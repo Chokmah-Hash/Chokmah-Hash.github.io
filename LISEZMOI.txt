@@ -1,22 +1,16 @@
-LES PROTOCOLES ÉTERNELS — Sauvegarde du site
-Archive générée le 11/10/2026 à 20:12:18
-Source : https://project30149.websitepublisher.ai
+LES PROTOCOLES ETERNELS - site officiel du JDR
+================================================
 
-CONTENU
-- index.html : page d'accueil
-- regles.html : manuel du joueur (version neutre, sans secrets de campagne)
-- fiches.html : application de fiches d'unité (sauvegarde locale du navigateur)
-- mj.html : zone MJ, contenu brouillé — le mot de passe n'est PAS dans l'archive
-- sauvegarde.html : la page qui a généré cette archive
+Adresse du site : https://chokmah-hash.github.io
 
-MODE D'EMPLOI HORS LIGNE
-Ouvrez chaque fichier .html dans un navigateur (double-clic). Hors ligne, la barre
-de navigation et le pied de page ne s'affichent pas (fragments serveur) mais tout
-le contenu reste lisible.
+Pages :
+- index.html      : accueil
+- regles.html     : regles maison "Les Protocoles Eternels"
+- fiches.html     : fiches des joueuses (sauvegarde partagee Supabase)
+- mj.html         : page du MJ (scenarios proteges par mot de passe)
+- sauvegarde.html : telechargement d'une archive du site
+- bestiaire.html  : bestiaire partage du MJ
 
-FICHES DE PERSONNAGE
-Elles sont stockées dans le navigateur utilisé (stockage local, clé pe_fiches_v1),
-pas dans le site : elles ne sont PAS dans cette archive. Pour les conserver ou les
-transférer, utilisez les codes d'export de la page Fiches.
-
-Usage strictement privé entre amis. Bon jeu ! ⚡
+Site heberge gratuitement via GitHub Pages.
+Fiches et bestiaire synchronises via Supabase (https://supabase.com).
+Pour toute question : contacter le MJ.
