@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta name="robots" content="noindex, nofollow"><title>Bestiaire â Les Protocoles Ãternels</title>
+<meta name="robots" content="noindex, nofollow"><title>Bestiaire — Les Protocoles Éternels</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;500;600;700&display=swap');
 :root{--bg:#0a120f;--panel:#101c17;--panel2:#0d1713;--teal:#2ee6c9;--tealsoft:rgba(46,230,201,.10);--tealline:rgba(46,230,201,.25);--amber:#f0b24a;--ambersoft:rgba(240,178,74,.10);--amberline:rgba(240,178,74,.4);--text:#e8f5f1;--muted:#93aca1;--danger:#e2604f}
@@ -83,7 +83,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 .to-top.show{display:flex}
 @media print{.to-top{display:none!important}}
 @media (max-width:560px){.brand{font-size:.78rem;letter-spacing:.1em}.nav-links a{font-size:.76rem;padding:8px 9px}}
-/* âââââ SpÃ©cifique bestiaire âââââ */
+/* ————— Spécifique bestiaire ————— */
 .btools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 .searchbox{background:var(--panel);border:1px solid var(--tealline);border-radius:9px;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:.95rem;padding:10px 14px;flex:1;min-width:180px;max-width:340px}
 .searchbox:focus{outline:none;border-color:var(--teal);box-shadow:0 0 10px rgba(46,230,201,.2)}
@@ -114,66 +114,66 @@ textarea.fld{resize:vertical;min-height:64px}
 <body>
 <header class="nav">
 <div class="nav-in">
-<a class="brand" href="/">â¡ PROTOCOLES ÃTERNELS</a>
+<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
 <nav class="nav-links">
 <a href="/">Accueil</a>
-<a href="/regles.html">RÃ¨gles</a>
+<a href="/regles.html">Règles</a>
 <a href="/fiches.html">Fiches</a>
 <a href="/bestiaire.html">Bestiaire</a>
 <a href="/galaxie.html">Galaxie</a>
 <a href="/mon-espace.html">Mon espace</a>
-<a href="/mj.html" class="mj">ð Zone MJ</a>
+<a href="/mj.html" class="mj">🔒 Zone MJ</a>
 </nav>
 </div>
 </header>
 <script>
 (function(){var p=location.pathname;document.querySelectorAll('.nav-links a').forEach(function(a){var h=a.getAttribute('href')||'';var n=h.replace(/\.html$/,'');if(n===''||n==='/'){if(p==='/'||p==='/index.html'){a.classList.add('active');}}else if(p===h||p===n||p.indexOf(n)===0){a.classList.add('active');}});})();
 </script>
-<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">â²</button>
+<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 <script>
 (function(){var b=document.getElementById('pe-top');if(!b){return;}window.addEventListener('scroll',function(){if(window.scrollY>300){b.classList.add('show');}else{b.classList.remove('show');}},{passive:true});b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});})();
 </script>
 <main class="wrap">
 <section class="hero rev">
-<div class="glyphrow">â¡ â¬¥ â¡</div>
+<div class="glyphrow">⚡ ⬥ ⚡</div>
 <h1>Le <b>Bestiaire</b></h1>
-<div class="tagline">CrÃ©atures Â· Machines Â· Rencontres</div>
-<p class="pitch">Toutes les crÃ©atures et machines recensÃ©es par le groupe, partagÃ©es en nuage et consultables depuis tous les appareils. Le MJ y consigne ses rencontres ; les joueuses y retrouvent ce qui a dÃ©jÃ  Ã©tÃ© affrontÃ© â ou ce qui rÃ´de encore.</p>
+<div class="tagline">Créatures · Machines · Rencontres</div>
+<p class="pitch">Toutes les créatures et machines recensées par le groupe, partagées en nuage et consultables depuis tous les appareils. Le MJ y consigne ses rencontres ; les joueuses y retrouvent ce qui a déjà été affronté — ou ce qui rôde encore.</p>
 </section>
 
 <section class="sect rev d1">
-<h2>CrÃ©atures recensÃ©es</h2>
+<h2>Créatures recensées</h2>
 <div class="chips" id="filters">
 <a href="#" data-f="tous" class="on">Tous</a>
 <a href="#" data-f="ennemi">Ennemis</a>
-<a href="#" data-f="allie">AlliÃ©s</a>
+<a href="#" data-f="allie">Alliés</a>
 <a href="#" data-f="neutre">Neutres</a>
 </div>
 <div class="btools">
-<input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une noteâ¦">
-<button class="btn ghost" id="b-refresh" style="min-height:44px">â» RafraÃ®chir</button>
+<input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une note…">
+<button class="btn ghost" id="b-refresh" style="min-height:44px">↻ Rafraîchir</button>
 </div>
-<p id="b-status">Chargement du bestiaireâ¦</p>
+<p id="b-status">Chargement du bestiaire…</p>
 <div id="beasts"></div>
 <div class="note-box">
-<strong>Base en nuage :</strong> les crÃ©atures sont enregistrÃ©es dans la base partagÃ©e du groupe. La page nÃ©cessite une connexion internet â hors ligne, la liste reste vide mais rien n'est perdu.
+<strong>Base en nuage :</strong> les créatures sont enregistrées dans la base partagée du groupe. La page nécessite une connexion internet — hors ligne, la liste reste vide mais rien n'est perdu.
 </div>
 </section>
 
 <section class="sect amber rev d2" id="gestion">
-<h2>ð Gestion (MJ)</h2>
+<h2>🔒 Gestion (MJ)</h2>
 <div class="card amber">
 <form id="gform">
 <input type="hidden" id="g-old" value="">
-<label class="glab" for="g-nom">Nom de la crÃ©ature</label>
+<label class="glab" for="g-nom">Nom de la créature</label>
 <input class="fld" id="g-nom" type="text" required placeholder="Ex. Chasseur de la 7e crypte">
 <label class="glab" for="g-camp">Camp</label>
 <select class="fld" id="g-camp">
 <option value="ennemi">Ennemi</option>
-<option value="allie">AlliÃ©</option>
+<option value="allie">Allié</option>
 <option value="neutre">Neutre</option>
 </select>
-<label class="glab">CaractÃ©ristiques</label>
+<label class="glab">Caractéristiques</label>
 <div class="ggrid">
 <div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="s-m" type="text" inputmode="numeric" placeholder='Ex. 5"'></div>
 <div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="s-cc" type="text" inputmode="numeric" placeholder="3+"></div>
@@ -186,30 +186,30 @@ textarea.fld{resize:vertical;min-height:64px}
 <div><span class="glab teal" style="margin-top:0">Svg</span><input class="fld" id="s-sv" type="text" placeholder="3+"></div>
 <div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="s-rfx" type="text" inputmode="numeric" placeholder="0"></div>
 </div>
-<label class="glab" for="g-armes">Armes &amp; Ã©quipements (une ligne par arme)</label>
-<textarea class="fld" id="g-armes" placeholder="Ex. Fusil Ã  particules | 24&quot; | 4 | -1 | 1"></textarea>
+<label class="glab" for="g-armes">Armes &amp; équipements (une ligne par arme)</label>
+<textarea class="fld" id="g-armes" placeholder="Ex. Fusil à particules | 24&quot; | 4 | -1 | 1"></textarea>
 <label class="glab" for="g-notes">Notes de campagne (facultatif)</label>
-<textarea class="fld" id="g-notes" placeholder="Lore, capacitÃ©s spÃ©ciales, premiÃ¨re rencontreâ¦"></textarea>
-<label class="glab" for="g-key">ClÃ© MJ</label>
-<input class="fld" id="g-key" type="password" autocomplete="off" placeholder="La clÃ© n'est jamais enregistrÃ©e">
+<textarea class="fld" id="g-notes" placeholder="Lore, capacités spéciales, première rencontre…"></textarea>
+<label class="glab" for="g-key">Clé MJ</label>
+<input class="fld" id="g-key" type="password" autocomplete="off" placeholder="La clé n'est jamais enregistrée">
 <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
-<button type="submit" class="btn solid-amber">ð¾ Enregistrer</button>
-<button type="button" class="btn danger" id="g-del">ð Supprimer ce nom</button>
-<button type="button" class="btn ghost" id="g-clear">âº Vider le formulaire</button>
+<button type="submit" class="btn solid-amber">💾 Enregistrer</button>
+<button type="button" class="btn danger" id="g-del">🗑 Supprimer ce nom</button>
+<button type="button" class="btn ghost" id="g-clear">↺ Vider le formulaire</button>
 </div>
 <p class="gmsg" id="g-msg"></p>
 </form>
 </div>
 <div class="note-box amber" style="margin-top:14px">
-Le panneau s'ouvre pour tous, mais seules les Ã©critures signÃ©es avec la <strong>clÃ© MJ</strong> sont acceptÃ©es par la base â les curieuses ne risquent rien, elles ne peuvent rien casser. La clÃ© saisie sert uniquement Ã  signer l'opÃ©ration : elle n'est ni stockÃ©e, ni Ã©crite dans le site.
+Le panneau s'ouvre pour tous, mais seules les écritures signées avec la <strong>clé MJ</strong> sont acceptées par la base — les curieuses ne risquent rien, elles ne peuvent rien casser. La clé saisie sert uniquement à signer l'opération : elle n'est ni stockée, ni écrite dans le site.
 </div>
 </section>
 </main>
 <footer class="foot">
-<div class="glyphrow">â¡ â¬¥ â¡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Ãternels</strong> â JDR maison, usage strictement privÃ© entre amis.</p>
-<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est rÃ©servÃ©e au MaÃ®tre de la Tombe.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">â§ Sauvegarde du site (ZIP)</a></p>
+<div class="glyphrow">⚡ ⬥ ⚡</div>
+<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
 </footer>
 <script>
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
@@ -218,16 +218,16 @@ var BEASTS=[],FILTER='tous',Q='';
 function $(id){return document.getElementById(id);}
 function hdr(key,extra){var h={};h['apikey']=SBK;h['Authorization']='Bearer '+SBK;if(key){h['x-mj-key']=key;}if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function campLabel(c){if(c==='ennemi'){return 'Ennemi';}if(c==='allie'){return 'AlliÃ©';}if(c==='neutre'){return 'Neutre';}return c||'?';}
+function campLabel(c){if(c==='ennemi'){return 'Ennemi';}if(c==='allie'){return 'Allié';}if(c==='neutre'){return 'Neutre';}return c||'?';}
 function campBadge(c){var cls=c==='ennemi'?'enemy':(c==='allie'?'ally':'neutral');return '<span class="badge '+cls+'">'+esc(campLabel(c))+'</span>';}
 function setStatus(t,err){var s=$('b-status');s.textContent=t;s.className=err?'err':'';}
 function load(){
-  setStatus('Chargement du bestiaireâ¦');
+  setStatus('Chargement du bestiaire…');
   fetch(SB+'bestiaire?select=*&order=nom.asc',{headers:hdr()})
     .then(function(r){if(!r.ok){throw new Error('http '+r.status);}return r.json();})
     .then(function(list){BEASTS=list||[];render();
-      setStatus(BEASTS.length===0?'Aucune crÃ©ature recensÃ©e pour l\'instant â le MJ peut en ajouter ci-dessous.':BEASTS.length+' crÃ©ature(s) dans la base partagÃ©e.');})
-    .catch(function(){BEASTS=[];render();setStatus('Base inaccessible â vÃ©rifiez votre connexion internet.',true);});
+      setStatus(BEASTS.length===0?'Aucune créature recensée pour l\'instant — le MJ peut en ajouter ci-dessous.':BEASTS.length+' créature(s) dans la base partagée.');})
+    .catch(function(){BEASTS=[];render();setStatus('Base inaccessible — vérifiez votre connexion internet.',true);});
 }
 function render(){
   var out='';
@@ -240,8 +240,8 @@ function render(){
     return true;
   });
   if(list.length===0){
-    out='<div class="empty-box">Aucune crÃ©ature ne correspond'+(Q?' Ã  cette recherche':'')+'.';
-    if(BEASTS.length===0){out+=' Le MJ peut ouvrir la gestion ci-dessous pour crÃ©er la premiÃ¨re entrÃ©e.';}
+    out='<div class="empty-box">Aucune créature ne correspond'+(Q?' à cette recherche':'')+'.';
+    if(BEASTS.length===0){out+=' Le MJ peut ouvrir la gestion ci-dessous pour créer la première entrée.';}
     out+='</div>';
   }else{
     out='<div class="grid3">';
@@ -250,20 +250,20 @@ function render(){
       var armes=(b.data&&b.data.armes)||[];
       var notes=(b.data&&b.data.notes)||'';
       out+='<div class="card beast-card">'
-        +'<button type="button" class="edit-btn" data-edit="'+esc(b.nom)+'" title="Charger dans la gestion">â</button>'
+        +'<button type="button" class="edit-btn" data-edit="'+esc(b.nom)+'" title="Charger dans la gestion">✎</button>'
         +'<h3>'+esc(b.nom)+'</h3>'+campBadge(b.camp)
         +'<div class="tscroll"><table class="rt mini"><tr>'
         +'<th>M</th><th>CC</th><th>CT</th><th>F</th><th>E</th><th>PV</th><th>A</th><th>Cd</th><th>Svg</th><th>Rfx</th></tr><tr>'
-        +'<td>'+(esc(st.m)||'â')+'</td>'
-        +'<td>'+(esc(st.cc)||'â')+'</td>'
-        +'<td>'+(esc(st.ct)||'â')+'</td>'
-        +'<td>'+(esc(st.f)||'â')+'</td>'
-        +'<td>'+(esc(st.e)||'â')+'</td>'
-        +'<td>'+(esc(st.pv)||'â')+'</td>'
-        +'<td>'+(esc(st.a)||'â')+'</td>'
-        +'<td>'+(esc(st.cd)||'â')+'</td>'
-        +'<td>'+(esc(st.sv)||'â')+'</td>'
-        +'<td>'+(esc(st.rfx)||'â')+'</td>'
+        +'<td>'+(esc(st.m)||'—')+'</td>'
+        +'<td>'+(esc(st.cc)||'—')+'</td>'
+        +'<td>'+(esc(st.ct)||'—')+'</td>'
+        +'<td>'+(esc(st.f)||'—')+'</td>'
+        +'<td>'+(esc(st.e)||'—')+'</td>'
+        +'<td>'+(esc(st.pv)||'—')+'</td>'
+        +'<td>'+(esc(st.a)||'—')+'</td>'
+        +'<td>'+(esc(st.cd)||'—')+'</td>'
+        +'<td>'+(esc(st.sv)||'—')+'</td>'
+        +'<td>'+(esc(st.rfx)||'—')+'</td>'
         +'</tr></table></div>';
       if(armes.length){
         out+='<ul class="armeslist">'+armes.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>';
@@ -291,21 +291,21 @@ function fillForm(nom){
   $('s-a').value=st.a||'';$('s-cd').value=st.cd||'';$('s-sv').value=st.sv||'';$('s-rfx').value=st.rfx||'';
   $('g-armes').value=((b.data&&b.data.armes)||[]).join('\n');
   $('g-notes').value=(b.data&&b.data.notes)||'';
-  gmsg('Â« '+nom+' Â» chargÃ© dans le formulaire â modifiez puis enregistrez.','');
+  gmsg('« '+nom+' » chargé dans le formulaire — modifiez puis enregistrez.','');
   $('gestion').scrollIntoView({behavior:'smooth'});
 }
 function gmsg(t,cls){var m=$('g-msg');m.textContent=t;m.className='gmsg '+(cls||'');}
 function clearForm(){
   ['g-old','g-nom','s-m','s-cc','s-ct','s-f','s-e','s-pv','s-a','s-cd','s-sv','s-rfx','g-armes','g-notes','g-key'].forEach(function(id){$(id).value='';});
   $('g-camp').value='ennemi';
-  gmsg('Formulaire vidÃ© â prÃªt pour une nouvelle crÃ©ature.','');
+  gmsg('Formulaire vidé — prêt pour une nouvelle créature.','');
 }
 function save(ev){
   ev.preventDefault();
   var nom=$('g-nom').value.trim();
   var key=$('g-key').value;
   if(!nom){gmsg('Le nom est obligatoire.','err');return;}
-  if(!key){gmsg('La clÃ© MJ est requise pour signer l\'enregistrement.','err');return;}
+  if(!key){gmsg('La clé MJ est requise pour signer l\'enregistrement.','err');return;}
   var armes=$('g-armes').value.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
   var data={
     st:{m:$('s-m').value.trim(),cc:$('s-cc').value.trim(),ct:$('s-ct').value.trim(),f:$('s-f').value.trim(),e:$('s-e').value.trim(),pv:$('s-pv').value.trim(),a:$('s-a').value.trim(),cd:$('s-cd').value.trim(),sv:$('s-sv').value.trim(),rfx:$('s-rfx').value.trim()},
@@ -315,7 +315,7 @@ function save(ev){
   var camp=$('g-camp').value;
   var old=$('g-old').value.trim();
   var target=old||nom;
-  gmsg('Enregistrement en coursâ¦','');
+  gmsg('Enregistrement en cours…','');
   fetch(SB+'bestiaire?nom=eq.'+encodeURIComponent(target),{
     method:'PATCH',
     headers:hdr(key,{'Content-Type':'application/json','Prefer':'return=representation'}),
@@ -336,33 +336,33 @@ function save(ev){
       return {created:true};
     });
   }).then(function(res){
-    gmsg(res.created?('Â« '+nom+' Â» ajoutÃ© au bestiaire â'):('Â« '+nom+' Â» mis Ã  jour â'),'ok');
+    gmsg(res.created?('« '+nom+' » ajouté au bestiaire ✅'):('« '+nom+' » mis à jour ✅'),'ok');
     $('g-old').value=nom;
     load();
   }).catch(function(e){
-    if(e&&e.message==='key'){gmsg('ClÃ© MJ incorrecte â la base a refusÃ© l\'Ã©criture.','err');}
-    else{gmsg('Ãchec de l\'enregistrement (connexion ?). RÃ©essayez.','err');}
+    if(e&&e.message==='key'){gmsg('Clé MJ incorrecte — la base a refusé l\'écriture.','err');}
+    else{gmsg('Échec de l\'enregistrement (connexion ?). Réessayez.','err');}
   });
 }
 function del(){
   var nom=$('g-nom').value.trim();
   var key=$('g-key').value;
-  if(!nom){gmsg('Chargez d\'abord une crÃ©ature (bouton â d\'une carte) ou saisissez son nom exact.','err');return;}
-  if(!key){gmsg('La clÃ© MJ est requise.','err');return;}
-  if(!window.confirm('Supprimer Â« '+nom+' Â» du bestiaire ?')){return;}
-  gmsg('Suppression en coursâ¦','');
+  if(!nom){gmsg('Chargez d\'abord une créature (bouton ✎ d\'une carte) ou saisissez son nom exact.','err');return;}
+  if(!key){gmsg('La clé MJ est requise.','err');return;}
+  if(!window.confirm('Supprimer « '+nom+' » du bestiaire ?')){return;}
+  gmsg('Suppression en cours…','');
   fetch(SB+'bestiaire?nom=eq.'+encodeURIComponent(nom),{
     method:'DELETE',
     headers:hdr(key)
   }).then(function(r){
     if(r.status===403){throw new Error('key');}
     if(!r.ok){throw new Error('http '+r.status);}
-    gmsg('Â« '+nom+' Â» supprimÃ© du bestiaire.','ok');
+    gmsg('« '+nom+' » supprimé du bestiaire.','ok');
     clearForm();
     load();
   }).catch(function(e){
-    if(e&&e.message==='key'){gmsg('ClÃ© MJ incorrecte â la base a refusÃ© la suppression.','err');}
-    else{gmsg('Ãchec de la suppression (connexion ?). RÃ©essayez.','err');}
+    if(e&&e.message==='key'){gmsg('Clé MJ incorrecte — la base a refusé la suppression.','err');}
+    else{gmsg('Échec de la suppression (connexion ?). Réessayez.','err');}
   });
 }
 $('gform').addEventListener('submit',save);
