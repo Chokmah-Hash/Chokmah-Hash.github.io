@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow">
-<title>Sauvegarde du site — Les Protocoles Éternels</title>
+
+<meta name="robots" content="noindex, nofollow"><title>Sauvegarde du site — Les Protocoles Éternels</title>
 <!-- Optimizer - Canonical -->
 <!-- Optimizer - Custom Meta -->
 <!-- Optimizer - Open Graph -->
@@ -102,6 +102,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <a href="/regles.html">Règles</a>
 <a href="/fiches.html">Fiches</a>
 <a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
+<a href="https://chokmah-hash.github.io/mon-espace.html">Mon espace</a>
 <a href="/mj.html" class="mj">🔒 Zone MJ</a>
 </nav>
 </div>
@@ -132,6 +133,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <div class="zip-row"><span class="dot"></span><span>mj.html — zone MJ (contenu brouillé, mot de passe non inclus)</span><span class="sz"></span></div>
 <div class="zip-row"><span class="dot"></span><span>sauvegarde.html — cette page</span><span class="sz"></span></div>
 <div class="zip-row"><span class="dot"></span><span>bestiaire.html — bestiaire partagé (nuage)</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>mon-espace.html — espace joueur (nuage)</span><span class="sz"></span></div>
 <div class="zip-row"><span class="dot"></span><span>LISEZMOI.txt — mode d'emploi</span><span class="sz"></span></div>
 </div>
 <p id="zip-msg" style="color:var(--muted)"></p>
@@ -139,9 +141,10 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <section class="sect rev d2">
 <h2>Bon à savoir</h2>
 <div class="note-box">
-<strong>Hors ligne :</strong> l'archive est un site statique complet — navigation et mise en page incluses. Ouvrez chaque fichier .html dans un navigateur (double-clic) ; seules les données en nuage (fiches partagées, bestiaire) nécessitent internet.<br><br>
+<strong>Hors ligne :</strong> l'archive est un site statique complet — navigation et mise en page incluses. Ouvrez chaque fichier .html dans un navigateur (double-clic) ; seules les données en nuage (fiches partagées, bestiaire, espace joueur) nécessitent internet.<br><br>
 <strong>Fiches de personnage :</strong> elles vivent dans le stockage local de votre navigateur, pas dans le site — elles ne sont donc <strong>pas</strong> dans l'archive. Pour les conserver, utilisez les <strong>codes d'export</strong> de la page Fiches.<br><br>
 <strong>Bestiaire :</strong> la page bestiaire.html figure dans l'archive, mais les créatures vivent dans la base en nuage — elles se rechargent dès qu'internet revient.<br><br>
+<strong>Mon espace :</strong> la page mon-espace.html figure dans l'archive, mais comptes, personnages et notes vivent dans la base en nuage — reconnectez-vous pour les retrouver.<br><br>
 <strong>Site propre :</strong> l'archive est nettoyée automatiquement : aucun script, badge ni marqueur de l'hébergeur n'est inclus — l'archive est un site statique neutre, utilisable telle quelle partout (GitHub Pages compris).<br><br>
 <strong>Zone MJ :</strong> l'archive contient bien la page mj.html, mais son contenu reste brouillé et le mot de passe n'y figure pas.<br><br>
 <strong>Toujours à jour :</strong> l'archive est assemblée à partir des pages en ligne au moment du clic — pas d'ancienne copie qui traîne.
@@ -149,11 +152,12 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 </section>
 </main>
 <footer class="foot">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+<div class="glyphrow">â¡ â¬¥ â¡</div>
+<p style="margin:10px 0 2px"><strong>Les Protocoles Ãternels</strong> â JDR maison, usage strictement privÃ© entre amis.</p>
+<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est rÃ©servÃ©e au MaÃ®tre de la Tombe.</p>
+<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">â§ Sauvegarde du site (ZIP)</a></p>
 </footer>
+
 <script>
 var PAGES=[
  ["index.html","/"],
@@ -161,7 +165,8 @@ var PAGES=[
  ["fiches.html","/fiches.html"],
  ["mj.html","/mj.html"],
  ["sauvegarde.html","/sauvegarde.html"],
- ["bestiaire.html","/bestiaire.html","https://chokmah-hash.github.io/bestiaire.html"]
+ ["bestiaire.html","/bestiaire.html","https://chokmah-hash.github.io/bestiaire.html"],
+ ["mon-espace.html","/mon-espace.html","https://chokmah-hash.github.io/mon-espace.html"]
 ];
 var ZIPNAME="les-protocoles-eternels-site.zip";
 var DESCR={
@@ -170,7 +175,8 @@ var DESCR={
  "fiches.html":"application de fiches d'unité (navigateur + synchronisation nuage)",
  "mj.html":"zone MJ, contenu brouillé — le mot de passe n'est PAS dans l'archive",
  "sauvegarde.html":"la page qui a généré cette archive",
- "bestiaire.html":"bestiaire partagé (les créatures vivent dans la base en nuage, pas dans l'archive)"
+ "bestiaire.html":"bestiaire partagé (les créatures vivent dans la base en nuage, pas dans l'archive)",
+ "mon-espace.html":"espace joueur : aventure, personnages, notes (tout vit dans la base en nuage)"
 };
 function $(id){return document.getElementById(id);}
 var CRCT=(function(){var t=[],c,k,n;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++){c=c&1?0xEDB88320^(c>>>1):c>>>1;}t[n]=c>>>0;}return t;})();
@@ -303,14 +309,14 @@ function run(){
         "MODE D'EMPLOI HORS LIGNE\n"+
         "Ouvrez chaque fichier .html dans un navigateur (double-clic). Le site est statique\n"+
         "et autonome : navigation et mise en page incluses. Seules les données en nuage\n"+
-        "(fiches partagées, bestiaire) nécessitent une connexion internet.\n\n"+
+        "(fiches partagées, bestiaire, espace joueur) nécessitent une connexion internet.\n\n"+
         "FICHES DE PERSONNAGE\n"+
         "Elles sont stockées dans le navigateur utilisé (stockage local, clé pe_fiches_v1),\n"+
         "pas dans le site : elles ne sont PAS dans cette archive. Pour les conserver ou les\n"+
         "transférer, utilisez les codes d'export de la page Fiches.\n\n"+
         "Usage strictement privé entre amis. Bon jeu ! ⚡";
       files.push({name:"LISEZMOI.txt",data:bytesOf(readme)});
-      setRow(6,"ok","généré");
+      setRow(7,"ok","généré");
       var blob=makeZip(files);
       var a=document.createElement("a");
       a.href=URL.createObjectURL(blob);
