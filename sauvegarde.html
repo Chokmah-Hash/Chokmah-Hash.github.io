@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Sauvegarde du site (ZIP) — Les Protocoles Éternels</title>
+    <link rel="canonical" href="https://project30149.websitepublisher.ai/sauvegarde" />
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="content-language" content="fr">
+    
+    <script>!function(){"use strict";if("function"!=typeof Node||!Node.prototype)return;if(Node.prototype.__wpTranslateGuard)return;Node.prototype.__wpTranslateGuard=!0;var e=Node.prototype.removeChild;Node.prototype.removeChild=function(t){return t&&t.parentNode!==this?t:e.apply(this,arguments)};var r=Node.prototype.insertBefore;Node.prototype.insertBefore=function(t,n){return n&&n.parentNode!==this?r.call(this,t,null):r.apply(this,arguments)}}();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+<meta property="og:title" content="Sauvegarde du site (ZIP) — Les Protocoles Éternels" /><meta property="og:description" content="Générez en un clic une archive ZIP du site entier, à jour de la version en ligne." />
+
+<script type="text/javascript">hostname = '//project30149.websitepublisher.ai';</script>
+
+<style>
+#zip-status{margin-top:16px}
+.zip-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--tealline);border-radius:9px;margin:6px 0;background:var(--panel2);font-size:.92rem}
+.zip-row.ok{border-color:rgba(46,230,201,.45)}
+.zip-row.ko{border-color:rgba(226,96,79,.5);color:var(--danger)}
+.zip-row .dot{width:10px;height:10px;border-radius:99px;background:var(--muted);flex:none}
+.zip-row.ok .dot{background:var(--teal);box-shadow:0 0 8px rgba(46,230,201,.6)}
+.zip-row.ko .dot{background:var(--danger)}
+.zip-row .sz{margin-left:auto;color:var(--muted);font-size:.8rem;white-space:nowrap}
+#zip-msg{margin-top:12px;font-size:.95rem}
+</style>
+<meta name="disable-service-worker" content="true">
+<meta name="disable-service-worker" content="true">
+
+
+
+</head>
+<body>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;500;600;700&display=swap');
+:root{--bg:#0a120f;--panel:#101c17;--panel2:#0d1713;--teal:#2ee6c9;--tealsoft:rgba(46,230,201,.10);--tealline:rgba(46,230,201,.25);--amber:#f0b24a;--ambersoft:rgba(240,178,74,.10);--amberline:rgba(240,178,74,.4);--text:#e8f5f1;--muted:#93aca1;--danger:#e2604f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:16px;line-height:1.65;background:radial-gradient(1100px 520px at 50% -8%,#122219 0%,#0a120f 58%) fixed,#0a120f}
+h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:.06em;margin:.25em 0 .4em;line-height:1.2}
+h2{color:var(--teal);font-size:1.45rem;text-transform:uppercase;letter-spacing:.12em}
+h3{font-size:1.12rem;color:var(--text)}
+p{margin:.4em 0 .9em}
+a{color:var(--teal)}
+strong{color:var(--text)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
+.foot{margin-top:56px;border-top:1px solid var(--tealline);padding:24px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+.nav{position:sticky;top:0;z-index:50;background:rgba(10,18,15,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
+.nav-in{max-width:1000px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px}
+.brand{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.14em;color:var(--teal);text-decoration:none;font-size:.92rem;white-space:nowrap}
+.nav-links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto;-webkit-overflow-scrolling:touch}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{color:var(--muted);text-decoration:none;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;padding:9px 11px;border-radius:7px;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center}
+.nav-links a:hover{color:var(--text);background:var(--tealsoft)}
+.nav-links a.active{color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
+.nav-links a.mj{color:var(--amber)}
+.nav-links a.mj:hover,.nav-links a.mj.active{background:var(--ambersoft);box-shadow:inset 0 -2px 0 var(--amber)}
+.hero{text-align:center;padding:58px 0 34px}
+.glyphrow{color:var(--teal);letter-spacing:.55em;font-size:1.35rem;text-shadow:0 0 14px rgba(46,230,201,.55)}
+.hero h1{font-size:clamp(1.9rem,7vw,3.1rem);text-transform:uppercase;letter-spacing:.16em;margin:.35em 0 .2em}
+.hero h1 b{color:var(--teal);font-weight:700}
+.tagline{color:var(--muted);font-family:'Rajdhani',sans-serif;letter-spacing:.22em;text-transform:uppercase;font-size:.85rem}
+.pitch{max-width:660px;margin:14px auto 22px;color:var(--text);font-size:1.02rem}
+.cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 22px;border-radius:9px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.88rem;text-decoration:none;cursor:pointer;border:none;transition:transform .15s ease,box-shadow .15s ease}
+.btn.primary{background:var(--teal);color:#052018;box-shadow:0 0 18px rgba(46,230,201,.25)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 0 26px rgba(46,230,201,.4)}
+.btn.amber{background:transparent;border:1.5px solid var(--amber);color:var(--amber)}
+.btn.amber:hover{background:var(--ambersoft)}
+.btn.ghost{background:transparent;border:1.5px solid var(--tealline);color:var(--teal)}
+.btn.ghost:hover{background:var(--tealsoft)}
+.btn.danger{background:transparent;border:1.5px solid rgba(226,96,79,.5);color:var(--danger)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:20px 0}
+.card{background:var(--panel);border:1px solid var(--tealline);border-radius:14px;padding:20px;position:relative}
+.card .ico{font-size:1.7rem;display:block;margin-bottom:8px}
+.card h3{margin:.1em 0 .3em}
+.card p{color:var(--muted);font-size:.93rem;margin:.2em 0 .7em}
+.card.amber{border-color:var(--amberline)}
+.badge{display:inline-block;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;padding:3px 11px;border-radius:99px;border:1px solid var(--tealline);color:var(--teal);background:var(--tealsoft);margin-top:6px}
+.badge.amber{border-color:var(--amberline);color:var(--amber);background:var(--ambersoft)}
+.sect{margin:36px 0}
+.sect>h2{border-bottom:1px solid var(--tealline);padding-bottom:8px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0}
+table.rt{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+table.rt th{background:var(--tealsoft);color:var(--teal);text-transform:uppercase;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.07em;font-size:.76rem;padding:9px 10px;border:1px solid var(--tealline);text-align:left;white-space:nowrap}
+table.rt td{padding:8px 10px;border:1px solid rgba(46,230,201,.13);vertical-align:top}
+table.rt tr:nth-child(even) td{background:rgba(46,230,201,.035)}
+table.rt.amber th{background:var(--ambersoft);color:var(--amber);border-color:var(--amberline)}
+table.rt.amber td{border-color:rgba(240,178,74,.18)}
+.note-box{background:var(--panel2);border:1px solid var(--tealline);border-left:4px solid var(--teal);border-radius:10px;padding:14px 16px;margin:16px 0;font-size:.93rem;color:var(--muted)}
+.note-box.amber{border-color:var(--amberline);border-left-color:var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chips a{display:inline-block;background:var(--panel);border:1px solid var(--tealline);border-radius:99px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);text-decoration:none}
+.chips a:hover{background:var(--tealsoft)}
+.rev{opacity:0;transform:translateY(14px);animation:peReveal .7s ease forwards}
+.d1{animation-delay:.08s}.d2{animation-delay:.18s}.d3{animation-delay:.3s}.d4{animation-delay:.42s}
+@keyframes peReveal{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;opacity:1;transform:none}.btn{transition:none}}
+.to-top{position:fixed;bottom:168px;right:18px;z-index:70;display:none;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;border:1.5px solid var(--tealline);background:rgba(10,18,15,.92);color:var(--teal);font-size:1.05rem;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(46,230,201,.2)}
+.to-top:hover{background:var(--tealsoft);box-shadow:0 0 20px rgba(46,230,201,.4)}
+.to-top.show{display:flex}
+@media print{.to-top{display:none!important}}
+.grid3.acts .card{display:flex;flex-direction:column}
+.grid3.acts .card .btn{align-self:flex-end;margin-top:auto}
+@media (max-width:560px){.brand{font-size:.78rem;letter-spacing:.1em}.nav-links a{font-size:.76rem;padding:8px 9px}}
+</style><header class="nav">
+<div class="nav-in">
+<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+<nav class="nav-links">
+<a href="/">Accueil</a>
+<a href="/regles.html">Règles</a>
+<a href="/fiches.html">Fiches</a>
+<a href="/mj.html" class="mj">🔒 Zone MJ</a>
+</nav>
+</div>
+</header>
+<script>
+(function(){var p=location.pathname;document.querySelectorAll('.nav-links a').forEach(function(a){var h=a.getAttribute('href')||'';var n=h.replace(/\.html$/,'');if(n===''||n==='/'){if(p==='/'||p==='/index.html'){a.classList.add('active');}}else if(p===h||p===n||p.indexOf(n)===0){a.classList.add('active');}});})();
+</script>
+<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+<script>
+(function(){var b=document.getElementById('pe-top');if(!b){return;}window.addEventListener('scroll',function(){if(window.scrollY>300){b.classList.add('show');}else{b.classList.remove('show');}},{passive:true});b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});})();
+</script>
+<main class="wrap">
+<section class="hero rev">
+<div class="glyphrow">⚡ ⬥ ⚡</div>
+<h1>Sauvegarde du <b>site</b></h1>
+<div class="tagline">Archive ZIP · génération instantanée</div>
+<p class="pitch">Cette page télécharge le site entier — la version <strong>en ligne à l'instant présent</strong> — dans un fichier ZIP, prête à être conservée ou ouverte hors ligne. Un clic, rien à installer.</p>
+<div class="cta-row">
+<button class="btn primary" id="btn-zip">⇩ Générer l'archive ZIP</button>
+</div>
+</section>
+<section class="sect rev d1">
+<h2>Contenu de l'archive</h2>
+<div id="zip-status">
+<div class="zip-row"><span class="dot"></span><span>index.html — accueil</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>regles.html — manuel du joueur (neutre, sans secrets)</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>fiches.html — application de fiches</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>mj.html — zone MJ (contenu brouillé, mot de passe non inclus)</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>sauvegarde.html — cette page</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>LISEZMOI.txt — mode d'emploi</span><span class="sz"></span></div>
+</div>
+<p id="zip-msg" style="color:var(--muted)"></p>
+</section>
+<section class="sect rev d2">
+<h2>Bon à savoir</h2>
+<div class="note-box">
+<strong>Hors ligne :</strong> la barre de navigation et le pied de page proviennent de fragments serveur — hors ligne, ils ne s'affichent pas, mais <strong>tout le contenu reste lisible</strong> en ouvrant chaque fichier .html dans un navigateur (double-clic).<br><br>
+<strong>Fiches de personnage :</strong> elles vivent dans le stockage local de votre navigateur, pas dans le site — elles ne sont donc <strong>pas</strong> dans l'archive. Pour les conserver, utilisez les <strong>codes d'export</strong> de la page Fiches.<br><br>
+<strong>Zone MJ :</strong> l'archive contient bien la page mj.html, mais son contenu reste brouillé et le mot de passe n'y figure pas.<br><br>
+<strong>Toujours à jour :</strong> l'archive est assemblée à partir des pages en ligne au moment du clic — pas d'ancienne copie qui traîne.
+</div>
+</section>
+</main>
+<footer class="foot">
+<div class="glyphrow">⚡ ⬥ ⚡</div>
+<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+</footer>
+<script>
+var PAGES=[
+ ["index.html","/"],
+ ["regles.html","/regles.html"],
+ ["fiches.html","/fiches.html"],
+ ["mj.html","/mj.html"],
+ ["sauvegarde.html","/sauvegarde.html"]
+];
+var ZIPNAME="les-protocoles-eternels-site.zip";
+function $(id){return document.getElementById(id);}
+var CRCT=(function(){var t=[],c,k,n;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++){c=c&1?0xEDB88320^(c>>>1):c>>>1;}t[n]=c>>>0;}return t;})();
+function crc32(u8){var c=0^-1;for(var i=0;i<u8.length;i++){c=(c>>>8)^CRCT[(c^u8[i])&0xFF];}return (c^-1)>>>0;}
+function bytesOf(str){
+  var s=unescape(encodeURIComponent(str));
+  var u=new Uint8Array(s.length);
+  for(var i=0;i<s.length;i++){u[i]=s.charCodeAt(i)&0xFF;}
+  return u;
+}
+function makeZip(files){
+  var d=new Date();
+  var dosTime=((d.getHours()&31)<<11)|((d.getMinutes()&63)<<5)|((Math.floor(d.getSeconds()/2))&31);
+  var dosDate=(((d.getFullYear()-1980)&127)<<9)|(((d.getMonth()+1)&15)<<5)|(d.getDate()&31);
+  var parts=[],central=[],offset=0;
+  files.forEach(function(f){
+    var name=bytesOf(f.name);
+    var crc=crc32(f.data);
+    var lh=new Uint8Array(30+name.length);
+    var dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true);
+    dv.setUint16(4,20,true);
+    dv.setUint16(6,0x0800,true);
+    dv.setUint16(8,0,true);
+    dv.setUint16(10,dosTime,true);
+    dv.setUint16(12,dosDate,true);
+    dv.setUint32(14,crc,true);
+    dv.setUint32(18,f.data.length,true);
+    dv.setUint32(22,f.data.length,true);
+    dv.setUint16(26,name.length,true);
+    dv.setUint16(28,0,true);
+    lh.set(name,30);
+    parts.push(lh);parts.push(f.data);
+    var ch=new Uint8Array(46+name.length);
+    var cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true);
+    cv.setUint16(4,20,true);
+    cv.setUint16(6,20,true);
+    cv.setUint16(8,0x0800,true);
+    cv.setUint16(10,0,true);
+    cv.setUint16(12,dosTime,true);
+    cv.setUint16(14,dosDate,true);
+    cv.setUint32(16,crc,true);
+    cv.setUint32(20,f.data.length,true);
+    cv.setUint32(24,f.data.length,true);
+    cv.setUint16(28,name.length,true);
+    cv.setUint16(30,0,true);
+    cv.setUint16(32,0,true);
+    cv.setUint16(34,0,true);
+    cv.setUint16(36,0,true);
+    cv.setUint32(38,0,true);
+    cv.setUint32(42,offset,true);
+    ch.set(name,46);
+    central.push(ch);
+    offset+=lh.length+f.data.length;
+  });
+  var cdSize=0;central.forEach(function(c){cdSize+=c.length;});
+  var eocd=new Uint8Array(22);
+  var ev=new DataView(eocd.buffer);
+  ev.setUint32(0,0x06054b50,true);
+  ev.setUint16(4,0,true);
+  ev.setUint16(6,0,true);
+  ev.setUint16(8,files.length,true);
+  ev.setUint16(10,files.length,true);
+  ev.setUint32(12,cdSize,true);
+  ev.setUint32(16,offset,true);
+  ev.setUint16(20,0,true);
+  var all=parts.concat(central);all.push(eocd);
+  var total=0;all.forEach(function(p){total+=p.length;});
+  var out=new Uint8Array(total);var pos=0;
+  all.forEach(function(p){out.set(p,pos);pos+=p.length;});
+  return new Blob([out],{type:"application/zip"});
+}
+function fmt(n){return n>1024?Math.round(n/1024)+" Ko":n+" o";}
+function setRow(i,cls,txt){
+  var rows=$("zip-status").getElementsByClassName("zip-row");
+  var r=rows[i];
+  r.className="zip-row "+cls;
+  r.getElementsByTagName("span")[1].textContent=r.getElementsByTagName("span")[1].textContent.split(" — ")[0]+" — "+txt;
+}
+function run(){
+  var msg=$("zip-msg");
+  msg.style.color="var(--muted)";
+  msg.textContent="Téléchargement des pages en cours…";
+  var rows=$("zip-status").getElementsByClassName("zip-row");
+  for(var q=0;q<rows.length;q++){rows[q].className="zip-row";rows[q].getElementsByClassName("sz")[0].textContent="";}
+  var files=[];
+  var done=0,fail=0;
+  PAGES.forEach(function(p,idx){
+    fetch(p[1],{cache:"no-store"}).then(function(r){
+      if(!r.ok){throw new Error("http "+r.status);}
+      return r.text();
+    }).then(function(txt){
+      files.push({name:p[0],data:bytesOf(txt)});
+      setRow(idx,"ok","récupérée");
+      rows[idx].getElementsByClassName("sz")[0].textContent=fmt(txt.length);
+    }).catch(function(){
+      fail++;
+      setRow(idx,"ko","inaccessible");
+    }).then(function(){
+      done++;
+      if(done<PAGES.length){return;}
+      if(fail>0){
+        msg.style.color="var(--danger)";
+        msg.textContent=fail+" page(s) inaccessible(s) — vérifiez votre connexion puis réessayez.";
+        return;
+      }
+      var d=new Date();
+      var readme="LES PROTOCOLES ÉTERNELS — Sauvegarde du site\n"+
+        "Archive générée le "+d.toLocaleDateString("fr-FR")+" à "+d.toLocaleTimeString("fr-FR")+"\n"+
+        "Source : https://project30149.websitepublisher.ai\n\n"+
+        "CONTENU\n"+
+        "- index.html : page d'accueil\n"+
+        "- regles.html : manuel du joueur (version neutre, sans secrets de campagne)\n"+
+        "- fiches.html : application de fiches d'unité (sauvegarde locale du navigateur)\n"+
+        "- mj.html : zone MJ, contenu brouillé — le mot de passe n'est PAS dans l'archive\n"+
+        "- sauvegarde.html : la page qui a généré cette archive\n\n"+
+        "MODE D'EMPLOI HORS LIGNE\n"+
+        "Ouvrez chaque fichier .html dans un navigateur (double-clic). Hors ligne, la barre\n"+
+        "de navigation et le pied de page ne s'affichent pas (fragments serveur) mais tout\n"+
+        "le contenu reste lisible.\n\n"+
+        "FICHES DE PERSONNAGE\n"+
+        "Elles sont stockées dans le navigateur utilisé (stockage local, clé pe_fiches_v1),\n"+
+        "pas dans le site : elles ne sont PAS dans cette archive. Pour les conserver ou les\n"+
+        "transférer, utilisez les codes d'export de la page Fiches.\n\n"+
+        "Usage strictement privé entre amis. Bon jeu ! ⚡";
+      files.push({name:"LISEZMOI.txt",data:bytesOf(readme)});
+      setRow(5,"ok","généré");
+      var blob=makeZip(files);
+      var a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download=ZIPNAME;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},4000);
+      msg.style.color="var(--teal)";
+      msg.textContent="Archive prête : "+ZIPNAME+" ("+fmt(blob.size)+") — vérifiez vos téléchargements.";
+    });
+  });
+}
+$("btn-zip").addEventListener("click",run);
+</script>
+
+<!-- WPE-DEBUG path=api slug=sauvegarde.html -->
+<script src="https://cdn.websitepublisher.ai/wpe/loader.js" data-project="30149" data-page="sauvegarde.html" defer></script>
+
+
+<!-- WebsitePublisher.ai Powered-by Widget -->
+<div id="wpa-widget" style="position:fixed;bottom:0;right:0;z-index:2147483647;display:flex;justify-content:flex-end;pointer-events:none;padding:0 12px 12px 0;">
+    <div style="pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(15,15,15,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:1;color:rgba(255,255,255,0.7);box-shadow:0 2px 12px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);">
+        <a href="https://www.websitepublisher.ai?ref=widget" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.9);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            WebsitePublisher.ai
+        </a>
+        <span style="color:rgba(255,255,255,0.25);">&middot;</span>
+        <a href="https://www.websitepublisher.ai/report?url=https%3A%2F%2Fproject30149.websitepublisher.ai" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.5);text-decoration:none;">Report Abuse</a>
+    </div>
+</div>
+</body>
+</html>

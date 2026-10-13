@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Fiches d&apos;unité — Les Protocoles Éternels</title>
+    <link rel="canonical" href="https://project30149.websitepublisher.ai/fiches" />
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="content-language" content="fr">
+    
+    <script>!function(){"use strict";if("function"!=typeof Node||!Node.prototype)return;if(Node.prototype.__wpTranslateGuard)return;Node.prototype.__wpTranslateGuard=!0;var e=Node.prototype.removeChild;Node.prototype.removeChild=function(t){return t&&t.parentNode!==this?t:e.apply(this,arguments)};var r=Node.prototype.insertBefore;Node.prototype.insertBefore=function(t,n){return n&&n.parentNode!==this?r.call(this,t,null):r.apply(this,arguments)}}();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+<meta property="og:title" content="Fiches d'unité — Les Protocoles Éternels" /><meta property="og:description" content="Créez, suivez et imprimez vos fiches d'unité : châssis pré-remplis, points de vie, compétences, arsenal, XP. Sauvegarde locale automatique et codes d'export." />
+
+<script type="text/javascript">hostname = '//project30149.websitepublisher.ai';</script>
+
+<style>
+input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--tealline);border-radius:9px;color:var(--text);padding:9px 11px;font-family:inherit;font-size:1rem;min-height:44px}
+input:focus,select:focus,textarea:focus{outline:1.5px solid var(--teal)}
+.ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:12px 0}
+.ig label,.stats label,.arow-h span+div label,form label{display:block;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:3px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
+.pvrow{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.pv{width:22px;height:22px;border:1.5px solid var(--tealline);border-radius:4px;cursor:pointer;display:inline-block}
+.pv.on{background:var(--teal);box-shadow:0 0 8px rgba(46,230,201,.5)}
+.ech{width:28px;height:28px;border:2px solid var(--amberline);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--amber);font-weight:700;font-size:1.1rem}
+.ech.on{background:var(--amber);color:#201405}
+.comps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+label.cb{display:flex;align-items:center;gap:9px;min-height:44px;border:1px solid var(--tealline);border-radius:9px;padding:6px 12px;cursor:pointer;background:var(--panel2);margin:0}
+label.cb.on{border-color:var(--teal);background:var(--tealsoft)}
+label.cb input{width:auto;min-height:0}
+.arow{display:grid;grid-template-columns:1.7fr .6fr .45fr .45fr .45fr .45fr 1.5fr;gap:8px;margin:8px 0}
+.arow-h{display:grid;grid-template-columns:1.7fr .6fr .45fr .45fr .45fr .45fr 1.5fr;gap:8px;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-family:'Rajdhani',sans-serif;font-weight:600}
+.erow{display:grid;grid-template-columns:1.1fr 2fr 135px;gap:8px;margin:8px 0;align-items:center}
+@media(max-width:640px){.arow,.arow-h{grid-template-columns:1fr 1fr}.erow{grid-template-columns:1fr}}
+h3.sub{color:var(--teal);text-transform:uppercase;letter-spacing:.1em;font-size:.95rem;border-bottom:1px solid var(--tealline);padding-bottom:4px;margin-top:26px}
+h3.sub small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.78rem}
+.fh{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px}
+.cardbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+#exp-box{display:none}
+#imp-msg{margin-top:6px;color:var(--muted);font-size:.85rem}
+textarea{resize:vertical}
+@media print{
+ body{background:#fff!important;color:#111}
+ .nav,.foot,#view-list,.fh,.btn{display:none!important}
+ #view-edit{display:block!important}
+ main{max-width:100%;padding:0}
+ h2,h3.sub{color:#0b6e66!important}
+ input,select,textarea{background:#fff!important;color:#111!important;border:1px solid #888!important;min-height:0}
+ .pv{border-color:#666}.pv.on{background:#0e9e92!important;box-shadow:none}
+ .ech{border-color:#a06a1e!important}.ech.on{background:#c98a2e!important;color:#111!important}
+ label.cb{border:1px solid #888}
+ label.cb.on{background:#e2f4f1!important}
+ .note-box{background:#fff!important;border:1px solid #888!important;color:#333!important}
+ *{box-shadow:none!important}
+}
+</style>
+<meta name="disable-service-worker" content="true">
+<meta name="disable-service-worker" content="true">
+
+
+
+</head>
+<body>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;500;600;700&display=swap');
+:root{--bg:#0a120f;--panel:#101c17;--panel2:#0d1713;--teal:#2ee6c9;--tealsoft:rgba(46,230,201,.10);--tealline:rgba(46,230,201,.25);--amber:#f0b24a;--ambersoft:rgba(240,178,74,.10);--amberline:rgba(240,178,74,.4);--text:#e8f5f1;--muted:#93aca1;--danger:#e2604f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:16px;line-height:1.65;background:radial-gradient(1100px 520px at 50% -8%,#122219 0%,#0a120f 58%) fixed,#0a120f}
+h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:.06em;margin:.25em 0 .4em;line-height:1.2}
+h2{color:var(--teal);font-size:1.45rem;text-transform:uppercase;letter-spacing:.12em}
+h3{font-size:1.12rem;color:var(--text)}
+p{margin:.4em 0 .9em}
+a{color:var(--teal)}
+strong{color:var(--text)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
+.foot{margin-top:56px;border-top:1px solid var(--tealline);padding:24px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+.nav{position:sticky;top:0;z-index:50;background:rgba(10,18,15,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
+.nav-in{max-width:1000px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px}
+.brand{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.14em;color:var(--teal);text-decoration:none;font-size:.92rem;white-space:nowrap}
+.nav-links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto;-webkit-overflow-scrolling:touch}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{color:var(--muted);text-decoration:none;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;padding:9px 11px;border-radius:7px;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center}
+.nav-links a:hover{color:var(--text);background:var(--tealsoft)}
+.nav-links a.active{color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
+.nav-links a.mj{color:var(--amber)}
+.nav-links a.mj:hover,.nav-links a.mj.active{background:var(--ambersoft);box-shadow:inset 0 -2px 0 var(--amber)}
+.hero{text-align:center;padding:58px 0 34px}
+.glyphrow{color:var(--teal);letter-spacing:.55em;font-size:1.35rem;text-shadow:0 0 14px rgba(46,230,201,.55)}
+.hero h1{font-size:clamp(1.9rem,7vw,3.1rem);text-transform:uppercase;letter-spacing:.16em;margin:.35em 0 .2em}
+.hero h1 b{color:var(--teal);font-weight:700}
+.tagline{color:var(--muted);font-family:'Rajdhani',sans-serif;letter-spacing:.22em;text-transform:uppercase;font-size:.85rem}
+.pitch{max-width:660px;margin:14px auto 22px;color:var(--text);font-size:1.02rem}
+.cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 22px;border-radius:9px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.88rem;text-decoration:none;cursor:pointer;border:none;transition:transform .15s ease,box-shadow .15s ease}
+.btn.primary{background:var(--teal);color:#052018;box-shadow:0 0 18px rgba(46,230,201,.25)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 0 26px rgba(46,230,201,.4)}
+.btn.amber{background:transparent;border:1.5px solid var(--amber);color:var(--amber)}
+.btn.amber:hover{background:var(--ambersoft)}
+.btn.ghost{background:transparent;border:1.5px solid var(--tealline);color:var(--teal)}
+.btn.ghost:hover{background:var(--tealsoft)}
+.btn.danger{background:transparent;border:1.5px solid rgba(226,96,79,.5);color:var(--danger)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:20px 0}
+.card{background:var(--panel);border:1px solid var(--tealline);border-radius:14px;padding:20px;position:relative}
+.card .ico{font-size:1.7rem;display:block;margin-bottom:8px}
+.card h3{margin:.1em 0 .3em}
+.card p{color:var(--muted);font-size:.93rem;margin:.2em 0 .7em}
+.card.amber{border-color:var(--amberline)}
+.badge{display:inline-block;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;padding:3px 11px;border-radius:99px;border:1px solid var(--tealline);color:var(--teal);background:var(--tealsoft);margin-top:6px}
+.badge.amber{border-color:var(--amberline);color:var(--amber);background:var(--ambersoft)}
+.sect{margin:36px 0}
+.sect>h2{border-bottom:1px solid var(--tealline);padding-bottom:8px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0}
+table.rt{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+table.rt th{background:var(--tealsoft);color:var(--teal);text-transform:uppercase;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.07em;font-size:.76rem;padding:9px 10px;border:1px solid var(--tealline);text-align:left;white-space:nowrap}
+table.rt td{padding:8px 10px;border:1px solid rgba(46,230,201,.13);vertical-align:top}
+table.rt tr:nth-child(even) td{background:rgba(46,230,201,.035)}
+table.rt.amber th{background:var(--ambersoft);color:var(--amber);border-color:var(--amberline)}
+table.rt.amber td{border-color:rgba(240,178,74,.18)}
+.note-box{background:var(--panel2);border:1px solid var(--tealline);border-left:4px solid var(--teal);border-radius:10px;padding:14px 16px;margin:16px 0;font-size:.93rem;color:var(--muted)}
+.note-box.amber{border-color:var(--amberline);border-left-color:var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chips a{display:inline-block;background:var(--panel);border:1px solid var(--tealline);border-radius:99px;padding:7px 14px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);text-decoration:none}
+.chips a:hover{background:var(--tealsoft)}
+.rev{opacity:0;transform:translateY(14px);animation:peReveal .7s ease forwards}
+.d1{animation-delay:.08s}.d2{animation-delay:.18s}.d3{animation-delay:.3s}.d4{animation-delay:.42s}
+@keyframes peReveal{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;opacity:1;transform:none}.btn{transition:none}}
+.to-top{position:fixed;bottom:168px;right:18px;z-index:70;display:none;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;border:1.5px solid var(--tealline);background:rgba(10,18,15,.92);color:var(--teal);font-size:1.05rem;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(46,230,201,.2)}
+.to-top:hover{background:var(--tealsoft);box-shadow:0 0 20px rgba(46,230,201,.4)}
+.to-top.show{display:flex}
+@media print{.to-top{display:none!important}}
+.grid3.acts .card{display:flex;flex-direction:column}
+.grid3.acts .card .btn{align-self:flex-end;margin-top:auto}
+@media (max-width:560px){.brand{font-size:.78rem;letter-spacing:.1em}.nav-links a{font-size:.76rem;padding:8px 9px}}
+</style><header class="nav">
+<div class="nav-in">
+<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+<nav class="nav-links">
+<a href="/">Accueil</a>
+<a href="/regles.html">Règles</a>
+<a href="/fiches.html">Fiches</a>
+<a href="/mj.html" class="mj">🔒 Zone MJ</a>
+</nav>
+</div>
+</header>
+<script>
+(function(){var p=location.pathname;document.querySelectorAll('.nav-links a').forEach(function(a){var h=a.getAttribute('href')||'';var n=h.replace(/\.html$/,'');if(n===''||n==='/'){if(p==='/'||p==='/index.html'){a.classList.add('active');}}else if(p===h||p===n||p.indexOf(n)===0){a.classList.add('active');}});})();
+</script>
+<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+<script>
+(function(){var b=document.getElementById('pe-top');if(!b){return;}window.addEventListener('scroll',function(){if(window.scrollY>300){b.classList.add('show');}else{b.classList.remove('show');}},{passive:true});b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});})();
+</script>
+<main class="wrap">
+<section id="view-list" class="sect rev">
+<h2>Vos fiches d'unité</h2>
+<div class="note-box">Chaque fiche est sauvegardée <strong>automatiquement dans ce navigateur</strong> (stockage local) — aucun compte, rien n'est envoyé. Pour transférer une fiche sur un autre appareil, utilisez son <strong>code d'export</strong>.</div>
+<div class="cta-row" style="justify-content:flex-start;margin:14px 0">
+<button class="btn primary" id="btn-new">＋ Nouvelle unité</button>
+</div>
+<div id="cards" class="grid3"></div>
+<h3 class="sub" style="margin-top:30px">Importer un code d'export</h3>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+<textarea id="imp-code" rows="3" style="flex:1;min-width:240px" placeholder="Collez ici un code d'export reçu d'un autre appareil…"></textarea>
+<div><button class="btn ghost" id="btn-imp">Importer</button><div id="imp-msg"></div></div>
+</div>
+</section>
+
+<section id="view-edit" style="display:none">
+<div class="fh">
+<button class="btn ghost" id="btn-back">← Toutes les fiches</button>
+<button class="btn ghost" id="btn-print">🖨️ Imprimer</button>
+<button class="btn ghost" id="btn-code">⇄ Code d'export</button>
+<button class="btn danger" id="btn-del">🗑 Supprimer</button>
+</div>
+<h2 id="f-title">Fiche d'unité</h2>
+<div id="exp-box" class="note-box">
+<strong>Code d'export de cette fiche</strong> — copiez-le et conservez-le (message privé, note…). Sur un autre appareil : Fiches → Importer un code.
+<textarea id="exp-code" rows="4" readonly style="width:100%;margin-top:8px"></textarea>
+<div style="margin-top:8px"><button class="btn ghost" id="btn-copy">Copier le code</button></div>
+</div>
+<form id="f-form" onsubmit="return false">
+<h3 class="sub">Identité</h3>
+<div class="ig">
+<div><label for="f-nom">Désignation</label><input id="f-nom" type="text" placeholder="ex. AKH-77 « Verdict »"></div>
+<div><label for="f-ch">Châssis</label><select id="f-ch"></select></div>
+<div><label for="f-code">Code de fabrique</label><select id="f-code"></select></div>
+<div><label for="f-fonction">Fonction</label><input id="f-fonction" type="text" placeholder="ex. reconnaissance rapprochée"></div>
+<div><label for="f-emotion">Émotion résiduelle</label><input id="f-emotion" type="text" placeholder="ex. orgueil blessé"></div>
+<div><label for="f-opinion">Opinion sur les vivants</label><input id="f-opinion" type="text" placeholder="ex. sujets d'étude"></div>
+</div>
+<h3 class="sub">Caractéristiques</h3>
+<div class="stats">
+<div><label for="st-m">M</label><input id="st-m" type="text"></div>
+<div><label for="st-cc">CC</label><input id="st-cc" type="text"></div>
+<div><label for="st-ct">CT</label><input id="st-ct" type="text"></div>
+<div><label for="st-f">F</label><input id="st-f" type="text"></div>
+<div><label for="st-e">E</label><input id="st-e" type="text"></div>
+<div><label for="st-pv">PV</label><input id="st-pv" type="text"></div>
+<div><label for="st-a">A</label><input id="st-a" type="text"></div>
+<div><label for="st-cd">Cd</label><input id="st-cd" type="text"></div>
+<div><label for="st-sv">Sv</label><input id="st-sv" type="text"></div>
+<div><label for="st-inv">Inv.</label><input id="st-inv" type="text"></div>
+<div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text"></div>
+</div>
+<div class="note-box">Le choix du châssis pré-remplit les caractéristiques, l'aptitude et les compétences maîtrisées. Tout reste modifiable ensuite (progression, wargear).</div>
+<h3 class="sub">Points de vie <small>— cochez les PV perdus</small></h3>
+<div class="pvrow" id="pv-box"></div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+<strong style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)">Protocole de Secours · échecs</strong>
+<span class="ech" id="ech-0"></span><span class="ech" id="ech-1"></span>
+<span style="color:var(--muted);font-size:.85rem">5+ au début du round · 2 échecs consécutifs = extraction d'urgence</span>
+</div>
+<h3 class="sub">Compétences <small>— cochée = maîtrisée (3+), sinon 4+</small></h3>
+<div class="comps" id="comps-box"></div>
+<h3 class="sub">Arsenal</h3>
+<div class="arow-h"><span>Arme</span><span>Portée</span><span>Atq</span><span>F</span><span>PA</span><span>D</span><span>Spécial</span></div>
+<div class="arow"><select id="ar0-w"></select><input id="ar0-po" type="text"><input id="ar0-at" type="text"><input id="ar0-f" type="text"><input id="ar0-pa" type="text"><input id="ar0-d" type="text"><input id="ar0-sp" type="text"></div>
+<div class="arow"><select id="ar1-w"></select><input id="ar1-po" type="text"><input id="ar1-at" type="text"><input id="ar1-f" type="text"><input id="ar1-pa" type="text"><input id="ar1-d" type="text"><input id="ar1-sp" type="text"></div>
+<div class="arow"><select id="ar2-w"></select><input id="ar2-po" type="text"><input id="ar2-at" type="text"><input id="ar2-f" type="text"><input id="ar2-pa" type="text"><input id="ar2-d" type="text"><input id="ar2-sp" type="text"></div>
+<div class="note-box">Sélectionnez une arme de l'arsenal du manuel pour pré-remplir la ligne, ou saisissez librement (armes-reliques…).</div>
+<h3 class="sub">Équipement</h3>
+<div class="erow"><select id="eq0-w"></select><input id="eq0-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq0-u"> utilisée</label></div>
+<div class="erow"><select id="eq1-w"></select><input id="eq1-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq1-u"> utilisée</label></div>
+<div class="erow"><select id="eq2-w"></select><input id="eq2-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq2-u"> utilisée</label></div>
+<h3 class="sub">Aptitudes &amp; pouvoirs</h3>
+<div class="ig">
+<div><label for="f-apt">Aptitude de châssis</label><input id="f-apt" type="text"></div>
+<div><label for="f-aptA">Aptitude acquise (XP)</label><input id="f-aptA" type="text"></div>
+</div>
+<div class="ig">
+<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p1">Pouvoir 1 (1×/scène)</label><input id="f-p1" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p1u"> utilisé</label></div>
+<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p2">Pouvoir 2 (1×/scène)</label><input id="f-p2" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p2u"> utilisé</label></div>
+</div>
+<h3 class="sub">Expérience &amp; notes</h3>
+<div class="ig">
+<div><label for="f-xp">XP disponibles</label><input id="f-xp" type="number" min="0"></div>
+</div>
+<label for="f-notes">Notes / dégâts / hontes</label>
+<textarea id="f-notes" rows="4" placeholder="Ce que le métal n'oublie pas…"></textarea>
+</form>
+</section>
+</main>
+<footer class="foot">
+<div class="glyphrow">⚡ ⬥ ⚡</div>
+<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+</footer>
+<script>
+(function(){
+"use strict";
+var LSKEY="pe_fiches_v1";
+var CH=[
+ {n:"Fantassin programmé",m:"10",cc:"4+",ct:"4+",f:"4",e:"4",pv:"3",a:"1",cd:"7+",sv:"4+",rfx:"+0",apt:"Discipline sans faille : relancez 1 test de Commandement raté par scène.",cp:["Athlétisme","Technologie"]},
+ {n:"Vétéran",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+1",apt:"Élite : vos touches critiques infligent +1 dégât.",cp:["Athlétisme","Perception"]},
+ {n:"Traqueur",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+2",apt:"Embuscade : 1×/scène, apparaissez dans un rayon de 6 m (après 1 round de délai).",cp:["Furtivité","Perception","Pilotage"]},
+ {n:"Ombre",m:"10",cc:"3+",ct:"6+",f:"5",e:"4",pv:"3",a:"3",cd:"8+",sv:"4+",rfx:"+2",apt:"Peau d'ombre : Furtivité 3+ ; ennemis qui vous voient -1 Cd.",cp:["Furtivité","Intimidation"]},
+ {n:"Sentinelle",m:"10",cc:"3+",ct:"4+",f:"6",e:"5",pv:"6",a:"2",cd:"8+",sv:"3+",rfx:"+1",apt:"Écran : 1×/round, prenez une frappe destinée à un allié à 2 m.",cp:["Athlétisme","Intimidation"]},
+ {n:"Officier de garde",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"12",a:"3",cd:"8+",sv:"3+",rfx:"+1",apt:"Ordre de secours : 1×/scène, forcez un allié à relancer son Protocole de Secours.",cp:["Commandement","Technologie"]},
+ {n:"Artificier",m:"10",cc:"3+",ct:"3+",f:"4",e:"5",pv:"12",a:"2",cd:"8+",sv:"4+",rfx:"+1",apt:"Essaim réparateur : 1×/scène, soignez D3 PV d'une unité à 6 m.",cp:["Technologie","Érudition","Perception"]},
+ {n:"Énergicien",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"12",a:"3",cd:"8+",sv:"3+",rfx:"+1",apt:"Décharge : 1×/scène, attaque F7 PA -2 D 2 à tous les ennemis à 3 m.",cp:["Technologie","Érudition"]},
+ {n:"Commandant",m:"10",cc:"3+",ct:"3+",f:"6",e:"6",pv:"15",a:"4",cd:"9+",sv:"3+",rfx:"+1",apt:"Aura de commandement : les alliés à 6 m relancent les 1 au toucher.",cp:["Commandement","Intimidation","Érudition"]},
+ {n:"Seigneur de guerre",m:"10",cc:"2+",ct:"2+",f:"6",e:"6",pv:"18",a:"5",cd:"10+",sv:"3+",rfx:"+1",apt:"Volonté inflexible : relancez 1 échec par round.",cp:["Commandement","Érudition","Intimidation","Technologie"]}
+];
+var CODES=["Éternel","Pragmatique","Sanguinaire","Solaire","Tutélaire","Fondateur"];
+var COMPS=["Perception","Furtivité","Technologie","Érudition","Commandement","Intimidation","Athlétisme","Pilotage"];
+var ARMES=[
+ ["Fusil magnétique","48 m","1","5","-1","1","Perforation"],
+ ["Canon magnétique","48 m","1","6","-1","1","Perforation"],
+ ["Mitrailleur magnétique","36 m","2","6","-2","1","Perforation"],
+ ["Canon longue-portée","72 m","1","7","-2","2","Précis : ignore le couvert"],
+ ["Carabine à arcs","28 m","2","5","-1","1","Arc : critique = 1 dégât irréversible en plus"],
+ ["Bâton d'énergie","24 m","1","5","-2","2","Aussi utilisable en mêlée"],
+ ["Sceptre tactique","18 m","1","6","-1","2","Relance 1 au toucher, 1×/bataille"],
+ ["Pistolets jumelés ×6","12 m","3","5","-2","1","Tir défensif sur un ennemi qui approche"],
+ ["Bâton d'énergie (mêlée)","A","F+1","-2","2","—"],
+ ["Lame désagrégatrice","A","F+1","-3","2","—"],
+ ["Lames jumelles (paire)","A+1","F+1","-2","2","+1 A si deux lames"],
+ ["Faucheuse lourde","A","F+2","-4","D3","Lourde : -1 à l'initiative"],
+ ["Grappins déchiqueteurs","A+1","F+1","-2","1","Terreur : Cd -1 en face"],
+ ["Sceptre de duel","A","F+2","-3","2","Critique sur 5+ en duel"]
+];
+var EQUIP=[
+ ["Noyau de réparation","1×/bataille : un allié à 6 m relance son Protocole de Secours avec +2"],
+ ["Écran de phase","Sauvegarde invulnérable 4++"],
+ ["Blindage entrelacé","-1 dégât subi (minimum 1)"],
+ ["Matrice de translocation","1×/bataille : téléporte le groupe (6 unités max) à 30 m"],
+ ["Chronomètre","+1 initiative et +2 m de déplacement"],
+ ["Réacteur d'étoile","1×/bataille : D3 dégâts irréversibles à 12 m (Technologie 3+)"]
+];
+var state={v:1,chars:[]};
+var cur=null;
+function $(id){return document.getElementById(id);}
+function load(){try{var d=JSON.parse(localStorage.getItem(LSKEY)||"null");if(d&&d.chars){state=d;}}catch(e){}}
+function save(){try{localStorage.setItem(LSKEY,JSON.stringify(state));}catch(e){}}
+function uid(){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function byId(id){for(var i=0;i<state.chars.length;i++){if(state.chars[i].id===id)return state.chars[i];}return null;}
+function chByName(n){for(var i=0;i<CH.length;i++){if(CH[i].n===n)return CH[i];}return CH[0];}
+function norm(c){
+  if(!c.arm)c.arm=[{},{},{}];
+  while(c.arm.length<3)c.arm.push({});
+  if(!c.eq)c.eq=[{},{},{}];
+  while(c.eq.length<3)c.eq.push({});
+  if(!c.pv)c.pv=[];
+  while(c.pv.length<30)c.pv.push(false);
+  if(c.pv.length>30)c.pv=c.pv.slice(0,30);
+  if(!c.ech)c.ech=[false,false];
+  if(!c.comps)c.comps=[];
+  if(!c.st)c.st={m:"10",cc:"4+",ct:"4+",f:"4",e:"4",pv:"3",a:"1",cd:"7+",sv:"4+",inv:"",rfx:"+0"};
+  if(!c.p1)c.p1={t:"",used:false};
+  if(!c.p2)c.p2={t:"",used:false};
+  return c;
+}
+function blankChar(chName){
+  var c=chByName(chName);
+  var p=[];for(var i=0;i<30;i++)p.push(false);
+  var o={id:uid(),nom:"",ch:c.n,code:"",fonction:"",emotion:"",opinion:"",
+   st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
+   pv:p,ech:[false,false],comps:c.cp.slice(0),
+   arm:[{},{},{}],eq:[{},{},{}],
+   apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
+   xp:"",notes:""};
+  return o;
+}
+function pvLost(ch){var n=0;for(var i=0;i<ch.pv.length;i++){if(ch.pv[i])n++;}return n;}
+function renderCards(){
+  var box=$("cards");box.textContent="";
+  if(!state.chars.length){
+    var p=document.createElement("p");p.style.color="var(--muted)";
+    p.textContent="Aucune unité enregistrée pour l'instant. Créez votre première fiche avec le bouton ci-dessus.";
+    box.appendChild(p);return;
+  }
+  state.chars.forEach(function(ch){
+    var card=document.createElement("div");card.className="card";
+    var h=document.createElement("h3");h.textContent=ch.nom||"Unité sans nom";card.appendChild(h);
+    var meta=document.createElement("p");meta.textContent=ch.ch+(ch.code?" · Code "+ch.code:"");card.appendChild(meta);
+    var pv=document.createElement("p");pv.textContent="PV perdus : "+pvLost(ch)+" / "+(ch.st.pv||"?")+(ch.xp!==""&&ch.xp!==undefined?" · XP : "+ch.xp:"");card.appendChild(pv);
+    var row=document.createElement("div");row.className="cardbtns";
+    var b1=document.createElement("button");b1.className="btn ghost";b1.textContent="Ouvrir";
+    b1.onclick=function(){showEdit(ch.id);};row.appendChild(b1);
+    var b2=document.createElement("button");b2.className="btn danger";b2.textContent="Supprimer";
+    b2.onclick=function(){if(confirm("Supprimer définitivement cette fiche ?")){state.chars=state.chars.filter(function(c){return c.id!==ch.id;});save();renderCards();}};row.appendChild(b2);
+    card.appendChild(row);box.appendChild(card);
+  });
+}
+function setSelect(id,val){var s=$(id);var ok=false;for(var i=0;i<s.options.length;i++){if(s.options[i].value===val){ok=true;break;}}s.value=ok?val:"";}
+function fillForm(){
+  var ch=norm(cur);
+  $("f-title").textContent="Fiche — "+(ch.nom||"unité sans nom");
+  $("f-nom").value=ch.nom;$("f-ch").value=ch.ch;setSelect("f-code",ch.code||"");
+  $("f-fonction").value=ch.fonction||"";$("f-emotion").value=ch.emotion||"";$("f-opinion").value=ch.opinion||"";
+  var st=ch.st;
+  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){$("st-"+k).value=st[k]||"";});
+  pvNodes.forEach(function(el,i){el.classList.toggle("on",!!ch.pv[i]);});
+  $("ech-0").classList.toggle("on",!!ch.ech[0]);$("ech-1").classList.toggle("on",!!ch.ech[1]);
+  compsNodes.forEach(function(o){var on=ch.comps.indexOf(o.name)>=0;o.box.checked=on;o.lab.classList.toggle("on",on);});
+  for(var i=0;i<3;i++){
+    var a=ch.arm[i]||{};
+    setSelect("ar"+i+"-w",a.w||"");
+    $("ar"+i+"-po").value=a.po||"";$("ar"+i+"-at").value=a.at||"";$("ar"+i+"-f").value=a.f||"";
+    $("ar"+i+"-pa").value=a.pa||"";$("ar"+i+"-d").value=a.d||"";$("ar"+i+"-sp").value=a.sp||"";
+    var q=ch.eq[i]||{};
+    setSelect("eq"+i+"-w",q.w||"");
+    $("eq"+i+"-e").value=q.e||"";$("eq"+i+"-u").checked=!!q.used;
+  }
+  $("f-apt").value=ch.apt||"";$("f-aptA").value=ch.aptA||"";
+  $("f-p1").value=ch.p1.t||"";$("f-p1u").checked=!!ch.p1.used;
+  $("f-p2").value=ch.p2.t||"";$("f-p2u").checked=!!ch.p2.used;
+  $("f-xp").value=ch.xp||"";$("f-notes").value=ch.notes||"";
+}
+function collect(){
+  if(!cur)return;
+  var ch=norm(cur);
+  ch.nom=$("f-nom").value;ch.ch=$("f-ch").value;ch.code=$("f-code").value;
+  ch.fonction=$("f-fonction").value;ch.emotion=$("f-emotion").value;ch.opinion=$("f-opinion").value;
+  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
+  ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
+  ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
+  for(var i=0;i<3;i++){
+    ch.arm[i]={w:$("ar"+i+"-w").value,po:$("ar"+i+"-po").value,at:$("ar"+i+"-at").value,f:$("ar"+i+"-f").value,pa:$("ar"+i+"-pa").value,d:$("ar"+i+"-d").value,sp:$("ar"+i+"-sp").value};
+    ch.eq[i]={w:$("eq"+i+"-w").value,e:$("eq"+i+"-e").value,used:$("eq"+i+"-u").checked};
+  }
+  ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;
+  ch.p1={t:$("f-p1").value,used:$("f-p1u").checked};
+  ch.p2={t:$("f-p2").value,used:$("f-p2u").checked};
+  ch.xp=$("f-xp").value;ch.notes=$("f-notes").value;
+  $("f-title").textContent="Fiche — "+(ch.nom||"unité sans nom");
+  save();
+}
+function showList(){cur=null;$("view-edit").style.display="none";$("view-list").style.display="block";renderCards();}
+function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";fillForm();window.scrollTo(0,0);}
+var pvNodes=[],compsNodes=[];
+function init(){
+  var chSel=$("f-ch");
+  CH.forEach(function(c){var o=document.createElement("option");o.value=c.n;o.textContent=c.n;chSel.appendChild(o);});
+  var codeSel=$("f-code");
+  var oEmpty=document.createElement("option");oEmpty.value="";oEmpty.textContent="— aucune —";codeSel.appendChild(oEmpty);
+  CODES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;codeSel.appendChild(o);});
+  for(var i=0;i<3;i++){
+    (function(i){
+      var sel=$("ar"+i+"-w");
+      var o0=document.createElement("option");o0.value="";o0.textContent="— arme personnalisée / vide —";sel.appendChild(o0);
+      ARMES.forEach(function(a){var o=document.createElement("option");o.value=a[0];o.textContent=a[0];sel.appendChild(o);});
+      sel.addEventListener("change",function(){
+        if(sel.value===""){return;}
+        ARMES.forEach(function(a){if(a[0]===sel.value){
+          $("ar"+i+"-po").value=a[1];$("ar"+i+"-at").value=a[2];$("ar"+i+"-f").value=a[3];$("ar"+i+"-pa").value=a[4];$("ar"+i+"-d").value=a[5];$("ar"+i+"-sp").value=a[6];
+        }});
+      });
+      var eq=$("eq"+i+"-w");
+      var e0=document.createElement("option");e0.value="";e0.textContent="— objet personnalisé / vide —";eq.appendChild(e0);
+      EQUIP.forEach(function(x){var o=document.createElement("option");o.value=x[0];o.textContent=x[0];eq.appendChild(o);});
+      eq.addEventListener("change",function(){
+        if(eq.value===""){return;}
+        EQUIP.forEach(function(x){if(x[0]===eq.value){$("eq"+i+"-e").value=x[1];}});
+      });
+    })(i);
+  }
+  for(var j=0;j<30;j++){
+    (function(idx){
+      var s=document.createElement("span");s.className="pv";
+      s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);save();});
+      $("pv-box").appendChild(s);pvNodes.push(s);
+    })(j);
+  }
+  [0,1].forEach(function(k){
+    $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);save();});
+  });
+  COMPS.forEach(function(name){
+    var l=document.createElement("label");l.className="cb";
+    var cb=document.createElement("input");cb.type="checkbox";
+    var t=document.createElement("span");t.textContent=name;
+    l.appendChild(cb);l.appendChild(t);$("comps-box").appendChild(l);
+    compsNodes.push({name:name,box:cb,lab:l});
+    cb.addEventListener("change",function(){l.classList.toggle("on",cb.checked);});
+  });
+  $("f-ch").addEventListener("change",function(){
+    if(!cur)return;
+    var c=chByName($("f-ch").value);
+    cur.st={m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:cur.st.inv||"",rfx:c.rfx};
+    cur.apt=c.apt;cur.comps=c.cp.slice(0);
+    fillForm();save();
+  });
+  $("f-form").addEventListener("input",collect);
+  $("f-form").addEventListener("change",collect);
+  $("btn-new").addEventListener("click",function(){var c=blankChar("Fantassin programmé");state.chars.push(c);save();showEdit(c.id);});
+  $("btn-back").addEventListener("click",function(){collect();showList();});
+  $("btn-del").addEventListener("click",function(){
+    if(!cur)return;
+    if(confirm("Supprimer définitivement cette fiche ?")){state.chars=state.chars.filter(function(c){return c.id!==cur.id;});save();showList();}
+  });
+  $("btn-print").addEventListener("click",function(){collect();window.print();});
+  $("btn-code").addEventListener("click",function(){
+    collect();
+    $("exp-code").value=btoa(encodeURIComponent(JSON.stringify(cur)));
+    $("exp-box").style.display="block";
+  });
+  $("btn-copy").addEventListener("click",function(){
+    var ta=$("exp-code");ta.select();ta.setSelectionRange(0,99999);
+    try{document.execCommand("copy");}catch(e){}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value);}
+  });
+  $("btn-imp").addEventListener("click",function(){
+    var raw=$("imp-code").value.trim();
+    var msg=$("imp-msg");
+    if(!raw){msg.textContent="";return;}
+    try{
+      var obj=JSON.parse(decodeURIComponent(atob(raw)));
+      if(!obj||!obj.st){throw new Error("bad");}
+      norm(obj);obj.id=uid();
+      state.chars.push(obj);save();renderCards();
+      msg.textContent="Fiche importée : "+(obj.nom||"unité sans nom");
+      $("imp-code").value="";
+    }catch(e){msg.textContent="Code invalide — vérifiez le copier-coller.";}
+  });
+  load();
+  state.chars.forEach(norm);
+  renderCards();
+}
+init();
+})();
+</script>
+
+<!-- WPE-DEBUG path=api slug=fiches.html -->
+<script src="https://cdn.websitepublisher.ai/wpe/loader.js" data-project="30149" data-page="fiches.html" defer></script>
+
+
+<!-- WebsitePublisher.ai Powered-by Widget -->
+<div id="wpa-widget" style="position:fixed;bottom:0;right:0;z-index:2147483647;display:flex;justify-content:flex-end;pointer-events:none;padding:0 12px 12px 0;">
+    <div style="pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(15,15,15,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:1;color:rgba(255,255,255,0.7);box-shadow:0 2px 12px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);">
+        <a href="https://www.websitepublisher.ai?ref=widget" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.9);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            WebsitePublisher.ai
+        </a>
+        <span style="color:rgba(255,255,255,0.25);">&middot;</span>
+        <a href="https://www.websitepublisher.ai/report?url=https%3A%2F%2Fproject30149.websitepublisher.ai" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.5);text-decoration:none;">Report Abuse</a>
+    </div>
+</div>
+</body>
+</html>
