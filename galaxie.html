@@ -311,7 +311,7 @@ function loadPositions(){
 }
 function renderPosTable(){
   var out='';
-  if(!POSDATA.length){out='<tr><td colspan="4" style="color:var(--muted)">Aucun joueur ne s'est encore localisé.</td></tr>';}
+  if(!POSDATA.length){out='<tr><td colspan="4" style="color:var(--muted)">Aucun joueur ne s’est encore localisé.</td></tr>';}
   POSDATA.forEach(function(p){
     var c=COMPTES[p.compte_id]||{};
     var gname='ailleurs';
@@ -353,10 +353,7 @@ function fillForm(g){
   (d.planetes||[]).forEach(function(p){pla.push(p.nom+(p.infos?' | '+p.infos:''));(p.lieux||[]).forEach(function(l){lieux.push(l.nom+(l.infos?' | '+l.infos:''));});});
   (d.lieux||[]).forEach(function(l){lieux.push(l.nom+(l.infos?' | '+l.infos:''));});
   (d.creatures||[]).forEach(function(c){crea.push(c);});
-  $('g-pla').value=pla.join('
-');$('g-lieux').value=lieux.join('
-');$('g-crea').value=crea.join('
-');
+  $('g-pla').value=pla.join('\n');$('g-lieux').value=lieux.join('\n');$('g-crea').value=crea.join('\n');
   $('g-secret').value=SECRETS[g.id]||'';
   $('g-del').style.display='';
   msg('g-msg','Formulaire chargé. Le bouton « Placer sur la carte » permet de repositionner par un clic.','');
@@ -369,8 +366,7 @@ function clearForm(){
 }
 function parseLines(t){
   var out=[];
-  (t||'').split('
-').forEach(function(l){
+  (t||'').split('\n').forEach(function(l){
     l=l.trim();if(!l){return;}
     var nom=l,infos='';
     if(l.indexOf('|')>0){var i=l.indexOf('|');nom=l.slice(0,i).trim();infos=l.slice(i+1).trim();}
@@ -378,11 +374,11 @@ function parseLines(t){
   });
   return out;
 }
-$('g-new').addEventListener('click',function(){if(!MJMODE){msg('g-msg','Ouvre d'abord la console MJ avec ta clé.','err');return;}clearForm();});
+$('g-new').addEventListener('click',function(){if(!MJMODE){msg('g-msg','Ouvre d’abord la console MJ avec ta clé.','err');return;}clearForm();});
 $('g-place').addEventListener('click',function(){
-  if(!MJMODE){msg('g-msg','Ouvre d'abord la console MJ avec ta clé.','err');return;}
+  if(!MJMODE){msg('g-msg','Ouvre d’abord la console MJ avec ta clé.','err');return;}
   PLACING=true;this.textContent='Clique sur la carte…';
-  msg('g-msg','Mode placement : touche la carte à l'endroit voulu.','');
+  msg('g-msg','Mode placement : touche la carte à l’endroit voulu.','');
 });
 $('g-del').addEventListener('click',delSys);
 function delSys(){
@@ -397,7 +393,7 @@ function delSys(){
   }).catch(function(){msg('g-msg','Suppression impossible — vérifie ta clé.','err');});
 }
 $('g-save').addEventListener('click',function(){
-  if(!MJMODE){msg('g-msg','Ouvre d'abord la console MJ avec ta clé.','err');return;}
+  if(!MJMODE){msg('g-msg','Ouvre d’abord la console MJ avec ta clé.','err');return;}
   var nom=$('g-nom').value.trim();
   if(!nom){msg('g-msg','Donne un nom au système.','err');return;}
   var data={planetes:parseLines($('g-pla').value),lieux:parseLines($('g-lieux').value),creatures:parseLines($('g-crea').value).map(function(x){return x.nom;})};
