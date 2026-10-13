@@ -1,21 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <title>Sauvegarde du site (ZIP) — Les Protocoles Éternels</title>
-    <link rel="canonical" href="https://project30149.websitepublisher.ai/sauvegarde" />
-    <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="content-language" content="fr">
-    
-    <script>!function(){"use strict";if("function"!=typeof Node||!Node.prototype)return;if(Node.prototype.__wpTranslateGuard)return;Node.prototype.__wpTranslateGuard=!0;var e=Node.prototype.removeChild;Node.prototype.removeChild=function(t){return t&&t.parentNode!==this?t:e.apply(this,arguments)};var r=Node.prototype.insertBefore;Node.prototype.insertBefore=function(t,n){return n&&n.parentNode!==this?r.call(this,t,null):r.apply(this,arguments)}}();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-
-<meta property="og:title" content="Sauvegarde du site (ZIP) — Les Protocoles Éternels" /><meta property="og:description" content="Générez en un clic une archive ZIP du site entier, à jour de la version en ligne." />
-
-<script type="text/javascript">hostname = '//project30149.websitepublisher.ai';</script>
-
+<meta name="robots" content="noindex, nofollow">
+<title>Sauvegarde du site — Les Protocoles Éternels</title>
+<!-- Optimizer - Canonical -->
+<!-- Optimizer - Custom Meta -->
+<!-- Optimizer - Open Graph -->
+<!-- Optimizer - Header Javascripts -->
 <style>
 #zip-status{margin-top:16px}
 .zip-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--tealline);border-radius:9px;margin:6px 0;background:var(--panel2);font-size:.92rem}
@@ -27,11 +20,6 @@
 .zip-row .sz{margin-left:auto;color:var(--muted);font-size:.8rem;white-space:nowrap}
 #zip-msg{margin-top:12px;font-size:.95rem}
 </style>
-<meta name="disable-service-worker" content="true">
-<meta name="disable-service-worker" content="true">
-
-
-
 </head>
 <body>
 <style>
@@ -113,6 +101,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <a href="/">Accueil</a>
 <a href="/regles.html">Règles</a>
 <a href="/fiches.html">Fiches</a>
+<a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
 <a href="/mj.html" class="mj">🔒 Zone MJ</a>
 </nav>
 </div>
@@ -142,6 +131,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <div class="zip-row"><span class="dot"></span><span>fiches.html — application de fiches</span><span class="sz"></span></div>
 <div class="zip-row"><span class="dot"></span><span>mj.html — zone MJ (contenu brouillé, mot de passe non inclus)</span><span class="sz"></span></div>
 <div class="zip-row"><span class="dot"></span><span>sauvegarde.html — cette page</span><span class="sz"></span></div>
+<div class="zip-row"><span class="dot"></span><span>bestiaire.html — bestiaire partagé (nuage)</span><span class="sz"></span></div>
 <div class="zip-row"><span class="dot"></span><span>LISEZMOI.txt — mode d'emploi</span><span class="sz"></span></div>
 </div>
 <p id="zip-msg" style="color:var(--muted)"></p>
@@ -149,8 +139,10 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <section class="sect rev d2">
 <h2>Bon à savoir</h2>
 <div class="note-box">
-<strong>Hors ligne :</strong> la barre de navigation et le pied de page proviennent de fragments serveur — hors ligne, ils ne s'affichent pas, mais <strong>tout le contenu reste lisible</strong> en ouvrant chaque fichier .html dans un navigateur (double-clic).<br><br>
+<strong>Hors ligne :</strong> l'archive est un site statique complet — navigation et mise en page incluses. Ouvrez chaque fichier .html dans un navigateur (double-clic) ; seules les données en nuage (fiches partagées, bestiaire) nécessitent internet.<br><br>
 <strong>Fiches de personnage :</strong> elles vivent dans le stockage local de votre navigateur, pas dans le site — elles ne sont donc <strong>pas</strong> dans l'archive. Pour les conserver, utilisez les <strong>codes d'export</strong> de la page Fiches.<br><br>
+<strong>Bestiaire :</strong> la page bestiaire.html figure dans l'archive, mais les créatures vivent dans la base en nuage — elles se rechargent dès qu'internet revient.<br><br>
+<strong>Site propre :</strong> l'archive est nettoyée automatiquement : aucun script, badge ni marqueur de l'hébergeur n'est inclus — l'archive est un site statique neutre, utilisable telle quelle partout (GitHub Pages compris).<br><br>
 <strong>Zone MJ :</strong> l'archive contient bien la page mj.html, mais son contenu reste brouillé et le mot de passe n'y figure pas.<br><br>
 <strong>Toujours à jour :</strong> l'archive est assemblée à partir des pages en ligne au moment du clic — pas d'ancienne copie qui traîne.
 </div>
@@ -168,9 +160,18 @@ var PAGES=[
  ["regles.html","/regles.html"],
  ["fiches.html","/fiches.html"],
  ["mj.html","/mj.html"],
- ["sauvegarde.html","/sauvegarde.html"]
+ ["sauvegarde.html","/sauvegarde.html"],
+ ["bestiaire.html","/bestiaire.html","https://chokmah-hash.github.io/bestiaire.html"]
 ];
 var ZIPNAME="les-protocoles-eternels-site.zip";
+var DESCR={
+ "index.html":"page d'accueil",
+ "regles.html":"manuel du joueur (version neutre, sans secrets de campagne)",
+ "fiches.html":"application de fiches d'unité (navigateur + synchronisation nuage)",
+ "mj.html":"zone MJ, contenu brouillé — le mot de passe n'est PAS dans l'archive",
+ "sauvegarde.html":"la page qui a généré cette archive",
+ "bestiaire.html":"bestiaire partagé (les créatures vivent dans la base en nuage, pas dans l'archive)"
+};
 function $(id){return document.getElementById(id);}
 var CRCT=(function(){var t=[],c,k,n;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++){c=c&1?0xEDB88320^(c>>>1):c>>>1;}t[n]=c>>>0;}return t;})();
 function crc32(u8){var c=0^-1;for(var i=0;i<u8.length;i++){c=(c>>>8)^CRCT[(c^u8[i])&0xFF];}return (c^-1)>>>0;}
@@ -179,6 +180,14 @@ function bytesOf(str){
   var u=new Uint8Array(s.length);
   for(var i=0;i<s.length;i++){u[i]=s.charCodeAt(i)&0xFF;}
   return u;
+}
+function cleanHtml(t){
+  t=t.replace(/<link rel="canonical"[^>]*>\s*/g,"");
+  t=t.replace(/<script>!function\(\)\{"use strict";if\("function"!=typeof Node[\s\S]*?<\/script>\s*/g,"");
+  t=t.replace(/<script type="text\/javascript">hostname[\s\S]*?<\/script>\s*/g,"");
+  t=t.replace(/<!-- WPE-DEBUG[^>]*-->[\s\S]*?loader\.js[\s\S]*?<\/script>\s*/g,"");
+  t=t.replace(/<!-- WebsitePublisher\.ai Powered-by Widget -->[\s\S]*?(?=<\/body>)/,"");
+  return t;
 }
 function makeZip(files){
   var d=new Date();
@@ -263,41 +272,45 @@ function run(){
       if(!r.ok){throw new Error("http "+r.status);}
       return r.text();
     }).then(function(txt){
-      files.push({name:p[0],data:bytesOf(txt)});
+      files.push({name:p[0],data:bytesOf(cleanHtml(txt))});
       setRow(idx,"ok","récupérée");
       rows[idx].getElementsByClassName("sz")[0].textContent=fmt(txt.length);
     }).catch(function(){
+      if(p[2]){
+        return fetch(p[2],{cache:"no-store"}).then(function(r){
+          if(!r.ok){throw new Error("http "+r.status);}
+          return r.text();
+        }).then(function(txt){
+          files.push({name:p[0],data:bytesOf(cleanHtml(txt))});
+          setRow(idx,"ok","récupérée (miroir GitHub)");
+          rows[idx].getElementsByClassName("sz")[0].textContent=fmt(txt.length);
+        }).catch(function(){
+          fail++;
+          setRow(idx,"ko","absente");
+        });
+      }
       fail++;
       setRow(idx,"ko","inaccessible");
     }).then(function(){
       done++;
       if(done<PAGES.length){return;}
-      if(fail>0){
-        msg.style.color="var(--danger)";
-        msg.textContent=fail+" page(s) inaccessible(s) — vérifiez votre connexion puis réessayez.";
-        return;
-      }
       var d=new Date();
       var readme="LES PROTOCOLES ÉTERNELS — Sauvegarde du site\n"+
         "Archive générée le "+d.toLocaleDateString("fr-FR")+" à "+d.toLocaleTimeString("fr-FR")+"\n"+
         "Source : https://project30149.websitepublisher.ai\n\n"+
         "CONTENU\n"+
-        "- index.html : page d'accueil\n"+
-        "- regles.html : manuel du joueur (version neutre, sans secrets de campagne)\n"+
-        "- fiches.html : application de fiches d'unité (sauvegarde locale du navigateur)\n"+
-        "- mj.html : zone MJ, contenu brouillé — le mot de passe n'est PAS dans l'archive\n"+
-        "- sauvegarde.html : la page qui a généré cette archive\n\n"+
+        files.map(function(f){return "- "+f.name+" : "+(DESCR[f.name]||"");}).join("\n")+"\n\n"+
         "MODE D'EMPLOI HORS LIGNE\n"+
-        "Ouvrez chaque fichier .html dans un navigateur (double-clic). Hors ligne, la barre\n"+
-        "de navigation et le pied de page ne s'affichent pas (fragments serveur) mais tout\n"+
-        "le contenu reste lisible.\n\n"+
+        "Ouvrez chaque fichier .html dans un navigateur (double-clic). Le site est statique\n"+
+        "et autonome : navigation et mise en page incluses. Seules les données en nuage\n"+
+        "(fiches partagées, bestiaire) nécessitent une connexion internet.\n\n"+
         "FICHES DE PERSONNAGE\n"+
         "Elles sont stockées dans le navigateur utilisé (stockage local, clé pe_fiches_v1),\n"+
         "pas dans le site : elles ne sont PAS dans cette archive. Pour les conserver ou les\n"+
         "transférer, utilisez les codes d'export de la page Fiches.\n\n"+
         "Usage strictement privé entre amis. Bon jeu ! ⚡";
       files.push({name:"LISEZMOI.txt",data:bytesOf(readme)});
-      setRow(5,"ok","généré");
+      setRow(6,"ok","généré");
       var blob=makeZip(files);
       var a=document.createElement("a");
       a.href=URL.createObjectURL(blob);
@@ -305,28 +318,13 @@ function run(){
       document.body.appendChild(a);
       a.click();
       setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},4000);
-      msg.style.color="var(--teal)";
-      msg.textContent="Archive prête : "+ZIPNAME+" ("+fmt(blob.size)+") — vérifiez vos téléchargements.";
+      msg.style.color=fail>0?"var(--amber)":"var(--teal)";
+      msg.textContent="Archive prête : "+ZIPNAME+" ("+fmt(blob.size)+") — site 100 % propre (sans scripts ni badge de l'hébergeur). Vérifiez vos téléchargements."+(fail>0?" Attention : "+fail+" page(s) ignorée(s).":"");
     });
   });
 }
 $("btn-zip").addEventListener("click",run);
 </script>
-
-<!-- WPE-DEBUG path=api slug=sauvegarde.html -->
-<script src="https://cdn.websitepublisher.ai/wpe/loader.js" data-project="30149" data-page="sauvegarde.html" defer></script>
-
-
-<!-- WebsitePublisher.ai Powered-by Widget -->
-<div id="wpa-widget" style="position:fixed;bottom:0;right:0;z-index:2147483647;display:flex;justify-content:flex-end;pointer-events:none;padding:0 12px 12px 0;">
-    <div style="pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(15,15,15,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:1;color:rgba(255,255,255,0.7);box-shadow:0 2px 12px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);">
-        <a href="https://www.websitepublisher.ai?ref=widget" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.9);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            WebsitePublisher.ai
-        </a>
-        <span style="color:rgba(255,255,255,0.25);">&middot;</span>
-        <a href="https://www.websitepublisher.ai/report?url=https%3A%2F%2Fproject30149.websitepublisher.ai" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.5);text-decoration:none;">Report Abuse</a>
-    </div>
-</div>
+<!-- Optimizer - Footer Javascripts -->
 </body>
 </html>

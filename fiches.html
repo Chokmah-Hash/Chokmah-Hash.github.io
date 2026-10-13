@@ -1,21 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <title>Fiches d&apos;unité — Les Protocoles Éternels</title>
-    <link rel="canonical" href="https://project30149.websitepublisher.ai/fiches" />
-    <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="content-language" content="fr">
-    
-    <script>!function(){"use strict";if("function"!=typeof Node||!Node.prototype)return;if(Node.prototype.__wpTranslateGuard)return;Node.prototype.__wpTranslateGuard=!0;var e=Node.prototype.removeChild;Node.prototype.removeChild=function(t){return t&&t.parentNode!==this?t:e.apply(this,arguments)};var r=Node.prototype.insertBefore;Node.prototype.insertBefore=function(t,n){return n&&n.parentNode!==this?r.call(this,t,null):r.apply(this,arguments)}}();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-
-<meta property="og:title" content="Fiches d'unité — Les Protocoles Éternels" /><meta property="og:description" content="Créez, suivez et imprimez vos fiches d'unité : châssis pré-remplis, points de vie, compétences, arsenal, XP. Sauvegarde locale automatique et codes d'export." />
-
-<script type="text/javascript">hostname = '//project30149.websitepublisher.ai';</script>
-
+<meta name="robots" content="noindex, nofollow">
+<title>Fiches d'unité — Les Protocoles Éternels</title>
+<!-- Optimizer - Canonical -->
+<!-- Optimizer - Custom Meta -->
+<!-- Optimizer - Open Graph -->
+<!-- Optimizer - Header Javascripts -->
 <style>
 input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--tealline);border-radius:9px;color:var(--text);padding:9px 11px;font-family:inherit;font-size:1rem;min-height:44px}
 input:focus,select:focus,textarea:focus{outline:1.5px solid var(--teal)}
@@ -57,11 +50,6 @@ textarea{resize:vertical}
  *{box-shadow:none!important}
 }
 </style>
-<meta name="disable-service-worker" content="true">
-<meta name="disable-service-worker" content="true">
-
-
-
 </head>
 <body>
 <style>
@@ -143,6 +131,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <a href="/">Accueil</a>
 <a href="/regles.html">Règles</a>
 <a href="/fiches.html">Fiches</a>
+<a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
 <a href="/mj.html" class="mj">🔒 Zone MJ</a>
 </nav>
 </div>
@@ -157,10 +146,12 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 <main class="wrap">
 <section id="view-list" class="sect rev">
 <h2>Vos fiches d'unité</h2>
-<div class="note-box">Chaque fiche est sauvegardée <strong>automatiquement dans ce navigateur</strong> (stockage local) — aucun compte, rien n'est envoyé. Pour transférer une fiche sur un autre appareil, utilisez son <strong>code d'export</strong>.</div>
+<div class="note-box">Chaque fiche est sauvegardée <strong>sur cet appareil</strong> et <strong>synchronisée dans le nuage de la table</strong> : toutes les joueuses voient les mêmes fiches, à jour en permanence. Hors ligne, tout continue de fonctionner — la synchro reprend à la reconnexion. Le <strong>code d'export</strong> reste disponible pour les copies.</div>
 <div class="cta-row" style="justify-content:flex-start;margin:14px 0">
 <button class="btn primary" id="btn-new">＋ Nouvelle unité</button>
+<button class="btn ghost" id="btn-refresh">↻ Rafraîchir</button>
 </div>
+<p id="sync-line" style="color:var(--muted);font-size:.85rem;margin:-4px 0 12px"></p>
 <div id="cards" class="grid3"></div>
 <h3 class="sub" style="margin-top:30px">Importer un code d'export</h3>
 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
@@ -254,6 +245,10 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 (function(){
 "use strict";
 var LSKEY="pe_fiches_v1";
+var SUPA_URL="https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1";
+var SUPA_KEY="sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+var SUPA_HEADERS={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+var OTOK="";
 var CH=[
  {n:"Fantassin programmé",m:"10",cc:"4+",ct:"4+",f:"4",e:"4",pv:"3",a:"1",cd:"7+",sv:"4+",rfx:"+0",apt:"Discipline sans faille : relancez 1 test de Commandement raté par scène.",cp:["Athlétisme","Technologie"]},
  {n:"Vétéran",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+1",apt:"Élite : vos touches critiques infligent +1 dégât.",cp:["Athlétisme","Perception"]},
@@ -313,20 +308,87 @@ function norm(c){
   if(!c.st)c.st={m:"10",cc:"4+",ct:"4+",f:"4",e:"4",pv:"3",a:"1",cd:"7+",sv:"4+",inv:"",rfx:"+0"};
   if(!c.p1)c.p1={t:"",used:false};
   if(!c.p2)c.p2={t:"",used:false};
+  if(!c.maj)c.maj="";
   return c;
 }
 function blankChar(chName){
   var c=chByName(chName);
   var p=[];for(var i=0;i<30;i++)p.push(false);
-  var o={id:uid(),nom:"",ch:c.n,code:"",fonction:"",emotion:"",opinion:"",
+  return {id:uid(),nom:"",ch:c.n,code:"",fonction:"",emotion:"",opinion:"",
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
    arm:[{},{},{}],eq:[{},{},{}],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
-   xp:"",notes:""};
-  return o;
+   xp:"",notes:"",maj:new Date().toISOString()};
 }
 function pvLost(ch){var n=0;for(var i=0;i<ch.pv.length;i++){if(ch.pv[i])n++;}return n;}
+/* ===== Synchronisation nuage (Supabase) ===== */
+function ownerToken(){
+  try{
+    var t=localStorage.getItem("pe_owner_token");
+    if(!t){t=uid();localStorage.setItem("pe_owner_token",t);}
+    return t;
+  }catch(e){return "anonyme";}
+}
+function syncStatus(txt,color){var el=$("sync-line");if(el){el.textContent=txt;el.style.color=color||"var(--muted)";}}
+var syncTimer=null;
+function queueSync(ch){
+  if(!ch||!ch.id){return;}
+  if(syncTimer){clearTimeout(syncTimer);}
+  var chId=ch.id;
+  syncTimer=setTimeout(function(){
+    var live=byId(chId);
+    if(live){pushChar(live);}
+  },700);
+}
+function pushChar(ch){
+  try{
+    if(navigator.onLine===false){syncStatus("⚠ Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");return;}
+    syncStatus("☁ Synchronisation…");
+    fetch(SUPA_URL+"/fiches?on_conflict=id",{
+      method:"POST",
+      headers:Object.assign({},SUPA_HEADERS,{"Prefer":"resolution=merge-duplicates","x-owner-token":OTOK}),
+      body:JSON.stringify({id:ch.id,code_partie:"zulthekh",nom:ch.nom||"Unité sans nom",data:ch,owner_token:OTOK,maj:ch.maj||new Date().toISOString()})
+    }).then(function(r){
+      if(r.ok){syncStatus("☁ Synchronisée — visible par toute la table","var(--teal)");}
+      else{syncStatus("⚠ Synchronisation refusée (fiche protégée par sa créatrice) — enregistrée localement","var(--danger)");}
+    }).catch(function(){syncStatus("⚠ Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");});
+  }catch(e){}
+}
+function deleteRemote(id){
+  try{
+    fetch(SUPA_URL+"/fiches?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:Object.assign({},SUPA_HEADERS,{"x-owner-token":OTOK})}).catch(function(){});
+  }catch(e){}
+}
+function pullChars(onDone){
+  try{
+    if(navigator.onLine===false){syncStatus("⚠ Hors ligne — fiches locales uniquement","var(--danger)");if(onDone)onDone();return;}
+    syncStatus("☁ Lecture des fiches de la table…");
+    fetch(SUPA_URL+"/fiches?select=id,maj,data&order=maj.desc",{headers:SUPA_HEADERS,cache:"no-store"})
+    .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
+    .then(function(rows){
+      var changed=false;
+      (rows||[]).forEach(function(row){
+        var d=row.data;
+        if(!d||!d.st){return;}
+        norm(d);d.id=row.id;
+        var rmaj=(row.maj?new Date(row.maj).getTime():0)||0;
+        var found=null;
+        for(var i=0;i<state.chars.length;i++){if(state.chars[i].id===row.id){found=i;break;}}
+        if(found===null){state.chars.push(d);changed=true;}
+        else{
+          var lmaj=(state.chars[found].maj?new Date(state.chars[found].maj).getTime():0)||0;
+          if(rmaj>lmaj){state.chars[found]=d;changed=true;}
+        }
+      });
+      if(changed){save();}
+      syncStatus("☁ Fiches de la table à jour","var(--teal)");
+      if(onDone)onDone();
+    })
+    .catch(function(){syncStatus("⚠ Lecture du nuage impossible — affichage des fiches locales","var(--danger)");if(onDone)onDone();});
+  }catch(e){if(onDone)onDone();}
+}
+/* ===== Interface ===== */
 function renderCards(){
   var box=$("cards");box.textContent="";
   if(!state.chars.length){
@@ -343,7 +405,7 @@ function renderCards(){
     var b1=document.createElement("button");b1.className="btn ghost";b1.textContent="Ouvrir";
     b1.onclick=function(){showEdit(ch.id);};row.appendChild(b1);
     var b2=document.createElement("button");b2.className="btn danger";b2.textContent="Supprimer";
-    b2.onclick=function(){if(confirm("Supprimer définitivement cette fiche ?")){state.chars=state.chars.filter(function(c){return c.id!==ch.id;});save();renderCards();}};row.appendChild(b2);
+    b2.onclick=function(){if(confirm("Supprimer définitivement cette fiche (pour toute la table) ?")){deleteRemote(ch.id);state.chars=state.chars.filter(function(c){return c.id!==ch.id;});save();renderCards();}};row.appendChild(b2);
     card.appendChild(row);box.appendChild(card);
   });
 }
@@ -388,13 +450,16 @@ function collect(){
   ch.p1={t:$("f-p1").value,used:$("f-p1u").checked};
   ch.p2={t:$("f-p2").value,used:$("f-p2u").checked};
   ch.xp=$("f-xp").value;ch.notes=$("f-notes").value;
+  ch.maj=new Date().toISOString();
   $("f-title").textContent="Fiche — "+(ch.nom||"unité sans nom");
   save();
+  queueSync(ch);
 }
 function showList(){cur=null;$("view-edit").style.display="none";$("view-list").style.display="block";renderCards();}
 function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";fillForm();window.scrollTo(0,0);}
 var pvNodes=[],compsNodes=[];
 function init(){
+  OTOK=ownerToken();
   var chSel=$("f-ch");
   CH.forEach(function(c){var o=document.createElement("option");o.value=c.n;o.textContent=c.n;chSel.appendChild(o);});
   var codeSel=$("f-code");
@@ -423,12 +488,12 @@ function init(){
   for(var j=0;j<30;j++){
     (function(idx){
       var s=document.createElement("span");s.className="pv";
-      s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);save();});
+      s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);cur.maj=new Date().toISOString();save();queueSync(cur);});
       $("pv-box").appendChild(s);pvNodes.push(s);
     })(j);
   }
   [0,1].forEach(function(k){
-    $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);save();});
+    $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);cur.maj=new Date().toISOString();save();queueSync(cur);});
   });
   COMPS.forEach(function(name){
     var l=document.createElement("label");l.className="cb";
@@ -451,7 +516,7 @@ function init(){
   $("btn-back").addEventListener("click",function(){collect();showList();});
   $("btn-del").addEventListener("click",function(){
     if(!cur)return;
-    if(confirm("Supprimer définitivement cette fiche ?")){state.chars=state.chars.filter(function(c){return c.id!==cur.id;});save();showList();}
+    if(confirm("Supprimer définitivement cette fiche (pour toute la table) ?")){deleteRemote(cur.id);state.chars=state.chars.filter(function(c){return c.id!==cur.id;});save();showList();}
   });
   $("btn-print").addEventListener("click",function(){collect();window.print();});
   $("btn-code").addEventListener("click",function(){
@@ -471,34 +536,21 @@ function init(){
     try{
       var obj=JSON.parse(decodeURIComponent(atob(raw)));
       if(!obj||!obj.st){throw new Error("bad");}
-      norm(obj);obj.id=uid();
-      state.chars.push(obj);save();renderCards();
+      norm(obj);obj.id=uid();obj.maj=new Date().toISOString();
+      state.chars.push(obj);save();renderCards();queueSync(obj);
       msg.textContent="Fiche importée : "+(obj.nom||"unité sans nom");
       $("imp-code").value="";
     }catch(e){msg.textContent="Code invalide — vérifiez le copier-coller.";}
   });
+  $("btn-refresh").addEventListener("click",function(){pullChars(function(){renderCards();});});
   load();
   state.chars.forEach(norm);
   renderCards();
+  pullChars(function(){renderCards();});
 }
 init();
 })();
 </script>
-
-<!-- WPE-DEBUG path=api slug=fiches.html -->
-<script src="https://cdn.websitepublisher.ai/wpe/loader.js" data-project="30149" data-page="fiches.html" defer></script>
-
-
-<!-- WebsitePublisher.ai Powered-by Widget -->
-<div id="wpa-widget" style="position:fixed;bottom:0;right:0;z-index:2147483647;display:flex;justify-content:flex-end;pointer-events:none;padding:0 12px 12px 0;">
-    <div style="pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(15,15,15,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:1;color:rgba(255,255,255,0.7);box-shadow:0 2px 12px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);">
-        <a href="https://www.websitepublisher.ai?ref=widget" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.9);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            WebsitePublisher.ai
-        </a>
-        <span style="color:rgba(255,255,255,0.25);">&middot;</span>
-        <a href="https://www.websitepublisher.ai/report?url=https%3A%2F%2Fproject30149.websitepublisher.ai" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.5);text-decoration:none;">Report Abuse</a>
-    </div>
-</div>
+<!-- Optimizer - Footer Javascripts -->
 </body>
 </html>
