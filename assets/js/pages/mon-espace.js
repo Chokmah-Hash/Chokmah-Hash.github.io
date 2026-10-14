@@ -88,12 +88,14 @@ function logout(msg){
   SESS=null;
   $('app-view').style.display='none';
   $('auth-view').style.display='';
+  $('app-subnav').hidden=true;
   if(msg){authMsg(msg,'');}
 }
 $('btn-logout').addEventListener('click',function(){logout('');$('l-user').value='';$('l-pass').value='';});
 function enterApp(){
   $('auth-view').style.display='none';
   $('app-view').style.display='';
+  $('app-subnav').hidden=false;
   $('who-name').textContent=SESS.nom+' ('+SESS.login+')';
   loadAventure();
   loadPersos();
@@ -104,10 +106,10 @@ function enterApp(){
   setTimeout(pingPresence,1500);
 }
 /* ——— Onglets ——— */
-Array.prototype.forEach.call(document.querySelectorAll('.tabs .tab[data-t]'),function(b){
+Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .tab[data-t]'),function(b){
   b.addEventListener('click',function(){
-    Array.prototype.forEach.call(document.querySelectorAll('.tabs .tab[data-t]'),function(x){x.classList.remove('on');});
-    b.classList.add('on');
+    Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .tab[data-t]'),function(x){x.classList.remove('on');x.classList.remove('active');});
+    b.classList.add('active');
     var t=b.getAttribute('data-t');
     ['av','pj','notes'].forEach(function(k){
       var pane=$('tab-'+k);

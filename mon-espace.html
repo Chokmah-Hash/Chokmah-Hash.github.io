@@ -82,6 +82,15 @@ textarea.fld{resize:vertical;min-height:64px}
         </nav>
       </div>
     </header>
+    <nav class="subnav" id="app-subnav" aria-label="Navigation de mon espace" hidden>
+      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span> Menu</button>
+      <div class="subnav-in">
+        <button type="button" class="active" data-t="av">⚡ Aventure</button>
+        <button type="button" data-t="pj">👤 Personnages</button>
+        <button type="button" data-t="notes">📝 Notes</button>
+      </div>
+    </nav>
+
     <main class="wrap">
       <section class="hero rev">
         <div class="glyphrow">⚡ ⬥ ⚡</div>
@@ -130,11 +139,6 @@ textarea.fld{resize:vertical;min-height:64px}
         <div class="session-bar rev">
           <span class="who">⚡ <span id="who-name"></span></span>
           <button class="btn ghost small" id="btn-logout" type="button">Déconnexion</button>
-        </div>
-        <div class="tabs rev d1">
-          <button class="tab on" data-t="av" type="button">⚡ Aventure</button>
-          <button class="tab" data-t="pj" type="button">👤 Personnages</button>
-          <button class="tab" data-t="notes" type="button">📝 Notes</button>
         </div>
 
         <!-- Onglet Aventure -->
