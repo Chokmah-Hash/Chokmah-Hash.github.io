@@ -1,0 +1,28 @@
+/* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
+var CACHE='pe-v2026-10-14';
+var PRECACHE=[
+ '/', '/index.html', '/regles.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/mon-espace.html', '/mj.html', '/sauvegarde.html', '/404.html',
+ '/assets/css/main.css', '/assets/js/core.js',
+ '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/mon-espace.js', '/assets/js/pages/mj.js', '/assets/js/pages/sauvegarde.js',
+ '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
+];
+self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRECACHE);}).then(function(){return self.skipWaiting();}));});
+self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return k===CACHE?null:caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
+self.addEventListener('fetch',function(e){
+ var req=e.request;
+ if(req.method!=='GET'){return;}
+ var url=new URL(req.url);
+ if(url.origin!==location.origin){return;}
+ e.respondWith(
+  fetch(req).then(function(res){
+   if(res&&res.ok){var copy=res.clone();caches.open(CACHE).then(function(c){c.put(req,copy);});}
+   return res;
+  }).catch(function(){
+   return caches.match(req,{ignoreSearch:true}).then(function(r){
+    if(r){return r;}
+    if(req.mode==='navigate'){return caches.match('/');}
+    return new Response('Hors ligne',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+   });
+  })
+ );
+});

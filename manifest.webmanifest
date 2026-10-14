@@ -1,0 +1,25 @@
+{
+  "name": "Les Protocoles Éternels",
+  "short_name": "Protocoles",
+  "lang": "fr",
+  "description": "Site compagnon du JDR maison Les Protocoles Éternels : règles, fiches, bestiaire, carte de la galaxie et espace joueur.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a120f",
+  "theme_color": "#0a120f",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
