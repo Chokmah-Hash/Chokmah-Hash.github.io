@@ -1,9 +1,9 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-14';
+var CACHE='pe-v2026-10-14-b';
 var PRECACHE=[
- '/', '/index.html', '/regles.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/mon-espace.html', '/mj.html', '/sauvegarde.html', '/404.html',
+ '/', '/index.html', '/regles.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/mon-espace.html', '/mj.html', '/404.html',
  '/assets/css/main.css', '/assets/js/core.js',
- '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/mon-espace.js', '/assets/js/pages/mj.js', '/assets/js/pages/sauvegarde.js',
+ '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/mon-espace.js', '/assets/js/pages/mj.js',
  '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
 ];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRECACHE);}).then(function(){return self.skipWaiting();}));});
