@@ -28,6 +28,26 @@
 .lieu b{color:var(--text)}
 .legend{position:absolute;top:12px;right:12px;z-index:5;display:flex;flex-direction:column;gap:7px;margin:0;padding:9px 12px;font-size:.78rem;color:var(--text);align-items:flex-start;background:rgba(10,18,15,.88);border:1px solid var(--tealline);border-radius:10px;backdrop-filter:blur(5px)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+/* Exploration planète (phase 2) */
+.crumb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:20px 0 0;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.06em;font-size:.82rem;text-transform:uppercase}
+.crumb button{background:none;border:none;padding:0;color:var(--teal);cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:uppercase}
+.crumb button:hover{text-decoration:underline}
+.crumb .sep{color:var(--muted);opacity:.6}
+.crumb .cur{color:var(--text)}
+.pm{position:relative;width:100%;aspect-ratio:1000/700;background:#0a120f;border:1px solid var(--tealline);border-radius:14px;overflow:hidden}
+.pm svg{position:absolute;inset:0;width:100%;height:100%}
+.pmimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+.poid{position:absolute;z-index:3;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#2ee6c9;cursor:pointer;border:2px solid #07100c;box-shadow:0 0 0 2px rgba(46,230,201,.35)}
+.poid:hover,.poid.on{background:#eafffa;box-shadow:0 0 0 3px rgba(46,230,201,.65)}
+.poidlab{position:absolute;z-index:3;transform:translate(-50%,-170%);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;color:#e8f5f1;background:rgba(7,16,12,.82);border:1px solid var(--tealline);border-radius:6px;padding:1px 7px;white-space:nowrap;pointer-events:none}
+.plrow{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--tealline);border-radius:10px;padding:10px 12px;margin:8px 0}
+.plrow .btn{flex:none}
+.plthumb{width:64px;height:48px;object-fit:cover;border-radius:6px;flex:none;background:#0a120f}
+.plinfo{flex:1;min-width:0}
+.plinfo b{display:block;color:var(--text)}
+.plinfo span{display:block;color:var(--muted);font-size:.88rem}
+.poiimg{width:100%;border-radius:10px;margin:10px 0;display:block}
     </style>
   </head>
   <body>
@@ -47,12 +67,14 @@
     <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de page">▲</button>
     <script src="assets/js/core.js"></script>
     <main class="wrap">
-            <div class="gsearch">
+            <div class="gsearch" id="g-searchbox">
         <input class="gf" id="g-search" type="search" placeholder="🔎 Chercher un système, une planète…">
       </div>
+      <div class="crumb" id="g-crumb" style="display:none"></div>
       <div class="gmap-wrap">
         <div class="gmap" id="g-map"></div>
-        <div class="legend">
+        <div id="p-map" style="display:none"></div>
+        <div class="legend" id="g-legend">
           <span><i style="background:#2ee6c9"></i>Système</span>
           <span><i style="background:#f0b24a"></i>Vaisseau</span>
           <span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span>

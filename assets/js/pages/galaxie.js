@@ -44,15 +44,87 @@ function renderMap(){
   applySearch();
 }
 function catLabel(c){return c==='vaisseau'?'Vaisseau-tombe':c==='nebuleuse'?'Nébuleuse':c==='inconnu'?'Inexploré':'Système';}
-function select(id){SEL=id;renderPanel();}
+var PLS={},CURPLA=null,POIS=[],CURPOI=null;
+function bindImgs(root){Array.prototype.forEach.call((root||document).querySelectorAll('img'),function(im){im.addEventListener('error',function(){if(im.parentNode){im.parentNode.removeChild(im);}});});}
+function showGalaxy(){CURPLA=null;CURPOI=null;$('g-crumb').style.display='none';$('g-searchbox').style.display='';$('g-legend').style.display='';$('g-map').style.display='';$('p-map').style.display='none';renderPanel();}
+function crumbRender(){
+  var g=null;SYS.forEach(function(s){if(s.id===SEL){g=s;}});
+  var out='<button type="button" id="crumb-back">← Galaxie</button>';
+  if(g){out+='<span class="sep">·</span><span>'+esc(g.nom)+'</span>';}
+  if(CURPOI){out+='<span class="sep">·</span><span>'+esc(CURPLA.nom)+'</span><span class="sep">·</span><span class="cur">'+esc(CURPOI.nom)+'</span>';}
+  else if(CURPLA){out+='<span class="sep">·</span><span class="cur">'+esc(CURPLA.nom)+'</span>';}
+  $('g-crumb').innerHTML=out;
+  $('crumb-back').addEventListener('click',showGalaxy);
+}
+function pmSvg(seed){
+  var r=prng(seed*7919+13),s='<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Surface">';
+  s+='<defs><radialGradient id="pmg'+seed+'" cx="42%" cy="30%"><stop offset="0%" stop-color="#18261d"/><stop offset="100%" stop-color="#0a120f"/></radialGradient></defs>';
+  s+='<rect width="1000" height="700" fill="url(#pmg'+seed+')"/>';
+  for(var i=0;i<26;i++){var cx=(r()*1000).toFixed(0),cy=(r()*700).toFixed(0),rr=(10+r()*52).toFixed(0);
+    s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rr+'" ry="'+(rr*0.62).toFixed(0)+'" fill="none" stroke="#22382c" stroke-opacity="0.65"/>';}
+  for(var j=1;j<4;j++){s+='<line x1="0" y1="'+(j*175)+'" x2="1000" y2="'+(j*175)+'" stroke="#2ee6c9" stroke-opacity="0.05"/>';}
+  for(var k=1;k<5;k++){s+='<line x1="'+(k*200)+'" y1="0" x2="'+(k*200)+'" y2="700" stroke="#2ee6c9" stroke-opacity="0.04"/>';}
+  return s+'</svg>';
+}
+function select(id){SEL=id;if(!PLS[id]){PLS[id]=[];}loadPlanetes(id);renderPanel();}
+function loadPlanetes(id){
+  fetchJ(SB+'planetes?select=*&galaxie_id=eq.'+id+'&order=id.asc').then(function(l){PLS[id]=l||[];if(SEL===id&&!CURPLA){renderPanel();}}).catch(function(){});
+}
+function explorePlanet(pid){
+  var pl=null;(PLS[SEL]||[]).forEach(function(p){if(p.id===pid){pl=p;}});
+  if(!pl){return;}
+  CURPLA=pl;CURPOI=null;
+  fetchJ(SB+'planetes_poi?select=*&planete_id=eq.'+pid+'&order=id.asc').then(function(l){POIS=l||[];renderPlanetView();renderPanel();}).catch(function(){POIS=[];renderPlanetView();renderPanel();});
+}
+function renderPlanetView(){
+  $('g-searchbox').style.display='none';$('g-legend').style.display='none';$('g-map').style.display='none';
+  var pm=$('p-map');pm.style.display='';
+  crumbRender();
+  var h='<div class="pm">'+(CURPLA.carte?'<img class="pmimg" src="'+esc(CURPLA.carte)+'" alt="Mappemonde">':'')+pmSvg(CURPLA.id);
+  POIS.forEach(function(p){
+    var lx=Math.max(6,Math.min(94,p.x/10)),ly=Math.max(6,Math.min(93,p.y/7));
+    h+='<div class="poid'+(CURPOI&&CURPOI.id===p.id?' on':'')+'" data-id="'+p.id+'" style="left:'+lx+'%;top:'+ly+'%" title="'+esc(p.nom)+'"></div><div class="poidlab" style="left:'+lx+'%;top:'+ly+'%">'+esc(p.nom)+'</div>';
+  });
+  h+='</div>';
+  pm.innerHTML=h;bindImgs(pm);
+  Array.prototype.forEach.call(pm.querySelectorAll('.poid'),function(el){
+    el.addEventListener('click',function(ev){ev.stopPropagation();
+      var id=parseInt(el.getAttribute('data-id'),10);
+      POIS.forEach(function(p){if(p.id===id){CURPOI=p;}});
+      renderPlanetView();renderPanel();
+    });
+  });
+}
 function renderPanel(){
   var el=$('g-panel');
+  if(CURPLA){
+    var out='<h3 style="margin:.1em 0 .3em">🪐 '+esc(CURPLA.nom)+'</h3>';
+    if(CURPOI){
+      out+='<div class="pl">📍 '+esc(CURPOI.nom)+'</div>';
+      if(CURPOI.image){out+='<img class="poiimg" src="'+esc(CURPOI.image)+'" alt="">';}
+      out+='<p class="pv" style="margin-top:10px">'+esc(CURPOI.description||'')+'</p>';
+      out+='<div class="cta-row" style="justify-content:flex-start;margin-top:8px"><button class="btn ghost sm" id="poi-back" type="button">← Autres lieux</button></div>';
+    }else{
+      out+='<p class="pv" style="margin-top:10px">'+esc(CURPLA.description||'')+'</p>';
+      out+='<p class="pv">Clique sur un marqueur de la mappemonde pour découvrir un lieu.</p>';
+    }
+    el.innerHTML=out;bindImgs(el);
+    var pb=$('poi-back');if(pb){pb.addEventListener('click',function(){CURPOI=null;renderPlanetView();renderPanel();});}
+    return;
+  }
   if(!SEL){el.innerHTML='<p style="color:var(--muted);font-size:.95rem">Clique sur un système de la carte pour afficher sa fiche : description, planètes, lieux remarquables et créatures recensées.</p>';return;}
   var g=null;SYS.forEach(function(s){if(s.id===SEL){g=s;}});
   if(!g){SEL=null;renderPanel();return;}
   var d=g.data||{};
   var out='<h3 style="margin:.1em 0 .3em">'+esc(g.nom)+'</h3><span class="badge'+(g.categorie==='vaisseau'?' amber':'')+'">'+esc(catLabel(g.categorie))+'</span>';
   if(g.description){out+='<p class="pv" style="margin-top:10px">'+esc(g.description)+'</p>';}
+  var pls=PLS[SEL]||[];
+  if(pls.length){
+    out+='<div class="pl">Planètes</div>';
+    pls.forEach(function(pl){
+      out+='<div class="plrow">'+(pl.image?'<img class="plthumb" src="'+esc(pl.image)+'" alt="">':'')+'<div class="plinfo"><b>'+esc(pl.nom)+'</b>'+(pl.description?'<span>'+esc(pl.description)+'</span>':'')+'</div><button class="btn primary sm" data-pl="'+pl.id+'" type="button">Explorer</button></div>';
+    });
+  }
   (d.planetes||[]).forEach(function(pl){
     out+='<div class="pl">🪐 '+esc(pl.nom)+'</div>';
     if(pl.infos){out+='<p class="pv">'+esc(pl.infos)+'</p>';}
@@ -64,7 +136,10 @@ function renderPanel(){
     d.creatures.forEach(function(c){out+='<a href="/bestiaire.html">'+esc(c)+'</a>';});
     out+='</div>';
   }
-  el.innerHTML=out;
+  el.innerHTML=out;bindImgs(el);
+  Array.prototype.forEach.call(el.querySelectorAll('button[data-pl]'),function(b){
+    b.addEventListener('click',function(){explorePlanet(parseInt(b.getAttribute('data-pl'),10));});
+  });
 }
 function loadGalaxie(){
   fetchJ(SB+'galaxie?select=*&order=nom.asc').then(function(list){

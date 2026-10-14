@@ -63,7 +63,7 @@ function renderMap(){
   });
 }
 function catLabel(c){return c==='vaisseau'?'Vaisseau-tombe':c==='nebuleuse'?'Nébuleuse':c==='inconnu'?'Inexploré':'Système';}
-function select(id){SEL=id;renderPanel();}
+function select(id){SEL=id;plaCleanup();renderPanel();loadPlanetes(id);}
 function renderPanel(){
   var el=$('g-panel');
   if(!SEL){el.innerHTML='<p style="color:var(--muted);font-size:.95rem">Clique sur un système de la carte pour afficher sa fiche : description, planètes, lieux remarquables et créatures recensées.</p>';return;}
@@ -96,9 +96,9 @@ function renderPanel(){
 }
 function loadGalaxie(){
   fetchJ(SB+'galaxie?select=*&order=nom.asc').then(function(list){
-    SYS=list||[];$('g-err').style.display='none';renderMap();renderPanel();
+    SYS=list||[];renderMap();renderPanel();
   }).catch(function(){
-    $('g-err').style.display='';$('g-err').innerHTML='<strong>Carte inaccessible.</strong> Vérifie ta connexion internet — la carte vit dans la base partagée du groupe.';
+    msg('mj-msg','Carte inaccessible — vérifie ta connexion internet.','err');
   });
 }
 function loadComptes(){return fetchJ(SB+'comptes?select=id,login,nom').then(function(l){COMPTES={};(l||[]).forEach(function(c){COMPTES[c.id]=c;});}).catch(function(){});}
@@ -137,7 +137,7 @@ $('mj-open').addEventListener('click',function(){
     $('mj-tools').style.display='';
     $('mj-key').value='';
     msg('mj-msg','Console MJ ouverte. Les vérités cachées et les positions sont visibles.','ok');
-    renderMap();renderPanel();renderPosTable();
+    renderMap();renderPanel();renderPosTable();if(SEL){loadPlanetes(SEL);}else{renderPlaBox();}
     if(POSTIMER){clearInterval(POSTIMER);}
     POSTIMER=setInterval(loadPositions,15000);
   }).catch(function(){
@@ -185,7 +185,16 @@ function delSys(){
   var id=$('g-id').value;
   if(!id){msg('g-msg','Aucun système sélectionné dans le formulaire.','err');return;}
   if(!window.confirm('Supprimer définitivement ce système de la carte ?')){return;}
-  fetch(SB+'galaxie?id=eq.'+id,{method:'DELETE',headers:HM()}).then(function(r){
+  fetchJ(SB+'planetes?select=id&galaxie_id=eq.'+id,{headers:HM()}).then(function(pls){
+    var chain=Promise.resolve();
+    (pls||[]).forEach(function(pl){
+      chain=chain.then(function(){return fetch(SB+'planetes_poi?planete_id=eq.'+pl.id,{method:'DELETE',headers:HM()});});
+      chain=chain.then(function(){return fetch(SB+'planetes?id=eq.'+pl.id,{method:'DELETE',headers:HM()});});
+    });
+    return chain;
+  }).then(function(){
+    return fetch(SB+'galaxie?id=eq.'+id,{method:'DELETE',headers:HM()});
+  }).then(function(r){
     if(!r.ok){throw new Error('HTTP '+r.status);}
     msg('g-msg','Système supprimé.','ok');clearForm();loadGalaxie();
     if(MJMODE){loadSecrets();loadPositions();}
@@ -213,8 +222,175 @@ $('g-save').addEventListener('click',function(){
     });
   }).then(function(){
     msg('g-msg','Système enregistré sur la carte.','ok');
-    clearForm();loadGalaxie();
+    clearForm();loadGalaxie();if(SEL){loadPlanetes(SEL);}
     if(MJMODE){loadSecrets().then(function(){renderPanel();});loadPositions();}
   }).catch(function(e){msg('g-msg','Enregistrement impossible ('+(e.message||'erreur')+') — vérifie ta clé.','err');});
 });
 loadGalaxie();
+
+/* ————— Planètes & points d'intérêt (phase 2) ————— */
+var PLS={},PSEL=null,PSELPLA=null,POIS=[],PPLACING=false;
+function plaCleanup(){PSEL=null;PSELPLA=null;POIS=[];PPLACING=false;var pc=$('poi-card');if(pc){pc.style.display='none';}var pf=$('p-form');if(pf){pf.style.display='none';}var pw=$('poi-form');if(pw){pw.style.display='none';}}
+function loadPlanetes(id){
+  fetchJ(SB+'planetes?select=*&galaxie_id=eq.'+id+'&order=id.asc',{headers:HM()}).then(function(l){PLS[id]=l||[];renderPlaBox();}).catch(function(){});
+}
+function renderPlaBox(){
+  var box=$('g-pla-box');
+  if(!box){return;}
+  if(!SEL){box.innerHTML='<p class="pv">Clique sur un système de la carte ci-dessus pour gérer ses planètes.</p>';return;}
+  var l=PLS[SEL]||[];
+  var out='';
+  if(!l.length){out='<p class="pv">Aucune planète rattachée à ce système.</p>';}
+  l.forEach(function(pl){
+    out+='<div class="plrow">'
+      +'<div class="plinfo"><b>🪐 '+esc(pl.nom)+'</b><span>'+(pl.carte?'Carte : '+esc(pl.carte):'Pas de mappemonde')+'</span></div>'
+      +'<button class="btn primary sm" data-act="poi" data-id="'+pl.id+'" type="button">📍 Lieux</button>'
+      +'<button class="btn amber sm" data-act="edit" data-id="'+pl.id+'" type="button">✎ Modifier</button>'
+      +'<button class="btn danger sm" data-act="del" data-id="'+pl.id+'" type="button">🗑</button>'
+      +'</div>';
+  });
+  out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px"><button class="btn ghost sm" id="p-new" type="button">✚ Nouvelle planète</button></div>';
+  box.innerHTML=out;
+  var nb=$('p-new');if(nb){nb.addEventListener('click',function(){plaFormOpen(null);});}
+  Array.prototype.forEach.call(box.querySelectorAll('.plrow button'),function(b){
+    b.addEventListener('click',function(){
+      var act=b.getAttribute('data-act'),pid=parseInt(b.getAttribute('data-id'),10);
+      var pl=null;(PLS[SEL]||[]).forEach(function(p){if(p.id===pid){pl=p;}});
+      if(!pl){return;}
+      if(act==='poi'){poiOpen(pl);}
+      else if(act==='edit'){plaFormOpen(pl);}
+      else if(act==='del'){delPlanete(pl);}
+    });
+  });
+}
+function plaFormOpen(pl){
+  $('p-form').style.display='';
+  if(pl){$('p-title').textContent='🪐 Modifier : '+pl.nom;$('p-id').value=pl.id;$('p-nom').value=pl.nom||'';$('p-desc').value=pl.description||'';$('p-image').value=pl.image||'';$('p-carte').value=pl.carte||'';}
+  else{$('p-title').textContent='🪐 Nouvelle planète';$('p-id').value='';['p-nom','p-desc','p-image','p-carte'].forEach(function(i){$(i).value='';});}
+  msg('p-msg','');
+}
+$('p-cancel').addEventListener('click',function(){$('p-form').style.display='none';});
+$('p-save').addEventListener('click',function(){
+  if(!MJMODE){msg('p-msg','Ouvre d’abord la console avec ta clé MJ.','err');return;}
+  var nom=$('p-nom').value.trim();
+  if(!nom){msg('p-msg','Donne un nom à la planète.','err');return;}
+  if(!SEL){msg('p-msg','Sélectionne d’abord un système sur la carte.','err');return;}
+  var body={galaxie_id:SEL,nom:nom,description:$('p-desc').value.trim(),image:$('p-image').value.trim(),carte:$('p-carte').value.trim()};
+  var id=$('p-id').value;
+  var req=id?fetch(SB+'planetes?id=eq.'+id,{method:'PATCH',headers:HM(),body:JSON.stringify(body)})
+            :fetch(SB+'planetes',{method:'POST',headers:HM(),body:JSON.stringify(body)});
+  req.then(function(r){if(!r.ok){throw new Error('HTTP '+r.status);}}).then(function(){
+    msg('p-msg','Planète enregistrée.','ok');$('p-form').style.display='none';loadPlanetes(SEL);
+  }).catch(function(){msg('p-msg','Enregistrement impossible — vérifie ta clé.','err');});
+});
+function delPlanete(pl){
+  if(!MJMODE){return;}
+  if(!window.confirm('Supprimer « '+pl.nom+' » et tous ses points d’intérêt ?')){return;}
+  fetch(SB+'planetes_poi?planete_id=eq.'+pl.id,{method:'DELETE',headers:HM()}).then(function(){
+    return fetch(SB+'planetes?id=eq.'+pl.id,{method:'DELETE',headers:HM()});
+  }).then(function(r){
+    if(!r.ok){throw new Error('HTTP '+r.status);}
+    msg('p-msg','Planète supprimée.','ok');
+    if(PSELPLA&&PSELPLA.id===pl.id){plaCleanup();}
+    loadPlanetes(SEL);
+  }).catch(function(){msg('p-msg','Suppression impossible — vérifie ta clé.','err');});
+}
+function poiOpen(pl){
+  PSELPLA=pl;PSEL=pl.id;
+  $('poi-card').style.display='';
+  $('poi-title').textContent='📍 Lieux — '+pl.nom;
+  $('poi-note').textContent='« Placer sur la mappemonde » puis clique sur la carte pour positionner, ou saisis X/Y directement.';
+  $('poi-form').style.display='none';
+  loadPois();
+}
+function loadPois(){
+  fetchJ(SB+'planetes_poi?select=*&planete_id=eq.'+PSEL+'&order=id.asc',{headers:HM()}).then(function(l){
+    POIS=l||[];renderPoiMap();renderPoiList();
+  }).catch(function(){POIS=[];renderPoiMap();renderPoiList();});
+}
+function pmSvg(seed){
+  var r=prng(seed*7919+13),s='<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Surface">';
+  s+='<defs><radialGradient id="pmg'+seed+'" cx="42%" cy="30%"><stop offset="0%" stop-color="#18261d"/><stop offset="100%" stop-color="#0a120f"/></radialGradient></defs>';
+  s+='<rect width="1000" height="700" fill="url(#pmg'+seed+')"/>';
+  for(var i=0;i<26;i++){var cx=(r()*1000).toFixed(0),cy=(r()*700).toFixed(0),rr=(10+r()*52).toFixed(0);
+    s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rr+'" ry="'+(rr*0.62).toFixed(0)+'" fill="none" stroke="#22382c" stroke-opacity="0.65"/>';}
+  for(var j=1;j<4;j++){s+='<line x1="0" y1="'+(j*175)+'" x2="1000" y2="'+(j*175)+'" stroke="#2ee6c9" stroke-opacity="0.05"/>';}
+  for(var k=1;k<5;k++){s+='<line x1="'+(k*200)+'" y1="0" x2="'+(k*200)+'" y2="700" stroke="#2ee6c9" stroke-opacity="0.04"/>';}
+  return s+'</svg>';
+}
+function renderPoiMap(){
+  var box=$('p-map');
+  var img=(PSELPLA&&PSELPLA.carte)?'<img class="pmimg" src="'+esc(PSELPLA.carte)+'" alt="">':'';
+  var h='<div class="pm">'+img+pmSvg(PSEL);
+  POIS.forEach(function(p){
+    var lx=Math.max(6,Math.min(94,p.x/10)),ly=Math.max(6,Math.min(93,p.y/7));
+    h+='<div class="poid" style="left:'+lx+'%;top:'+ly+'%"></div>';
+  });
+  h+='</div>';
+  box.innerHTML=h;
+  var im=box.querySelector('.pmimg');
+  if(im){im.addEventListener('error',function(){if(im.parentNode){im.parentNode.removeChild(im);}});}
+  var pm=box.querySelector('.pm');
+  pm.addEventListener('click',function(ev){
+    if(!PPLACING){return;}
+    var r=pm.getBoundingClientRect();
+    var px=Math.round(Math.max(5,Math.min(995,(ev.clientX-r.left)/r.width*1000)));
+    var py=Math.round(Math.max(5,Math.min(695,(ev.clientY-r.top)/r.height*700)));
+    $('poi-x').value=px;$('poi-y').value=py;PPLACING=false;
+    $('poi-place').textContent='📍 Placer sur la mappemonde';
+    msg('poi-msg','Position : '+px+' ; '+py+'.','ok');
+  });
+}
+function renderPoiList(){
+  var box=$('poi-list');
+  var out='';
+  if(!POIS.length){out='<p class="pv">Aucun point d’intérêt. Ajoute le premier !</p>';}
+  POIS.forEach(function(p){
+    out+='<div class="plrow"><div class="plinfo"><b>📍 '+esc(p.nom)+'</b><span>'+p.x+' ; '+p.y+(p.image?' — '+esc(p.image):'')+'</span></div>'
+      +'<button class="btn amber sm" data-id="'+p.id+'" data-act="edit" type="button">✎ Modifier</button>'
+      +'<button class="btn danger sm" data-id="'+p.id+'" data-act="del" type="button">🗑</button></div>';
+  });
+  out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px"><button class="btn ghost sm" id="poi-new" type="button">✚ Nouveau point</button></div>';
+  box.innerHTML=out;
+  var nb=$('poi-new');if(nb){nb.addEventListener('click',function(){poiFormOpen(null);});}
+  Array.prototype.forEach.call(box.querySelectorAll('.plrow button'),function(b){
+    b.addEventListener('click',function(){
+      var id=parseInt(b.getAttribute('data-id'),10);var p=null;POIS.forEach(function(q){if(q.id===id){p=q;}});
+      if(!p){return;}
+      if(b.getAttribute('data-act')==='edit'){poiFormOpen(p);}else{delPoi(p);}
+    });
+  });
+}
+function poiFormOpen(p){
+  $('poi-form').style.display='';
+  if(p){$('poi-id').value=p.id;$('poi-nom').value=p.nom||'';$('poi-desc').value=p.description||'';$('poi-image').value=p.image||'';$('poi-x').value=p.x;$('poi-y').value=p.y;$('poi-del').style.display='';}
+  else{$('poi-id').value='';['poi-nom','poi-desc','poi-image'].forEach(function(i){$(i).value='';});$('poi-x').value=500;$('poi-y').value=350;$('poi-del').style.display='none';}
+  msg('poi-msg','');
+}
+$('poi-cancel').addEventListener('click',function(){$('poi-form').style.display='none';});
+$('poi-place').addEventListener('click',function(){
+  if(!$('poi-form')||$('poi-form').style.display==='none'){msg('poi-msg','Ouvre d’abord un point (nouveau ou modification).','err');return;}
+  PPLACING=true;this.textContent='Clique sur la mappemonde…';
+  msg('poi-msg','Mode placement : touche la mappemonde à l’endroit voulu.','');
+});
+$('poi-del').addEventListener('click',function(){
+  var id=$('poi-id').value;if(!id){return;}
+  if(!window.confirm('Supprimer ce point d’intérêt ?')){return;}
+  fetch(SB+'planetes_poi?id=eq.'+id,{method:'DELETE',headers:HM()}).then(function(r){
+    if(!r.ok){throw new Error('HTTP '+r.status);}
+    $('poi-form').style.display='none';msg('poi-msg','Point supprimé.','ok');loadPois();
+  }).catch(function(){msg('poi-msg','Suppression impossible — vérifie ta clé.','err');});
+});
+$('poi-save').addEventListener('click',function(){
+  if(!MJMODE){msg('poi-msg','Ouvre d’abord la console avec ta clé MJ.','err');return;}
+  var nom=$('poi-nom').value.trim();
+  if(!nom){msg('poi-msg','Donne un nom au lieu.','err');return;}
+  if(!PSEL){msg('poi-msg','Aucune planète sélectionnée.','err');return;}
+  var body={planete_id:PSEL,nom:nom,description:$('poi-desc').value.trim(),image:$('poi-image').value.trim(),x:parseInt($('poi-x').value,10)||500,y:parseInt($('poi-y').value,10)||350};
+  var id=$('poi-id').value;
+  var req=id?fetch(SB+'planetes_poi?id=eq.'+id,{method:'PATCH',headers:HM(),body:JSON.stringify(body)})
+            :fetch(SB+'planetes_poi',{method:'POST',headers:HM(),body:JSON.stringify(body)});
+  req.then(function(r){if(!r.ok){throw new Error('HTTP '+r.status);}}).then(function(){
+    msg('poi-msg','Point enregistré.','ok');$('poi-form').style.display='none';loadPois();
+  }).catch(function(){msg('poi-msg','Enregistrement impossible — vérifie ta clé.','err');});
+});
