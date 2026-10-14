@@ -6,18 +6,18 @@ Adresse du site : https://chokmah-hash.github.io
 Pages :
 - index.html      : accueil
 - regles.html     : regles maison "Les Protocoles Eternels"
-- bestiaire.html  : bestiaire partage du MJ
+- bestiaire.html  : bestiaire partage (fiches + creatures reperees sur la carte)
 - galaxie.html    : carte de la galaxie (systemes, planetes, mappemondes et POI explorables)
 - mon-espace.html : espace joueur (connexion, position sur la carte, notes)
 - fiches.html     : fiches d'unites (acces uniquement depuis la Zone joueurs)
-- mj.html         : page du MJ (scenarios proteges, consoles aventures et carte, planetes et POI)
+- mj.html         : page du MJ (scenarios proteges, consoles aventures, carte et bestiaire, planetes et POI)
 - 404.html        : page d'erreur autonome
 
 Assets :
 - assets/css/main.css  : theme commun a toutes les pages (404.html exceptee)
 - assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
                          service worker, menu et sous-menu mobiles)
-- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj)
+- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj, mj-carte, mj-bestiaire)
 - icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
 - images/              : illustrations (planetes, mappemondes, points d'interet)
 

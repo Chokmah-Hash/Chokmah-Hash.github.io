@@ -34,18 +34,16 @@ table.mini td{padding:6px 8px;text-align:center}
 .armeslist{margin:.4em 0 .5em;padding-left:18px;color:var(--muted);font-size:.9rem}
 .armeslist li{margin:2px 0}
 .beast-notes{color:var(--muted);font-size:.9rem;font-style:italic;margin:.3em 0}
-.edit-btn{position:absolute;top:12px;right:12px;background:transparent;border:1px solid var(--amberline);color:var(--amber);border-radius:8px;width:34px;height:34px;font-size:.95rem;cursor:pointer}
-.edit-btn:hover{background:var(--ambersoft)}
 .empty-box{background:var(--panel2);border:1px dashed var(--tealline);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted);margin:18px 0}
-.ggrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
-.glab{display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin:12px 0 4px}
-.glab.teal{color:var(--teal)}
-.fld{background:var(--panel2);border:1px solid var(--amberline);border-radius:8px;color:var(--text);padding:9px 11px;font-family:'Exo 2',system-ui,sans-serif;font-size:.95rem;width:100%}
-.fld:focus{outline:none;border-color:var(--amber)}
-textarea.fld{resize:vertical;min-height:64px}
-.gmsg{margin-top:14px;font-size:.93rem;color:var(--muted)}
-.gmsg.ok{color:var(--teal)}
-.gmsg.err{color:var(--danger)}
+/* ————— Créatures repérées sur la carte ————— */
+.syshead{margin:16px 0 4px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.08em;font-size:.85rem;text-transform:uppercase;color:var(--teal)}
+.crea-tags{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
+.crea-tag{display:inline-block;background:var(--panel2);border:1px solid var(--tealline);border-radius:999px;padding:5px 13px;font-size:.88rem;color:var(--text);text-decoration:none;cursor:pointer}
+.crea-tag:hover{border-color:var(--teal);color:var(--teal)}
+.crea-tag.ok{border-color:var(--teal);color:var(--teal)}
+.crea-tag.off{color:var(--muted);border-style:dashed;cursor:default}
+.crea-tag.off:hover{border-color:var(--tealline);color:var(--muted)}
+.crea-tag.hit{box-shadow:0 0 0 2px var(--amber);color:var(--amber)}
 </style>
   </head>
   <body>
@@ -92,49 +90,11 @@ textarea.fld{resize:vertical;min-height:64px}
         </div>
       </section>
 
-      <section class="sect amber rev d2" id="gestion">
-        <h2>🔒 Gestion (MJ)</h2>
-        <div class="card amber">
-          <form id="gform">
-            <input type="hidden" id="g-old" value="">
-            <label class="glab" for="g-nom">Nom de la créature</label>
-            <input class="fld" id="g-nom" type="text" required placeholder="Ex. Chasseur de la 7e crypte">
-            <label class="glab" for="g-camp">Camp</label>
-            <select class="fld" id="g-camp">
-              <option value="ennemi">Ennemi</option>
-              <option value="allie">Allié</option>
-              <option value="neutre">Neutre</option>
-            </select>
-            <label class="glab">Caractéristiques</label>
-            <div class="ggrid">
-              <div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="s-m" type="text" inputmode="numeric" placeholder='Ex. 5"'></div>
-              <div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="s-cc" type="text" inputmode="numeric" placeholder="3+"></div>
-              <div><span class="glab teal" style="margin-top:0">CT</span><input class="fld" id="s-ct" type="text" inputmode="numeric" placeholder="3+"></div>
-              <div><span class="glab teal" style="margin-top:0">F</span><input class="fld" id="s-f" type="text" inputmode="numeric" placeholder="5"></div>
-              <div><span class="glab teal" style="margin-top:0">E</span><input class="fld" id="s-e" type="text" inputmode="numeric" placeholder="4"></div>
-              <div><span class="glab teal" style="margin-top:0">PV</span><input class="fld" id="s-pv" type="text" inputmode="numeric" placeholder="9"></div>
-              <div><span class="glab teal" style="margin-top:0">A</span><input class="fld" id="s-a" type="text" inputmode="numeric" placeholder="2"></div>
-              <div><span class="glab teal" style="margin-top:0">Cd</span><input class="fld" id="s-cd" type="text" inputmode="numeric" placeholder="10"></div>
-              <div><span class="glab teal" style="margin-top:0">Svg</span><input class="fld" id="s-sv" type="text" placeholder="3+"></div>
-              <div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="s-rfx" type="text" inputmode="numeric" placeholder="0"></div>
-            </div>
-            <label class="glab" for="g-armes">Armes &amp; équipements (une ligne par arme)</label>
-            <textarea class="fld" id="g-armes" placeholder="Ex. Fusil à particules | 24&quot; | 4 | -1 | 1"></textarea>
-            <label class="glab" for="g-notes">Notes de campagne (facultatif)</label>
-            <textarea class="fld" id="g-notes" placeholder="Lore, capacités spéciales, première rencontre…"></textarea>
-            <label class="glab" for="g-key">Clé MJ</label>
-            <input class="fld" id="g-key" type="password" autocomplete="off" placeholder="La clé n'est jamais enregistrée">
-            <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
-              <button type="submit" class="btn solid-amber">💾 Enregistrer</button>
-              <button type="button" class="btn danger" id="g-del">🗑 Supprimer ce nom</button>
-              <button type="button" class="btn ghost" id="g-clear">↺ Vider le formulaire</button>
-            </div>
-            <p class="gmsg" id="g-msg"></p>
-          </form>
-        </div>
-        <div class="note-box amber" style="margin-top:14px">
-          Le panneau s'ouvre pour tous, mais seules les écritures signées avec la <strong>clé MJ</strong> sont acceptées par la base — les curieuses ne risquent rien, elles ne peuvent rien casser. La clé saisie sert uniquement à signer l'opération : elle n'est ni stockée, ni écrite dans le site.
-        </div>
+            <section class="sect rev d2" id="sightings">
+        <h2>🧭 Repérées sur la carte</h2>
+        <p style="color:var(--muted);font-size:.92rem;margin:.2em 0 .4em">Créatures signalées dans les systèmes et lieux de la galaxie. Celles en teal possèdent une fiche ci-dessus — un clic y saute ; les pointillées attendent leur première rencontre.</p>
+        <p id="s-status" style="color:var(--muted);font-size:.9rem">Chargement des signalements…</p>
+        <div id="s-list"></div>
       </section>
     </main>
     <footer class="foot">

@@ -80,7 +80,7 @@ function renderPanel(){
   (d.lieux||[]).forEach(function(l){out+='<div class="lieu"><b>'+esc(l.nom)+'</b>'+(l.infos?' — '+esc(l.infos):'')+'</div>';});
   if((d.creatures||[]).length){
     out+='<div class="pl">Créatures recensées</div><div class="chips">';
-    d.creatures.forEach(function(c){out+='<a href="/bestiaire.html">'+esc(c)+'</a>';});
+    d.creatures.forEach(function(c){out+='<a href="/bestiaire.html?c='+encodeURIComponent(c)+'">'+esc(c)+'</a>';});
     out+='</div>';
   }
   if(MJMODE){
