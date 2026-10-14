@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="assets/css/main.css">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="robots" content="noindex, nofollow">
-<title>Mon espace — Les Protocoles Éternels</title>
-<style>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Mon espace — Les Protocoles Éternels</title>
+    <style>
 .btn.small{min-height:36px;padding:5px 12px;font-size:.78rem}
 .badge.enemy{border-color:rgba(226,96,79,.55);color:var(--danger);background:rgba(226,96,79,.08)}
 .badge.ally{border-color:var(--tealline);color:var(--teal);background:var(--tealsoft)}
@@ -67,176 +67,176 @@ textarea.fld{resize:vertical;min-height:64px}
 .complist{color:var(--muted);font-size:.9rem;margin:.2em 0}
 .aptdesc{font-size:.92rem;color:var(--amber);font-style:italic;margin:.2em 0 .4em}
 </style>
-</head>
-<body>
-<header class="nav">
-<div class="nav-in">
-<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
-<nav class="nav-links">
-<a href="/">Accueil</a>
-<a href="/regles.html">Règles</a>
-<a href="/fiches.html">Fiches</a>
-<a href="/bestiaire.html">Bestiaire</a>
-<a href="/galaxie.html">Galaxie</a>
-<a href="/mon-espace.html" class="active">Mon espace</a>
-<a href="/mj.html" class="mj">������ Zone MJ</a>
-</nav>
-</div>
-</header>
-<main class="wrap">
-<section class="hero rev">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<h1>Mon <b>Espace</b></h1>
-<div class="tagline">Aventure · Personnages · Notes</div>
-<p class="pitch">Ton espace personnel : l'aventure en cours, tes personnages avec leur inventaire, et tes notes de campagne. Tout est sauvegardé dans la base partagée du groupe — accessible depuis n'importe quel appareil, suffit de te reconnecter.</p>
-</section>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/fiches.html">Fiches</a>
+          <a href="/bestiaire.html">Bestiaire</a>
+          <a href="/galaxie.html">Galaxie</a>
+          <a href="/mon-espace.html" class="active">Mon espace</a>
+          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <main class="wrap">
+      <section class="hero rev">
+        <div class="glyphrow">⚡ ⬥ ⚡</div>
+        <h1>Mon <b>Espace</b></h1>
+        <div class="tagline">Aventure · Personnages · Notes</div>
+        <p class="pitch">Ton espace personnel : l'aventure en cours, tes personnages avec leur inventaire, et tes notes de campagne. Tout est sauvegardé dans la base partagée du groupe — accessible depuis n'importe quel appareil, suffit de te reconnecter.</p>
+      </section>
 
-<!-- ============ VUE CONNEXION ============ -->
-<div id="auth-view">
-<section class="rev d1">
-<div class="card authcard">
-<span class="ico">������</span>
-<div class="tabs" style="justify-content:flex-start">
-<button class="tab on" id="t-login" type="button">Connexion</button>
-<button class="tab" id="t-signup" type="button">Créer un compte</button>
-</div>
-<form id="f-login">
-<label class="glab" for="l-user">Pseudo</label>
-<input class="fld tealfld" id="l-user" type="text" autocomplete="username" required>
-<label class="glab" for="l-pass">Mot de passe</label>
-<input class="fld tealfld" id="l-pass" type="password" autocomplete="current-password" required>
-<div style="margin-top:18px"><button type="submit" class="btn primary" style="width:100%">→ Entrer</button></div>
-</form>
-<form id="f-signup" style="display:none">
-<label class="glab" for="s-user">Pseudo (pour te connecter)</label>
-<input class="fld tealfld" id="s-user" type="text" autocomplete="username" required>
-<label class="glab" for="s-nom">Nom affiché (facultatif)</label>
-<input class="fld tealfld" id="s-nom" type="text" placeholder="Ex. Signa-3">
-<label class="glab" for="s-pass">Mot de passe</label>
-<input class="fld tealfld" id="s-pass" type="password" autocomplete="new-password" required minlength="4">
-<label class="glab" for="s-pass2">Mot de passe (vérification)</label>
-<input class="fld tealfld" id="s-pass2" type="password" autocomplete="new-password" required minlength="4">
-<div style="margin-top:18px"><button type="submit" class="btn primary" style="width:100%">✚ Créer mon compte</button></div>
-</form>
-<p class="gmsg" id="auth-msg"></p>
-</div>
-<div class="note-box" style="max-width:460px;margin:14px auto">
-Ton mot de passe n'est jamais écrit dans le site : seul son empreinte cryptée est envoyée à la base. Choisis un mot de passe que tu n'utilises nulle part ailleurs.
-</div>
-</section>
-</div>
+      <!-- ============ VUE CONNEXION ============ -->
+      <div id="auth-view">
+        <section class="rev d1">
+          <div class="card authcard">
+            <span class="ico">🔐</span>
+            <div class="tabs" style="justify-content:flex-start">
+              <button class="tab on" id="t-login" type="button">Connexion</button>
+              <button class="tab" id="t-signup" type="button">Créer un compte</button>
+            </div>
+            <form id="f-login">
+              <label class="glab" for="l-user">Pseudo</label>
+              <input class="fld tealfld" id="l-user" type="text" autocomplete="username" required>
+              <label class="glab" for="l-pass">Mot de passe</label>
+              <input class="fld tealfld" id="l-pass" type="password" autocomplete="current-password" required>
+              <div style="margin-top:18px"><button type="submit" class="btn primary" style="width:100%">→ Entrer</button></div>
+            </form>
+            <form id="f-signup" style="display:none">
+              <label class="glab" for="s-user">Pseudo (pour te connecter)</label>
+              <input class="fld tealfld" id="s-user" type="text" autocomplete="username" required>
+              <label class="glab" for="s-nom">Nom affiché (facultatif)</label>
+              <input class="fld tealfld" id="s-nom" type="text" placeholder="Ex. Signa-3">
+              <label class="glab" for="s-pass">Mot de passe</label>
+              <input class="fld tealfld" id="s-pass" type="password" autocomplete="new-password" required minlength="4">
+              <label class="glab" for="s-pass2">Mot de passe (vérification)</label>
+              <input class="fld tealfld" id="s-pass2" type="password" autocomplete="new-password" required minlength="4">
+              <div style="margin-top:18px"><button type="submit" class="btn primary" style="width:100%">✚ Créer mon compte</button></div>
+            </form>
+            <p class="gmsg" id="auth-msg"></p>
+          </div>
+          <div class="note-box" style="max-width:460px;margin:14px auto">
+            Ton mot de passe n'est jamais écrit dans le site : seul son empreinte cryptée est envoyée à la base. Choisis un mot de passe que tu n'utilises nulle part ailleurs.
+          </div>
+        </section>
+      </div>
 
-<!-- ============ VUE CONNECTÉE ============ -->
-<div id="app-view" style="display:none">
-<div class="session-bar rev">
-<span class="who">⚡ <span id="who-name"></span></span>
-<button class="btn ghost small" id="btn-logout" type="button">Déconnexion</button>
-</div>
-<div class="tabs rev d1">
-<button class="tab on" data-t="av" type="button">⚡ Aventure</button>
-<button class="tab" data-t="pj" type="button">������ Personnages</button>
-<button class="tab" data-t="notes" type="button">������ Notes</button>
-</div>
+      <!-- ============ VUE CONNECTÉE ============ -->
+      <div id="app-view" style="display:none">
+        <div class="session-bar rev">
+          <span class="who">⚡ <span id="who-name"></span></span>
+          <button class="btn ghost small" id="btn-logout" type="button">Déconnexion</button>
+        </div>
+        <div class="tabs rev d1">
+          <button class="tab on" data-t="av" type="button">⚡ Aventure</button>
+          <button class="tab" data-t="pj" type="button">👤 Personnages</button>
+          <button class="tab" data-t="notes" type="button">📝 Notes</button>
+        </div>
 
-<!-- Onglet Aventure -->
-<section class="tabpane on" id="tab-av">
-<div class="sect rev d1" style="margin-top:0">
-<h2>Aventure en cours</h2>
-<p id="av-status" class="gmsg">Chargement…</p>
-<div id="av-list"></div>
-<div class="note-box" id="av-hint" style="display:none">
-<strong>Comment ça marche :</strong> quand le Maître de la Tombe enclenche une aventure, elle apparaît ici automatiquement. Tant que cette page est ouverte, le MJ voit que tu es connecté à l'aventure.
-</div>
-</div>
-<div class="sect rev d2">
-<h2>Ma position sur la carte</h2>
-<div class="card">
-<p style="color:var(--muted);font-size:.93rem;margin-top:0">Indique o&#249; tu te trouves : le Ma&#238;tre de la Tombe te voit alors appara&#238;tre sur la <a href="/galaxie.html">carte de la galaxie</a>. Mets-la &#224; jour quand tu changes d'endroit.</p>
-<div class="ggrid" style="grid-template-columns:1fr 1fr">
-<div><label class="glab" for="pos-sys">Syst&#232;me o&#249; tu es</label><select class="fld" id="pos-sys"></select></div>
-<div><label class="glab" for="pos-lieu">Lieu pr&#233;cis</label><input class="fld" id="pos-lieu" type="text" placeholder="Ex. la galerie 9, le site minier..."></div>
-</div>
-<div class="cta-row" style="justify-content:flex-start;margin-top:12px">
-<button class="btn primary" id="pos-save" type="button">Enregistrer ma position</button>
-<button class="btn ghost" id="pos-clear" type="button">Effacer</button>
-</div>
-<p id="pos-status" class="gmsg"></p>
-</div>
-</div>
-</section>
+        <!-- Onglet Aventure -->
+        <section class="tabpane on" id="tab-av">
+          <div class="sect rev d1" style="margin-top:0">
+            <h2>Aventure en cours</h2>
+            <p id="av-status" class="gmsg">Chargement…</p>
+            <div id="av-list"></div>
+            <div class="note-box" id="av-hint" style="display:none">
+              <strong>Comment ça marche :</strong> quand le Maître de la Tombe enclenche une aventure, elle apparaît ici automatiquement. Tant que cette page est ouverte, le MJ voit que tu es connecté à l'aventure.
+            </div>
+          </div>
+          <div class="sect rev d2">
+            <h2>Ma position sur la carte</h2>
+            <div class="card">
+              <p style="color:var(--muted);font-size:.93rem;margin-top:0">Indique o&#249; tu te trouves : le Ma&#238;tre de la Tombe te voit alors appara&#238;tre sur la <a href="/galaxie.html">carte de la galaxie</a>. Mets-la &#224; jour quand tu changes d'endroit.</p>
+              <div class="ggrid" style="grid-template-columns:1fr 1fr">
+                <div><label class="glab" for="pos-sys">Syst&#232;me o&#249; tu es</label><select class="fld" id="pos-sys"></select></div>
+                <div><label class="glab" for="pos-lieu">Lieu pr&#233;cis</label><input class="fld" id="pos-lieu" type="text" placeholder="Ex. la galerie 9, le site minier..."></div>
+              </div>
+              <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
+                <button class="btn primary" id="pos-save" type="button">Enregistrer ma position</button>
+                <button class="btn ghost" id="pos-clear" type="button">Effacer</button>
+              </div>
+              <p id="pos-status" class="gmsg"></p>
+            </div>
+          </div>
+        </section>
 
-<!-- Onglet Personnages -->
-<section class="tabpane" id="tab-pj">
-<div class="sect rev d1" style="margin-top:0">
-<h2>Mes personnages</h2>
-<p id="pj-status" class="gmsg">Chargement…</p>
-<div id="pj-list"></div>
-</div>
-<div class="sect amber rev d2" id="pj-form-sect">
-<h2 id="pj-form-title">✚ Nouveau personnage</h2>
-<div class="card amber">
-<form id="pj-form">
-<input type="hidden" id="p-id" value="">
-<div class="ggrid" style="grid-template-columns:1fr 1fr">
-<div><label class="glab" for="p-nom">Nom du personnage</label><input class="fld" id="p-nom" type="text" required placeholder="Ex. Signa-3"></div>
-<div><label class="glab" for="p-chassis">Châssis</label><select class="fld" id="p-chassis"></select></div>
-</div>
-<label class="glab" for="p-code">Code de fabrique</label>
-<select class="fld" id="p-code"></select>
-<p class="aptdesc" id="p-apt"></p>
-<p class="complist" id="p-comp"></p>
-<label class="glab">Caractéristiques <span style="color:var(--muted);text-transform:none;letter-spacing:0">(préremplies selon le châssis)</span></label>
-<div class="statgrid">
-<div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="st-m" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="st-cc" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">CT</span><input class="fld" id="st-ct" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">F</span><input class="fld" id="st-f" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">E</span><input class="fld" id="st-e" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">PV</span><input class="fld" id="st-pv" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">A</span><input class="fld" id="st-a" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">Cd</span><input class="fld" id="st-cd" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">Sv</span><input class="fld" id="st-sv" type="text"></div>
-<div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="st-rfx" type="text"></div>
-</div>
-<div class="ggrid" style="grid-template-columns:1fr 1fr">
-<div><label class="glab teal" for="p-pv">PV actuels</label><input class="fld tealfld" id="p-pv" type="number" inputmode="numeric"></div>
-<div><label class="glab teal" for="p-xp">XP</label><input class="fld tealfld" id="p-xp" type="number" inputmode="numeric" value="0"></div>
-</div>
-<label class="glab" for="p-armes">Armes (une par ligne)</label>
-<textarea class="fld" id="p-armes" placeholder="Ex. Fusil magnétique"></textarea>
-<label class="glab" for="p-inv">Inventaire &amp; équipement (une ligne par objet)</label>
-<textarea class="fld" id="p-inv"></textarea>
-<label class="glab" for="p-notes">Notes de personnage (facultatif)</label>
-<textarea class="fld" id="p-notes" placeholder="Historique, blessures, objectifs secrets…"></textarea>
-<div class="cta-row" style="justify-content:flex-start;margin-top:18px">
-<button type="submit" class="btn amber">������ Enregistrer</button>
-<button type="button" class="btn danger" id="p-del" style="display:none">������ Supprimer</button>
-<button type="button" class="btn ghost" id="p-clear">↺ Vider</button>
-</div>
-<p class="gmsg" id="pj-msg"></p>
-</form>
-</div>
-</div>
-</section>
+        <!-- Onglet Personnages -->
+        <section class="tabpane" id="tab-pj">
+          <div class="sect rev d1" style="margin-top:0">
+            <h2>Mes personnages</h2>
+            <p id="pj-status" class="gmsg">Chargement…</p>
+            <div id="pj-list"></div>
+          </div>
+          <div class="sect amber rev d2" id="pj-form-sect">
+            <h2 id="pj-form-title">✚ Nouveau personnage</h2>
+            <div class="card amber">
+              <form id="pj-form">
+                <input type="hidden" id="p-id" value="">
+                <div class="ggrid" style="grid-template-columns:1fr 1fr">
+                  <div><label class="glab" for="p-nom">Nom du personnage</label><input class="fld" id="p-nom" type="text" required placeholder="Ex. Signa-3"></div>
+                  <div><label class="glab" for="p-chassis">Châssis</label><select class="fld" id="p-chassis"></select></div>
+                </div>
+                <label class="glab" for="p-code">Code de fabrique</label>
+                <select class="fld" id="p-code"></select>
+                <p class="aptdesc" id="p-apt"></p>
+                <p class="complist" id="p-comp"></p>
+                <label class="glab">Caractéristiques <span style="color:var(--muted);text-transform:none;letter-spacing:0">(préremplies selon le châssis)</span></label>
+                <div class="statgrid">
+                  <div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="st-m" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="st-cc" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">CT</span><input class="fld" id="st-ct" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">F</span><input class="fld" id="st-f" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">E</span><input class="fld" id="st-e" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">PV</span><input class="fld" id="st-pv" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">A</span><input class="fld" id="st-a" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">Cd</span><input class="fld" id="st-cd" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">Sv</span><input class="fld" id="st-sv" type="text"></div>
+                  <div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="st-rfx" type="text"></div>
+                </div>
+                <div class="ggrid" style="grid-template-columns:1fr 1fr">
+                  <div><label class="glab teal" for="p-pv">PV actuels</label><input class="fld tealfld" id="p-pv" type="number" inputmode="numeric"></div>
+                  <div><label class="glab teal" for="p-xp">XP</label><input class="fld tealfld" id="p-xp" type="number" inputmode="numeric" value="0"></div>
+                </div>
+                <label class="glab" for="p-armes">Armes (une par ligne)</label>
+                <textarea class="fld" id="p-armes" placeholder="Ex. Fusil magnétique"></textarea>
+                <label class="glab" for="p-inv">Inventaire &amp; équipement (une ligne par objet)</label>
+                <textarea class="fld" id="p-inv"></textarea>
+                <label class="glab" for="p-notes">Notes de personnage (facultatif)</label>
+                <textarea class="fld" id="p-notes" placeholder="Historique, blessures, objectifs secrets…"></textarea>
+                <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
+                  <button type="submit" class="btn amber">💾 Enregistrer</button>
+                  <button type="button" class="btn danger" id="p-del" style="display:none">🗑 Supprimer</button>
+                  <button type="button" class="btn ghost" id="p-clear">↺ Vider</button>
+                </div>
+                <p class="gmsg" id="pj-msg"></p>
+              </form>
+            </div>
+          </div>
+        </section>
 
-<!-- Onglet Notes -->
-<section class="tabpane" id="tab-notes">
-<div class="sect rev d1" style="margin-top:0">
-<h2>Mes notes de campagne</h2>
-<p class="gmsg" style="margin-bottom:6px">Un espace privé pour toi seul : souvenirs de l'histoire, pistes à creuser, plans… Sauvegarde automatique pendant que tu écris.</p>
-<textarea class="fld tealfld" id="note-area" placeholder="Écris tes notes ici… (sauvegarde automatique)"></textarea>
-<p class="savestate" id="note-state"></p>
-</div>
-</section>
-</div>
-</main>
-<footer class="foot">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
-</footer>
-<script src="assets/js/core.js"></script>
-<script src="assets/js/pages/mon-espace.js"></script>
-</body>
+        <!-- Onglet Notes -->
+        <section class="tabpane" id="tab-notes">
+          <div class="sect rev d1" style="margin-top:0">
+            <h2>Mes notes de campagne</h2>
+            <p class="gmsg" style="margin-bottom:6px">Un espace privé pour toi seul : souvenirs de l'histoire, pistes à creuser, plans… Sauvegarde automatique pendant que tu écris.</p>
+            <textarea class="fld tealfld" id="note-area" placeholder="Écris tes notes ici… (sauvegarde automatique)"></textarea>
+            <p class="savestate" id="note-state"></p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+    </footer>
+    <script src="assets/js/core.js"></script>
+    <script src="assets/js/pages/mon-espace.js"></script>
+  </body>
 </html>
 

@@ -257,7 +257,7 @@ function renderPersos(err){
     setMsg('pj-status','','');
     out='<div class="empty-box">Tu n\u2019as pas encore de personnage â€” crÃ©e le premier avec le formulaire ci-dessous â¬‡</div>';
   }else{
-    setMsg('pj-status',PERSOS.length+' personnage(s) enregistrÃ©(s). Clique sur âœ pour modifier, í ½í·‘ pour supprimer.','');
+    setMsg('pj-status',PERSOS.length+' personnage(s) enregistrÃ©(s). Clique sur âœ pour modifier, ğŸ—‘ pour supprimer.','');
     out+='<div class="grid3">';
     PERSOS.forEach(function(p,i){
       var d=p.data||{},st=d.st||{};
@@ -265,7 +265,7 @@ function renderPersos(err){
       var pvM=pvMax(p);
       var armes=d.armes||[],inv=d.inventaire||[];
       out+='<div class="card" style="padding-bottom:14px">'
-        +'<button type="button" class="del-btn" data-dp="'+i+'" title="Supprimer">í ½í·‘</button>'
+        +'<button type="button" class="del-btn" data-dp="'+i+'" title="Supprimer">ğŸ—‘</button>'
         +'<button type="button" class="edit-btn" data-ep="'+i+'" title="Modifier">âœ</button>'
         +'<h3>'+esc(p.nom)+'</h3>'
         +(d.chassis?'<span class="badge">'+esc(d.chassis)+'</span>':'')

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="robots" content="noindex, nofollow"><title>Carte de la galaxie — Les Protocoles Éternels</title>
-<style>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="robots" content="noindex, nofollow"><title>Carte de la galaxie — Les Protocoles Éternels</title>
+    <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Exo+2:wght@400;500;600;700&display=swap');
 :root{--bg:#0a120f;--panel:#101c17;--panel2:#0d1713;--teal:#2ee6c9;--tealsoft:rgba(46,230,201,.10);--tealline:rgba(46,230,201,.25);--amber:#f0b24a;--ambersoft:rgba(240,178,74,.10);--amberline:rgba(240,178,74,.4);--text:#e8f5f1;--muted:#93aca1;--danger:#e2604f}
 *{box-sizing:border-box}
@@ -93,103 +93,103 @@ table.rt td{padding:7px 9px;border:1px solid rgba(240,178,74,.18);vertical-align
 .on{color:var(--teal);font-weight:600}
 @media print{.to-top{display:none!important}}
 </style>
-</head>
-<body>
-<header class="nav">
-<div class="nav-in">
-<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
-<nav class="nav-links">
-<a href="/">Accueil</a>
-<a href="/regles.html">Règles</a>
-<a href="/fiches.html">Fiches</a>
-<a href="/bestiaire.html">Bestiaire</a>
-<a href="/galaxie.html" class="active">������ Galaxie</a>
-<a href="/mon-espace.html">Mon espace</a>
-<a href="/mj.html" class="mj">������ Zone MJ</a>
-</nav>
-</div>
-</header>
-<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de page">▲</button>
-<script src="assets/js/core.js"></script>
-<main class="wrap">
-<section class="hero rev">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<h1>La Carte de la <b>Galaxie</b></h1>
-<div class="tagline">Systèmes · Planètes · Positions</div>
-<p class="pitch">La galaxie telle que vos capteurs la dessinent. Touchez ou cliquez sur un système pour voir ses planètes, ses lieux et ce qui y rôde. Le Maître de la Tombe l'enrichit au fil des aventures — et si tu es joueur, indique où tu es depuis <a href="/mon-espace.html">Mon espace</a> pour apparaître dessus.</p>
-</section>
-<div class="glay rev d1">
-<div>
-<div class="gsearch">
-<input class="gf" id="g-search" type="search" placeholder="������ Chercher un système, une planète…">
-</div>
-<div class="legend">
-<span><i style="background:#2ee6c9"></i>Système</span>
-<span><i style="background:#f0b24a"></i>Vaisseau</span>
-<span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span>
-<span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>
-</div>
-<div class="gmap" id="g-map" style="margin-top:14px"></div>
-<div class="note-box" id="g-err" style="display:none"></div>
-</div>
-<div class="gpanel">
-<div class="card" id="g-panel" style="min-height:220px"></div>
-<div id="mj-sect">
-<div class="note-box amber" style="margin-top:18px">
-<strong>������ Console du Maître de la Tombe :</strong> saisis ta clé MJ pour révéler les vérités cachées, voir la position des joueurs en direct, et modifier la carte. La clé ne sert qu'à signer les opérations — elle n'est jamais stockée.
-<div class="cta-row" style="justify-content:flex-start;margin-top:12px">
-<input class="gf" id="mj-key" type="password" placeholder="Clé MJ" style="max-width:220px">
-<button class="btn amber" id="mj-open" type="button">Ouvrir la console</button>
-</div>
-<p class="gmsg" id="mj-msg"></p>
-</div>
-<div id="mj-tools" style="display:none">
-<div class="card amber" style="margin-top:18px">
-<h3>������ Joueurs localisés</h3>
-<div class="tscroll"><table class="rt"><thead><tr><th>Joueur</th><th>Système</th><th>Lieu</th><th>Statut</th></tr></thead><tbody id="mj-positions"></tbody></table></div>
-<p class="gmsg" id="mj-note"></p>
-</div>
-<div class="card amber" style="margin-top:18px">
-<h3 id="g-form-title">������️ Nouveau système</h3>
-<div id="g-form">
-<div class="mjgrid">
-<div><label class="glab" for="g-nom">Nom</label><input class="gf" id="g-nom" type="text" placeholder="Ex. Système Héra"></div>
-<div><label class="glab" for="g-cat">Catégorie</label><select class="gf" id="g-cat"><option value="systeme">Système</option><option value="vaisseau">Vaisseau</option><option value="nebuleuse">Nébuleuse</option><option value="inconnu">Inexploré</option></select></div>
-</div>
-<div class="mjgrid">
-<div><label class="glab" for="g-x">Position X (0–1000)</label><input class="gf" id="g-x" type="number" min="0" max="1000" value="500"></div>
-<div><label class="glab" for="g-y">Position Y (0–700)</label><input class="gf" id="g-y" type="number" min="0" max="700" value="350"></div>
-</div>
-<label class="glab" for="g-desc">Description (visible par tous)</label>
-<textarea class="gf" id="g-desc" rows="3" placeholder="Ce que voient les joueurs en cliquant…"></textarea>
-<label class="glab" for="g-pla">Planètes — une par ligne : Nom | infos</label>
-<textarea class="gf" id="g-pla" rows="2" placeholder="9-Héra | Planète minière aride…"></textarea>
-<label class="glab" for="g-lieux">Lieux — un par ligne : Nom | infos</label>
-<textarea class="gf" id="g-lieux" rows="2" placeholder="La galerie 9 | Condamnée après…"></textarea>
-<label class="glab" for="g-crea">Créatures liées — une par ligne (fiche bestiaire)</label>
-<textarea class="gf" id="g-crea" rows="2" placeholder="Homme de fer"></textarea>
-<label class="glab" for="g-secret">Vérités cachées MJ (réservées à ta clé)</label>
-<textarea class="gf" id="g-secret" rows="2" placeholder="Ce que TOI seul vois en mode MJ…"></textarea>
-<div class="cta-row" style="justify-content:flex-start;margin-top:14px">
-<button class="btn amber" id="g-place" type="button">������ Placer sur la carte</button>
-<button class="btn primary" id="g-save" type="button">������ Enregistrer</button>
-<button class="btn ghost" id="g-new" type="button">✚ Nouveau</button>
-<button class="btn danger" id="g-del" type="button" style="display:none">������ Supprimer</button>
-</div>
-<p class="gmsg" id="g-msg"></p>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</main>
-<footer class="foot">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
-</footer>
-<script src="assets/js/pages/galaxie.js"></script>
-</body>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/fiches.html">Fiches</a>
+          <a href="/bestiaire.html">Bestiaire</a>
+          <a href="/galaxie.html" class="active">🌌 Galaxie</a>
+          <a href="/mon-espace.html">Mon espace</a>
+          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de page">▲</button>
+    <script src="assets/js/core.js"></script>
+    <main class="wrap">
+      <section class="hero rev">
+        <div class="glyphrow">⚡ ⬥ ⚡</div>
+        <h1>La Carte de la <b>Galaxie</b></h1>
+        <div class="tagline">Systèmes · Planètes · Positions</div>
+        <p class="pitch">La galaxie telle que vos capteurs la dessinent. Touchez ou cliquez sur un système pour voir ses planètes, ses lieux et ce qui y rôde. Le Maître de la Tombe l'enrichit au fil des aventures — et si tu es joueur, indique où tu es depuis <a href="/mon-espace.html">Mon espace</a> pour apparaître dessus.</p>
+      </section>
+      <div class="glay rev d1">
+        <div>
+          <div class="gsearch">
+            <input class="gf" id="g-search" type="search" placeholder="🔎 Chercher un système, une planète…">
+          </div>
+          <div class="legend">
+            <span><i style="background:#2ee6c9"></i>Système</span>
+            <span><i style="background:#f0b24a"></i>Vaisseau</span>
+            <span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span>
+            <span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>
+          </div>
+          <div class="gmap" id="g-map" style="margin-top:14px"></div>
+          <div class="note-box" id="g-err" style="display:none"></div>
+        </div>
+        <div class="gpanel">
+          <div class="card" id="g-panel" style="min-height:220px"></div>
+          <div id="mj-sect">
+            <div class="note-box amber" style="margin-top:18px">
+              <strong>🎮 Console du Maître de la Tombe :</strong> saisis ta clé MJ pour révéler les vérités cachées, voir la position des joueurs en direct, et modifier la carte. La clé ne sert qu'à signer les opérations — elle n'est jamais stockée.
+              <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
+                <input class="gf" id="mj-key" type="password" placeholder="Clé MJ" style="max-width:220px">
+                <button class="btn amber" id="mj-open" type="button">Ouvrir la console</button>
+              </div>
+              <p class="gmsg" id="mj-msg"></p>
+            </div>
+            <div id="mj-tools" style="display:none">
+              <div class="card amber" style="margin-top:18px">
+                <h3>📍 Joueurs localisés</h3>
+                <div class="tscroll"><table class="rt"><thead><tr><th>Joueur</th><th>Système</th><th>Lieu</th><th>Statut</th></tr></thead><tbody id="mj-positions"></tbody></table></div>
+                <p class="gmsg" id="mj-note"></p>
+              </div>
+              <div class="card amber" style="margin-top:18px">
+                <h3 id="g-form-title">🛠️ Nouveau système</h3>
+                <div id="g-form">
+                  <div class="mjgrid">
+                    <div><label class="glab" for="g-nom">Nom</label><input class="gf" id="g-nom" type="text" placeholder="Ex. Système Héra"></div>
+                    <div><label class="glab" for="g-cat">Catégorie</label><select class="gf" id="g-cat"><option value="systeme">Système</option><option value="vaisseau">Vaisseau</option><option value="nebuleuse">Nébuleuse</option><option value="inconnu">Inexploré</option></select></div>
+                  </div>
+                  <div class="mjgrid">
+                    <div><label class="glab" for="g-x">Position X (0–1000)</label><input class="gf" id="g-x" type="number" min="0" max="1000" value="500"></div>
+                    <div><label class="glab" for="g-y">Position Y (0–700)</label><input class="gf" id="g-y" type="number" min="0" max="700" value="350"></div>
+                  </div>
+                  <label class="glab" for="g-desc">Description (visible par tous)</label>
+                  <textarea class="gf" id="g-desc" rows="3" placeholder="Ce que voient les joueurs en cliquant…"></textarea>
+                  <label class="glab" for="g-pla">Planètes — une par ligne : Nom | infos</label>
+                  <textarea class="gf" id="g-pla" rows="2" placeholder="9-Héra | Planète minière aride…"></textarea>
+                  <label class="glab" for="g-lieux">Lieux — un par ligne : Nom | infos</label>
+                  <textarea class="gf" id="g-lieux" rows="2" placeholder="La galerie 9 | Condamnée après…"></textarea>
+                  <label class="glab" for="g-crea">Créatures liées — une par ligne (fiche bestiaire)</label>
+                  <textarea class="gf" id="g-crea" rows="2" placeholder="Homme de fer"></textarea>
+                  <label class="glab" for="g-secret">Vérités cachées MJ (réservées à ta clé)</label>
+                  <textarea class="gf" id="g-secret" rows="2" placeholder="Ce que TOI seul vois en mode MJ…"></textarea>
+                  <div class="cta-row" style="justify-content:flex-start;margin-top:14px">
+                    <button class="btn amber" id="g-place" type="button">📍 Placer sur la carte</button>
+                    <button class="btn primary" id="g-save" type="button">💾 Enregistrer</button>
+                    <button class="btn ghost" id="g-new" type="button">✚ Nouveau</button>
+                    <button class="btn danger" id="g-del" type="button" style="display:none">🗑 Supprimer</button>
+                  </div>
+                  <p class="gmsg" id="g-msg"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+      <p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+    </footer>
+    <script src="assets/js/pages/galaxie.js"></script>
+  </body>
 </html>

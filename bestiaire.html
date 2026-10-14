@@ -1,16 +1,16 @@
 
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="assets/css/main.css">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-<meta name="robots" content="noindex, nofollow"><title>Bestiaire — Les Protocoles Éternels</title>
-<style>
+    <meta name="robots" content="noindex, nofollow"><title>Bestiaire — Les Protocoles Éternels</title>
+    <style>
 .btn.solid-amber{background:var(--amber);color:#231503}
 .btn.solid-amber:hover{transform:translateY(-1px);box-shadow:0 0 22px rgba(240,178,74,.35)}
 .badge.enemy{border-color:rgba(226,96,79,.55);color:var(--danger);background:rgba(226,96,79,.08)}
@@ -45,104 +45,104 @@ textarea.fld{resize:vertical;min-height:64px}
 .gmsg.ok{color:var(--teal)}
 .gmsg.err{color:var(--danger)}
 </style>
-</head>
-<body>
-<header class="nav">
-<div class="nav-in">
-<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
-<nav class="nav-links">
-<a href="/">Accueil</a>
-<a href="/regles.html">Règles</a>
-<a href="/fiches.html">Fiches</a>
-<a href="/bestiaire.html">Bestiaire</a>
-<a href="/galaxie.html">Galaxie</a>
-<a href="/mon-espace.html">Mon espace</a>
-<a href="/mj.html" class="mj">������ Zone MJ</a>
-</nav>
-</div>
-</header>
-<script src="assets/js/core.js"></script>
-<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/fiches.html">Fiches</a>
+          <a href="/bestiaire.html">Bestiaire</a>
+          <a href="/galaxie.html">Galaxie</a>
+          <a href="/mon-espace.html">Mon espace</a>
+          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <script src="assets/js/core.js"></script>
+    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 
-<main class="wrap">
-<section class="hero rev">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<h1>Le <b>Bestiaire</b></h1>
-<div class="tagline">Créatures · Machines · Rencontres</div>
-<p class="pitch">Toutes les créatures et machines recensées par le groupe, partagées en nuage et consultables depuis tous les appareils. Le MJ y consigne ses rencontres ; les joueuses y retrouvent ce qui a déjà été affronté — ou ce qui rôde encore.</p>
-</section>
+    <main class="wrap">
+      <section class="hero rev">
+        <div class="glyphrow">⚡ ⬥ ⚡</div>
+        <h1>Le <b>Bestiaire</b></h1>
+        <div class="tagline">Créatures · Machines · Rencontres</div>
+        <p class="pitch">Toutes les créatures et machines recensées par le groupe, partagées en nuage et consultables depuis tous les appareils. Le MJ y consigne ses rencontres ; les joueuses y retrouvent ce qui a déjà été affronté — ou ce qui rôde encore.</p>
+      </section>
 
-<section class="sect rev d1">
-<h2>Créatures recensées</h2>
-<div class="chips" id="filters">
-<a href="#" data-f="tous" class="on">Tous</a>
-<a href="#" data-f="ennemi">Ennemis</a>
-<a href="#" data-f="allie">Alliés</a>
-<a href="#" data-f="neutre">Neutres</a>
-</div>
-<div class="btools">
-<input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une note…">
-<button class="btn ghost" id="b-refresh" style="min-height:44px">↻ Rafraîchir</button>
-</div>
-<p id="b-status">Chargement du bestiaire…</p>
-<div id="beasts"></div>
-<div class="note-box">
-<strong>Base en nuage :</strong> les créatures sont enregistrées dans la base partagée du groupe. La page nécessite une connexion internet — hors ligne, la liste reste vide mais rien n'est perdu.
-</div>
-</section>
+      <section class="sect rev d1">
+        <h2>Créatures recensées</h2>
+        <div class="chips" id="filters">
+          <a href="#" data-f="tous" class="on">Tous</a>
+          <a href="#" data-f="ennemi">Ennemis</a>
+          <a href="#" data-f="allie">Alliés</a>
+          <a href="#" data-f="neutre">Neutres</a>
+        </div>
+        <div class="btools">
+          <input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une note…">
+          <button class="btn ghost" id="b-refresh" style="min-height:44px">↻ Rafraîchir</button>
+        </div>
+        <p id="b-status">Chargement du bestiaire…</p>
+        <div id="beasts"></div>
+        <div class="note-box">
+          <strong>Base en nuage :</strong> les créatures sont enregistrées dans la base partagée du groupe. La page nécessite une connexion internet — hors ligne, la liste reste vide mais rien n'est perdu.
+        </div>
+      </section>
 
-<section class="sect amber rev d2" id="gestion">
-<h2>������ Gestion (MJ)</h2>
-<div class="card amber">
-<form id="gform">
-<input type="hidden" id="g-old" value="">
-<label class="glab" for="g-nom">Nom de la créature</label>
-<input class="fld" id="g-nom" type="text" required placeholder="Ex. Chasseur de la 7e crypte">
-<label class="glab" for="g-camp">Camp</label>
-<select class="fld" id="g-camp">
-<option value="ennemi">Ennemi</option>
-<option value="allie">Allié</option>
-<option value="neutre">Neutre</option>
-</select>
-<label class="glab">Caractéristiques</label>
-<div class="ggrid">
-<div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="s-m" type="text" inputmode="numeric" placeholder='Ex. 5"'></div>
-<div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="s-cc" type="text" inputmode="numeric" placeholder="3+"></div>
-<div><span class="glab teal" style="margin-top:0">CT</span><input class="fld" id="s-ct" type="text" inputmode="numeric" placeholder="3+"></div>
-<div><span class="glab teal" style="margin-top:0">F</span><input class="fld" id="s-f" type="text" inputmode="numeric" placeholder="5"></div>
-<div><span class="glab teal" style="margin-top:0">E</span><input class="fld" id="s-e" type="text" inputmode="numeric" placeholder="4"></div>
-<div><span class="glab teal" style="margin-top:0">PV</span><input class="fld" id="s-pv" type="text" inputmode="numeric" placeholder="9"></div>
-<div><span class="glab teal" style="margin-top:0">A</span><input class="fld" id="s-a" type="text" inputmode="numeric" placeholder="2"></div>
-<div><span class="glab teal" style="margin-top:0">Cd</span><input class="fld" id="s-cd" type="text" inputmode="numeric" placeholder="10"></div>
-<div><span class="glab teal" style="margin-top:0">Svg</span><input class="fld" id="s-sv" type="text" placeholder="3+"></div>
-<div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="s-rfx" type="text" inputmode="numeric" placeholder="0"></div>
-</div>
-<label class="glab" for="g-armes">Armes &amp; équipements (une ligne par arme)</label>
-<textarea class="fld" id="g-armes" placeholder="Ex. Fusil à particules | 24&quot; | 4 | -1 | 1"></textarea>
-<label class="glab" for="g-notes">Notes de campagne (facultatif)</label>
-<textarea class="fld" id="g-notes" placeholder="Lore, capacités spéciales, première rencontre…"></textarea>
-<label class="glab" for="g-key">Clé MJ</label>
-<input class="fld" id="g-key" type="password" autocomplete="off" placeholder="La clé n'est jamais enregistrée">
-<div class="cta-row" style="justify-content:flex-start;margin-top:18px">
-<button type="submit" class="btn solid-amber">������ Enregistrer</button>
-<button type="button" class="btn danger" id="g-del">������ Supprimer ce nom</button>
-<button type="button" class="btn ghost" id="g-clear">↺ Vider le formulaire</button>
-</div>
-<p class="gmsg" id="g-msg"></p>
-</form>
-</div>
-<div class="note-box amber" style="margin-top:14px">
-Le panneau s'ouvre pour tous, mais seules les écritures signées avec la <strong>clé MJ</strong> sont acceptées par la base — les curieuses ne risquent rien, elles ne peuvent rien casser. La clé saisie sert uniquement à signer l'opération : elle n'est ni stockée, ni écrite dans le site.
-</div>
-</section>
-</main>
-<footer class="foot">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
-</footer>
-<script src="assets/js/pages/bestiaire.js"></script>
-</body>
+      <section class="sect amber rev d2" id="gestion">
+        <h2>🔒 Gestion (MJ)</h2>
+        <div class="card amber">
+          <form id="gform">
+            <input type="hidden" id="g-old" value="">
+            <label class="glab" for="g-nom">Nom de la créature</label>
+            <input class="fld" id="g-nom" type="text" required placeholder="Ex. Chasseur de la 7e crypte">
+            <label class="glab" for="g-camp">Camp</label>
+            <select class="fld" id="g-camp">
+              <option value="ennemi">Ennemi</option>
+              <option value="allie">Allié</option>
+              <option value="neutre">Neutre</option>
+            </select>
+            <label class="glab">Caractéristiques</label>
+            <div class="ggrid">
+              <div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="s-m" type="text" inputmode="numeric" placeholder='Ex. 5"'></div>
+              <div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="s-cc" type="text" inputmode="numeric" placeholder="3+"></div>
+              <div><span class="glab teal" style="margin-top:0">CT</span><input class="fld" id="s-ct" type="text" inputmode="numeric" placeholder="3+"></div>
+              <div><span class="glab teal" style="margin-top:0">F</span><input class="fld" id="s-f" type="text" inputmode="numeric" placeholder="5"></div>
+              <div><span class="glab teal" style="margin-top:0">E</span><input class="fld" id="s-e" type="text" inputmode="numeric" placeholder="4"></div>
+              <div><span class="glab teal" style="margin-top:0">PV</span><input class="fld" id="s-pv" type="text" inputmode="numeric" placeholder="9"></div>
+              <div><span class="glab teal" style="margin-top:0">A</span><input class="fld" id="s-a" type="text" inputmode="numeric" placeholder="2"></div>
+              <div><span class="glab teal" style="margin-top:0">Cd</span><input class="fld" id="s-cd" type="text" inputmode="numeric" placeholder="10"></div>
+              <div><span class="glab teal" style="margin-top:0">Svg</span><input class="fld" id="s-sv" type="text" placeholder="3+"></div>
+              <div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="s-rfx" type="text" inputmode="numeric" placeholder="0"></div>
+            </div>
+            <label class="glab" for="g-armes">Armes &amp; équipements (une ligne par arme)</label>
+            <textarea class="fld" id="g-armes" placeholder="Ex. Fusil à particules | 24&quot; | 4 | -1 | 1"></textarea>
+            <label class="glab" for="g-notes">Notes de campagne (facultatif)</label>
+            <textarea class="fld" id="g-notes" placeholder="Lore, capacités spéciales, première rencontre…"></textarea>
+            <label class="glab" for="g-key">Clé MJ</label>
+            <input class="fld" id="g-key" type="password" autocomplete="off" placeholder="La clé n'est jamais enregistrée">
+            <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
+              <button type="submit" class="btn solid-amber">💾 Enregistrer</button>
+              <button type="button" class="btn danger" id="g-del">🗑 Supprimer ce nom</button>
+              <button type="button" class="btn ghost" id="g-clear">↺ Vider le formulaire</button>
+            </div>
+            <p class="gmsg" id="g-msg"></p>
+          </form>
+        </div>
+        <div class="note-box amber" style="margin-top:14px">
+          Le panneau s'ouvre pour tous, mais seules les écritures signées avec la <strong>clé MJ</strong> sont acceptées par la base — les curieuses ne risquent rien, elles ne peuvent rien casser. La clé saisie sert uniquement à signer l'opération : elle n'est ni stockée, ni écrite dans le site.
+        </div>
+      </section>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+      <p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+    </footer>
+    <script src="assets/js/pages/bestiaire.js"></script>
+  </body>
 </html>
 

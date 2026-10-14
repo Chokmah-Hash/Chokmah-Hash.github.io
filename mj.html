@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="assets/css/main.css">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-<meta name="robots" content="noindex, nofollow"><title>Zone MJ — Les Protocoles Éternels</title>
-<!-- Optimizer - Canonical -->
-<!-- Optimizer - Custom Meta -->
-<!-- Optimizer - Open Graph -->
-<!-- Optimizer - Header Javascripts -->
-<style>
+    <meta name="robots" content="noindex, nofollow"><title>Zone MJ — Les Protocoles Éternels</title>
+    <!-- Optimizer - Canonical -->
+    <!-- Optimizer - Custom Meta -->
+    <!-- Optimizer - Open Graph -->
+    <!-- Optimizer - Header Javascripts -->
+    <style>
 #mj-pass{background:var(--panel2);border:1.5px solid var(--amberline);border-radius:9px;color:var(--text);padding:10px 12px;font-size:1rem;min-height:44px;width:100%;max-width:420px}
 #mj-pass:focus{outline:1.5px solid var(--amber)}
 #mj-content h2{color:var(--amber)}
@@ -41,81 +41,81 @@ table.rt.montab th:first-child,table.rt.montab td:first-child{text-align:left}
 .monoff{color:var(--muted)}
 
 </style>
-</head>
-<body>
-<header class="nav">
-<div class="nav-in">
-<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
-<nav class="nav-links">
-<a href="/">Accueil</a>
-<a href="/regles.html">Règles</a>
-<a href="/fiches.html">Fiches</a>
-<a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
-<a href="https://chokmah-hash.github.io/galaxie.html">Galaxie</a>
-<a href="https://chokmah-hash.github.io/mon-espace.html">Mon espace</a>
-<a href="/mj.html" class="mj">������ Zone MJ</a>
-</nav>
-</div>
-</header>
-<script src="assets/js/core.js"></script>
-<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/fiches.html">Fiches</a>
+          <a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
+          <a href="https://chokmah-hash.github.io/galaxie.html">Galaxie</a>
+          <a href="https://chokmah-hash.github.io/mon-espace.html">Mon espace</a>
+          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <script src="assets/js/core.js"></script>
+    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 
-<main class="wrap">
-<section class="hero rev" id="mj-intro">
-<div class="glyphrow" style="color:var(--amber);text-shadow:0 0 14px rgba(240,178,74,.5)">⚡ ⬥ ⚡</div>
-<h1>Zone <b style="color:var(--amber)">MJ</b></h1>
-<div class="tagline">Réservée au Maître de la Tombe</div>
-<p class="pitch">Cette section contient les scénarios et les vérités cachées de la campagne. Son contenu est brouillé : seul le mot de passe du MJ le fait apparaître. C'est une protection anti-curieuse — pas un coffre-fort.</p>
-</section>
-<section id="mj-lock" class="rev d1">
-<div class="card amber">
-<span class="ico">������</span>
-<h3>Accès protégé</h3>
-<p>Entrez le mot de passe MJ. Il n'est stocké nulle part sur ce site — ni dans la page, ni sur le serveur.</p>
-<input type="password" id="mj-pass" placeholder="Mot de passe" autocomplete="off" autocapitalize="off" spellcheck="false">
-<div style="margin-top:12px"><button class="btn amber" id="mj-go">Déverrouiller</button></div>
-<p id="mj-err" style="display:none;color:var(--danger);margin:10px 0 0">Mot de passe incorrect.</p>
-</div>
-</section>
-<section id="mj-content" style="display:none"></section>
-<section class="sect rev d2" id="av-console">
-<h2>������ Console des aventures en ligne</h2>
-<div class="card amber" id="av-lockbox">
-<span class="ico">������</span>
-<h3>Ouvrir la console</h3>
-<p>Prépare tes aventures en brouillon, enclenche-les pour les joueuses, et suis en direct qui les consulte. La clé saisie sert uniquement à signer les opérations : elle n&rsquo;est enregistrée nulle part.</p>
-<span class="glabc" for="av-key">Clé MJ</span>
-<input type="password" id="av-key" class="fldc" autocomplete="off" placeholder="Clé MJ">
-<div style="margin-top:14px"><button class="btn amber" id="av-go" type="button">→ Ouvrir la console</button></div>
-<p class="gmsgc" id="av-msg"></p>
-</div>
-<div id="av-panel" style="display:none">
-<div class="card amber">
-<span class="glabc" for="av-new">Nouvelle aventure — titre</span>
-<input type="text" id="av-new" class="fldc" placeholder="Ex. L&rsquo;éveil de la crypte">
-<div style="margin-top:12px"><button class="btn amber smallbtn" id="av-create" type="button">✚ Créer en brouillon</button></div>
-</div>
-<p class="gmsgc" id="av-msg2"></p>
-<div id="av-list"></div>
-<div class="sect" style="margin-top:28px">
-<h3 style="margin-top:0">������ Joueurs connectés</h3>
-<p class="gmsgc" id="mon-msg"></p>
-<div id="mon-list"></div>
-</div>
-</div>
-<div class="note-box amber">Une seule aventure peut être « active » à la fois : en activer une termine automatiquement la précédente. L&rsquo;aventure active apparaît dans l&rsquo;espace de chaque joueuse connectée — et tu vois qui la consulte, rafraîchi toutes les 15 secondes.</div>
-</section>
+    <main class="wrap">
+      <section class="hero rev" id="mj-intro">
+        <div class="glyphrow" style="color:var(--amber);text-shadow:0 0 14px rgba(240,178,74,.5)">⚡ ⬥ ⚡</div>
+        <h1>Zone <b style="color:var(--amber)">MJ</b></h1>
+        <div class="tagline">Réservée au Maître de la Tombe</div>
+        <p class="pitch">Cette section contient les scénarios et les vérités cachées de la campagne. Son contenu est brouillé : seul le mot de passe du MJ le fait apparaître. C'est une protection anti-curieuse — pas un coffre-fort.</p>
+      </section>
+      <section id="mj-lock" class="rev d1">
+        <div class="card amber">
+          <span class="ico">🔒</span>
+          <h3>Accès protégé</h3>
+          <p>Entrez le mot de passe MJ. Il n'est stocké nulle part sur ce site — ni dans la page, ni sur le serveur.</p>
+          <input type="password" id="mj-pass" placeholder="Mot de passe" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div style="margin-top:12px"><button class="btn amber" id="mj-go">Déverrouiller</button></div>
+          <p id="mj-err" style="display:none;color:var(--danger);margin:10px 0 0">Mot de passe incorrect.</p>
+        </div>
+      </section>
+      <section id="mj-content" style="display:none"></section>
+      <section class="sect rev d2" id="av-console">
+        <h2>🎮 Console des aventures en ligne</h2>
+        <div class="card amber" id="av-lockbox">
+          <span class="ico">🔑</span>
+          <h3>Ouvrir la console</h3>
+          <p>Prépare tes aventures en brouillon, enclenche-les pour les joueuses, et suis en direct qui les consulte. La clé saisie sert uniquement à signer les opérations : elle n&rsquo;est enregistrée nulle part.</p>
+          <span class="glabc" for="av-key">Clé MJ</span>
+          <input type="password" id="av-key" class="fldc" autocomplete="off" placeholder="Clé MJ">
+          <div style="margin-top:14px"><button class="btn amber" id="av-go" type="button">→ Ouvrir la console</button></div>
+          <p class="gmsgc" id="av-msg"></p>
+        </div>
+        <div id="av-panel" style="display:none">
+          <div class="card amber">
+            <span class="glabc" for="av-new">Nouvelle aventure — titre</span>
+            <input type="text" id="av-new" class="fldc" placeholder="Ex. L&rsquo;éveil de la crypte">
+            <div style="margin-top:12px"><button class="btn amber smallbtn" id="av-create" type="button">✚ Créer en brouillon</button></div>
+          </div>
+          <p class="gmsgc" id="av-msg2"></p>
+          <div id="av-list"></div>
+          <div class="sect" style="margin-top:28px">
+            <h3 style="margin-top:0">📡 Joueurs connectés</h3>
+            <p class="gmsgc" id="mon-msg"></p>
+            <div id="mon-list"></div>
+          </div>
+        </div>
+        <div class="note-box amber">Une seule aventure peut être « active » à la fois : en activer une termine automatiquement la précédente. L&rsquo;aventure active apparaît dans l&rsquo;espace de chaque joueuse connectée — et tu vois qui la consulte, rafraîchi toutes les 15 secondes.</div>
+      </section>
 
-</main>
-<footer class="foot">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
-</footer>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+      <p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+    </footer>
 
-<script src="assets/js/pages/mj.js"></script>
-<!-- Optimizer - Footer Javascripts -->
+    <script src="assets/js/pages/mj.js"></script>
+    <!-- Optimizer - Footer Javascripts -->
 
-</body>
+  </body>
 </html>

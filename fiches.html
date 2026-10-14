@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="assets/css/main.css">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-<meta name="robots" content="noindex, nofollow"><title>Fiches d'unité — Les Protocoles Éternels</title>
-<!-- Optimizer - Canonical -->
-<!-- Optimizer - Custom Meta -->
-<!-- Optimizer - Open Graph -->
-<!-- Optimizer - Header Javascripts -->
-<style>
+    <meta name="robots" content="noindex, nofollow"><title>Fiches d'unité — Les Protocoles Éternels</title>
+    <!-- Optimizer - Canonical -->
+    <!-- Optimizer - Custom Meta -->
+    <!-- Optimizer - Open Graph -->
+    <!-- Optimizer - Header Javascripts -->
+    <style>
 input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--tealline);border-radius:9px;color:var(--text);padding:9px 11px;font-family:inherit;font-size:1rem;min-height:44px}
 input:focus,select:focus,textarea:focus{outline:1.5px solid var(--teal)}
 .ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:12px 0}
@@ -54,125 +54,125 @@ textarea{resize:vertical}
  *{box-shadow:none!important}
 }
 </style>
-</head>
-<body>
-<header class="nav">
-<div class="nav-in">
-<a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
-<nav class="nav-links">
-<a href="/">Accueil</a>
-<a href="/regles.html">Règles</a>
-<a href="/fiches.html">Fiches</a>
-<a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
-<a href="https://chokmah-hash.github.io/galaxie.html">Galaxie</a>
-<a href="https://chokmah-hash.github.io/mon-espace.html">Mon espace</a>
-<a href="/mj.html" class="mj">������ Zone MJ</a>
-</nav>
-</div>
-</header>
-<script src="assets/js/core.js"></script>
-<button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/fiches.html">Fiches</a>
+          <a href="https://chokmah-hash.github.io/bestiaire.html">Bestiaire</a>
+          <a href="https://chokmah-hash.github.io/galaxie.html">Galaxie</a>
+          <a href="https://chokmah-hash.github.io/mon-espace.html">Mon espace</a>
+          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <script src="assets/js/core.js"></script>
+    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 
-<main class="wrap">
-<section id="view-list" class="sect rev">
-<h2>Vos fiches d'unité</h2>
-<div class="note-box">Chaque fiche est sauvegardée <strong>sur cet appareil</strong> et <strong>synchronisée dans le nuage de la table</strong> : toutes les joueuses voient les mêmes fiches, à jour en permanence. Hors ligne, tout continue de fonctionner — la synchro reprend à la reconnexion. Le <strong>code d'export</strong> reste disponible pour les copies.</div>
-<div class="cta-row" style="justify-content:flex-start;margin:14px 0">
-<button class="btn primary" id="btn-new">＋ Nouvelle unité</button>
-<button class="btn ghost" id="btn-refresh">↻ Rafraîchir</button>
-</div>
-<p id="sync-line" style="color:var(--muted);font-size:.85rem;margin:-4px 0 12px"></p>
-<div id="cards" class="grid3"></div>
-<h3 class="sub" style="margin-top:30px">Importer un code d'export</h3>
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
-<textarea id="imp-code" rows="3" style="flex:1;min-width:240px" placeholder="Collez ici un code d'export reçu d'un autre appareil…"></textarea>
-<div><button class="btn ghost" id="btn-imp">Importer</button><div id="imp-msg"></div></div>
-</div>
-</section>
+    <main class="wrap">
+      <section id="view-list" class="sect rev">
+        <h2>Vos fiches d'unité</h2>
+        <div class="note-box">Chaque fiche est sauvegardée <strong>sur cet appareil</strong> et <strong>synchronisée dans le nuage de la table</strong> : toutes les joueuses voient les mêmes fiches, à jour en permanence. Hors ligne, tout continue de fonctionner — la synchro reprend à la reconnexion. Le <strong>code d'export</strong> reste disponible pour les copies.</div>
+        <div class="cta-row" style="justify-content:flex-start;margin:14px 0">
+          <button class="btn primary" id="btn-new">＋ Nouvelle unité</button>
+          <button class="btn ghost" id="btn-refresh">↻ Rafraîchir</button>
+        </div>
+        <p id="sync-line" style="color:var(--muted);font-size:.85rem;margin:-4px 0 12px"></p>
+        <div id="cards" class="grid3"></div>
+        <h3 class="sub" style="margin-top:30px">Importer un code d'export</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+          <textarea id="imp-code" rows="3" style="flex:1;min-width:240px" placeholder="Collez ici un code d'export reçu d'un autre appareil…"></textarea>
+          <div><button class="btn ghost" id="btn-imp">Importer</button><div id="imp-msg"></div></div>
+        </div>
+      </section>
 
-<section id="view-edit" style="display:none">
-<div class="fh">
-<button class="btn ghost" id="btn-back">← Toutes les fiches</button>
-<button class="btn ghost" id="btn-print">������️ Imprimer</button>
-<button class="btn ghost" id="btn-code">⇄ Code d'export</button>
-<button class="btn danger" id="btn-del">������ Supprimer</button>
-</div>
-<h2 id="f-title">Fiche d'unité</h2>
-<div id="exp-box" class="note-box">
-<strong>Code d'export de cette fiche</strong> — copiez-le et conservez-le (message privé, note…). Sur un autre appareil : Fiches → Importer un code.
-<textarea id="exp-code" rows="4" readonly style="width:100%;margin-top:8px"></textarea>
-<div style="margin-top:8px"><button class="btn ghost" id="btn-copy">Copier le code</button></div>
-</div>
-<form id="f-form" onsubmit="return false">
-<h3 class="sub">Identité</h3>
-<div class="ig">
-<div><label for="f-nom">Désignation</label><input id="f-nom" type="text" placeholder="ex. AKH-77 « Verdict »"></div>
-<div><label for="f-ch">Châssis</label><select id="f-ch"></select></div>
-<div><label for="f-code">Code de fabrique</label><select id="f-code"></select></div>
-<div><label for="f-fonction">Fonction</label><input id="f-fonction" type="text" placeholder="ex. reconnaissance rapprochée"></div>
-<div><label for="f-emotion">Émotion résiduelle</label><input id="f-emotion" type="text" placeholder="ex. orgueil blessé"></div>
-<div><label for="f-opinion">Opinion sur les vivants</label><input id="f-opinion" type="text" placeholder="ex. sujets d'étude"></div>
-</div>
-<h3 class="sub">Caractéristiques</h3>
-<div class="stats">
-<div><label for="st-m">M</label><input id="st-m" type="text"></div>
-<div><label for="st-cc">CC</label><input id="st-cc" type="text"></div>
-<div><label for="st-ct">CT</label><input id="st-ct" type="text"></div>
-<div><label for="st-f">F</label><input id="st-f" type="text"></div>
-<div><label for="st-e">E</label><input id="st-e" type="text"></div>
-<div><label for="st-pv">PV</label><input id="st-pv" type="text"></div>
-<div><label for="st-a">A</label><input id="st-a" type="text"></div>
-<div><label for="st-cd">Cd</label><input id="st-cd" type="text"></div>
-<div><label for="st-sv">Sv</label><input id="st-sv" type="text"></div>
-<div><label for="st-inv">Inv.</label><input id="st-inv" type="text"></div>
-<div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text"></div>
-</div>
-<div class="note-box">Le choix du châssis pré-remplit les caractéristiques, l'aptitude et les compétences maîtrisées. Tout reste modifiable ensuite (progression, wargear).</div>
-<h3 class="sub">Points de vie <small>— cochez les PV perdus</small></h3>
-<div class="pvrow" id="pv-box"></div>
-<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
-<strong style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)">Protocole de Secours · échecs</strong>
-<span class="ech" id="ech-0"></span><span class="ech" id="ech-1"></span>
-<span style="color:var(--muted);font-size:.85rem">5+ au début du round · 2 échecs consécutifs = extraction d'urgence</span>
-</div>
-<h3 class="sub">Compétences <small>— cochée = maîtrisée (3+), sinon 4+</small></h3>
-<div class="comps" id="comps-box"></div>
-<h3 class="sub">Arsenal</h3>
-<div class="arow-h"><span>Arme</span><span>Portée</span><span>Atq</span><span>F</span><span>PA</span><span>D</span><span>Spécial</span></div>
-<div class="arow"><select id="ar0-w"></select><input id="ar0-po" type="text"><input id="ar0-at" type="text"><input id="ar0-f" type="text"><input id="ar0-pa" type="text"><input id="ar0-d" type="text"><input id="ar0-sp" type="text"></div>
-<div class="arow"><select id="ar1-w"></select><input id="ar1-po" type="text"><input id="ar1-at" type="text"><input id="ar1-f" type="text"><input id="ar1-pa" type="text"><input id="ar1-d" type="text"><input id="ar1-sp" type="text"></div>
-<div class="arow"><select id="ar2-w"></select><input id="ar2-po" type="text"><input id="ar2-at" type="text"><input id="ar2-f" type="text"><input id="ar2-pa" type="text"><input id="ar2-d" type="text"><input id="ar2-sp" type="text"></div>
-<div class="note-box">Sélectionnez une arme de l'arsenal du manuel pour pré-remplir la ligne, ou saisissez librement (armes-reliques…).</div>
-<h3 class="sub">Équipement</h3>
-<div class="erow"><select id="eq0-w"></select><input id="eq0-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq0-u"> utilisée</label></div>
-<div class="erow"><select id="eq1-w"></select><input id="eq1-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq1-u"> utilisée</label></div>
-<div class="erow"><select id="eq2-w"></select><input id="eq2-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq2-u"> utilisée</label></div>
-<h3 class="sub">Aptitudes &amp; pouvoirs</h3>
-<div class="ig">
-<div><label for="f-apt">Aptitude de châssis</label><input id="f-apt" type="text"></div>
-<div><label for="f-aptA">Aptitude acquise (XP)</label><input id="f-aptA" type="text"></div>
-</div>
-<div class="ig">
-<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p1">Pouvoir 1 (1×/scène)</label><input id="f-p1" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p1u"> utilisé</label></div>
-<div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p2">Pouvoir 2 (1×/scène)</label><input id="f-p2" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p2u"> utilisé</label></div>
-</div>
-<h3 class="sub">Expérience &amp; notes</h3>
-<div class="ig">
-<div><label for="f-xp">XP disponibles</label><input id="f-xp" type="number" min="0"></div>
-</div>
-<label for="f-notes">Notes / dégâts / hontes</label>
-<textarea id="f-notes" rows="4" placeholder="Ce que le métal n'oublie pas…"></textarea>
-</form>
-</section>
-</main>
-<footer class="foot">
-<div class="glyphrow">⚡ ⬥ ⚡</div>
-<p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-<p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
-<p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
-</footer>
+      <section id="view-edit" style="display:none">
+        <div class="fh">
+          <button class="btn ghost" id="btn-back">← Toutes les fiches</button>
+          <button class="btn ghost" id="btn-print">🖨️ Imprimer</button>
+          <button class="btn ghost" id="btn-code">⇄ Code d'export</button>
+          <button class="btn danger" id="btn-del">🗑 Supprimer</button>
+        </div>
+        <h2 id="f-title">Fiche d'unité</h2>
+        <div id="exp-box" class="note-box">
+          <strong>Code d'export de cette fiche</strong> — copiez-le et conservez-le (message privé, note…). Sur un autre appareil : Fiches → Importer un code.
+          <textarea id="exp-code" rows="4" readonly style="width:100%;margin-top:8px"></textarea>
+          <div style="margin-top:8px"><button class="btn ghost" id="btn-copy">Copier le code</button></div>
+        </div>
+        <form id="f-form" onsubmit="return false">
+          <h3 class="sub">Identité</h3>
+          <div class="ig">
+            <div><label for="f-nom">Désignation</label><input id="f-nom" type="text" placeholder="ex. AKH-77 « Verdict »"></div>
+            <div><label for="f-ch">Châssis</label><select id="f-ch"></select></div>
+            <div><label for="f-code">Code de fabrique</label><select id="f-code"></select></div>
+            <div><label for="f-fonction">Fonction</label><input id="f-fonction" type="text" placeholder="ex. reconnaissance rapprochée"></div>
+            <div><label for="f-emotion">Émotion résiduelle</label><input id="f-emotion" type="text" placeholder="ex. orgueil blessé"></div>
+            <div><label for="f-opinion">Opinion sur les vivants</label><input id="f-opinion" type="text" placeholder="ex. sujets d'étude"></div>
+          </div>
+          <h3 class="sub">Caractéristiques</h3>
+          <div class="stats">
+            <div><label for="st-m">M</label><input id="st-m" type="text"></div>
+            <div><label for="st-cc">CC</label><input id="st-cc" type="text"></div>
+            <div><label for="st-ct">CT</label><input id="st-ct" type="text"></div>
+            <div><label for="st-f">F</label><input id="st-f" type="text"></div>
+            <div><label for="st-e">E</label><input id="st-e" type="text"></div>
+            <div><label for="st-pv">PV</label><input id="st-pv" type="text"></div>
+            <div><label for="st-a">A</label><input id="st-a" type="text"></div>
+            <div><label for="st-cd">Cd</label><input id="st-cd" type="text"></div>
+            <div><label for="st-sv">Sv</label><input id="st-sv" type="text"></div>
+            <div><label for="st-inv">Inv.</label><input id="st-inv" type="text"></div>
+            <div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text"></div>
+          </div>
+          <div class="note-box">Le choix du châssis pré-remplit les caractéristiques, l'aptitude et les compétences maîtrisées. Tout reste modifiable ensuite (progression, wargear).</div>
+          <h3 class="sub">Points de vie <small>— cochez les PV perdus</small></h3>
+          <div class="pvrow" id="pv-box"></div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+            <strong style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)">Protocole de Secours · échecs</strong>
+            <span class="ech" id="ech-0"></span><span class="ech" id="ech-1"></span>
+            <span style="color:var(--muted);font-size:.85rem">5+ au début du round · 2 échecs consécutifs = extraction d'urgence</span>
+          </div>
+          <h3 class="sub">Compétences <small>— cochée = maîtrisée (3+), sinon 4+</small></h3>
+          <div class="comps" id="comps-box"></div>
+          <h3 class="sub">Arsenal</h3>
+          <div class="arow-h"><span>Arme</span><span>Portée</span><span>Atq</span><span>F</span><span>PA</span><span>D</span><span>Spécial</span></div>
+          <div class="arow"><select id="ar0-w"></select><input id="ar0-po" type="text"><input id="ar0-at" type="text"><input id="ar0-f" type="text"><input id="ar0-pa" type="text"><input id="ar0-d" type="text"><input id="ar0-sp" type="text"></div>
+          <div class="arow"><select id="ar1-w"></select><input id="ar1-po" type="text"><input id="ar1-at" type="text"><input id="ar1-f" type="text"><input id="ar1-pa" type="text"><input id="ar1-d" type="text"><input id="ar1-sp" type="text"></div>
+          <div class="arow"><select id="ar2-w"></select><input id="ar2-po" type="text"><input id="ar2-at" type="text"><input id="ar2-f" type="text"><input id="ar2-pa" type="text"><input id="ar2-d" type="text"><input id="ar2-sp" type="text"></div>
+          <div class="note-box">Sélectionnez une arme de l'arsenal du manuel pour pré-remplir la ligne, ou saisissez librement (armes-reliques…).</div>
+          <h3 class="sub">Équipement</h3>
+          <div class="erow"><select id="eq0-w"></select><input id="eq0-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq0-u"> utilisée</label></div>
+          <div class="erow"><select id="eq1-w"></select><input id="eq1-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq1-u"> utilisée</label></div>
+          <div class="erow"><select id="eq2-w"></select><input id="eq2-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq2-u"> utilisée</label></div>
+          <h3 class="sub">Aptitudes &amp; pouvoirs</h3>
+          <div class="ig">
+            <div><label for="f-apt">Aptitude de châssis</label><input id="f-apt" type="text"></div>
+            <div><label for="f-aptA">Aptitude acquise (XP)</label><input id="f-aptA" type="text"></div>
+          </div>
+          <div class="ig">
+            <div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p1">Pouvoir 1 (1×/scène)</label><input id="f-p1" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p1u"> utilisé</label></div>
+            <div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p2">Pouvoir 2 (1×/scène)</label><input id="f-p2" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p2u"> utilisé</label></div>
+          </div>
+          <h3 class="sub">Expérience &amp; notes</h3>
+          <div class="ig">
+            <div><label for="f-xp">XP disponibles</label><input id="f-xp" type="number" min="0"></div>
+          </div>
+          <label for="f-notes">Notes / dégâts / hontes</label>
+          <textarea id="f-notes" rows="4" placeholder="Ce que le métal n'oublie pas…"></textarea>
+        </form>
+      </section>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+      <p style="margin:10px 0 0;font-size:.85rem"><a href="/sauvegarde.html">↧ Sauvegarde du site (ZIP)</a></p>
+    </footer>
 
-<script src="assets/js/pages/fiches.js"></script>
-<!-- Optimizer - Footer Javascripts -->
-</body>
+    <script src="assets/js/pages/fiches.js"></script>
+    <!-- Optimizer - Footer Javascripts -->
+  </body>
 </html>

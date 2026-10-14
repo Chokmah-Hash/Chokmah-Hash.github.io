@@ -77,7 +77,7 @@ function avRender(){
         +'<input type="text" class="fldb btitre" value="'+avesc(b.titre||'')+'">'
         +'<span class="glabc" style="color:var(--teal)">Texte affichÃ© aux joueuses</span>'
         +'<textarea class="fldb btexte">'+avesc(b.texte||'')+'</textarea>'
-        +'<div style="margin-top:6px"><button type="button" class="btn danger smallbtn" data-delb="'+i+'" data-delj="'+j+'">í ½í·‘ Retirer ce bloc</button></div>'
+        +'<div style="margin-top:6px"><button type="button" class="btn danger smallbtn" data-delb="'+i+'" data-delj="'+j+'">ğŸ—‘ Retirer ce bloc</button></div>'
         +'</div>';
     });
     var btnAct=a.statut==='active';
@@ -88,11 +88,11 @@ function avRender(){
       +bhtml
       +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
       +'<button type="button" class="btn ghost smallbtn" data-addb="'+i+'">âœš Ajouter un bloc</button>'
-      +'<button type="button" class="btn amber smallbtn" data-save="'+i+'">í ½í²¾ Enregistrer</button>'
+      +'<button type="button" class="btn amber smallbtn" data-save="'+i+'">ğŸ’¾ Enregistrer</button>'
       +(btnAct?'':'<button type="button" class="btn primary smallbtn" data-act="'+i+'">â–¶ Activer pour les joueuses</button>')
       +(btnAct?'<button type="button" class="btn ghost smallbtn" data-term="'+i+'">â¹ Terminer</button>':'')
       +(a.statut==='brouillon'?'':'<button type="button" class="btn ghost smallbtn" data-draft="'+i+'">â†© Brouillon</button>')
-      +'<button type="button" class="btn danger smallbtn" data-del="'+i+'">í ½í·‘ Supprimer</button>'
+      +'<button type="button" class="btn danger smallbtn" data-del="'+i+'">ğŸ—‘ Supprimer</button>'
       +'</div></div>';
   });
   $$id('av-list').innerHTML=out;

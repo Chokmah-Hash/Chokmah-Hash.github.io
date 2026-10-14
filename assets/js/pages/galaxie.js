@@ -58,7 +58,7 @@ function renderMap(){
     var px=Math.round(Math.max(5,Math.min(995,(ev.clientX-r.left)/r.width*1000)));
     var py=Math.round(Math.max(5,Math.min(695,(ev.clientY-r.top)/r.height*700)));
     $('g-x').value=px;$('g-y').value=py;PLACING=false;
-    $('g-place').textContent='Ì†ΩÌ≥ç Placer sur la carte';
+    $('g-place').textContent='üìç Placer sur la carte';
     msg('g-msg','Position : '+px+', '+py+' ‚Äî clique sur Enregistrer.','ok');
   });
   applySearch();
@@ -74,7 +74,7 @@ function renderPanel(){
   var out='<h3 style="margin:.1em 0 .3em">'+esc(g.nom)+'</h3><span class="badge'+(g.categorie==='vaisseau'?' amber':'')+'">'+esc(catLabel(g.categorie))+'</span>';
   if(g.description){out+='<p class="pv" style="margin-top:10px">'+esc(g.description)+'</p>';}
   (d.planetes||[]).forEach(function(pl){
-    out+='<div class="pl">Ì†æÌ∫ê '+esc(pl.nom)+'</div>';
+    out+='<div class="pl">ü™ê '+esc(pl.nom)+'</div>';
     if(pl.infos){out+='<p class="pv">'+esc(pl.infos)+'</p>';}
     (pl.lieux||[]).forEach(function(l){out+='<div class="lieu"><b>'+esc(l.nom)+'</b>'+(l.infos?' ‚Äî '+esc(l.infos):'')+'</div>';});
   });
@@ -86,10 +86,10 @@ function renderPanel(){
   }
   if(MJMODE){
     var sec=SECRETS[g.id];
-    if(sec){out+='<div class="note-box amber" style="margin-top:12px"><strong>Ì†ΩÌ¥í V√©rit√©s cach√©es :</strong> '+esc(sec)+'</div>';}
+    if(sec){out+='<div class="note-box amber" style="margin-top:12px"><strong>üîí V√©rit√©s cach√©es :</strong> '+esc(sec)+'</div>';}
     out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
       +'<button class="btn amber sm" id="g-edit" type="button">‚úé Modifier ce syst√®me</button>'
-      +'<button class="btn danger sm" id="g-del2" type="button">Ì†ΩÌ∑ë Supprimer</button></div>';
+      +'<button class="btn danger sm" id="g-del2" type="button">üóë Supprimer</button></div>';
   }
   el.innerHTML=out;
   var be=$('g-edit');if(be){be.addEventListener('click',function(){fillForm(g);});}
@@ -155,7 +155,7 @@ $('mj-open').addEventListener('click',function(){
   });
 });
 function fillForm(g){
-  $('g-form-title').textContent='Ì†ΩÌª†Ô∏è Modifier : '+g.nom;
+  $('g-form-title').textContent='üõ†Ô∏è Modifier : '+g.nom;
   $('g-id').value=g.id;$('g-nom').value=g.nom;$('g-cat').value=g.categorie;
   $('g-x').value=g.x;$('g-y').value=g.y;$('g-desc').value=g.description||'';
   var d=g.data||{},pla=[],lieux=[],crea=[];
@@ -168,7 +168,7 @@ function fillForm(g){
   msg('g-msg','Formulaire charg√©. Le bouton ¬´ Placer sur la carte ¬ª permet de repositionner par un clic.','');
 }
 function clearForm(){
-  $('g-form-title').textContent='Ì†ΩÌª†Ô∏è Nouveau syst√®me';
+  $('g-form-title').textContent='üõ†Ô∏è Nouveau syst√®me';
   ['g-id','g-nom','g-desc','g-pla','g-lieux','g-crea','g-secret'].forEach(function(i){$(i).value='';});
   $('g-x').value=500;$('g-y').value=350;$('g-cat').value='systeme';
   $('g-del').style.display='none';msg('g-msg','');
