@@ -15,7 +15,7 @@ var nl=h.querySelector('.nav-links'),navTg=null;
 if(nl&&hasMain()){
 navTg=document.createElement('button');
 navTg.type='button';navTg.className='nav-toggle';navTg.setAttribute('aria-expanded','false');navTg.setAttribute('aria-label','Menu');
-navTg.innerHTML='<span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span>';
+navTg.innerHTML='<span class="tg-label">Menu</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span>';
 nl.parentNode.insertBefore(navTg,nl);
 navTg.addEventListener('click',function(){var open=h.classList.toggle('open');navTg.setAttribute('aria-expanded',open?'true':'false');});
 Array.prototype.forEach.call(nl.querySelectorAll('a'),function(a){a.addEventListener('click',function(){h.classList.remove('open');navTg.setAttribute('aria-expanded','false');});});

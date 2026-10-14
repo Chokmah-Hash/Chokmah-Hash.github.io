@@ -73,7 +73,7 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 /* ===== Sous-menu unifié (.subnav) : barre collée sous la nav ; ☰ hamburger sur mobile ===== */
 section[id]{scroll-margin-top:110px}
 .subnav{position:sticky;top:var(--nav-h,44px);z-index:40;background:rgba(10,18,15,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
-.subnav-toggle{display:none;width:100%;align-items:center;gap:8px;background:none;border:0;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);text-align:left;padding:11px 14px}
+.subnav-toggle{display:none;width:100%;align-items:center;gap:8px;background:none;border:0;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);justify-content:flex-end;padding:11px 14px}
 .subnav-toggle .ic-x{display:none}
 .subnav.open .subnav-toggle .ic-x{display:inline}
 .subnav.open .subnav-toggle .ic-bars{display:none}
@@ -91,8 +91,9 @@ section[id]{scroll-margin-top:110px}
 .subnav.open .subnav-in a,.subnav.open .subnav-in button{white-space:normal;text-align:center}
 .subnav.collapse.open .subnav-in a.active,.subnav.collapse.open .subnav-in button.active{box-shadow:inset 2px 0 0 var(--teal);border-radius:8px}
 /* Barre du haut : même mécanique — hamburger dès que les liens débordent (bouton injecté par core.js, visible seulement si main.css actif) */
-.nav-toggle{display:none;margin-left:auto;align-items:center;background:none;border:0;cursor:pointer;color:var(--teal);font-size:1.25rem;padding:6px 12px;min-height:44px}
+.nav-toggle{display:none;margin-left:auto;align-items:center;gap:8px;background:none;border:0;cursor:pointer;color:var(--teal);font-size:1.25rem;padding:6px 12px;min-height:44px}
 .nav-toggle .ic-x{display:none}
+.nav-toggle .tg-label{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}
 .nav.open .nav-toggle .ic-x{display:inline}
 .nav.open .nav-toggle .ic-bars{display:none}
 .nav.collapse .nav-toggle{display:inline-flex}
