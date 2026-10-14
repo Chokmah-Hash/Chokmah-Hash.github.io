@@ -37,7 +37,7 @@ h.classList.toggle('collapse',nl.scrollWidth>nl.clientWidth+2);
 }
 if(sn&&sni&&!sn.classList.contains('open')){
 if(sn.classList.contains('collapse')){sn.classList.remove('collapse');}
-sn.classList.toggle('collapse',sni.scrollWidth>sni.clientWidth+2);
+sn.classList.toggle('collapse',window.innerWidth<760&&sni.scrollWidth>sni.clientWidth+2);
 }
 };
 fit();window.addEventListener('resize',fit);window.addEventListener('load',fit);
