@@ -70,3 +70,12 @@ table.rt.amber td{border-color:rgba(240,178,74,.18)}
 .grid3.acts .card{display:flex;flex-direction:column}
 .grid3.acts .card .btn{align-self:flex-end;margin-top:auto}
 @media (max-width:560px){.brand{font-size:.78rem;letter-spacing:.1em}.nav-links a{font-size:.76rem;padding:8px 9px}}
+/* ===== Sous-menu unifié (.subnav) : barre collée sous la nav principale ===== */
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:110px}
+.subnav{position:sticky;top:var(--nav-h,44px);z-index:40;background:rgba(10,18,15,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
+.subnav-in{max-width:1000px;margin:0 auto;padding:6px 14px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.subnav-in::-webkit-scrollbar{display:none}
+.subnav-in a{color:var(--muted);text-decoration:none;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;border-radius:7px;white-space:nowrap;display:inline-flex;align-items:center}
+.subnav-in a:hover{color:var(--text);background:var(--tealsoft)}
+.subnav-in a.active{color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
