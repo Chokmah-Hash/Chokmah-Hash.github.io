@@ -20,24 +20,14 @@
 .sysg:hover .halo{opacity:.3}
 .gsearch{display:flex;gap:10px;margin:26px 0 0}
 .gsearch input{flex:1}
-.glab{display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:12px 0 4px}
 .gf{width:100%;background:var(--panel2);border:1px solid var(--tealline);border-radius:8px;color:var(--text);padding:9px 12px;font-family:'Exo 2',sans-serif;font-size:.95rem}
 .gf:focus{outline:1px solid var(--teal)}
-textarea.gf{min-height:64px;resize:vertical}
-.gmsg{margin-top:12px;font-size:.93rem;color:var(--muted);min-height:1.4em}
-.gmsg.ok{color:var(--teal)}
-.gmsg.err{color:var(--danger)}
 .pl{margin:.6em 0 .2em;font-family:'Rajdhani',sans-serif;color:var(--teal);font-weight:700;letter-spacing:.08em;font-size:.85rem;text-transform:uppercase}
 .pv{color:var(--muted);font-size:.93rem;margin:.1em 0 .5em}
 .lieu{background:var(--panel2);border-left:3px solid var(--teal);border-radius:6px;padding:6px 10px;margin:6px 0;font-size:.9rem;color:var(--muted)}
 .lieu b{color:var(--text)}
 .legend{position:absolute;top:12px;right:12px;z-index:5;display:flex;flex-direction:column;gap:7px;margin:0;padding:9px 12px;font-size:.78rem;color:var(--text);align-items:flex-start;background:rgba(10,18,15,.88);border:1px solid var(--tealline);border-radius:10px;backdrop-filter:blur(5px)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
-.posdot{animation:pospulse 1.8s infinite}
-@keyframes pospulse{0%,100%{opacity:.45}50%{opacity:1}}
-.mjgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
-@media(max-width:640px){.mjgrid{grid-template-columns:1fr}}
-.on{color:var(--teal);font-weight:600}
     </style>
   </head>
   <body>
@@ -72,54 +62,7 @@ textarea.gf{min-height:64px;resize:vertical}
       <div class="note-box" id="g-err" style="display:none"></div>
       <div class="gpanel">
           <div class="card" id="g-panel" style="min-height:220px"></div>
-          <div id="mj-sect">
-            <div class="note-box amber" style="margin-top:18px">
-              <strong>🎮 Console du Maître de la Tombe :</strong> saisis ta clé MJ pour révéler les vérités cachées, voir la position des joueurs en direct, et modifier la carte. La clé ne sert qu'à signer les opérations — elle n'est jamais stockée.
-              <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
-                <input class="gf" id="mj-key" type="password" placeholder="Clé MJ" style="max-width:220px">
-                <button class="btn amber" id="mj-open" type="button">Ouvrir la console</button>
-              </div>
-              <p class="gmsg" id="mj-msg"></p>
-            </div>
-            <div id="mj-tools" style="display:none">
-              <div class="card amber" style="margin-top:18px">
-                <h3>📍 Joueurs localisés</h3>
-                <div class="tscroll"><table class="rt amber"><thead><tr><th>Joueur</th><th>Système</th><th>Lieu</th><th>Statut</th></tr></thead><tbody id="mj-positions"></tbody></table></div>
-                <p class="gmsg" id="mj-note"></p>
-              </div>
-              <div class="card amber" style="margin-top:18px">
-                <h3 id="g-form-title">🛠️ Nouveau système</h3>
-                <div id="g-form">
-                  <div class="mjgrid">
-                    <div><label class="glab" for="g-nom">Nom</label><input class="gf" id="g-nom" type="text" placeholder="Ex. Système Héra"></div>
-                    <div><label class="glab" for="g-cat">Catégorie</label><select class="gf" id="g-cat"><option value="systeme">Système</option><option value="vaisseau">Vaisseau</option><option value="nebuleuse">Nébuleuse</option><option value="inconnu">Inexploré</option></select></div>
-                  </div>
-                  <div class="mjgrid">
-                    <div><label class="glab" for="g-x">Position X (0–1000)</label><input class="gf" id="g-x" type="number" min="0" max="1000" value="500"></div>
-                    <div><label class="glab" for="g-y">Position Y (0–700)</label><input class="gf" id="g-y" type="number" min="0" max="700" value="350"></div>
-                  </div>
-                  <label class="glab" for="g-desc">Description (visible par tous)</label>
-                  <textarea class="gf" id="g-desc" rows="3" placeholder="Ce que voient les joueurs en cliquant…"></textarea>
-                  <label class="glab" for="g-pla">Planètes — une par ligne : Nom | infos</label>
-                  <textarea class="gf" id="g-pla" rows="2" placeholder="9-Héra | Planète minière aride…"></textarea>
-                  <label class="glab" for="g-lieux">Lieux — un par ligne : Nom | infos</label>
-                  <textarea class="gf" id="g-lieux" rows="2" placeholder="La galerie 9 | Condamnée après…"></textarea>
-                  <label class="glab" for="g-crea">Créatures liées — une par ligne (fiche bestiaire)</label>
-                  <textarea class="gf" id="g-crea" rows="2" placeholder="Homme de fer"></textarea>
-                  <label class="glab" for="g-secret">Vérités cachées MJ (réservées à ta clé)</label>
-                  <textarea class="gf" id="g-secret" rows="2" placeholder="Ce que TOI seul vois en mode MJ…"></textarea>
-                  <div class="cta-row" style="justify-content:flex-start;margin-top:14px">
-                    <button class="btn amber" id="g-place" type="button">📍 Placer sur la carte</button>
-                    <button class="btn primary" id="g-save" type="button">💾 Enregistrer</button>
-                    <button class="btn ghost" id="g-new" type="button">✚ Nouveau</button>
-                    <button class="btn danger" id="g-del" type="button" style="display:none">🗑 Supprimer</button>
-                  </div>
-                  <p class="gmsg" id="g-msg"></p>
                 </div>
-              </div>
-            </div>
-          </div>
-      </div>
     </main>
     <footer class="foot">
       <div class="glyphrow">⚡ ⬥ ⚡</div>

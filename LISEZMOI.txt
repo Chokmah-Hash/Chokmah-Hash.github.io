@@ -10,7 +10,7 @@ Pages :
 - galaxie.html    : carte de la galaxie (systemes, planetes, lieux, console MJ)
 - mon-espace.html : espace joueur (connexion, position sur la carte, notes)
 - fiches.html     : fiches d'unites (acces uniquement depuis la Zone joueurs)
-- mj.html         : page du MJ (scenarios proteges par mot de passe)
+- mj.html         : page du MJ (scenarios proteges, consoles aventures et carte)
 - 404.html        : page d'erreur autonome
 
 Assets :
