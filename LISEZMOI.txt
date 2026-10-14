@@ -19,6 +19,7 @@ Assets :
                          service worker, menu et sous-menu mobiles)
 - assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj)
 - icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
+- images/              : illustrations (cartes de planetes, points d'interet)
 
 PWA : manifest.webmanifest + sw.js (consultable hors ligne apres la premiere visite).
 
