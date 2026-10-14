@@ -6,11 +6,24 @@ Adresse du site : https://chokmah-hash.github.io
 Pages :
 - index.html      : accueil
 - regles.html     : regles maison "Les Protocoles Eternels"
-- fiches.html     : fiches des joueuses (sauvegarde partagee Supabase)
-- mj.html         : page du MJ (scenarios proteges par mot de passe)
-- sauvegarde.html : telechargement d'une archive du site
 - bestiaire.html  : bestiaire partage du MJ
+- galaxie.html    : carte de la galaxie (systemes, planetes, lieux, console MJ)
+- mon-espace.html : espace joueur (connexion, position sur la carte, notes)
+- fiches.html     : fiches d'unites (acces uniquement depuis Mon espace)
+- mj.html         : page du MJ (scenarios proteges par mot de passe)
+- 404.html        : page d'erreur autonome
+
+Assets :
+- assets/css/main.css  : theme commun a toutes les pages (404.html exceptee)
+- assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
+                         service worker, menu et sous-menu mobiles)
+- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj)
+- icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
+
+PWA : manifest.webmanifest + sw.js (consultable hors ligne apres la premiere visite).
+
+Archiver le site : sur GitHub, bouton "Code" > "Download ZIP".
 
 Site heberge gratuitement via GitHub Pages.
-Fiches et bestiaire synchronises via Supabase (https://supabase.com).
+Bestiaire, galaxie et fiches synchronises via Supabase (https://supabase.com).
 Pour toute question : contacter le MJ.

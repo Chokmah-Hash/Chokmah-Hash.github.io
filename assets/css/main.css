@@ -37,6 +37,7 @@ strong{color:var(--text)}
 .btn.ghost{background:transparent;border:1.5px solid var(--tealline);color:var(--teal)}
 .btn.ghost:hover{background:var(--tealsoft)}
 .btn.danger{background:transparent;border:1.5px solid rgba(226,96,79,.5);color:var(--danger)}
+.btn.sm{min-height:34px;padding:5px 12px;font-size:.78rem}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:20px 0}
 .card{background:var(--panel);border:1px solid var(--tealline);border-radius:14px;padding:20px;position:relative}
 .card .ico{font-size:1.7rem;display:block;margin-bottom:8px}
