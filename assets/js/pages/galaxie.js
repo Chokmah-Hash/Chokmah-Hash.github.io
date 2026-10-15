@@ -157,14 +157,14 @@ function genStars(){
   var r=prng(987654),st=[],i,ang,dist;
   for(i=0;i<1400;i++){ang=r()*6.2832;dist=(r()+r())*80;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.78});}for(i=0;i<1000;i++){ang=r()*6.2832;dist=(r()+r())*170;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.22});}
   for(var a2=0;a2<2;a2++){
-    for(i=0;i<3500;i++){var t=r();var th0=t*5.4+(a2*3.1416);var rad=130+t*410;var spread=20+t*38;
+    for(i=0;i<3500;i++){var t=r();var th0=t*(5.1+a2*0.55)+(a2*3.1416);var rad=130+t*410+((t>0.55)?(t-0.55)*(a2?170:80):0);var spread=20+t*38;
       var sp2=spread*(0.35+r()*1.5);var jx=(r()+r()-1)*sp2,jy=(r()+r()-1)*sp2*0.8;
       if(r()<0.16){jx*=3.1;jy*=3.1;}
       st.push({x:700+Math.cos(th0)*rad*1.06+jx,y:450+Math.sin(th0)*rad*0.62+jy});}
   }
   for(i=0;i<1900;i++){ang=r()*6.2832;dist=Math.sqrt(r())*560;st.push({x:700+Math.cos(ang)*dist*1.06,y:450+Math.sin(ang)*dist*0.62});}
   for(i=0;i<700;i++){ang=r()*6.2832;dist=560+r()*180;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.66});}
-  st.forEach(function(s){var dx=s.x-700,dy=s.y-450;s.x=700+dx*0.766+dy*0.643;s.y=450-dx*0.643+dy*0.766;s.x=Math.max(4,Math.min(1396,s.x));s.y=Math.max(4,Math.min(896,s.y));});
+  st.forEach(function(s){var dx=s.x-700,dy=s.y-450;s.x=700+dx*0.766+dy*0.643;s.y=450-dx*0.643+dy*0.766;s.y=450+(s.y-450)*0.78;s.x=Math.max(4,Math.min(1396,s.x));s.y=Math.max(4,Math.min(896,s.y));});
   var CL=[['O','#9db8ff',1],['B','#aac4ff',3],['A','#dfe8ff',6],['F','#fff4e0',8],['G','#ffe9b0',12],['K','#ffd28a',20],['M','#ffb46b',50]];
   var NOTES=['Monde agricole recens\u00e9','Ruines xenos non identifi\u00e9es','Signal r\u00e9current capt\u00e9','Station perdue depuis trois si\u00e8cles','Ceinture d\u2019ast\u00e9ro\u00efdes m\u00e9tallif\u00e8re','Temp\u00eate \u00e9lectromagn\u00e9tique en cours','N\u00e9buleuse protostellaire','Navire \u00e0 la d\u00e9rive signal\u00e9','Balise d\u2019alerte muette','Contrebandiers actifs dans le secteur','Monde-tombe h\u00e9raldique','Anomalie gravitationnelle l\u00e9g\u00e8re'];
   st.forEach(function(s,idx){
