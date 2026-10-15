@@ -18,10 +18,11 @@ Assets :
 - assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
                          service worker, menu et sous-menu mobiles)
 - assets/js/vendor/supabase.js : bibliotheque Supabase locale (temps reel, prechargee hors ligne)
-- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj, mj-carte, mj-bestiaire, des)
+- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj, mj-carte, mj-bestiaire, des, auth, images)
 - icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
 - images/              : illustrations (planetes, mappemondes, points d'interet)
 - Storage Supabase     : bucket public "images" pour heberger de nouvelles illustrations (URL a coller dans les consoles MJ)
+- Compte MJ            : authentification Supabase optionnelle de la Zone MJ (email + mot de passe, en plus de la cle)
 
 PWA : manifest.webmanifest + sw.js (consultable hors ligne apres la premiere visite).
 

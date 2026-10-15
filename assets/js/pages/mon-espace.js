@@ -21,7 +21,7 @@ function hdr(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-T
 function setMsg(id,t,cls){var m=$(id);if(m){m.textContent=t;m.className='gmsg '+(cls||'');}}
 function nowIso(){return new Date().toISOString();}
 function api(url,opt){return fetch(url,opt).then(function(r){
-  if(r.status===401&&SESS&&url.indexOf('rpc/login')<0){logout('Session expirée — reconnecte-toi.');throw new Error('session');}
+  if(r.status===401&&SESS&&url.indexOf('rpc/')<0){logout('Session expirée — reconnecte-toi.');throw new Error('session');}
   return r;
 });}
 function sha256hex(s){
@@ -41,46 +41,40 @@ function authMsg(t,cls){setMsg('auth-msg',t,cls);}
 $('t-login').addEventListener('click',function(){$('t-login').classList.add('on');$('t-signup').classList.remove('on');$('f-login').style.display='';$('f-signup').style.display='none';authMsg('');});
 $('t-signup').addEventListener('click',function(){$('t-signup').classList.add('on');$('t-login').classList.remove('on');$('f-signup').style.display='';$('f-login').style.display='none';authMsg('');});
 $('f-login').addEventListener('submit',function(ev){
+
   ev.preventDefault();
   var u=$('l-user').value.trim(),p=$('l-pass').value;
   if(!u||!p){return;}
   authMsg('Vérification…','');
-  sha256hex(u+':'+p).then(function(h){
-    return api(SB+'rpc/login',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u,p_mdp_hash:h})}).then(function(r){
-      if(!r.ok){throw new Error('http');}
-      return r.json();
-    });
-  }).then(function(rep){
-    if(!rep||!rep.token){authMsg('Pseudo ou mot de passe incorrect.','err');return;}
+  api(SB+'rpc/connexion_joueur',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u,p_mdp:p})}).then(function(r){
+    if(!r.ok){throw new Error('http');}
+    return r.json();
+  }).then(function(rep0){
+    var rep=Array.isArray(rep0)?rep0[0]:rep0;
+    if(!rep||rep.erreur||!rep.token){authMsg((rep&&rep.erreur)||'Pseudo ou mot de passe incorrect.','err');return;}
     SESS={id:rep.id,login:rep.login||u,nom:rep.nom||u,token:rep.token};
     try{localStorage.setItem('pe_session',JSON.stringify(SESS));}catch(e){}
     enterApp();
   }).catch(function(){authMsg('Connexion impossible — vérifie ta connexion internet.','err');});
 });
 $('f-signup').addEventListener('submit',function(ev){
+
   ev.preventDefault();
   var u=$('s-user').value.trim(),nom=$('s-nom').value.trim(),p=$('s-pass').value,p2=$('s-pass2').value;
   if(!u||!p){return;}
   if(p!==p2){authMsg('Les deux mots de passe ne correspondent pas.','err');return;}
   if(p.length<4){authMsg('Mot de passe trop court (4 caractères minimum).','err');return;}
   authMsg('Création du compte…','');
-  sha256hex(u+':'+p).then(function(h){
-    var tok=newToken();
-    return api(SB+'comptes',{method:'POST',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify({login:u,mdp_hash:h,token:tok,nom:nom||u})}).then(function(r){
-      if(r.status===409||r.status===400){throw new Error('pris');}
-      if(!r.ok){throw new Error('http');}
-      SESS={id:null,login:u,nom:nom||u,token:tok};
-      return api(SB+'comptes?select=id&login=eq.'+encodeURIComponent(u),{headers:hdr()}).then(function(r2){return r2.json();});
-    }).then(function(rows){
-      if(!rows||!rows.length){throw new Error('http');}
-      SESS.id=rows[0].id;
-      try{localStorage.setItem('pe_session',JSON.stringify(SESS));}catch(e){}
-      enterApp();
-    });
-  }).catch(function(e){
-    if(e&&e.message==='pris'){authMsg('Ce pseudo est déjà pris — choisis-en un autre.','err');}
-    else{authMsg('Création impossible — vérifie ta connexion internet.','err');}
-  });
+  api(SB+'rpc/creer_compte',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u,p_mdp:p,p_nom:nom||u})}).then(function(r){
+    if(!r.ok){throw new Error('http');}
+    return r.json();
+  }).then(function(rep0){
+    var rep=Array.isArray(rep0)?rep0[0]:rep0;
+    if(!rep||rep.erreur||!rep.token){authMsg((rep&&rep.erreur)||'Création impossible.','err');return;}
+    SESS={id:rep.id,login:rep.login||u,nom:rep.nom||u,token:rep.token};
+    try{localStorage.setItem('pe_session',JSON.stringify(SESS));}catch(e){}
+    enterApp();
+  }).catch(function(){authMsg('Création impossible — vérifie ta connexion internet.','err');});
 });
 function logout(msg){
   try{localStorage.removeItem('pe_session');}catch(e){}

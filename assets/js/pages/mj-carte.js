@@ -5,7 +5,7 @@ var SYS=[],SECRETS={},COMPTES={},MJMODE=false,MJKEY='',SEL=null,PLACING=false,PO
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function msg(id,t,cls){var m=$(id);if(m){m.textContent=t;m.className='gmsgc '+(cls||'');}}
-function H(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-Type':'application/json'};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
+function H(extra){var h={'apikey':SBK,'Authorization':'Bearer '+(window.MJBEARER||SBK),'Content-Type':'application/json'};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
 function HM(extra){var h=H(extra);h['x-mj-key']=MJKEY;return h;}
 function fetchJ(url,opt){return fetch(url,opt||{headers:H()}).then(function(r){if(!r.ok){throw new Error('HTTP '+r.status);}return r.json();});}
 function prng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

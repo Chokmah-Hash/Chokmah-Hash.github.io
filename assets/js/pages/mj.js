@@ -37,7 +37,7 @@ var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var CONKEY='',AVS=[],CONTIMER=null;
 function $$id(x){return document.getElementById(x);}
-function avhdr(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-Type':'application/json','x-mj-key':CONKEY};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
+function avhdr(extra){var h={'apikey':SBK,'Authorization':'Bearer '+(window.MJBEARER||SBK),'Content-Type':'application/json','x-mj-key':CONKEY};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
 function avmsg(t,cls){var m=$$id('av-msg');if(m){m.textContent=t;m.className='gmsgc '+(cls||'');}}
 function avmsg2(t,cls){var m=$$id('av-msg2');if(m){m.textContent=t;m.className='gmsgc '+(cls||'');}}
 function avesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

@@ -3,7 +3,7 @@ var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var BJKEY='',BJMODE=false,BJ=[];
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function H(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-Type':'application/json'};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
+function H(extra){var h={'apikey':SBK,'Authorization':'Bearer '+(window.MJBEARER||SBK),'Content-Type':'application/json'};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
 function HB(extra){var h=H(extra);h['x-mj-key']=BJKEY;return h;}
 function bmsg(id,t,cls){var m=$(id);if(m){m.textContent=t;m.className='gmsgc '+(cls||'');}}
 function campLabelB(c){return c==='ennemi'?'Ennemi':(c==='allie'?'Allié':'Neutre');}
