@@ -168,6 +168,7 @@ function genStars(){
   for(i=0;i<320;i++){st.push({x:4+r()*1392,y:4+r()*892});}
   var CL=[['O','#9db8ff',1],['B','#aac4ff',3],['A','#dfe8ff',6],['F','#fff4e0',8],['G','#ffe9b0',12],['K','#ffd28a',20],['M','#ffb46b',50]];
   var NOTES=['Monde agricole recens\u00e9','Ruines xenos non identifi\u00e9es','Signal r\u00e9current capt\u00e9','Station perdue depuis trois si\u00e8cles','Ceinture d\u2019ast\u00e9ro\u00efdes m\u00e9tallif\u00e8re','Temp\u00eate \u00e9lectromagn\u00e9tique en cours','N\u00e9buleuse protostellaire','Navire \u00e0 la d\u00e9rive signal\u00e9','Balise d\u2019alerte muette','Contrebandiers actifs dans le secteur','Monde-tombe h\u00e9raldique','Anomalie gravitationnelle l\u00e9g\u00e8re'];
+  var gmap={};st=st.filter(function(sx){var gx=Math.floor(sx.x/3.2),gy=Math.floor(sx.y/3.2);for(var ddx=-1;ddx<=1;ddx++){for(var ddy=-1;ddy<=1;ddy++){if(gmap[(gx+ddx)+'_'+(gy+ddy)]){return false;}}}gmap[gx+'_'+gy]=1;return true;});
   st.forEach(function(s,idx){
     s.si=idx;
     var v=r()*100,acc=0,k,c=CL[6];
@@ -183,7 +184,7 @@ function genStars(){
   return st;
 }
 function aStars(){
-  var st=genStars(),byc={},s='<g>';
+  var st=genStars(),byc={},s='<g id="a-col" style="transition:opacity .25s ease-out">';
   st.forEach(function(sx){(byc[sx.cls]=byc[sx.cls]||[]).push(sx);});
   Object.keys(byc).forEach(function(k){
     s+='<g fill="'+byc[k][0].col+'">';
@@ -191,6 +192,11 @@ function aStars(){
       s+='<circle cx="'+sx.x.toFixed(1)+'" cy="'+sx.y.toFixed(1)+'" r="'+sx.r+'" fill-opacity="'+sx.fo+'" data-si="'+sx.si+'"/>';
     });
     s+='</g>';
+  });
+  s+='</g>';
+  s+='<g id="a-wov" fill="#ffffff" style="transition:opacity .25s ease-out">';
+  st.forEach(function(sx){
+    s+='<circle cx="'+sx.x.toFixed(1)+'" cy="'+sx.y.toFixed(1)+'" r="'+sx.r+'" fill-opacity="'+sx.fo+'" data-si="'+sx.si+'"/>';
   });
   return s+'</g>';
 }
@@ -216,7 +222,6 @@ function atlasSvg(){
   var svg='<svg id="a-svg" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Atlas de la galaxie">';
   svg+='<image href="https://res.cloudinary.com/bdxof4sp/image/upload/v1792104807/jdr/galaxie-fond-sharp.jpg" x="0" y="0" width="1400" height="900" preserveAspectRatio="xMidYMid slice" opacity="0.9"/>';
   svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>'; svg+=aBg();
-  svg+=aStars();
   svg+=aStars();
   svg+='</svg>';
   return svg;
@@ -317,8 +322,8 @@ $('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w
 $('m-secteur').addEventListener('click',function(){setMode(false);});
 $('m-galaxie').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
-var VB={x:0,y:0,w:1000,h:700},DRAGGED=false,DRG=null;function vbmin(){return AMODE?30:170;}
-function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var sr=Math.max(0.06,VB.w*(0.0014+0.0021*(1400-VB.w)/1370)).toFixed(3);var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}sty.textContent=sr?('#a-svg circle[data-si]{r:'+sr+'px}'):'';var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
+var VB={x:0,y:0,w:1000,h:700},DRAGGED=false,DRG=null;function vbmin(){return AMODE?240:170;}
+function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var z=Math.max(0,Math.min(1,(1400-VB.w)/(1400-vbmin())));var sr=(VB.w*(0.001+0.004*z)).toFixed(3);var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}sty.textContent='#a-svg circle[data-si]{r:'+sr+'px;transition:r .25s ease-out}';var col=$('a-col'),wov=$('a-wov');if(col){col.setAttribute('opacity',z.toFixed(3));}if(wov){wov.setAttribute('opacity',(1-z).toFixed(3));}var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
 function clampVB(){var W=wdim(),Hh=hdim();if(VB.w<vbmin()){VB.w=vbmin();}if(VB.w>W){VB.w=W;}VB.h=VB.w*(Hh/W);var mx=W-VB.w,my=Hh-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
 function zoomAt(px,py,f){var W=wdim();var nw=Math.max(vbmin(),Math.min(W,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
 function resetVB(){VB={x:0,y:0,w:wdim(),h:hdim()};applyVB();}
