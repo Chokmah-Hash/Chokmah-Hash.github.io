@@ -214,6 +214,7 @@ function aBg(){
 function atlasSvg(){
   var p=SKP[SKIN];
   var svg='<svg id="a-svg" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Atlas de la galaxie">';
+  svg+='<image href="https://res.cloudinary.com/bdxof4sp/image/upload/v1792094808/jdr/galaxie-fond-teal.jpg" x="0" y="0" width="1400" height="900" preserveAspectRatio="xMidYMid slice" opacity="0.9"/>';
   svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>'; svg+=aBg();
   svg+=aStars();
   svg+=aStars();
