@@ -210,7 +210,6 @@ function aBg(){
     var rr=55+(i%7)*11;
     s+='<circle cx="'+sx.x.toFixed(1)+'" cy="'+sx.y.toFixed(1)+'" r="'+rr+'" fill="url(#ab'+n+')"/>';
   });
-  s+='<circle cx="700" cy="450" r="300" fill="url(#acore)"/>';
   return s;
 }
 function atlasSvg(){
