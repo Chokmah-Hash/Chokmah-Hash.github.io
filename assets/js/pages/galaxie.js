@@ -155,9 +155,9 @@ function segName(x,y){var dx=x-700,dy=y-450;if(dx*dx+dy*dy*1.6<36000){return 'Se
 function genStars(){
   if(SFLD){return SFLD;}
   var r=prng(987654),st=[],i,ang,dist;
-  for(i=0;i<2400;i++){ang=r()*6.2832;dist=(r()+r())*95;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.82});}
-  for(var a2=0;a2<4;a2++){
-    for(i=0;i<1750;i++){var t=r();var th0=t*3.4+(a2*1.5708);var rad=90+t*520;var spread=26+t*46;
+  for(i=0;i<1400;i++){ang=r()*6.2832;dist=(r()+r())*80;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.78});}for(i=0;i<1000;i++){ang=r()*6.2832;dist=(r()+r())*135;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.32});}
+  for(var a2=0;a2<2;a2++){
+    for(i=0;i<3500;i++){var t=r();var th0=t*5.4+(a2*3.1416);var rad=150+t*460;var spread=24+t*44;
       var jx=(r()+r()-1)*spread,jy=(r()+r()-1)*spread*0.8;
       st.push({x:700+Math.cos(th0)*rad*1.06+jx,y:450+Math.sin(th0)*rad*0.62+jy});}
   }
