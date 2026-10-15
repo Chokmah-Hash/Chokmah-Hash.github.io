@@ -155,16 +155,16 @@ function segName(x,y){var dx=x-700,dy=y-450;if(dx*dx+dy*dy*1.6<36000){return 'Se
 function genStars(){
   if(SFLD){return SFLD;}
   var r=prng(987654),st=[],i,ang,dist;
-  for(i=0;i<1400;i++){ang=r()*6.2832;dist=(r()+r())*80;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.78});}for(i=0;i<1000;i++){ang=r()*6.2832;dist=(r()+r())*135;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.32});}
+  for(i=0;i<1400;i++){ang=r()*6.2832;dist=(r()+r())*80;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.78});}for(i=0;i<1000;i++){ang=r()*6.2832;dist=(r()+r())*170;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.22});}
   for(var a2=0;a2<2;a2++){
-    for(i=0;i<3500;i++){var t=r();var th0=t*5.4+(a2*3.1416);var rad=150+t*460;var spread=24+t*44;
+    for(i=0;i<3500;i++){var t=r();var th0=t*5.4+(a2*3.1416);var rad=130+t*410;var spread=20+t*38;
       var sp2=spread*(0.35+r()*1.5);var jx=(r()+r()-1)*sp2,jy=(r()+r()-1)*sp2*0.8;
       if(r()<0.16){jx*=3.1;jy*=3.1;}
       st.push({x:700+Math.cos(th0)*rad*1.06+jx,y:450+Math.sin(th0)*rad*0.62+jy});}
   }
   for(i=0;i<1900;i++){ang=r()*6.2832;dist=Math.sqrt(r())*560;st.push({x:700+Math.cos(ang)*dist*1.06,y:450+Math.sin(ang)*dist*0.62});}
   for(i=0;i<700;i++){ang=r()*6.2832;dist=560+r()*180;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.66});}
-  st.forEach(function(s){var dx=s.x-700,dy=s.y-450;s.x=700+dx*0.766+dy*0.643;s.y=450-dx*0.643+dy*0.766;});
+  st.forEach(function(s){var dx=s.x-700,dy=s.y-450;s.x=700+dx*0.766+dy*0.643;s.y=450-dx*0.643+dy*0.766;s.x=Math.max(4,Math.min(1396,s.x));s.y=Math.max(4,Math.min(896,s.y));});
   var CL=[['O','#9db8ff',1],['B','#aac4ff',3],['A','#dfe8ff',6],['F','#fff4e0',8],['G','#ffe9b0',12],['K','#ffd28a',20],['M','#ffb46b',50]];
   var NOTES=['Monde agricole recens\u00e9','Ruines xenos non identifi\u00e9es','Signal r\u00e9current capt\u00e9','Station perdue depuis trois si\u00e8cles','Ceinture d\u2019ast\u00e9ro\u00efdes m\u00e9tallif\u00e8re','Temp\u00eate \u00e9lectromagn\u00e9tique en cours','N\u00e9buleuse protostellaire','Navire \u00e0 la d\u00e9rive signal\u00e9','Balise d\u2019alerte muette','Contrebandiers actifs dans le secteur','Monde-tombe h\u00e9raldique','Anomalie gravitationnelle l\u00e9g\u00e8re'];
   st.forEach(function(s,idx){
@@ -200,28 +200,6 @@ function atlasSvg(){
   svg+=aStars();
   svg+=aStars();
   svg+='<circle cx="700" cy="450" r="150" fill="url(#acore)"/><circle cx="700" cy="450" r="38" fill="'+p.core+'" opacity=".25"/><circle cx="700" cy="450" r="13" fill="'+p.core+'" opacity=".7"/>';
-  svg+='<path d="M690,0 L704,300 L700,450 L676,900" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
-  svg+='<path d="M0,430 L440,438 L700,450" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
-  svg+='<path d="M700,450 L520,900" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
-  svg+='<text class="aseg" x="250" y="66" fill="'+p.seg+'" opacity=".55">SEGMENTUM OBSCURUS</text>';
-  svg+='<text class="aseg" x="1010" y="66" fill="'+p.seg+'" opacity=".55">ULTIMA SEGMENTUM</text>';
-  svg+='<text class="aseg" x="150" y="740" fill="'+p.seg+'" opacity=".55">SEGMENTUM PACIFICUS</text>';
-  svg+='<text class="aseg" x="560" y="846" fill="'+p.seg+'" opacity=".55">SEGMENTUM TEMPESTUS</text>';
-  svg+='<text class="aseg" x="420" y="530" fill="'+p.seg+'" opacity=".55">SEGMENTUM SOLAR</text>';
-  ATLAS.forEach(function(a){
-    var c=a.categorie,col=p.monde;
-    if(c==='forgemonde'){col=p.forge;}else if(c==='capitale'){col=p.cap;}else if(c==='zone'){col=p.zone;}else if(c==='anomalie'){col=p.ano;}
-    var shape='';
-    if(c==='zone'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="26" fill="none" stroke="'+col+'" stroke-opacity=".5" stroke-dasharray="4 4"/>';}
-    else if(c==='anomalie'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="20" fill="none" stroke="'+col+'" stroke-opacity=".55" stroke-width="2"/><circle cx="'+a.x+'" cy="'+a.y+'" r="8" fill="'+col+'" opacity=".5"/>';}
-    else if(c==='capitale'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="13" fill="none" stroke="'+col+'" stroke-opacity=".85" stroke-width="2"/><circle cx="'+a.x+'" cy="'+a.y+'" r="4.5" fill="'+col+'"/>';}
-    else if(c==='forgemonde'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="9" fill="none" stroke="'+col+'" stroke-width="2"/><circle cx="'+a.x+'" cy="'+a.y+'" r="3.5" fill="'+col+'"/>';}
-    else{shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="4.5" fill="'+col+'"/>';}
-    var dyn=(c==='monde'||c==='forgemonde')?' shlbl':'';
-    var lx=Math.max(60,Math.min(1340,a.x));
-    var ly=(a.y<60)?(a.y+32):((a.y>830)?(a.y-24):(a.y+20));
-    svg+='<g class="aloc" data-id="'+a.id+'">'+shape+'<text class="albl'+dyn+'" x="'+lx+'" y="'+ly+'" text-anchor="middle" fill="'+p.lbl+'" opacity=".9" font-size="13" font-family="Rajdhani" font-weight="600" style="pointer-events:none">'+esc(a.nom)+'</text></g>';
-  });
   svg+='</svg>';
   return svg;
 }
@@ -244,7 +222,7 @@ function renderAtlas(){
       var si=parseInt(t.getAttribute('data-si'),10);
       var s=SFLD&&SFLD[si];
       if(!s){tip.style.display='none';return;}
-      tip.innerHTML='<b>'+s.des+'</b> \u00b7 classe '+s.cls+' \u00b7 '+s.seg+(s.note?'<br><i>'+s.note+'</i>':'');
+      tip.innerHTML='<b>'+s.des+'</b> \u00b7 classe '+s.cls+(s.note?'<br><i>'+s.note+'</i>':'');
       tip.style.display='';
       var wr=wrap.getBoundingClientRect();
       var l=ev.clientX-wr.left+14,tp2=ev.clientY-wr.top+14;
@@ -268,7 +246,7 @@ function loadAtlas(){
 function legRender(){
   var p=SKP[SKIN],d=$('leg-drop');
   if(AMODE){
-    d.innerHTML='<span><i style="background:'+p.monde+'"></i>Monde</span><span><i style="background:'+p.forge+'"></i>Monde-forge</span><span><i style="background:'+p.cap+'"></i>Capitale</span><span><i style="background:none;border:1px dashed '+p.zone+'"></i>Zone</span><span><i style="background:'+p.ano+'"></i>Anomalie warp</span>';
+    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · 12 000 étoiles</span>';
   }else{
     d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>';
   }
@@ -333,7 +311,7 @@ $('m-secteur').addEventListener('click',function(){setMode(false);});
 $('m-galaxie').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
 var VB={x:0,y:0,w:1000,h:700},DRAGGED=false,DRG=null;function vbmin(){return AMODE?30:170;}
-function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var sr=(VB.w<560)?Math.max(0.05,VB.w*0.0011).toFixed(3):'';var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}sty.textContent=sr?('#a-svg circle[data-si]{r:'+sr+'px}'):'';var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
+function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var zl=Math.max(1,Math.min(10,Math.round((1400-VB.w)/137)));var SRZ=[2.6,2.1,1.65,1.3,1.0,0.78,0.6,0.46,0.34,0.24,0.16];var sr=(VB.w<1250)?SRZ[zl]:'';var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}sty.textContent=sr?('#a-svg circle[data-si]{r:'+sr+'px}'):'';var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
 function clampVB(){var W=wdim(),Hh=hdim();if(VB.w<vbmin()){VB.w=vbmin();}if(VB.w>W){VB.w=W;}VB.h=VB.w*(Hh/W);var mx=W-VB.w,my=Hh-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
 function zoomAt(px,py,f){var W=wdim();var nw=Math.max(vbmin(),Math.min(W,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
 function resetVB(){VB={x:0,y:0,w:wdim(),h:hdim()};applyVB();}
