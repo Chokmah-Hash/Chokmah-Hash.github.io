@@ -19,7 +19,7 @@ return s+'</g>';}
 function sysLabel(g){var x=Math.max(50,Math.min(950,g.x));var y=g.y>560?g.y-30:g.y+30;return String(x)+','+String(y);}
 function renderMap(){
   var svg='<svg id="g-svg" viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Carte de la galaxie">';
-  svg+='<defs><radialGradient id="nebg"><stop offset="0%" stop-color="rgba(46,230,201,.35)"/><stop offset="100%" stop-color="rgba(46,230,201,0)"/></radialGradient></defs>';
+  svg+='<defs><radialGradient id="nebg"><stop offset="0%" stop-color="rgba(46,230,201,.35)"/><stop offset="100%" stop-color="rgba(46,230,201,0)"/></radialGradient></defs>'; svg+=aBg();
   svg+=starsSvg();
   SYS.forEach(function(g){
     var shape='';
@@ -62,7 +62,7 @@ function crumbRender(){
 }
 function pmSvg(seed){
   var r=prng(seed*7919+13),s='<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Surface">';
-  s+='<defs><radialGradient id="pmg'+seed+'" cx="42%" cy="30%"><stop offset="0%" stop-color="#18261d"/><stop offset="100%" stop-color="#0a120f"/></radialGradient></defs>';
+  s+='<defs><radialGradient id="pmg'+seed+'" cx="42%" cy="30%"><stop offset="0%" stop-color="#18261d"/><stop offset="100%" stop-color="#0a120f"/></radialGradient></defs>'; svg+=aBg();
   s+='<rect width="1000" height="700" fill="url(#pmg'+seed+')"/>';
   for(var i=0;i<26;i++){var cx=(r()*1000).toFixed(0),cy=(r()*700).toFixed(0),rr=(10+r()*52).toFixed(0);
     s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rr+'" ry="'+(rr*0.62).toFixed(0)+'" fill="none" stroke="#22382c" stroke-opacity="0.65"/>';}
@@ -195,10 +195,28 @@ function aStars(){
   });
   return s+'</g>';
 }
+function aBg(){
+  var st=genStars(),p=SKP[SKIN],s='<defs>',n=0;
+  st.forEach(function(sx,i){
+    if(i%240){return;}
+    n++;
+    s+='<radialGradient id="ab'+n+'"><stop offset="0%" stop-color="'+p.arm+'" stop-opacity=".12"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient>';
+  });
+  s+='</defs>';
+  n=0;
+  st.forEach(function(sx,i){
+    if(i%240){return;}
+    n++;
+    var rr=55+(i%7)*11;
+    s+='<circle cx="'+sx.x.toFixed(1)+'" cy="'+sx.y.toFixed(1)+'" r="'+rr+'" fill="url(#ab'+n+')"/>';
+  });
+  s+='<circle cx="700" cy="450" r="300" fill="url(#acore)"/>';
+  return s;
+}
 function atlasSvg(){
   var p=SKP[SKIN];
   var svg='<svg id="a-svg" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Atlas de la galaxie">';
-  svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>';
+  svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>'; svg+=aBg();
   svg+=aStars();
   svg+=aStars();
   svg+='<circle cx="700" cy="450" r="150" fill="url(#acore)"/><circle cx="700" cy="450" r="38" fill="'+p.core+'" opacity=".25"/><circle cx="700" cy="450" r="13" fill="'+p.core+'" opacity=".7"/>';
