@@ -79,7 +79,7 @@ function explorePlanet(pid){
 }
 function renderPlanetView(){
   $('g-searchbox').style.display='none';$('g-legend').style.display='none';$('g-map').style.display='none';
-  var pm=$('p-map');pm.style.display='';
+  var pm=$('p-map');pm.style.display=CURPOI?'none':'';
   crumbRender();
   var h='<div class="pm">'+(CURPLA.carte?'<img class="pmimg" src="'+esc(CURPLA.carte)+'" alt="Mappemonde">':'')+pmSvg(CURPLA.id);
   POIS.forEach(function(p){

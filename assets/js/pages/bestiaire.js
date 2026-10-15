@@ -28,9 +28,10 @@ function buildFactions(){
   var seen={},names=[];
   BEASTS.forEach(function(b){var f=b.faction||'—';if(!seen[f]){seen[f]=1;names.push(f);}});
   names.sort(function(a,b){return a.localeCompare(b);});
-  var out='<button type="button" data-f="tous"'+(FILTER==='tous'?' class="active"':'')+'>Tous</button>';
+  var out='';
   names.forEach(function(f){out+='<button type="button" data-f="'+esc(f)+'"'+(FILTER===f?' class="active"':'')+'>'+esc(f)+'</button>';});
   out+='<a href="#recherche">🔎 Recherche</a>';
+  out+='<button type="button" data-f="tous" class="tous"'+(FILTER==='tous'?' active':'')+'>Tous</button>';
   box.innerHTML=out;
   Array.prototype.forEach.call(box.querySelectorAll('button[data-f]'),function(btn){
     btn.addEventListener('click',function(){
