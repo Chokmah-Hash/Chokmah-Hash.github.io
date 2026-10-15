@@ -150,20 +150,53 @@ function renderPanel(){
 /* ===== Atlas : vue galaxie 40K complete ===== */
 function wdim(){return AMODE?1400:1000;}
 function hdim(){return AMODE?900:700;}
-function aStars(){var r=prng(777333),s='<g>';
-for(var i=0;i<190;i++){var x=(r()*1400).toFixed(1),y=(r()*900).toFixed(1),rad=(0.4+r()*1.3).toFixed(1),op=(0.10+r()*0.5).toFixed(2);
-var dx=(x-700)/640,dy=(y-450)/460,ing=(dx*dx+dy*dy)<1;
-s+='<circle cx="'+x+'" cy="'+y+'" r="'+rad+'" fill="'+SKP[SKIN].star+'" opacity="'+(ing?(op*0.5).toFixed(2):op)+'"/>';}
-return s+'</g>';}
+var SFLD=null;
+function segName(x,y){var dx=x-700,dy=y-450;if(dx*dx+dy*dy*1.6<36000){return 'Segmentum Solar';}if(x>=700){if(y>=450&&x<820){return 'Segmentum Tempestus';}return 'Segmentum Ultima';}if(y<430){return 'Segmentum Obscurus';}if(x<500){return 'Segmentum Pacificus';}return 'Segmentum Tempestus';}
+function genStars(){
+  if(SFLD){return SFLD;}
+  var r=prng(987654),st=[],i,ang,dist;
+  for(i=0;i<2400;i++){ang=r()*6.2832;dist=(r()+r())*95;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.82});}
+  for(var a2=0;a2<4;a2++){
+    for(i=0;i<1750;i++){var t=r();var th0=t*3.4+(a2*1.5708);var rad=90+t*520;var spread=26+t*46;
+      var jx=(r()+r()-1)*spread,jy=(r()+r()-1)*spread*0.8;
+      st.push({x:700+Math.cos(th0)*rad*1.06+jx,y:450+Math.sin(th0)*rad*0.62+jy});}
+  }
+  for(i=0;i<1900;i++){ang=r()*6.2832;dist=Math.sqrt(r())*560;st.push({x:700+Math.cos(ang)*dist*1.06,y:450+Math.sin(ang)*dist*0.62});}
+  for(i=0;i<700;i++){ang=r()*6.2832;dist=560+r()*180;st.push({x:700+Math.cos(ang)*dist,y:450+Math.sin(ang)*dist*0.66});}
+  var CL=[['O','#9db8ff',1],['B','#aac4ff',3],['A','#dfe8ff',6],['F','#fff4e0',8],['G','#ffe9b0',12],['K','#ffd28a',20],['M','#ffb46b',50]];
+  var NOTES=['Monde agricole recens\u00e9','Ruines xenos non identifi\u00e9es','Signal r\u00e9current capt\u00e9','Station perdue depuis trois si\u00e8cles','Ceinture d\u2019ast\u00e9ro\u00efdes m\u00e9tallif\u00e8re','Temp\u00eate \u00e9lectromagn\u00e9tique en cours','N\u00e9buleuse protostellaire','Navire \u00e0 la d\u00e9rive signal\u00e9','Balise d\u2019alerte muette','Contrebandiers actifs dans le secteur','Monde-tombe h\u00e9raldique','Anomalie gravitationnelle l\u00e9g\u00e8re'];
+  st.forEach(function(s,idx){
+    s.si=idx;
+    var v=r()*100,acc=0,k,c=CL[6];
+    for(k=0;k<7;k++){acc+=CL[k][2];if(v<acc){c=CL[k];break;}}
+    s.cls=c[0];s.col=c[1];
+    s.r=(0.55+r()*1.9).toFixed(2);
+    s.fo=(0.35+r()*0.6).toFixed(2);
+    s.des='HD-'+(1000+Math.floor(r()*89000));
+    s.seg=segName(s.x,s.y);
+    s.note=(r()<0.08)?NOTES[Math.floor(r()*NOTES.length)]:null;
+  });
+  SFLD=st;
+  return st;
+}
+function aStars(){
+  var st=genStars(),byc={},s='<g>';
+  st.forEach(function(sx){(byc[sx.cls]=byc[sx.cls]||[]).push(sx);});
+  Object.keys(byc).forEach(function(k){
+    s+='<g fill="'+byc[k][0].col+'">';
+    byc[k].forEach(function(sx){
+      s+='<circle cx="'+sx.x.toFixed(1)+'" cy="'+sx.y.toFixed(1)+'" r="'+sx.r+'" fill-opacity="'+sx.fo+'" data-si="'+sx.si+'"/>';
+    });
+    s+='</g>';
+  });
+  return s+'</g>';
+}
 function atlasSvg(){
   var p=SKP[SKIN];
   var svg='<svg id="a-svg" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Atlas de la galaxie">';
   svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>';
   svg+=aStars();
-  var arms=['M700,450 C810,320 950,300 1060,360','M700,450 C830,520 950,560 1080,520','M700,450 C590,320 450,300 340,360','M700,450 C570,520 450,560 320,520'];
-  arms.forEach(function(d){
-    svg+='<path d="'+d+'" stroke="'+p.arm+'" stroke-width="54" fill="none" opacity="'+p.armop+'" stroke-linecap="round"/>';
-    svg+='<path d="'+d+'" stroke="'+p.arm+'" stroke-width="16" fill="none" opacity="0.07" stroke-linecap="round"/>';});
+  svg+=aStars();
   svg+='<circle cx="700" cy="450" r="150" fill="url(#acore)"/><circle cx="700" cy="450" r="38" fill="'+p.core+'" opacity=".25"/><circle cx="700" cy="450" r="13" fill="'+p.core+'" opacity=".7"/>';
   svg+='<path d="M690,0 L704,300 L700,450 L676,900" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
   svg+='<path d="M0,430 L440,438 L700,450" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
@@ -199,6 +232,25 @@ function renderAtlas(){
       if(a){SEL=null;CURPLA=null;CURPOI=null;aPanel(a);}
     });
   });
+  if(!$('a-map')._tipw){
+    $('a-map')._tipw=true;
+    var tip=$('star-tip'),wrap=$('a-map').parentNode;
+    $('a-map').addEventListener('mousemove',function(ev){
+      if(DRG){tip.style.display='none';return;}
+      var t=ev.target;
+      if(!t||!t.getAttribute||t.getAttribute('data-si')===null){tip.style.display='none';return;}
+      var si=parseInt(t.getAttribute('data-si'),10);
+      var s=SFLD&&SFLD[si];
+      if(!s){tip.style.display='none';return;}
+      tip.innerHTML='<b>'+s.des+'</b> \u00b7 classe '+s.cls+' \u00b7 '+s.seg+(s.note?'<br><i>'+s.note+'</i>':'');
+      tip.style.display='';
+      var wr=wrap.getBoundingClientRect();
+      var l=ev.clientX-wr.left+14,tp2=ev.clientY-wr.top+14;
+      tip.style.left=(l+200>wr.width?l-215:l)+'px';
+      tip.style.top=(tp2+70>wr.height?tp2-85:tp2)+'px';
+    });
+    $('a-map').addEventListener('mouseleave',function(){tip.style.display='none';});
+  }
   applySearch();
 }
 function aPanel(a){
@@ -238,6 +290,7 @@ function setMode(gal){
   $('g-searchbox').style.display='';
   $('g-zoom').style.display='';
   $('g-search').value='';
+  $('star-tip').style.display='none';
   $('g-search').placeholder=AMODE?'\\uD83D\\uD0E Chercher un monde, une zone, une anomalie...':'\\uD83D\\uD0E Chercher un système, une planète...';
   if(AMODE){SEL=null;CURPLA=null;CURPOI=null;if(!ATLAS.length){loadAtlas();}else{renderAtlas();}}
   else{renderMap();}
@@ -277,10 +330,10 @@ $('sk-imp').addEventListener('click',function(){setSkin('imp');});
 $('m-secteur').addEventListener('click',function(){setMode(false);});
 $('m-galaxie').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
-var VB={x:0,y:0,w:1000,h:700},VBMIN=170,DRAGGED=false,DRG=null;
-function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});}}
-function clampVB(){var W=wdim(),Hh=hdim();if(VB.w<VBMIN){VB.w=VBMIN;}if(VB.w>W){VB.w=W;}VB.h=VB.w*(Hh/W);var mx=W-VB.w,my=Hh-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
-function zoomAt(px,py,f){var W=wdim();var nw=Math.max(VBMIN,Math.min(W,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
+var VB={x:0,y:0,w:1000,h:700},DRAGGED=false,DRG=null;function vbmin(){return AMODE?30:170;}
+function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
+function clampVB(){var W=wdim(),Hh=hdim();if(VB.w<vbmin()){VB.w=vbmin();}if(VB.w>W){VB.w=W;}VB.h=VB.w*(Hh/W);var mx=W-VB.w,my=Hh-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
+function zoomAt(px,py,f){var W=wdim();var nw=Math.max(vbmin(),Math.min(W,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
 function resetVB(){VB={x:0,y:0,w:wdim(),h:hdim()};applyVB();}
 function svgPt(ev){var sv=$(AMODE?'a-svg':'g-svg');if(!sv){return null;}var r=sv.getBoundingClientRect();if(r.width<2){return null;}return {sx:VB.x+(ev.clientX-r.left)/r.width*VB.w,sy:VB.y+(ev.clientY-r.top)/r.height*VB.h,kx:VB.w/r.width,ky:VB.h/r.height};}
 (function(){
