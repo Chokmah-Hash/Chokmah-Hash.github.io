@@ -6,6 +6,16 @@ function $(id){return document.getElementById(id);}
 function hdr(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function norm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+var FACC={};
+function facColor(f){
+  if(FACC[f]){return FACC[f];}
+  var fixed={'necrons':'#2ee6c9','hommes':'#f0b24a','imperium':'#e2604f','aeldari':'#b18cf0','orks':'#7ec14f','tyranides':'#a83ba8','chaos':'#c2454f'};
+  var kk=norm(f);
+  if(fixed[kk]){FACC[f]=fixed[kk];return FACC[f];}
+  var h=0;for(var i=0;i<kk.length;i++){h=(h*31+kk.charCodeAt(i))%360;}
+  FACC[f]='hsl('+h+',65%,62%)';
+  return FACC[f];
+}
 function campLabel(c){if(c==='ennemi'){return 'Ennemi';}if(c==='allie'){return 'Allié';}if(c==='neutre'){return 'Neutre';}return c||'?';}
 function campBadge(c){var cls=c==='ennemi'?'enemy':(c==='allie'?'ally':'neutral');return '<span class="badge '+cls+'">'+esc(campLabel(c))+'</span>';}
 function setStatus(t,err){var s=$('b-status');s.textContent=t;s.className=err?'err':'';}
@@ -28,7 +38,7 @@ function buildFactions(){
   BEASTS.forEach(function(b){var f=b.faction||'—';if(!seen[f]){seen[f]=1;names.push(f);}});
   names.sort(function(a,b){return a.localeCompare(b);});
   var out='';
-  names.forEach(function(f){out+='<button type="button" data-f="'+esc(f)+'"'+(FILTER===f?' class="active"':'')+'>'+esc(f)+'</button>';});
+  names.forEach(function(f){out+='<button type="button" data-f="'+esc(f)+'"'+(FILTER===f?' class="active"':'')+'><span class="fdot" style="background:'+facColor(f)+'"></span>'+esc(f)+'</button>';});
   out+='<button type="button" data-f="tous"'+(FILTER==='tous'?' class="active"':'')+'>Tous</button>';
   out+='<a href="#recherche">🔎 Recherche</a>';
   box.innerHTML=out;
@@ -75,7 +85,7 @@ function render(){
       k++;
       var cells=['m','cc','ct','f','e','pv','a','cd','sv','rfx'].map(function(kk){return '<td>'+(esc(st[kk])||'\u2014')+'</td>';}).join('');
       var nomHtml=(notes||sv.length)?'<span class="bname" role="button" tabindex="0" data-i="'+k+'" aria-expanded="false"><b>'+esc(b.nom)+'</b><span class="chev" aria-hidden="true">\u25B8</span></span>':'<b>'+esc(b.nom)+'</b>';
-      out+='<tr class="brow"><td class="nomcell">'+nomHtml+' '+campBadge(b.camp)+' <span class="fac">'+esc(b.faction||'')+'</span></td>'+cells+'</tr>';
+      out+='<tr class="brow"><td class="nomcell" style="border-left:3px solid '+facColor(b.faction||'')+'">'+nomHtml+' '+campBadge(b.camp)+'</td>'+cells+'</tr>';
       if(armes.length){
         out+='<tr class="subrow"><td colspan="11"><span class="bsub">'+armes.map(esc).join(' \u00B7 ')+'</span></td></tr>';
       }
