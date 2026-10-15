@@ -199,7 +199,7 @@ function aBg(){
   st.forEach(function(sx,i){
     if(i%240){return;}
     n++;
-    s+='<radialGradient id="ab'+n+'"><stop offset="0%" stop-color="'+p.arm+'" stop-opacity=".3"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient>';
+    s+='<radialGradient id="ab'+n+'"><stop offset="0%" stop-color="'+p.arm+'" stop-opacity=".12"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient>';
   });
   s+='</defs>';
   n=0;
