@@ -38,6 +38,7 @@ function renderMap(){
   });
   svg+='</svg>';
   $('g-map').innerHTML=svg;
+  applyVB();
   Array.prototype.forEach.call(document.querySelectorAll('.sysg'),function(el){
     el.addEventListener('click',function(ev){ev.stopPropagation();select(parseInt(el.getAttribute('data-id'),10));});
   });
@@ -46,7 +47,7 @@ function renderMap(){
 function catLabel(c){return c==='vaisseau'?'Vaisseau-tombe':c==='nebuleuse'?'Nébuleuse':c==='inconnu'?'Inexploré':'Système';}
 var PLS={},CURPLA=null,POIS=[],CURPOI=null;
 function bindImgs(root){Array.prototype.forEach.call((root||document).querySelectorAll('img'),function(im){im.addEventListener('error',function(){if(im.parentNode){im.parentNode.removeChild(im);}});});}
-function showGalaxy(){CURPLA=null;CURPOI=null;$('g-crumb').style.display='none';$('g-searchbox').style.display='';$('g-legend').style.display='';$('g-map').style.display='';$('p-map').style.display='none';renderPanel();}
+function showGalaxy(){CURPLA=null;CURPOI=null;$('g-crumb').style.display='none';$('g-searchbox').style.display='';$('g-legend').style.display='';$('g-zoom').style.display='';$('g-map').style.display='';$('p-map').style.display='none';renderPanel();}
 function crumbRender(){
   var g=null;SYS.forEach(function(s){if(s.id===SEL){g=s;}});
   var out='<button type="button" id="crumb-back">← Galaxie</button>';
@@ -78,7 +79,7 @@ function explorePlanet(pid){
   fetchJ(SB+'planetes_poi?select=*&planete_id=eq.'+pid+'&order=id.asc').then(function(l){POIS=l||[];renderPlanetView();renderPanel();}).catch(function(){POIS=[];renderPlanetView();renderPanel();});
 }
 function renderPlanetView(){
-  $('g-searchbox').style.display='none';$('g-legend').style.display='none';$('g-map').style.display='none';
+  $('g-searchbox').style.display='none';$('g-legend').style.display='none';$('g-map').style.display='none';$('g-zoom').style.display='none';
   var pm=$('p-map');pm.style.display=CURPOI?'none':'';
   crumbRender();
   var h='<div class="pm">'+(CURPLA.carte?'<img class="pmimg" src="'+esc(CURPLA.carte)+'" alt="Mappemonde">':'')+pmSvg(CURPLA.id);
@@ -162,6 +163,25 @@ function applySearch(){
 }
 $('g-search').addEventListener('input',applySearch);
 $('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open');this.setAttribute('aria-expanded',on?'true':'false');});
+/* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
+var VB={x:0,y:0,w:1000,h:700},VBMIN=170,VBMAX=1000,DRAGGED=false,DRG=null;
+function applyVB(){var sv=$('g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}}
+function clampVB(){if(VB.w<VBMIN){VB.w=VBMIN;}if(VB.w>VBMAX){VB.w=VBMAX;}VB.h=VB.w*0.7;var mx=1000-VB.w,my=700-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
+function zoomAt(px,py,f){var nw=Math.max(VBMIN,Math.min(VBMAX,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
+function resetVB(){VB={x:0,y:0,w:1000,h:700};applyVB();}
+function svgPt(ev){var sv=$('g-svg');if(!sv){return null;}var r=sv.getBoundingClientRect();if(r.width<2){return null;}return {sx:VB.x+(ev.clientX-r.left)/r.width*VB.w,sy:VB.y+(ev.clientY-r.top)/r.height*VB.h,kx:VB.w/r.width,ky:VB.h/r.height};}
+(function(){
+  var gm=$('g-map');
+  gm.addEventListener('wheel',function(ev){ev.preventDefault();var p=svgPt(ev);if(!p){return;}zoomAt(p.sx,p.sy,ev.deltaY<0?1.25:0.8);},{passive:false});
+  gm.addEventListener('dblclick',function(ev){var p=svgPt(ev);if(p){zoomAt(p.sx,p.sy,1.6);}});
+  gm.addEventListener('pointerdown',function(ev){DRG={cx:ev.clientX,cy:ev.clientY,vx:VB.x,vy:VB.y};DRAGGED=false;gm.classList.add('drag');});
+  window.addEventListener('pointermove',function(ev){if(!DRG){return;}var p=svgPt(ev);if(!p){return;}var dx=ev.clientX-DRG.cx,dy=ev.clientY-DRG.cy;if(!DRAGGED&&(dx*dx+dy*dy)>25){DRAGGED=true;}if(DRAGGED){VB.x=DRG.vx-dx*p.kx;VB.y=DRG.vy-dy*p.ky;clampVB();applyVB();}});
+  window.addEventListener('pointerup',function(){DRG=null;gm.classList.remove('drag');});
+  gm.addEventListener('click',function(ev){if(DRAGGED){ev.stopPropagation();ev.preventDefault();DRAGGED=false;}},true);
+  $('g-zin').addEventListener('click',function(){zoomAt(VB.x+VB.w/2,VB.y+VB.h/2,1.45);});
+  $('g-zout').addEventListener('click',function(){zoomAt(VB.x+VB.w/2,VB.y+VB.h/2,0.69);});
+  $('g-reset').addEventListener('click',resetVB);
+})();
 loadGalaxie();
 var RTGD=null;
 function rtDeb(fn){return function(){clearTimeout(RTGD);RTGD=setTimeout(fn,700);};}

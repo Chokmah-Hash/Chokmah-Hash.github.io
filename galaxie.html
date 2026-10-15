@@ -52,6 +52,12 @@
 .plinfo b{display:block;color:var(--text)}
 .plinfo span{display:block;color:var(--muted);font-size:.88rem}
 .poiimg{width:100%;border-radius:10px;margin:10px 0;display:block}
+
+/* Navigation pan + zoom */
+.zoomctl{position:absolute;right:12px;bottom:12px;z-index:6;display:flex;gap:6px;align-items:center}
+.zoomctl .legend-btn{padding:7px 13px}
+.gmap{cursor:grab}
+.gmap.drag{cursor:grabbing}
     </style>
   </head>
   <body>
@@ -86,6 +92,11 @@
             <span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span>
             <span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>
           </div>
+        </div>
+        <div class="zoomctl" id="g-zoom">
+          <button class="legend-btn" id="g-zin" type="button" title="Zoom avant" aria-label="Zoom avant">+</button>
+          <button class="legend-btn" id="g-zout" type="button" title="Zoom arriere" aria-label="Zoom arriere">-</button>
+          <button class="legend-btn" id="g-reset" type="button" title="Vue complete de la galaxie">Recentrer</button>
         </div>
       </div>
       <div class="note-box" id="g-err" style="display:none"></div>
