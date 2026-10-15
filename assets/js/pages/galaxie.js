@@ -2,8 +2,7 @@
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SYS=[],SEL=null,ATLAS=[],AMODE=false,SKIN='necro';
-try{SKIN=(localStorage.getItem('pe_skin')==='imp')?'imp':'necro';}catch(e){}
-var SKP={necro:{arm:'#2ee6c9',armop:'0.09',core:'#7cf5df',seg:'#2ee6c9',lbl:'#e8f5f1',monde:'#2ee6c9',forge:'#f0b24a',cap:'#ffffff',zone:'#93aca1',ano:'#c2454f',star:'#bfe9df'},imp:{arm:'#f0b24a',armop:'0.10',core:'#ffe3a3',seg:'#f0b24a',lbl:'#f5ead2',monde:'#e8c06a',forge:'#d98f2b',cap:'#fff6e0',zone:'#a3936f',ano:'#e2604f',star:'#e6d9b8'}};
+var SKP={necro:{arm:'#2ee6c9',armop:'0.09',core:'#7cf5df',seg:'#2ee6c9',lbl:'#e8f5f1',monde:'#2ee6c9',forge:'#f0b24a',cap:'#ffffff',zone:'#93aca1',ano:'#c2454f',star:'#bfe9df'}};
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function H(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-Type':'application/json'};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
@@ -218,7 +217,6 @@ function atlasSvg(){
   svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>'; svg+=aBg();
   svg+=aStars();
   svg+=aStars();
-  svg+='<circle cx="700" cy="450" r="150" fill="url(#acore)"/><circle cx="700" cy="450" r="38" fill="'+p.core+'" opacity=".25"/><circle cx="700" cy="450" r="13" fill="'+p.core+'" opacity=".7"/>';
   svg+='</svg>';
   return svg;
 }
@@ -270,14 +268,6 @@ function legRender(){
     d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>';
   }
 }
-function setSkin(s){
-  SKIN=(s==='imp')?'imp':'necro';
-  try{localStorage.setItem('pe_skin',SKIN);}catch(e){}
-  $('sk-necro').classList.toggle('on',SKIN==='necro');
-  $('sk-imp').classList.toggle('on',SKIN==='imp');
-  legRender();
-  if(AMODE){renderAtlas();}
-}
 function setMode(gal){
   AMODE=!!gal;
   $('m-secteur').classList.toggle('active',!AMODE);
@@ -323,9 +313,6 @@ function applySearch(){
 }
 $('g-search').addEventListener('input',applySearch);
 $('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open-leg');this.setAttribute('aria-expanded',on?'true':'false');});
-$('skin-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open-skin');this.setAttribute('aria-expanded',on?'true':'false');});
-$('sk-necro').addEventListener('click',function(){setSkin('necro');});
-$('sk-imp').addEventListener('click',function(){setSkin('imp');});
 $('m-secteur').addEventListener('click',function(){setMode(false);});
 $('m-galaxie').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
@@ -351,7 +338,6 @@ function svgPt(ev){var sv=$(AMODE?'a-svg':'g-svg');if(!sv){return null;}var r=sv
 })();
 loadGalaxie();
 legRender();
-setSkin(SKIN);
 var RTGD=null;
 function rtDeb(fn){return function(){clearTimeout(RTGD);RTGD=setTimeout(fn,700);};}
 function rtInit(){
