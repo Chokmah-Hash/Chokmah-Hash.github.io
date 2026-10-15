@@ -38,3 +38,4 @@ self.addEventListener('fetch',function(e){
   })
  );
 });
+/* deploiement v2.3 */
