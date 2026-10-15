@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-    <meta name="robots" content="noindex, nofollow"><title>Bestiaire — Les Protocoles Éternels</title>
+    <meta name="robots" content="noindex, nofollow"><title>Bestiaire â Les Protocoles Ãternels</title>
     <style>
 .btn.solid-amber{background:var(--amber);color:#231503}
 .btn.solid-amber:hover{transform:translateY(-1px);box-shadow:0 0 22px rgba(240,178,74,.35)}
@@ -20,7 +20,7 @@
 .badge.neutral{border-color:rgba(147,172,161,.4);color:var(--muted);background:rgba(147,172,161,.08)}
 .sect.amber>h2{color:var(--amber);border-bottom-color:var(--amberline)}
 .chips a.on{background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
-/* ————— Spécifique bestiaire ————— */
+/* âââââ SpÃ©cifique bestiaire âââââ */
 .btools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 .searchbox{background:var(--panel);border:1px solid var(--tealline);border-radius:9px;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:.95rem;padding:10px 14px;flex:1;min-width:180px;max-width:340px}
 .searchbox:focus{outline:none;border-color:var(--teal);box-shadow:0 0 10px rgba(46,230,201,.2)}
@@ -36,7 +36,7 @@ table.mini td{padding:6px 8px;text-align:center}
 .armeslist li{margin:2px 0}
 .beast-notes{color:var(--muted);font-size:.9rem;font-style:italic;margin:.3em 0}
 .empty-box{background:var(--panel2);border:1px dashed var(--tealline);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted);margin:18px 0}
-/* ————— Créatures repérées sur la carte ————— */
+/* âââââ CrÃ©atures repÃ©rÃ©es sur la carte âââââ */
 .syshead{margin:16px 0 4px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.08em;font-size:.85rem;text-transform:uppercase;color:var(--teal)}
 .crea-tags{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
 .crea-tag{display:inline-block;background:var(--panel2);border:1px solid var(--tealline);border-radius:999px;padding:5px 13px;font-size:.88rem;color:var(--text);text-decoration:none;cursor:pointer}
@@ -45,10 +45,16 @@ table.mini td{padding:6px 8px;text-align:center}
 .crea-tag.off{color:var(--muted);border-style:dashed;cursor:default}
 .crea-tag.off:hover{border-color:var(--tealline);color:var(--muted)}
 .crea-tag.hit{box-shadow:0 0 0 2px var(--amber);color:var(--amber)}
-#f-subnav .tous{margin-left:auto}
 table.mini.beasts td{padding:7px 8px;white-space:nowrap}
 table.mini.beasts td.nomcell{text-align:left;min-width:170px;white-space:normal}
 table.mini.beasts tr.subrow td{padding:0 10px 9px;text-align:left}
+table.mini.beasts tr.brow td{padding-top:14px}
+table.mini.beasts tr.descrow td{padding:2px 10px 0;white-space:normal}
+.bname{cursor:pointer}
+.bname:hover>b,.bname.open>b{color:var(--teal)}
+.bname .chev{display:inline-block;color:var(--teal);font-size:.72em;margin-left:6px;transition:transform .18s ease}
+.bname.open .chev{transform:rotate(90deg)}
+.bdesc{background:var(--panel2);border:1px solid var(--tealline);border-left:3px solid var(--teal);border-radius:8px;padding:10px 14px;color:var(--text);font-size:.88rem;line-height:1.45;font-style:italic;text-align:left;margin:4px 0 6px}
 .bsub{display:block;color:var(--muted);font-size:.78rem;line-height:1.35}
 .bsub.it{font-style:italic}
 </style>
@@ -56,52 +62,52 @@ table.mini.beasts tr.subrow td{padding:0 10px 9px;text-align:left}
   <body>
     <header class="nav">
       <div class="nav-in">
-        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <a class="brand" href="/">â¡ PROTOCOLES ÃTERNELS</a>
         <nav class="nav-links">
           <a href="/">Accueil</a>
-          <a href="/regles.html">Règles</a>
+          <a href="/regles.html">RÃ¨gles</a>
           <a href="/bestiaire.html">Bestiaire</a>
           <a href="/galaxie.html">Cartes</a>
-          <a href="/mon-espace.html" class="pj">🔐 Zone joueurs</a>
-          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+          <a href="/mon-espace.html" class="pj">ð Zone joueurs</a>
+          <a href="/mj.html" class="mj">ð Zone MJ</a>
         </nav>
       </div>
     </header>
     <nav class="subnav" aria-label="Filtrer le bestiaire">
-      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span> Factions</button>
+      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="ic-bars" aria-hidden="true">â°</span><span class="ic-x" aria-hidden="true">â</span> Factions</button>
       <div class="subnav-in" id="f-subnav">
         <button type="button" data-f="tous" class="active">Tous</button>
-        <a href="#recherche">🔎 Recherche</a>
+        <a href="#recherche">ð Recherche</a>
       </div>
     </nav>
     <script src="assets/js/core.js"></script>
-    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">â²</button>
 
     <main class="wrap">
       <section class="sect rev d1">
-        <h2>Créatures recensées</h2>
-        <p id="b-status">Chargement du bestiaire…</p>
+        <h2>CrÃ©atures recensÃ©es</h2>
+        <p id="b-status">Chargement du bestiaireâ¦</p>
         <div id="beasts"></div>
         <div class="btools" id="recherche">
-          <input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une note…">
-          <button class="btn ghost" id="b-refresh" style="min-height:44px">↻ Rafraîchir</button>
+          <input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une noteâ¦">
+          <button class="btn ghost" id="b-refresh" style="min-height:44px">â» RafraÃ®chir</button>
         </div>
         <div class="note-box">
-          <strong>Base en nuage :</strong> les créatures sont enregistrées dans la base partagée du groupe. La page nécessite une connexion internet — hors ligne, la liste reste vide mais rien n'est perdu.
+          <strong>Base en nuage :</strong> les crÃ©atures sont enregistrÃ©es dans la base partagÃ©e du groupe. La page nÃ©cessite une connexion internet â hors ligne, la liste reste vide mais rien n'est perdu.
         </div>
       </section>
 
             <section class="sect rev d2" id="sightings">
-        <h2>🧭 Repérées sur la carte</h2>
-        <p style="color:var(--muted);font-size:.92rem;margin:.2em 0 .4em">Créatures signalées dans les systèmes et lieux de la galaxie. Celles en teal possèdent une fiche ci-dessus — un clic y saute ; les pointillées attendent leur première rencontre.</p>
-        <p id="s-status" style="color:var(--muted);font-size:.9rem">Chargement des signalements…</p>
+        <h2>ð§­ RepÃ©rÃ©es sur la carte</h2>
+        <p style="color:var(--muted);font-size:.92rem;margin:.2em 0 .4em">CrÃ©atures signalÃ©es dans les systÃ¨mes et lieux de la galaxie. Celles en teal possÃ¨dent une fiche ci-dessus â un clic y saute ; les pointillÃ©es attendent leur premiÃ¨re rencontre.</p>
+        <p id="s-status" style="color:var(--muted);font-size:.9rem">Chargement des signalementsâ¦</p>
         <div id="s-list"></div>
       </section>
     </main>
     <footer class="foot">
-      <div class="glyphrow">⚡ ⬥ ⚡</div>
-      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+      <div class="glyphrow">â¡ â¬¥ â¡</div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Ãternels</strong> â JDR maison, usage strictement privÃ© entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est rÃ©servÃ©e au MaÃ®tre de la Tombe.</p>
     </footer>
     <script src="assets/js/vendor/supabase.js"></script>
     <script src="assets/js/pages/bestiaire.js"></script>
