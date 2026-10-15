@@ -111,7 +111,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .
     Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .tab[data-t]'),function(x){x.classList.remove('on');x.classList.remove('active');});
     b.classList.add('active');
     var t=b.getAttribute('data-t');
-    ['av','pj','notes'].forEach(function(k){
+    ['av','pj','notes','des'].forEach(function(k){
       var pane=$('tab-'+k);
       if(pane){pane.classList.toggle('on',k===t);}
     });

@@ -90,6 +90,7 @@ textarea.fld{resize:vertical;min-height:64px}
         <button type="button" class="active" data-t="av">⚡ Aventure</button>
         <button type="button" data-t="pj">👤 Personnages</button>
         <button type="button" data-t="notes">📝 Notes</button>
+        <button type="button" data-t="des">🎲 Dés</button>
       </div>
     </nav>
 
@@ -234,6 +235,15 @@ textarea.fld{resize:vertical;min-height:64px}
             <p class="savestate" id="note-state"></p>
           </div>
         </section>
+
+        <!-- Onglet Dés -->
+        <section class="tabpane" id="tab-des">
+          <div class="sect rev d1" style="margin-top:0">
+            <h2>🎲 Jets de dés</h2>
+            <p class="gmsg" style="margin-bottom:6px">Les dés du groupe, signés et horodatés dans la base partagée : chacun voit les jets de tous, en direct — fini les jets fantômes.</p>
+            <div id="des-box"></div>
+          </div>
+        </section>
       </div>
     </main>
     <footer class="foot">
@@ -242,6 +252,8 @@ textarea.fld{resize:vertical;min-height:64px}
     </footer>
     <script src="assets/js/core.js"></script>
     <script src="assets/js/pages/mon-espace.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/pages/des.js"></script>
   </body>
 </html>
 

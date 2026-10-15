@@ -8,18 +8,19 @@ Pages :
 - regles.html     : regles maison "Les Protocoles Eternels"
 - bestiaire.html  : bestiaire partage (fiches filtrees par faction + creatures reperees sur la carte)
 - galaxie.html    : carte de la galaxie (systemes, planetes, mappemondes et POI explorables)
-- mon-espace.html : espace joueur (connexion, position sur la carte, notes)
+- mon-espace.html : espace joueur (connexion, position sur la carte, notes, jets de des partages)
 - fiches.html     : fiches d'unites (acces uniquement depuis la Zone joueurs)
-- mj.html         : page du MJ (scenarios proteges, consoles aventures, carte et bestiaire, planetes et POI)
+- mj.html         : page du MJ (scenarios proteges, consoles aventures, carte et bestiaire, planetes et POI, jets de des)
 - 404.html        : page d'erreur autonome
 
 Assets :
 - assets/css/main.css  : theme commun a toutes les pages (404.html exceptee)
 - assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
                          service worker, menu et sous-menu mobiles)
-- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj, mj-carte, mj-bestiaire)
+- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj, mj-carte, mj-bestiaire, des)
 - icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
 - images/              : illustrations (planetes, mappemondes, points d'interet)
+- Storage Supabase     : bucket public "images" pour heberger de nouvelles illustrations (URL a coller dans les consoles MJ)
 
 PWA : manifest.webmanifest + sw.js (consultable hors ligne apres la premiere visite).
 

@@ -1,9 +1,9 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-15-a';
+var CACHE='pe-v2026-10-15-b';
 var PRECACHE=[
  '/', '/index.html', '/regles.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/mon-espace.html', '/mj.html', '/404.html',
  '/assets/css/main.css', '/assets/js/core.js',
- '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/mon-espace.js', '/assets/js/pages/mj.js', '/assets/js/pages/mj-carte.js', '/assets/js/pages/mj-bestiaire.js',
+ '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/mon-espace.js', '/assets/js/pages/mj.js', '/assets/js/pages/mj-carte.js', '/assets/js/pages/mj-bestiaire.js', '/assets/js/pages/des.js',
  '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
 ];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRECACHE);}).then(function(){return self.skipWaiting();}));});
@@ -12,7 +12,19 @@ self.addEventListener('fetch',function(e){
  var req=e.request;
  if(req.method!=='GET'){return;}
  var url=new URL(req.url);
- if(url.origin!==location.origin){return;}
+ if(url.origin!==location.origin){
+  var cachable=(url.origin==='https://cdn.jsdelivr.net')||(url.origin==='https://dnbnkdakmobufqcrqzpq.supabase.co'&&url.pathname.indexOf('/storage/v1/object/public/')===0);
+  if(!cachable){return;}
+  e.respondWith(
+   fetch(req).then(function(res){
+    if(res&&res.ok){var copy=res.clone();caches.open(CACHE).then(function(c){c.put(req,copy);});}
+    return res;
+   }).catch(function(){
+    return caches.match(req);
+   })
+  );
+  return;
+ }
  e.respondWith(
   fetch(req).then(function(res){
    if(res&&res.ok){var copy=res.clone();caches.open(CACHE).then(function(c){c.put(req,copy);});}
