@@ -163,3 +163,22 @@ function applySearch(){
 $('g-search').addEventListener('input',applySearch);
 $('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open');this.setAttribute('aria-expanded',on?'true':'false');});
 loadGalaxie();
+var RTGD=null;
+function rtDeb(fn){return function(){clearTimeout(RTGD);RTGD=setTimeout(fn,700);};}
+function rtInit(){
+  try{
+    if(typeof supabase==="undefined"||!supabase.createClient){return;}
+    var rtu=(typeof SB!=="undefined"&&String(SB).indexOf("/rest")>0)?String(SB).slice(0,String(SB).indexOf("/rest")):((typeof SB!=="undefined")?String(SB):"https://dnbnkdakmobufqcrqzpq.supabase.co");
+    var rtk=(typeof SBK!=="undefined")?String(SBK).replace("Bearer ",""):"sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+    var rtr=rtu+"/rest/v1/";
+    var c=supabase.createClient(rtu,rtk,{realtime:{params:{eventsPerSecond:2}}});
+    var ch=c.channel("carte-live");
+    ch.on("postgres_changes",{event:"*",schema:"public",table:"galaxie"},rtDeb(loadGalaxie));
+    ch.on("postgres_changes",{event:"*",schema:"public",table:"planetes"},rtDeb(function(){if(SEL){loadPlanetes(SEL);}renderPanel();}));
+    ch.on("postgres_changes",{event:"*",schema:"public",table:"planetes_poi"},rtDeb(function(){
+      if(CURPLA){fetchJ(SB+"planetes_poi?select=*&planete_id=eq."+CURPLA.id+"&order=id.asc").then(function(l){POIS=l||[];renderPlanetView();renderPanel();}).catch(function(){});}
+    }));
+    ch.subscribe(function(){});
+  }catch(e){}
+}
+rtInit();

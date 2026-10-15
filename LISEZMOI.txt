@@ -17,6 +17,7 @@ Assets :
 - assets/css/main.css  : theme commun a toutes les pages (404.html exceptee)
 - assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
                          service worker, menu et sous-menu mobiles)
+- assets/js/vendor/supabase.js : bibliotheque Supabase locale (temps reel, prechargee hors ligne)
 - assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, mon-espace, mj, mj-carte, mj-bestiaire, des)
 - icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
 - images/              : illustrations (planetes, mappemondes, points d'interet)

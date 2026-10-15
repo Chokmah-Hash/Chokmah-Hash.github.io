@@ -1,8 +1,8 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-15-b';
+var CACHE='pe-v2026-10-15-c';
 var PRECACHE=[
  '/', '/index.html', '/regles.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/mon-espace.html', '/mj.html', '/404.html',
- '/assets/css/main.css', '/assets/js/core.js',
+ '/assets/css/main.css', '/assets/js/core.js', '/assets/js/vendor/supabase.js',
  '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/mon-espace.js', '/assets/js/pages/mj.js', '/assets/js/pages/mj-carte.js', '/assets/js/pages/mj-bestiaire.js', '/assets/js/pages/des.js',
  '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
 ];

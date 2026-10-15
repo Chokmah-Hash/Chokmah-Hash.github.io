@@ -1,6 +1,7 @@
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var BEASTS=[],FILTER='tous',Q='',GALS=[],WC=null,WC_DONE=false;
+var RT_ON=false;
 function $(id){return document.getElementById(id);}
 function hdr(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -14,7 +15,7 @@ function load(){
     .then(function(r){if(!r.ok){throw new Error('http '+r.status);}return r.json();})
     .then(function(list){
       BEASTS=list||[];buildFactions();render();renderSightings();
-      setStatus(BEASTS.length===0?'Aucune créature recensée pour l\'instant — le MJ les crée depuis la console Bestiaire de sa Zone MJ.':BEASTS.length+' créature(s) dans la base partagée.');
+      setStatus(BEASTS.length===0?'Aucune créature recensée pour l\'instant — le MJ les crée depuis la console Bestiaire de sa Zone MJ.':BEASTS.length+' créature(s) dans la base partagée.'+(RT_ON?' \uD83D\uDD02 en direct':''));
       if(WC&&!WC_DONE){WC_DONE=true;
         var hit=false;BEASTS.forEach(function(b){if(!hit&&norm(b.nom)===norm(WC)){hit=true;}});
         if(hit){$('beasts').scrollIntoView({behavior:'smooth'});}
@@ -117,3 +118,21 @@ $('b-search').addEventListener('input',function(){Q=this.value.trim().toLowerCas
 try{WC=new URLSearchParams(location.search).get('c');}catch(e){WC=null;}
 if(WC){Q=WC.toLowerCase();$('b-search').value=WC;}
 load();loadGals();
+var RTD=null;
+function rtInit(){
+  try{
+    if(typeof supabase==="undefined"||!supabase.createClient){return;}
+    var rtu=(typeof SB!=="undefined"&&String(SB).indexOf("/rest")>0)?String(SB).slice(0,String(SB).indexOf("/rest")):((typeof SB!=="undefined")?String(SB):"https://dnbnkdakmobufqcrqzpq.supabase.co");
+    var rtk=(typeof SBK!=="undefined")?String(SBK).replace("Bearer ",""):"sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+    var c=supabase.createClient(rtu,rtk,{realtime:{params:{eventsPerSecond:2}}});
+    var ch=c.channel("bestiaire-live");
+    ch.on("postgres_changes",{event:"*",schema:"public",table:"bestiaire"},function(){
+      clearTimeout(RTD);RTD=setTimeout(function(){load();loadGals();},800);
+    });
+    ch.subscribe(function(st){
+      RT_ON=(st==="SUBSCRIBED");
+      setStatus(BEASTS.length===0?"Aucune cr\u00e9ature recens\u00e9e pour l'instant \u2014 le MJ les cr\u00e9e depuis la console Bestiaire de sa Zone MJ.":BEASTS.length+" cr\u00e9ature(s) dans la base partag\u00e9e."+(RT_ON?" \uD83D\uDD02 en direct":""));
+    });
+  }catch(e){RT_ON=false;}
+}
+rtInit();
