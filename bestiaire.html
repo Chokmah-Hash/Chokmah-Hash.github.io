@@ -28,6 +28,7 @@
 #b-status.err{color:var(--danger)}
 .beast-card h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:.1em 0 .2em}
 .beast-card .badge{margin-top:0}
+.beast-card .fac{color:var(--muted);font-size:.82rem;font-family:'Exo 2',sans-serif}
 table.mini{min-width:440px;font-size:.85rem}
 table.mini th{font-size:.68rem;padding:6px 8px;text-align:center}
 table.mini td{padding:6px 8px;text-align:center}
@@ -60,31 +61,25 @@ table.mini td{padding:6px 8px;text-align:center}
         </nav>
       </div>
     </header>
+    <nav class="subnav" aria-label="Filtrer le bestiaire">
+      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span> Factions</button>
+      <div class="subnav-in" id="f-subnav">
+        <button type="button" data-f="tous" class="active">Tous</button>
+        <a href="#recherche">🔎 Recherche</a>
+      </div>
+    </nav>
     <script src="assets/js/core.js"></script>
     <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 
     <main class="wrap">
-      <section class="hero rev">
-        <div class="glyphrow">⚡ ⬥ ⚡</div>
-        <h1>Le <b>Bestiaire</b></h1>
-        <div class="tagline">Créatures · Machines · Rencontres</div>
-        <p class="pitch">Toutes les créatures et machines recensées par le groupe, partagées en nuage et consultables depuis tous les appareils. Le MJ y consigne ses rencontres ; les joueuses y retrouvent ce qui a déjà été affronté — ou ce qui rôde encore.</p>
-      </section>
-
       <section class="sect rev d1">
         <h2>Créatures recensées</h2>
-        <div class="chips" id="filters">
-          <a href="#" data-f="tous" class="on">Tous</a>
-          <a href="#" data-f="ennemi">Ennemis</a>
-          <a href="#" data-f="allie">Alliés</a>
-          <a href="#" data-f="neutre">Neutres</a>
-        </div>
-        <div class="btools">
+        <p id="b-status">Chargement du bestiaire…</p>
+        <div id="beasts"></div>
+        <div class="btools" id="recherche">
           <input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une note…">
           <button class="btn ghost" id="b-refresh" style="min-height:44px">↻ Rafraîchir</button>
         </div>
-        <p id="b-status">Chargement du bestiaire…</p>
-        <div id="beasts"></div>
         <div class="note-box">
           <strong>Base en nuage :</strong> les créatures sont enregistrées dans la base partagée du groupe. La page nécessite une connexion internet — hors ligne, la liste reste vide mais rien n'est perdu.
         </div>

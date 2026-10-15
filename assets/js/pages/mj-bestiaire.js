@@ -18,7 +18,7 @@ function bjList(){
   if(!BJ.length){out='<p class="pv">Aucune fiche pour l\'instant — crée la première ci-dessus.</p>';}
   BJ.forEach(function(b){
     var ar=((b.data&&b.data.armes)||[]).length;
-    out+='<div class="plrow"><div class="plinfo"><b>'+esc(b.nom)+'</b><span>'+esc(campLabelB(b.camp))+' — '+ar+' arme(s)</span></div>'
+    out+='<div class="plrow"><div class="plinfo"><b>'+esc(b.nom)+'</b><span>'+esc(campLabelB(b.camp))+' · '+esc(b.faction||'—')+' · '+ar+' arme(s)</span></span></div>'
       +'<button class="btn amber sm" data-act="edit" data-nom="'+esc(b.nom)+'" type="button">✎ Modifier</button>'
       +'<button class="btn danger sm" data-act="del" data-nom="'+esc(b.nom)+'" type="button">🗑</button></div>';
   });
@@ -35,7 +35,7 @@ function bjFill(nom){
   var b=null;BJ.forEach(function(x){if(x.nom===nom){b=x;}});
   if(!b){return;}
   var st=(b.data&&b.data.st)||{};
-  $('b-old').value=b.nom||'';$('b-nom').value=b.nom||'';$('b-camp').value=b.camp||'ennemi';
+  $('b-old').value=b.nom||'';$('b-nom').value=b.nom||'';$('b-camp').value=b.camp||'ennemi';$('b-faction').value=b.faction||'';
   ['m','cc','ct','f','e','pv','a','cd','sv','rfx'].forEach(function(k){$('b-'+k).value=st[k]||'';});
   $('b-armes').value=((b.data&&b.data.armes)||[]).join('\n');
   $('b-notes').value=(b.data&&b.data.notes)||'';
@@ -45,7 +45,7 @@ function bjFill(nom){
 }
 function bjClear(){
   $('b-form-title').textContent='🦴 Nouvelle créature';
-  $('b-old').value='';$('b-nom').value='';$('b-camp').value='ennemi';
+  $('b-old').value='';$('b-nom').value='';$('b-camp').value='ennemi';$('b-faction').value='';
   ['m','cc','ct','f','e','pv','a','cd','sv','rfx'].forEach(function(k){$('b-'+k).value='';});
   $('b-armes').value='';$('b-notes').value='';
   $('b-del').style.display='none';
@@ -95,13 +95,14 @@ $('b-save').addEventListener('click',function(){
     notes:$('b-notes').value.trim()
   };
   var camp=$('b-camp').value;
+  var faction=$('b-faction').value.trim()||'Nécrons';
   var old=$('b-old').value.trim();
   var target=old||nom;
   bmsg('b-fmsg','Enregistrement en cours…','');
   fetch(SB+'bestiaire?nom=eq.'+encodeURIComponent(target),{
     method:'PATCH',
     headers:HB({'Prefer':'return=representation'}),
-    body:JSON.stringify({nom:nom,camp:camp,data:data})
+    body:JSON.stringify({nom:nom,camp:camp,faction:faction,data:data})
   }).then(function(r){
     if(r.status===403){throw new Error('key');}
     if(!r.ok){throw new Error('http '+r.status);}
@@ -111,7 +112,7 @@ $('b-save').addEventListener('click',function(){
     return fetch(SB+'bestiaire',{
       method:'POST',
       headers:HB({'Prefer':'return=minimal'}),
-      body:JSON.stringify({nom:nom,camp:camp,data:data})
+      body:JSON.stringify({nom:nom,camp:camp,faction:faction,data:data})
     }).then(function(r){
       if(r.status===403){throw new Error('key');}
       if(!r.ok){throw new Error('http '+r.status);}

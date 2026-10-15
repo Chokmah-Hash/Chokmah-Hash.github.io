@@ -13,7 +13,7 @@ function load(){
   fetch(SB+'bestiaire?select=*&order=nom.asc',{headers:hdr()})
     .then(function(r){if(!r.ok){throw new Error('http '+r.status);}return r.json();})
     .then(function(list){
-      BEASTS=list||[];render();renderSightings();
+      BEASTS=list||[];buildFactions();render();renderSightings();
       setStatus(BEASTS.length===0?'Aucune créature recensée pour l\'instant — le MJ les crée depuis la console Bestiaire de sa Zone MJ.':BEASTS.length+' créature(s) dans la base partagée.');
       if(WC&&!WC_DONE){WC_DONE=true;
         var hit=false;BEASTS.forEach(function(b){if(!hit&&norm(b.nom)===norm(WC)){hit=true;}});
@@ -21,7 +21,28 @@ function load(){
         else{$('sightings').scrollIntoView({behavior:'smooth'});}
       }
     })
-    .catch(function(){BEASTS=[];render();renderSightings();setStatus('Base inaccessible — vérifiez votre connexion internet.',true);});
+    .catch(function(){BEASTS=[];buildFactions();render();renderSightings();setStatus('Base inaccessible — vérifiez votre connexion internet.',true);});
+}
+function buildFactions(){
+  var box=$('f-subnav');
+  var seen={},names=[];
+  BEASTS.forEach(function(b){var f=b.faction||'—';if(!seen[f]){seen[f]=1;names.push(f);}});
+  names.sort(function(a,b){return a.localeCompare(b);});
+  var out='<button type="button" data-f="tous"'+(FILTER==='tous'?' class="active"':'')+'>Tous</button>';
+  names.forEach(function(f){out+='<button type="button" data-f="'+esc(f)+'"'+(FILTER===f?' class="active"':'')+'>'+esc(f)+'</button>';});
+  out+='<a href="#recherche">🔎 Recherche</a>';
+  box.innerHTML=out;
+  Array.prototype.forEach.call(box.querySelectorAll('button[data-f]'),function(btn){
+    btn.addEventListener('click',function(){
+      FILTER=btn.getAttribute('data-f');
+      Array.prototype.forEach.call(box.querySelectorAll('button'),function(x){x.classList.remove('active');});
+      btn.classList.add('active');
+      render();
+    });
+  });
+  var rl=box.querySelector('a[href="#recherche"]');
+  if(rl){rl.addEventListener('click',function(){setTimeout(function(){var i=$('b-search');if(i){i.focus();}},350);});}
+  try{window.dispatchEvent(new Event('resize'));}catch(e){}
 }
 function loadGals(){
   fetch(SB+'galaxie?select=*&order=nom.asc',{headers:hdr()})
@@ -32,8 +53,8 @@ function loadGals(){
 function render(){
   var out='';
   var list=BEASTS.filter(function(b){
-    if(FILTER!=='tous'&&b.camp!==FILTER){return false;}
-    if(Q){var hay=((b.nom||'')+' '+(b.camp||'')+' '+JSON.stringify(b.data||{})).toLowerCase();if(hay.indexOf(Q)<0){return false;}}
+    if(FILTER!=='tous'&&b.faction!==FILTER){return false;}
+    if(Q){var hay=((b.nom||'')+' '+(b.camp||'')+' '+(b.faction||'')+' '+JSON.stringify(b.data||{})).toLowerCase();if(hay.indexOf(Q)<0){return false;}}
     return true;
   });
   if(list.length===0){
@@ -47,7 +68,7 @@ function render(){
       var armes=(b.data&&b.data.armes)||[];
       var notes=(b.data&&b.data.notes)||'';
       out+='<div class="card beast-card">'
-        +'<h3>'+esc(b.nom)+'</h3>'+campBadge(b.camp)
+        +'<h3>'+esc(b.nom)+'</h3>'+campBadge(b.camp)+'<span class="fac">'+esc(b.faction||'')+'</span>'
         +'<div class="tscroll"><table class="rt mini"><tr>'
         +'<th>M</th><th>CC</th><th>CT</th><th>F</th><th>E</th><th>PV</th><th>A</th><th>Cd</th><th>Svg</th><th>Rfx</th></tr><tr>'
         +'<td>'+(esc(st.m)||'—')+'</td><td>'+(esc(st.cc)||'—')+'</td><td>'+(esc(st.ct)||'—')+'</td><td>'+(esc(st.f)||'—')+'</td><td>'+(esc(st.e)||'—')+'</td>'
@@ -93,15 +114,6 @@ function renderSightings(){
 }
 $('b-refresh').addEventListener('click',function(){load();loadGals();});
 $('b-search').addEventListener('input',function(){Q=this.value.trim().toLowerCase();render();});
-Array.prototype.forEach.call(document.querySelectorAll('#filters a'),function(a){
-  a.addEventListener('click',function(ev){
-    ev.preventDefault();
-    FILTER=a.getAttribute('data-f');
-    Array.prototype.forEach.call(document.querySelectorAll('#filters a'),function(x){x.classList.remove('on');});
-    a.classList.add('on');
-    render();
-  });
-});
 try{WC=new URLSearchParams(location.search).get('c');}catch(e){WC=null;}
 if(WC){Q=WC.toLowerCase();$('b-search').value=WC;}
 load();loadGals();

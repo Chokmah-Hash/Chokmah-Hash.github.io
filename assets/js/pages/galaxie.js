@@ -53,6 +53,7 @@ function crumbRender(){
   if(g){out+='<span class="sep">·</span><span>'+esc(g.nom)+'</span>';}
   if(CURPOI){out+='<span class="sep">·</span><span>'+esc(CURPLA.nom)+'</span><span class="sep">·</span><span class="cur">'+esc(CURPOI.nom)+'</span>';}
   else if(CURPLA){out+='<span class="sep">·</span><span class="cur">'+esc(CURPLA.nom)+'</span>';}
+  $('g-crumb').style.display='flex';
   $('g-crumb').innerHTML=out;
   $('crumb-back').addEventListener('click',showGalaxy);
 }
@@ -108,8 +109,10 @@ function renderPanel(){
       out+='<p class="pv" style="margin-top:10px">'+esc(CURPLA.description||'')+'</p>';
       out+='<p class="pv">Clique sur un marqueur de la mappemonde pour découvrir un lieu.</p>';
     }
+    out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px"><button class="btn ghost sm" id="pl-back" type="button">← Carte de la galaxie</button></div>';
     el.innerHTML=out;bindImgs(el);
     var pb=$('poi-back');if(pb){pb.addEventListener('click',function(){CURPOI=null;renderPlanetView();renderPanel();});}
+    var bk=$('pl-back');if(bk){bk.addEventListener('click',showGalaxy);}
     return;
   }
   if(!SEL){el.innerHTML='<p style="color:var(--muted);font-size:.95rem">Clique sur un système de la carte pour afficher sa fiche : description, planètes, lieux remarquables et créatures recensées.</p>';return;}
@@ -158,4 +161,5 @@ function applySearch(){
   });
 }
 $('g-search').addEventListener('input',applySearch);
+$('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open');this.setAttribute('aria-expanded',on?'true':'false');});
 loadGalaxie();

@@ -6,7 +6,7 @@ Adresse du site : https://chokmah-hash.github.io
 Pages :
 - index.html      : accueil
 - regles.html     : regles maison "Les Protocoles Eternels"
-- bestiaire.html  : bestiaire partage (fiches + creatures reperees sur la carte)
+- bestiaire.html  : bestiaire partage (fiches filtrees par faction + creatures reperees sur la carte)
 - galaxie.html    : carte de la galaxie (systemes, planetes, mappemondes et POI explorables)
 - mon-espace.html : espace joueur (connexion, position sur la carte, notes)
 - fiches.html     : fiches d'unites (acces uniquement depuis la Zone joueurs)
