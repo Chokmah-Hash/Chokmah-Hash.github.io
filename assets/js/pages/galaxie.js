@@ -1,7 +1,9 @@
 
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
-var SYS=[],SEL=null;
+var SYS=[],SEL=null,ATLAS=[],AMODE=false,SKIN='necro';
+try{SKIN=(localStorage.getItem('pe_skin')==='imp')?'imp':'necro';}catch(e){}
+var SKP={necro:{arm:'#2ee6c9',armop:'0.09',core:'#7cf5df',seg:'#2ee6c9',lbl:'#e8f5f1',monde:'#2ee6c9',forge:'#f0b24a',cap:'#ffffff',zone:'#93aca1',ano:'#c2454f',star:'#bfe9df'},imp:{arm:'#f0b24a',armop:'0.10',core:'#ffe3a3',seg:'#f0b24a',lbl:'#f5ead2',monde:'#e8c06a',forge:'#d98f2b',cap:'#fff6e0',zone:'#a3936f',ano:'#e2604f',star:'#e6d9b8'}};
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function H(extra){var h={'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-Type':'application/json'};if(extra){for(var k in extra){h[k]=extra[k];}}return h;}
@@ -116,7 +118,7 @@ function renderPanel(){
     var bk=$('pl-back');if(bk){bk.addEventListener('click',showGalaxy);}
     return;
   }
-  if(!SEL){el.innerHTML='<p style="color:var(--muted);font-size:.95rem">Clique sur un système de la carte pour afficher sa fiche : description, planètes, lieux remarquables et créatures recensées.</p>';return;}
+  if(!SEL){el.innerHTML='<p style="color:var(--muted);font-size:.95rem">'+(AMODE?'Clique sur un monde, une capitale ou une anomalie de la galaxie pour afficher sa fiche.':'Clique sur un système de la carte pour afficher sa fiche : description, planètes, lieux remarquables et créatures recensées.')+'</p>';return;}
   var g=null;SYS.forEach(function(s){if(s.id===SEL){g=s;}});
   if(!g){SEL=null;renderPanel();return;}
   var d=g.data||{};
@@ -145,6 +147,104 @@ function renderPanel(){
     b.addEventListener('click',function(){explorePlanet(parseInt(b.getAttribute('data-pl'),10));});
   });
 }
+/* ===== Atlas : vue galaxie 40K complete ===== */
+function wdim(){return AMODE?1400:1000;}
+function hdim(){return AMODE?900:700;}
+function aStars(){var r=prng(777333),s='<g>';
+for(var i=0;i<190;i++){var x=(r()*1400).toFixed(1),y=(r()*900).toFixed(1),rad=(0.4+r()*1.3).toFixed(1),op=(0.10+r()*0.5).toFixed(2);
+var dx=(x-700)/640,dy=(y-450)/460,ing=(dx*dx+dy*dy)<1;
+s+='<circle cx="'+x+'" cy="'+y+'" r="'+rad+'" fill="'+SKP[SKIN].star+'" opacity="'+(ing?(op*0.5).toFixed(2):op)+'"/>';}
+return s+'</g>';}
+function atlasSvg(){
+  var p=SKP[SKIN];
+  var svg='<svg id="a-svg" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Atlas de la galaxie">';
+  svg+='<defs><radialGradient id="acore"><stop offset="0%" stop-color="'+p.core+'" stop-opacity=".5"/><stop offset="45%" stop-color="'+p.arm+'" stop-opacity=".14"/><stop offset="100%" stop-color="'+p.arm+'" stop-opacity="0"/></radialGradient></defs>';
+  svg+=aStars();
+  var arms=['M700,450 C810,320 950,300 1060,360','M700,450 C830,520 950,560 1080,520','M700,450 C590,320 450,300 340,360','M700,450 C570,520 450,560 320,520'];
+  arms.forEach(function(d){
+    svg+='<path d="'+d+'" stroke="'+p.arm+'" stroke-width="54" fill="none" opacity="'+p.armop+'" stroke-linecap="round"/>';
+    svg+='<path d="'+d+'" stroke="'+p.arm+'" stroke-width="16" fill="none" opacity="0.07" stroke-linecap="round"/>';});
+  svg+='<circle cx="700" cy="450" r="150" fill="url(#acore)"/><circle cx="700" cy="450" r="38" fill="'+p.core+'" opacity=".25"/><circle cx="700" cy="450" r="13" fill="'+p.core+'" opacity=".7"/>';
+  svg+='<path d="M690,0 L704,300 L700,450 L676,900" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
+  svg+='<path d="M0,430 L440,438 L700,450" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
+  svg+='<path d="M700,450 L520,900" stroke="'+p.seg+'" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="7 7" fill="none"/>';
+  svg+='<text class="aseg" x="250" y="66" fill="'+p.seg+'" opacity=".55">SEGMENTUM OBSCURUS</text>';
+  svg+='<text class="aseg" x="1010" y="66" fill="'+p.seg+'" opacity=".55">ULTIMA SEGMENTUM</text>';
+  svg+='<text class="aseg" x="150" y="740" fill="'+p.seg+'" opacity=".55">SEGMENTUM PACIFICUS</text>';
+  svg+='<text class="aseg" x="560" y="846" fill="'+p.seg+'" opacity=".55">SEGMENTUM TEMPESTUS</text>';
+  svg+='<text class="aseg" x="420" y="530" fill="'+p.seg+'" opacity=".55">SEGMENTUM SOLAR</text>';
+  ATLAS.forEach(function(a){
+    var c=a.categorie,col=p.monde;
+    if(c==='forgemonde'){col=p.forge;}else if(c==='capitale'){col=p.cap;}else if(c==='zone'){col=p.zone;}else if(c==='anomalie'){col=p.ano;}
+    var shape='';
+    if(c==='zone'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="26" fill="none" stroke="'+col+'" stroke-opacity=".5" stroke-dasharray="4 4"/>';}
+    else if(c==='anomalie'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="20" fill="none" stroke="'+col+'" stroke-opacity=".55" stroke-width="2"/><circle cx="'+a.x+'" cy="'+a.y+'" r="8" fill="'+col+'" opacity=".5"/>';}
+    else if(c==='capitale'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="13" fill="none" stroke="'+col+'" stroke-opacity=".85" stroke-width="2"/><circle cx="'+a.x+'" cy="'+a.y+'" r="4.5" fill="'+col+'"/>';}
+    else if(c==='forgemonde'){shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="9" fill="none" stroke="'+col+'" stroke-width="2"/><circle cx="'+a.x+'" cy="'+a.y+'" r="3.5" fill="'+col+'"/>';}
+    else{shape='<circle cx="'+a.x+'" cy="'+a.y+'" r="4.5" fill="'+col+'"/>';}
+    var dyn=(c==='monde'||c==='forgemonde')?' shlbl':'';
+    var lx=Math.max(60,Math.min(1340,a.x));
+    var ly=(a.y<60)?(a.y+32):((a.y>830)?(a.y-24):(a.y+20));
+    svg+='<g class="aloc" data-id="'+a.id+'">'+shape+'<text class="albl'+dyn+'" x="'+lx+'" y="'+ly+'" text-anchor="middle" fill="'+p.lbl+'" opacity=".9" font-size="13" font-family="Rajdhani" font-weight="600" style="pointer-events:none">'+esc(a.nom)+'</text></g>';
+  });
+  svg+='</svg>';
+  return svg;
+}
+function renderAtlas(){
+  $('a-map').innerHTML=atlasSvg();
+  applyVB();
+  Array.prototype.forEach.call(document.querySelectorAll('.aloc'),function(el){
+    el.addEventListener('click',function(ev){ev.stopPropagation();
+      var id=parseInt(el.getAttribute('data-id'),10);var a=null;ATLAS.forEach(function(s){if(s.id===id){a=s;}});
+      if(a){SEL=null;CURPLA=null;CURPOI=null;aPanel(a);}
+    });
+  });
+  applySearch();
+}
+function aPanel(a){
+  var names={monde:'Monde',forgemonde:'Monde-forge',capitale:'Capitale de segmentum',zone:'Zone',anomalie:'Anomalie warp'};
+  var el=$('g-panel');
+  var out='<h3 style="margin:.1em 0 .3em">'+esc(a.nom)+'</h3><span class="badge'+(a.categorie==='capitale'?' amber':'')+'">'+esc(names[a.categorie]||a.categorie)+'</span>';
+  if(a.description){out+='<p class="pv" style="margin-top:10px">'+esc(a.description)+'</p>';}
+  el.innerHTML=out;
+}
+function loadAtlas(){
+  fetchJ(SB+'atlas?select=*&order=nom.asc').then(function(list){ATLAS=list||[];if(AMODE){renderAtlas();}}).catch(function(){});
+}
+function legRender(){
+  var p=SKP[SKIN],d=$('leg-drop');
+  if(AMODE){
+    d.innerHTML='<span><i style="background:'+p.monde+'"></i>Monde</span><span><i style="background:'+p.forge+'"></i>Monde-forge</span><span><i style="background:'+p.cap+'"></i>Capitale</span><span><i style="background:none;border:1px dashed '+p.zone+'"></i>Zone</span><span><i style="background:'+p.ano+'"></i>Anomalie warp</span>';
+  }else{
+    d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>';
+  }
+}
+function setSkin(s){
+  SKIN=(s==='imp')?'imp':'necro';
+  try{localStorage.setItem('pe_skin',SKIN);}catch(e){}
+  $('sk-necro').classList.toggle('on',SKIN==='necro');
+  $('sk-imp').classList.toggle('on',SKIN==='imp');
+  legRender();
+  if(AMODE){renderAtlas();}
+}
+function setMode(gal){
+  AMODE=!!gal;
+  $('m-secteur').classList.toggle('active',!AMODE);
+  $('m-galaxie').classList.toggle('active',AMODE);
+  $('g-map').style.display=AMODE?'none':'';
+  $('a-map').style.display=AMODE?'':'none';
+  $('p-map').style.display='none';
+  $('g-crumb').style.display='none';
+  $('g-searchbox').style.display='';
+  $('g-zoom').style.display='';
+  $('g-search').value='';
+  $('g-search').placeholder=AMODE?'\\uD83D\\uD0E Chercher un monde, une zone, une anomalie...':'\\uD83D\\uD0E Chercher un système, une planète...';
+  if(AMODE){SEL=null;CURPLA=null;CURPOI=null;if(!ATLAS.length){loadAtlas();}else{renderAtlas();}}
+  else{renderMap();}
+  renderPanel();
+  legRender();
+  resetVB();
+}
 function loadGalaxie(){
   fetchJ(SB+'galaxie?select=*&order=nom.asc').then(function(list){
     SYS=list||[];$('g-err').style.display='none';renderMap();renderPanel();
@@ -154,6 +254,14 @@ function loadGalaxie(){
 }
 function applySearch(){
   var q=($('g-search').value||'').toLowerCase();
+  if(AMODE){
+    Array.prototype.forEach.call(document.querySelectorAll('.aloc'),function(el){
+      var id=parseInt(el.getAttribute('data-id'),10);var a=null;ATLAS.forEach(function(s){if(s.id===id){a=s;}});
+      var hay=(a?(a.nom+' '+(a.description||'')+' '+a.categorie):'').toLowerCase();
+      el.style.opacity=(!q||hay.indexOf(q)>=0)?'1':'0.12';
+    });
+    return;
+  }
   Array.prototype.forEach.call(document.querySelectorAll('.sysg'),function(el){
     var id=parseInt(el.getAttribute('data-id'),10);
     var g=null;SYS.forEach(function(s){if(s.id===id){g=s;}});
@@ -162,27 +270,36 @@ function applySearch(){
   });
 }
 $('g-search').addEventListener('input',applySearch);
-$('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open');this.setAttribute('aria-expanded',on?'true':'false');});
+$('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open-leg');this.setAttribute('aria-expanded',on?'true':'false');});
+$('skin-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open-skin');this.setAttribute('aria-expanded',on?'true':'false');});
+$('sk-necro').addEventListener('click',function(){setSkin('necro');});
+$('sk-imp').addEventListener('click',function(){setSkin('imp');});
+$('m-secteur').addEventListener('click',function(){setMode(false);});
+$('m-galaxie').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
-var VB={x:0,y:0,w:1000,h:700},VBMIN=170,VBMAX=1000,DRAGGED=false,DRG=null;
-function applyVB(){var sv=$('g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}}
-function clampVB(){if(VB.w<VBMIN){VB.w=VBMIN;}if(VB.w>VBMAX){VB.w=VBMAX;}VB.h=VB.w*0.7;var mx=1000-VB.w,my=700-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
-function zoomAt(px,py,f){var nw=Math.max(VBMIN,Math.min(VBMAX,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
-function resetVB(){VB={x:0,y:0,w:1000,h:700};applyVB();}
-function svgPt(ev){var sv=$('g-svg');if(!sv){return null;}var r=sv.getBoundingClientRect();if(r.width<2){return null;}return {sx:VB.x+(ev.clientX-r.left)/r.width*VB.w,sy:VB.y+(ev.clientY-r.top)/r.height*VB.h,kx:VB.w/r.width,ky:VB.h/r.height};}
+var VB={x:0,y:0,w:1000,h:700},VBMIN=170,DRAGGED=false,DRG=null;
+function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});}}
+function clampVB(){var W=wdim(),Hh=hdim();if(VB.w<VBMIN){VB.w=VBMIN;}if(VB.w>W){VB.w=W;}VB.h=VB.w*(Hh/W);var mx=W-VB.w,my=Hh-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
+function zoomAt(px,py,f){var W=wdim();var nw=Math.max(VBMIN,Math.min(W,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
+function resetVB(){VB={x:0,y:0,w:wdim(),h:hdim()};applyVB();}
+function svgPt(ev){var sv=$(AMODE?'a-svg':'g-svg');if(!sv){return null;}var r=sv.getBoundingClientRect();if(r.width<2){return null;}return {sx:VB.x+(ev.clientX-r.left)/r.width*VB.w,sy:VB.y+(ev.clientY-r.top)/r.height*VB.h,kx:VB.w/r.width,ky:VB.h/r.height};}
 (function(){
-  var gm=$('g-map');
+  ['g-map','a-map'].forEach(function(mid){
+  var gm=$(mid);
   gm.addEventListener('wheel',function(ev){ev.preventDefault();var p=svgPt(ev);if(!p){return;}zoomAt(p.sx,p.sy,ev.deltaY<0?1.25:0.8);},{passive:false});
   gm.addEventListener('dblclick',function(ev){var p=svgPt(ev);if(p){zoomAt(p.sx,p.sy,1.6);}});
   gm.addEventListener('pointerdown',function(ev){DRG={cx:ev.clientX,cy:ev.clientY,vx:VB.x,vy:VB.y};DRAGGED=false;gm.classList.add('drag');});
-  window.addEventListener('pointermove',function(ev){if(!DRG){return;}var p=svgPt(ev);if(!p){return;}var dx=ev.clientX-DRG.cx,dy=ev.clientY-DRG.cy;if(!DRAGGED&&(dx*dx+dy*dy)>25){DRAGGED=true;}if(DRAGGED){VB.x=DRG.vx-dx*p.kx;VB.y=DRG.vy-dy*p.ky;clampVB();applyVB();}});
-  window.addEventListener('pointerup',function(){DRG=null;gm.classList.remove('drag');});
   gm.addEventListener('click',function(ev){if(DRAGGED){ev.stopPropagation();ev.preventDefault();DRAGGED=false;}},true);
+  });
+  window.addEventListener('pointermove',function(ev){if(!DRG){return;}var p=svgPt(ev);if(!p){return;}var dx=ev.clientX-DRG.cx,dy=ev.clientY-DRG.cy;if(!DRAGGED&&(dx*dx+dy*dy)>25){DRAGGED=true;}if(DRAGGED){VB.x=DRG.vx-dx*p.kx;VB.y=DRG.vy-dy*p.ky;clampVB();applyVB();}});
+  window.addEventListener('pointerup',function(){DRG=null;$('g-map').classList.remove('drag');$('a-map').classList.remove('drag');});
   $('g-zin').addEventListener('click',function(){zoomAt(VB.x+VB.w/2,VB.y+VB.h/2,1.45);});
   $('g-zout').addEventListener('click',function(){zoomAt(VB.x+VB.w/2,VB.y+VB.h/2,0.69);});
   $('g-reset').addEventListener('click',resetVB);
 })();
 loadGalaxie();
+legRender();
+setSkin(SKIN);
 var RTGD=null;
 function rtDeb(fn){return function(){clearTimeout(RTGD);RTGD=setTimeout(fn,700);};}
 function rtInit(){
@@ -194,6 +311,7 @@ function rtInit(){
     var c=supabase.createClient(rtu,rtk,{realtime:{params:{eventsPerSecond:2}}});
     var ch=c.channel("carte-live");
     ch.on("postgres_changes",{event:"*",schema:"public",table:"galaxie"},rtDeb(loadGalaxie));
+    ch.on("postgres_changes",{event:"*",schema:"public",table:"atlas"},rtDeb(loadAtlas));
     ch.on("postgres_changes",{event:"*",schema:"public",table:"planetes"},rtDeb(function(){if(SEL){loadPlanetes(SEL);}renderPanel();}));
     ch.on("postgres_changes",{event:"*",schema:"public",table:"planetes_poi"},rtDeb(function(){
       if(CURPLA){fetchJ(SB+"planetes_poi?select=*&planete_id=eq."+CURPLA.id+"&order=id.asc").then(function(l){POIS=l||[];renderPlanetView();renderPanel();}).catch(function(){});}

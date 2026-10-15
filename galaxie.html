@@ -30,7 +30,9 @@
 .legend-btn{background:rgba(10,18,15,.88);border:1px solid var(--tealline);border-radius:9px;color:var(--text);padding:7px 13px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.06em;font-size:.8rem;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(5px)}
 .legend-btn:hover{border-color:var(--teal)}
 .legend-drop{display:none;flex-direction:column;gap:7px;margin:7px 0 0;padding:9px 12px;font-size:.78rem;color:var(--text);align-items:flex-start;background:rgba(10,18,15,.88);border:1px solid var(--tealline);border-radius:10px;backdrop-filter:blur(5px)}
-.legend-wrap.open .legend-drop{display:flex}
+.legend-wrap.open-leg .legend-drop.leg{display:flex}
+.legend-wrap.open-skin .legend-drop.skin{display:flex}
+.legend-btnrow{display:flex;gap:6px;justify-content:flex-end}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
 /* Exploration planète (phase 2) */
@@ -58,6 +60,15 @@
 .zoomctl .legend-btn{padding:7px 13px}
 .gmap{cursor:grab}
 .gmap.drag{cursor:grabbing}
+
+/* Vue Atlas galaxie 40K */
+.mbtn{white-space:nowrap}
+.legopt{background:none;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:2px 0;text-align:left}
+.legopt:hover{color:var(--teal)}
+.legopt.on{color:var(--teal)}
+.aseg{font-family:'Rajdhani',sans-serif;font-size:15px;letter-spacing:.22em;font-weight:600}
+.aloc{cursor:pointer}
+.aloc:hover .albl{fill:#ffffff}
     </style>
   </head>
   <body>
@@ -78,15 +89,25 @@
     <script src="assets/js/core.js"></script>
     <main class="wrap">
             <div class="gsearch" id="g-searchbox">
+        <button class="legend-btn mbtn" id="m-secteur" type="button">Secteur</button>
+        <button class="legend-btn mbtn" id="m-galaxie" type="button">Galaxie</button>
         <input class="gf" id="g-search" type="search" placeholder="🔎 Chercher un système, une planète…">
       </div>
       <div class="crumb" id="g-crumb" style="display:none"></div>
       <div class="gmap-wrap">
         <div class="gmap" id="g-map"></div>
+        <div class="gmap" id="a-map" style="display:none"></div>
         <div id="p-map" style="display:none"></div>
         <div class="legend-wrap" id="g-legend">
-          <button class="legend-btn" id="legend-btn" type="button" aria-expanded="false">Légende ▾</button>
-          <div class="legend-drop">
+          <div class="legend-btnrow">
+            <button class="legend-btn" id="skin-btn" type="button" aria-expanded="false">Apparence ▾</button>
+            <button class="legend-btn" id="legend-btn" type="button" aria-expanded="false">Légende ▾</button>
+          </div>
+          <div class="legend-drop skin">
+            <button class="legopt" id="sk-necro" type="button">Nécroderme</button>
+            <button class="legopt" id="sk-imp" type="button">Impérial</button>
+          </div>
+          <div class="legend-drop leg" id="leg-drop">
             <span><i style="background:#2ee6c9"></i>Système</span>
             <span><i style="background:#f0b24a"></i>Vaisseau</span>
             <span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span>
