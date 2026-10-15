@@ -63,23 +63,22 @@ function render(){
     if(BEASTS.length===0){out+=' Le MJ peut en créer depuis la console Bestiaire de sa Zone MJ.';}
     out+='</div>';
   }else{
-    out='<div class="grid3">';
+    out='<div class="tscroll"><table class="rt mini beasts"><tr>'
+      +'<th>Créature</th><th>M</th><th>CC</th><th>CT</th><th>F</th><th>E</th><th>PV</th><th>A</th><th>Cd</th><th>Svg</th><th>Rfx</th></tr>';
     list.forEach(function(b){
       var st=(b.data&&b.data.st)||{};
       var armes=(b.data&&b.data.armes)||[];
       var notes=(b.data&&b.data.notes)||'';
-      out+='<div class="card beast-card">'
-        +'<h3>'+esc(b.nom)+'</h3>'+campBadge(b.camp)+'<span class="fac">'+esc(b.faction||'')+'</span>'
-        +'<div class="tscroll"><table class="rt mini"><tr>'
-        +'<th>M</th><th>CC</th><th>CT</th><th>F</th><th>E</th><th>PV</th><th>A</th><th>Cd</th><th>Svg</th><th>Rfx</th></tr><tr>'
-        +'<td>'+(esc(st.m)||'—')+'</td><td>'+(esc(st.cc)||'—')+'</td><td>'+(esc(st.ct)||'—')+'</td><td>'+(esc(st.f)||'—')+'</td><td>'+(esc(st.e)||'—')+'</td>'
-        +'<td>'+(esc(st.pv)||'—')+'</td><td>'+(esc(st.a)||'—')+'</td><td>'+(esc(st.cd)||'—')+'</td><td>'+(esc(st.sv)||'—')+'</td><td>'+(esc(st.rfx)||'—')+'</td>'
-        +'</tr></table></div>';
-      if(armes.length){out+='<ul class="armeslist">'+armes.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>';}
-      if(notes){out+='<p class="beast-notes">'+esc(notes)+'</p>';}
-      out+='</div>';
+      var cells=['m','cc','ct','f','e','pv','a','cd','sv','rfx'].map(function(k){return '<td>'+(esc(st[k])||'—')+'</td>';}).join('');
+      out+='<tr><td class="nomcell"><b>'+esc(b.nom)+'</b> '+campBadge(b.camp)+' <span class="fac">'+esc(b.faction||'')+'</span></td>'+cells+'</tr>';
+      if(armes.length||notes){
+        out+='<tr class="subrow"><td colspan="11">'
+          +(armes.length?'<span class="bsub">'+armes.map(esc).join(' · ')+'</span>':'')
+          +(notes?'<span class="bsub it">'+esc(notes)+'</span>':'')
+          +'</td></tr>';
+      }
     });
-    out+='</div>';
+    out+='</table></div>';
   }
   $('beasts').innerHTML=out;
 }
