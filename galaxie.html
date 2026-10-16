@@ -92,10 +92,8 @@
     <script src="assets/js/core.js"></script>
     <main class="wrap">
             <div class="gsearch" id="g-searchbox">
-        <button class="legend-btn mbtn" id="m-galaxie" type="button">Galaxie</button>
-        <button class="legend-btn mbtn" id="m-secteur" type="button">Secteur</button>
+        <button class="legend-btn mbtn" id="m-backgal" type="button" style="display:none">← Galaxie</button>
         <input class="gf" id="g-search" type="search" placeholder="🔎 Chercher un système, une planète…">
-        <button class="legend-btn mbtn" id="m-secval" type="button" style="display:none">Valider</button>
       </div>
       <div class="crumb" id="g-crumb" style="display:none"></div>
       <div class="gmap-wrap">
@@ -119,6 +117,7 @@
           <button class="legend-btn" id="g-reset" type="button" title="Vue complete de la galaxie">Recentrer</button>
         </div>
         <div class="star-tip" id="star-tip" style="display:none"></div>
+        <button class="legend-btn" id="sec-btn" type="button" style="display:none;position:absolute;z-index:8;white-space:nowrap">Afficher ce secteur ▸</button>
       </div>
       <div class="note-box" id="g-err" style="display:none"></div>
       <div class="gpanel">

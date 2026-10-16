@@ -243,8 +243,8 @@ function renderAtlas(){
     $('a-map')._tipw=true;
     var tip=$('star-tip'),wrap=$('a-map').parentNode;
     $('a-map').addEventListener('mousemove',function(ev){
-      if(DRG){tip.style.display='none';return;}
-      var spx=svgPt(ev);if(spx){var lsec=$('leg-sec');if(lsec){lsec.textContent='Secteur : '+segGrid(spx.sx,spx.sy)+' \u00b7 '+segSub(spx.sx,spx.sy);}}
+      if(DRG){tip.style.display='none';var hb=$('sec-btn');if(hb){hb.style.display='none';}return;}
+      var spx=svgPt(ev);if(spx){secHover(spx);var lsec=$('leg-sec');if(lsec){lsec.textContent='Secteur : '+segGrid(spx.sx,spx.sy)+' \u00b7 '+segSub(spx.sx,spx.sy);}}
       var t=ev.target;
       if(!t||!t.getAttribute||t.getAttribute('data-si')===null){tip.style.display='none';return;}
       var si=parseInt(t.getAttribute('data-si'),10);
@@ -257,7 +257,9 @@ function renderAtlas(){
       tip.style.left=(l+200>wr.width?l-215:l)+'px';
       tip.style.top=(tp2+70>wr.height?tp2-85:tp2)+'px';
     });
-    $('a-map').addEventListener('mouseleave',function(){tip.style.display='none';});
+    $('a-map').addEventListener('mouseleave',function(){tip.style.display='none';var hb=$('sec-btn');if(hb){hb.style.display='none';}});
+    var sb=$('sec-btn');
+    if(sb){sb.addEventListener('click',function(ev){ev.stopPropagation();if(HOVSEC){CURSEC=HOVSEC;HOVSEC=null;sb.style.display='none';setMode(false);}});}
     $('a-map').addEventListener('click',function(ev){
       if(DRG){return;}
       var t=ev.target;
@@ -540,9 +542,23 @@ function legRender(){
     d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span><span id="leg-sec">Secteur : '+(CURSEC||'Campagne')+'</span>';
   }
 }
-function secInput(){var v=($('g-search').value||'').toUpperCase().replace(/\s+/g,'');var m=/^C([1-9]|1[0-9]|20)-L([1-9]|1[0-2])$/.exec(v);return m?v:null;}
-function secPick(){var s=secInput();if(s){CURSEC=s;$('g-search').value='';$('m-secval').textContent='✓ '+CURSEC;$('m-secteur').textContent='Secteur · '+CURSEC;}else{$('m-secval').textContent='Valider';}}
-function secGo(){secPick();setMode(false);}
+var HOVSEC=null;
+function secHover(p){
+  var b=$('sec-btn');if(!b){return;}
+  if(!AMODE){b.style.display='none';return;}
+  var z=(1400-VB.w)/(1400-vbmin());
+  if(z<0.25){b.style.display='none';return;}
+  var ci=Math.max(1,Math.min(20,Math.ceil(p.sx/70))),cl=Math.max(1,Math.min(12,Math.ceil(p.sy/75)));
+  HOVSEC='C'+ci+'-L'+cl;
+  var sv=$('a-svg');if(!sv){b.style.display='none';return;}
+  var r=sv.getBoundingClientRect(),wr=sv.parentNode.getBoundingClientRect();
+  var lx=(ci*70-VB.x)/VB.w*r.width+(r.left-wr.left);
+  var ly=((cl-1)*75-VB.y)/VB.h*r.height+(r.top-wr.top);
+  b.textContent='Afficher ce secteur ▸';
+  b.style.display='';
+  b.style.left=(lx-b.offsetWidth-10)+'px';
+  b.style.top=(ly+8)+'px';
+}
 function secItems(){
   if(!CURSEC){SECS=SYS;return SECS;}
   var own=SYS.filter(function(g){return String(g.secteur||'').toUpperCase()===CURSEC;});
@@ -553,8 +569,7 @@ function secItems(){
 }
 function setMode(gal){
   AMODE=!!gal;
-  $('m-secteur').classList.toggle('active',!AMODE);
-  $('m-galaxie').classList.toggle('active',AMODE);
+  $('m-backgal').style.display=AMODE?'none':'';
   $('g-map').style.display=AMODE?'none':'';
   $('a-map').style.display=AMODE?'':'none';
   $('p-map').style.display='none';
@@ -563,9 +578,7 @@ function setMode(gal){
   $('g-zoom').style.display='';
   $('g-search').value='';
   $('star-tip').style.display='none';
-  $('g-search').placeholder=AMODE?'🔎 Secteur — ex. C7-L3 (Entrée ou Valider)':'\\uD83D\\uD0E Chercher un système, une planète...';
-  $('m-secval').style.display=AMODE?'':'none';
-  $('m-secteur').textContent=AMODE?('Secteur'+(CURSEC?' · '+CURSEC:'')):'Secteur';
+  $('g-search').placeholder=AMODE?'🔎 Chercher un monde, une zone, une anomalie...':'\\uD83D\\uD0E Chercher un système, une planète...';
   if(AMODE){SEL=null;CURPLA=null;CURPOI=null;if(!ATLAS.length){loadAtlas();}else{renderAtlas();}}
   else{renderMap();}
   renderPanel();
@@ -598,10 +611,7 @@ function applySearch(){
 }
 $('g-search').addEventListener('input',applySearch);
 $('legend-btn').addEventListener('click',function(){var w=$('g-legend');var on=w.classList.toggle('open-leg');this.setAttribute('aria-expanded',on?'true':'false');});
-$('m-secteur').addEventListener('click',secGo);
-$('m-secval').addEventListener('click',secPick);
-$('g-search').addEventListener('keydown',function(ev){if(ev.key==='Enter'&&AMODE){ev.preventDefault();secPick();}});
-$('m-galaxie').addEventListener('click',function(){setMode(true);});
+$('m-backgal').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
 var VB={x:0,y:0,w:1000,h:700},DRAGGED=false,DRG=null;function vbmin(){return AMODE?240:170;}
 function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var z=Math.max(0,Math.min(1,(1400-VB.w)/(1400-vbmin())));var srT=VB.w*(0.001+0.004*z);var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}var gd=$('a-grid'),gl=$('a-glab');if(gd){gd.setAttribute('opacity',(0.12+z*0.33).toFixed(3));}if(gl){gl.setAttribute('opacity',Math.max(0,Math.min(1,(z-0.1)/0.15)).toFixed(3));var fs=22*(VB.w/1400);gl.setAttribute('font-size',fs.toFixed(2));var mg=fs*3;for(var gi=1;gi<=20;gi++){var tC=$('glC'+gi),rb=$('glCb'+gi);var cx=gi*70-35;var vis=cx>=VB.x+mg&&cx<=VB.x+VB.w-mg;if(tC){tC.setAttribute('y',(VB.y+fs*1.195).toFixed(1));tC.setAttribute('display',(vis?'':'none'));}if(rb){var w=fs*(('C'+gi).length*0.62+0.5);rb.setAttribute('x',(cx-w/2).toFixed(1));rb.setAttribute('y',(VB.y+fs*0.12).toFixed(1));rb.setAttribute('width',w.toFixed(1));rb.setAttribute('height',(fs*1.45).toFixed(1));rb.setAttribute('rx',(fs*0.3).toFixed(1));rb.setAttribute('display',(vis?'':'none'));}}for(var gj=1;gj<=12;gj++){var tL=$('gL'+gj),rb2=$('glLb'+gj);var ly=gj*75-37.5;var vis2=ly>=VB.y+mg&&ly<=VB.y+VB.h-mg;if(tL){tL.setAttribute('text-anchor','middle');tL.setAttribute('x',(VB.x+fs*0.1+fs*(('L'+gj).length*0.62+0.5)/2).toFixed(1));tL.setAttribute('y',(ly+fs*0.225).toFixed(1));tL.setAttribute('display',(vis2?'':'none'));}if(rb2){var w2=fs*(('L'+gj).length*0.62+0.5);rb2.setAttribute('x',(VB.x+fs*0.1).toFixed(1));rb2.setAttribute('y',(ly-fs*0.85).toFixed(1));rb2.setAttribute('width',w2.toFixed(1));rb2.setAttribute('height',(fs*1.45).toFixed(1));rb2.setAttribute('rx',(fs*0.3).toFixed(1));rb2.setAttribute('display',(vis2?'':'none'));}}}var col=$('a-col'),wov=$('a-wov');if(col){col.setAttribute('opacity',z.toFixed(3));}if(wov){wov.setAttribute('opacity',(1-z).toFixed(3));}window._srTgt=srT;if(!window._srCur){window._srCur=srT;}var _srA=function(v){sty.textContent='#a-svg circle[data-si]{r:'+v.toFixed(3)+'px;stroke:#02060d;stroke-opacity:.65;stroke-width:'+(v*0.8).toFixed(3)+'px;paint-order:stroke fill}';};if(window._srRaf){cancelAnimationFrame(window._srRaf);}(function(){var step=function(){var c=window._srCur,t=window._srTgt;c=c+(t-c)*0.3;if(Math.abs(t-c)<0.004){c=t;}_srA(c);window._srCur=c;if(c!==t){window._srRaf=requestAnimationFrame(step);}else{window._srRaf=null;}};step();})();var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
