@@ -393,16 +393,14 @@ function sysInfo(sg){
    +'<p class="pv">Distance \u00e0 l\u2019\u00e9toile : '+p.ua+' UA \u00b7 P\u00e9riode : '+p.per+' ans</p>'
    +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
    +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
-   +'<button class="btn ghost sm" id="sv-back" type="button">\u2190 Syst\u00e8me</button>'
-   +'<button class="btn solid sm" id="sv-x" type="button">Explorer</button></div>';
+   +'<button class="btn ghost sm" id="sv-back" type="button">\u2190 Syst\u00e8me</button></div>';
   $('sv-back').addEventListener('click',function(){sg.pl.forEach(function(x){x.sel=false;});sysStar(sg);sysHl(sg);});
-  $('sv-x').addEventListener('click',function(){sysExplore(sg,idx);});
 }
 function sysSel(sg,i){
   if(i<0){i=sg.pl.length-1;}
   if(i>=sg.pl.length){i=0;}
   sg.pl.forEach(function(p,j){p.sel=j===i;});
-  sysInfo(sg);sysHl(sg);
+  sysHl(sg);sysExplore(sg,i);
 }
 function sysAnim(sg){
   if(window._svRaf){cancelAnimationFrame(window._svRaf);}
@@ -439,7 +437,7 @@ function sysXInfo(sg){
   }
   el.innerHTML+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
    +'<button class="btn ghost sm" id="sx-back" type="button">\u2190 Syst\u00e8me</button></div>';
-  $('sx-back').addEventListener('click',function(){SYSXP=-1;SYSXPOI=null;openSys(sg.star.si);});
+  $('sx-back').addEventListener('click',function(){SYSXP=-1;SYSXPOI=null;sg.pl.forEach(function(x){x.sel=false;});openSys(sg.star.si);});
 }
 function sysExplore(sg,i){
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
