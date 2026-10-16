@@ -269,7 +269,7 @@ function loadAtlas(){
 function legRender(){
   var p=SKP[SKIN],d=$('leg-drop');
   if(AMODE){
-    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · 12 000 étoiles</span>';
+    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · '+genStars().length+' étoiles</span>';
   }else{
     d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>';
   }
@@ -323,7 +323,7 @@ $('m-secteur').addEventListener('click',function(){setMode(false);});
 $('m-galaxie').addEventListener('click',function(){setMode(true);});
 /* Pan + zoom sur la carte de la galaxie : glisser pour deplacer, molette / double-clic / boutons pour zoomer */
 var VB={x:0,y:0,w:1000,h:700},DRAGGED=false,DRG=null;function vbmin(){return AMODE?240:170;}
-function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var z=Math.max(0,Math.min(1,(1400-VB.w)/(1400-vbmin())));var sr=(VB.w*(0.001+0.004*z)).toFixed(3);var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}sty.textContent='#a-svg circle[data-si]{r:'+sr+'px;transition:r .25s ease-out}';var col=$('a-col'),wov=$('a-wov');if(col){col.setAttribute('opacity',z.toFixed(3));}if(wov){wov.setAttribute('opacity',(1-z).toFixed(3));}var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
+function applyVB(){var sv=$(AMODE?'a-svg':'g-svg');if(sv){sv.setAttribute('viewBox',VB.x+' '+VB.y+' '+VB.w+' '+VB.h);}if(AMODE){var z=Math.max(0,Math.min(1,(1400-VB.w)/(1400-vbmin())));var srT=VB.w*(0.001+0.004*z);var sty=$('a-sr');if(!sty){sty=document.createElement('style');sty.id='a-sr';document.head.appendChild(sty);}var col=$('a-col'),wov=$('a-wov');if(col){col.setAttribute('opacity',z.toFixed(3));}if(wov){wov.setAttribute('opacity',(1-z).toFixed(3));}window._srTgt=srT;if(!window._srCur){window._srCur=srT;}var _srA=function(v){sty.textContent='#a-svg circle[data-si]{r:'+v.toFixed(3)+'px;stroke:#02060d;stroke-opacity:.65;stroke-width:'+(v*0.8).toFixed(3)+'px;paint-order:stroke fill}';};if(window._srRaf){cancelAnimationFrame(window._srRaf);}(function(){var step=function(){var c=window._srCur,t=window._srTgt;c=c+(t-c)*0.3;if(Math.abs(t-c)<0.004){c=t;}_srA(c);window._srCur=c;if(c!==t){window._srRaf=requestAnimationFrame(step);}else{window._srRaf=null;}};step();})();var sh=(VB.w<=820);Array.prototype.forEach.call(document.querySelectorAll('.shlbl'),function(t){t.style.display=sh?'':'none';});var sg=(VB.w>420);Array.prototype.forEach.call(document.querySelectorAll('.aseg'),function(t){t.style.display=sg?'':'none';});}}
 function clampVB(){var W=wdim(),Hh=hdim();if(VB.w<vbmin()){VB.w=vbmin();}if(VB.w>W){VB.w=W;}VB.h=VB.w*(Hh/W);var mx=W-VB.w,my=Hh-VB.h;if(VB.x<0){VB.x=0;}if(VB.y<0){VB.y=0;}if(VB.x>mx){VB.x=mx;}if(VB.y>my){VB.y=my;}}
 function zoomAt(px,py,f){var W=wdim();var nw=Math.max(vbmin(),Math.min(W,VB.w/f));var k=nw/VB.w;VB.x=px-(px-VB.x)*k;VB.y=py-(py-VB.y)*k;VB.w=nw;clampVB();applyVB();}
 function resetVB(){VB={x:0,y:0,w:wdim(),h:hdim()};applyVB();}
