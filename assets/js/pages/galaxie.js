@@ -257,7 +257,7 @@ function renderAtlas(){
       tip.style.left=(l+200>wr.width?l-215:l)+'px';
       tip.style.top=(tp2+70>wr.height?tp2-85:tp2)+'px';
     });
-    $('a-map').addEventListener('mouseleave',function(){tip.style.display='none';var hb=$('sec-btn');if(hb){hb.style.display='none';}});
+    $('a-map').parentNode.addEventListener('mouseleave',function(){tip.style.display='none';var hb=$('sec-btn');if(hb){hb.style.display='none';}});
     var sb=$('sec-btn');
     if(sb){sb.addEventListener('click',function(ev){ev.stopPropagation();if(HOVSEC){CURSEC=HOVSEC;HOVSEC=null;sb.style.display='none';setMode(false);}});}
     $('a-map').addEventListener('click',function(ev){
