@@ -245,7 +245,7 @@ function renderAtlas(){
       var si=parseInt(t.getAttribute('data-si'),10);
       var s=SFLD&&SFLD[si];
       if(!s){tip.style.display='none';return;}
-      tip.innerHTML='<b>'+s.des+'</b> \u00b7 classe '+s.cls+(s.note?'<br><i>'+s.note+'</i>':'');
+      var sg2=sysGen(si);tip.innerHTML='<b>'+s.des+'</b> \u00b7 classe '+s.cls+(sg2&&sg2.pl.length?'<br>'+sg2.pl.length+' plan\u00e8te'+(sg2.pl.length>1?'s':'')+' \u00b7 <i>clic pour explorer</i>':'')+(s.note?'<br><i>'+s.note+'</i>':'');
       tip.style.display='';
       var wr=wrap.getBoundingClientRect();
       var l=ev.clientX-wr.left+14,tp2=ev.clientY-wr.top+14;
@@ -253,6 +253,14 @@ function renderAtlas(){
       tip.style.top=(tp2+70>wr.height?tp2-85:tp2)+'px';
     });
     $('a-map').addEventListener('mouseleave',function(){tip.style.display='none';});
+    $('a-map').addEventListener('click',function(ev){
+      if(DRG){return;}
+      var t=ev.target;
+      if(!t||!t.getAttribute||t.getAttribute('data-si')===null){return;}
+      var si2=parseInt(t.getAttribute('data-si'),10);
+      var sg3=sysGen(si2);
+      if(sg3&&sg3.pl.length){$('star-tip').style.display='none';openSys(si2);}
+    });
   }
   applySearch();
 }
@@ -266,10 +274,143 @@ function aPanel(a){
 function loadAtlas(){
   fetchJ(SB+'atlas?select=*&order=nom.asc').then(function(list){ATLAS=list||[];if(AMODE){renderAtlas();}}).catch(function(){});
 }
+var SYSG={},SYSV=null;
+function sysGen(si){
+  if(SYSG[si]!==undefined){return SYSG[si];}
+  var s0=null,st=genStars(),q;
+  for(q=0;q<st.length;q++){if(st[q].si===si){s0=st[q];break;}}
+  if(!s0){SYSG[si]=null;return null;}
+  var r=prng(si*2654435761+911);
+  var res={star:s0,pl:[]};
+  if(r()<0.52){
+    var ROM=['I','II','III','IV','V','VI'];
+    var T=[
+      ['Tellurique','#b08968','#6e5138','Biosph\u00e8re r\u00e9siliente|Cro\u00fbte tectonique jeune|Plaines balay\u00e9es par les vents'],
+      ['Oc\u00e9anique','#4f86c9','#28527d','Mer mondiale unique|Archipels volcaniques \u00e9pars|Courants abyssaux violents'],
+      ['Glaciaire','#cfe8f2','#7d9db0','Calotte glaci\u00e8re perp\u00e9tuelle|Oc\u00e9an sous-glaciaire probable|Banquise \u00e9ternellement fig\u00e9e'],
+      ['D\u00e9sertique','#e0b36a','#8f6f3f','Dunes ocres \u00e0 perte de vue|Canyons cisaill\u00e9s par les temp\u00eates|Ruines ensevelies sous le sable'],
+      ['Volcanique','#c2454f','#7a2430','Cha\u00eenes de volcans actifs|Mers de lave incandescente|Cendres dans la haute atmosph\u00e8re'],
+      ['G\u00e9ante gazeuse','#d9a86a','#9c7a4a','Bandes d\u2019ammoniac en turbulence|Temp\u00eates multicentenaires|C\u0153ur de m\u00e9tal liquide'],
+      ['St\u00e9rile','#9aa3a8','#5c6467','Crat\u00e8res d\u2019impact s\u00e9culaires|Aucune atmosph\u00e8re notable|Silence radio absolu']
+    ];
+    var n=1+Math.floor(r()*6);
+    for(var i=0;i<n;i++){
+      var t=T[Math.floor(r()*T.length)];
+      var orb=72+i*46+r()*18;
+      res.pl.push({nom:s0.des+' '+ROM[i],type:t[0],c1:t[1],c2:t[2],dp:t[3].split('|')[Math.floor(r()*3)],rad:6+r()*7,orb:orb,a:r()*6.2832,om:(0.03+0.05*r())/Math.sqrt(orb/72)*(r()<0.5?1:-1),rings:(t[0]==='G\u00e9ante gazeuse'&&r()<0.45),ua:(orb/60).toFixed(1),per:(1.4+i*1.9+r()*1.4).toFixed(1),sel:i===0});
+    }
+  }
+  SYSG[si]=res;
+  return res;
+}
+function sysCss(){
+  if($('sysv-css')){return;}
+  var c=document.createElement('style');c.id='sysv-css';
+  c.textContent='#sysv{position:absolute;inset:0;background:rgba(3,8,14,.97);border:1px solid #1d3a33;border-radius:10px;display:flex;flex-direction:column;z-index:40;overflow:hidden}'
+  +'#sysv .svhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #1d3a33;font-size:1.05rem;flex:none}'
+  +'#sysv .svhead b{color:#e8f5f1}'
+  +'#sysv .svid{margin-left:10px;font-size:.72rem;color:#2ee6c9;text-transform:uppercase;letter-spacing:.08em}'
+  +'#sysv .svbody{flex:1;display:flex;min-height:0}'
+  +'#sysv .svmap{flex:1.6;min-width:0;padding:10px}'
+  +'#sysv .svmap svg{width:100%;height:100%}'
+  +'#sysv .svinfo{flex:1;max-width:360px;border-left:1px solid #1d3a33;padding:14px 16px;overflow:auto}'
+  +'#sv-svg .plg{cursor:pointer}'
+  +'#sv-svg .plc{cursor:pointer}';
+  document.head.appendChild(c);
+}
+function openSys(si){
+  var sg=sysGen(si);
+  if(!sg||!sg.pl.length){return;}
+  sysCss();
+  SYSV=si;
+  var wrap=$('a-map').parentNode;
+  var ov=$('sysv');
+  if(!ov){ov=document.createElement('div');ov.id='sysv';wrap.appendChild(ov);}
+  var s=sg.star;
+  var h='<div class="svhead"><div><b>'+esc(s.des)+'</b> \u00b7 classe '+s.cls+' \u00b7 '+esc(s.seg)+'<span class="svid">Vue syst\u00e8me</span></div><button type="button" id="sv-close" class="btn ghost sm">\u2190 Atlas</button></div>';
+  h+='<div class="svbody"><div class="svmap"><svg id="sv-svg" viewBox="0 0 1000 1000">';
+  h+='<defs><radialGradient id="sv-star"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="'+s.col+'"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>';
+  sg.pl.forEach(function(p,i){h+='<radialGradient id="sv-p'+i+'" cx="35%" cy="30%"><stop offset="0%" stop-color="'+p.c1+'"/><stop offset="100%" stop-color="'+p.c2+'"/></radialGradient>';});
+  h+='</defs>';
+  h+='<circle cx="500" cy="500" r="36" fill="url(#sv-star)"/>';
+  sg.pl.forEach(function(p){h+='<circle cx="500" cy="500" r="'+p.orb.toFixed(0)+'" fill="none" stroke="#2ee6c9" stroke-opacity="0.16"/>';});
+  sg.pl.forEach(function(p,i){
+    h+='<g class="plg" data-i="'+i+'"><circle class="plc" r="'+p.rad.toFixed(1)+'" fill="url(#sv-p'+i+')" stroke="#02060d" stroke-opacity=".5" stroke-width="1"/>';
+    if(p.rings){h+='<ellipse class="plr" rx="'+(p.rad*1.9).toFixed(1)+'" ry="'+(p.rad*0.55).toFixed(1)+'" fill="none" stroke="#e8d9b0" stroke-opacity=".5"/>';}
+    h+='</g>';
+  });
+  h+='</svg></div><div class="svinfo" id="sv-info"></div></div>';
+  ov.innerHTML=h;
+  ov.style.display='';
+  $('sv-close').addEventListener('click',closeSys);
+  Array.prototype.forEach.call(ov.querySelectorAll('.plg'),function(el){
+    el.addEventListener('click',function(ev){ev.stopPropagation();
+      var i=parseInt(el.getAttribute('data-i'),10);
+      sg.pl.forEach(function(p,j){p.sel=j===i;});
+      sysInfo(sg);sysHl(sg);
+    });
+  });
+  sysInfo(sg);
+  sysHl(sg);
+  sysAnim(sg);
+}
+function sysHl(sg){
+  Array.prototype.forEach.call(document.querySelectorAll('#sv-svg .plg'),function(el){
+    var i=parseInt(el.getAttribute('data-i'),10);
+    el.setAttribute('opacity',sg.pl[i].sel?'1':'0.72');
+    var c=el.querySelector('.plc');
+    c.setAttribute('stroke',sg.pl[i].sel?'#2ee6c9':'#02060d');
+  });
+}
+function sysInfo(sg){
+  var el=$('sv-info');if(!el){return;}
+  var p=null;sg.pl.forEach(function(x){if(x.sel){p=x;}});
+  if(!p){el.innerHTML='';return;}
+  var idx=sg.pl.indexOf(p);
+  el.innerHTML='<h3>\uD83E\uDE90 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
+   +'<p class="pv" style="margin-top:10px">'+esc(p.dp)+'.</p>'
+   +'<div class="pl">Donn\u00e9es orbitales</div>'
+   +'<p class="pv">Distance \u00e0 l\u2019\u00e9toile : '+p.ua+' UA \u00b7 P\u00e9riode : '+p.per+' ans</p>'
+   +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
+   +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
+   +'<button class="btn ghost sm" id="sv-prev" type="button">\u2190 Pr\u00e9c.</button>'
+   +'<button class="btn ghost sm" id="sv-next" type="button">Suiv. \u2192</button></div>';
+  $('sv-prev').addEventListener('click',function(){sysSel(sg,idx-1);});
+  $('sv-next').addEventListener('click',function(){sysSel(sg,idx+1);});
+}
+function sysSel(sg,i){
+  if(i<0){i=sg.pl.length-1;}
+  if(i>=sg.pl.length){i=0;}
+  sg.pl.forEach(function(p,j){p.sel=j===i;});
+  sysInfo(sg);sysHl(sg);
+}
+function sysAnim(sg){
+  if(window._svRaf){cancelAnimationFrame(window._svRaf);}
+  var last=null;
+  var step=function(ts){
+    if(SYSV===null){window._svRaf=null;return;}
+    var svg=$('sv-svg');
+    if(!svg){window._svRaf=null;return;}
+    if(last===null){last=ts;}
+    var dt=Math.min(0.1,(ts-last)/1000);last=ts;
+    sg.pl.forEach(function(p,i){
+      p.a+=p.om*dt;
+      var g=svg.querySelector('.plg[data-i="'+i+'"]');
+      if(g){g.setAttribute('transform','translate('+(500+Math.cos(p.a)*p.orb).toFixed(1)+' '+(500+Math.sin(p.a)*p.orb*0.92).toFixed(1)+')');}
+    });
+    window._svRaf=requestAnimationFrame(step);
+  };
+  window._svRaf=requestAnimationFrame(step);
+}
+function closeSys(){
+  SYSV=null;
+  var ov=$('sysv');if(ov){ov.style.display='none';ov.innerHTML='';}
+}
+
 function legRender(){
   var p=SKP[SKIN],d=$('leg-drop');
   if(AMODE){
-    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · '+genStars().length+' étoiles</span>';
+    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · '+genStars().length+' étoiles</span><span><i style="background:none;border:0"></i>Clic sur une \u00e9toile : syst\u00e8me</span>';
   }else{
     d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span>';
   }
