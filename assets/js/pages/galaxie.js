@@ -43,6 +43,26 @@ function renderMap(){
   Array.prototype.forEach.call(document.querySelectorAll('.sysg'),function(el){
     el.addEventListener('click',function(ev){ev.stopPropagation();var psi=el.getAttribute('data-si');if(psi!==null&&psi!==''){openSys(parseInt(psi,10));}else{select(parseInt(el.getAttribute('data-id'),10));}});
   });
+  if(!$('g-map')._tipw){
+    $('g-map')._tipw=true;
+    var tip2=$('star-tip'),wrap2=$('g-map').parentNode;
+    $('g-map').addEventListener('mousemove',function(ev){
+      if(DRG){tip2.style.display='none';return;}
+      var t=ev.target;
+      if(!t||!t.getAttribute||t.getAttribute('data-si')===null){tip2.style.display='none';return;}
+      var si=parseInt(t.getAttribute('data-si'),10);
+      var s=SFLD&&SFLD[si];
+      if(!s){tip2.style.display='none';return;}
+      var sg2=sysGen(si);
+      tip2.innerHTML='<b>'+s.des+'</b> · classe '+s.cls+(sg2&&sg2.pl.length?'<br>'+sg2.pl.length+' planète'+(sg2.pl.length>1?'s':'')+' · <i>clic pour explorer</i>':'<br><i>aucune planète détectée</i>')+(s.note?'<br><i>'+s.note+'</i>':'');
+      tip2.style.display='';
+      var wr=wrap2.getBoundingClientRect();
+      var l=ev.clientX-wr.left+14,tp2=ev.clientY-wr.top+14;
+      tip2.style.left=(l+200>wr.width?l-215:l)+'px';
+      tip2.style.top=(tp2+70>wr.height?tp2-85:tp2)+'px';
+    });
+    $('g-map').addEventListener('mouseleave',function(){tip2.style.display='none';});
+  }
   applySearch();
 }
 function catLabel(c){return c==='vaisseau'?'Vaisseau-tombe':c==='nebuleuse'?'Nébuleuse':c==='inconnu'?'Inexploré':'Système';}
