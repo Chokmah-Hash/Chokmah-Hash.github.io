@@ -297,7 +297,7 @@ function sysGen(si){
     for(var i=0;i<n;i++){
       var t=T[Math.floor(r()*T.length)];
       var orb=72+i*46+r()*18;
-      res.pl.push({nom:s0.des+' '+ROM[i],type:t[0],c1:t[1],c2:t[2],dp:t[3].split('|')[Math.floor(r()*3)],rad:6+r()*7,orb:orb,a:r()*6.2832,om:(0.03+0.05*r())/Math.sqrt(orb/72)*(r()<0.5?1:-1),rings:(t[0]==='G\u00e9ante gazeuse'&&r()<0.45),ua:(orb/60).toFixed(1),per:(1.4+i*1.9+r()*1.4).toFixed(1),sel:i===0});
+      res.pl.push({nom:s0.des+' '+ROM[i],type:t[0],c1:t[1],c2:t[2],dp:t[3].split('|')[Math.floor(r()*3)],rad:6+r()*7,orb:orb,a:r()*6.2832,om:(0.028+0.05*r())/Math.sqrt(orb/72),rings:(t[0]==='G\u00e9ante gazeuse'&&r()<0.45),ua:(orb/60).toFixed(1),per:(1.4+i*1.9+r()*1.4).toFixed(1),sel:i===0});
     }
   }
   SYSG[si]=res;
@@ -315,10 +315,12 @@ function sysCss(){
   +'#sysv .svmap svg{width:100%;height:100%}'
   +'#sysv .svinfo{flex:1;max-width:360px;border-left:1px solid #1d3a33;padding:14px 16px;overflow:auto}'
   +'#sv-svg .plg{cursor:pointer}'
-  +'#sv-svg .plc{cursor:pointer}';
+  +'#sv-svg .plc{cursor:pointer}'
+  +'#sysv .sxpoi{cursor:pointer}';
   document.head.appendChild(c);
 }
 function openSys(si){
+  if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
   var sg=sysGen(si);
   if(!sg||!sg.pl.length){return;}
   sysCss();
@@ -339,7 +341,7 @@ function openSys(si){
     if(p.rings){h+='<ellipse class="plr" rx="'+(p.rad*1.9).toFixed(1)+'" ry="'+(p.rad*0.55).toFixed(1)+'" fill="none" stroke="#e8d9b0" stroke-opacity=".5"/>';}
     h+='</g>';
   });
-  h+='</svg></div><div class="svinfo" id="sv-info"></div></div>';
+  h+='</svg></div></div>';
   ov.innerHTML=h;
   ov.style.display='';
   $('sv-close').addEventListener('click',closeSys);
@@ -363,7 +365,7 @@ function sysHl(sg){
   });
 }
 function sysInfo(sg){
-  var el=$('sv-info');if(!el){return;}
+  var el=$('g-panel');if(!el){return;}
   var p=null;sg.pl.forEach(function(x){if(x.sel){p=x;}});
   if(!p){el.innerHTML='';return;}
   var idx=sg.pl.indexOf(p);
@@ -374,9 +376,11 @@ function sysInfo(sg){
    +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
    +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
    +'<button class="btn ghost sm" id="sv-prev" type="button">\u2190 Pr\u00e9c.</button>'
-   +'<button class="btn ghost sm" id="sv-next" type="button">Suiv. \u2192</button></div>';
+   +'<button class="btn ghost sm" id="sv-next" type="button">Suiv. \u2192</button>'
+   +'<button class="btn solid sm" id="sv-x" type="button">Explorer</button></div>';
   $('sv-prev').addEventListener('click',function(){sysSel(sg,idx-1);});
   $('sv-next').addEventListener('click',function(){sysSel(sg,idx+1);});
+  $('sv-x').addEventListener('click',function(){sysExplore(sg,idx);});
 }
 function sysSel(sg,i){
   if(i<0){i=sg.pl.length-1;}
@@ -402,9 +406,113 @@ function sysAnim(sg){
   };
   window._svRaf=requestAnimationFrame(step);
 }
+var SYSXP=-1,SYSXPOI=null;
+function sysXInfo(sg){
+  var el=$('g-panel');if(!el){return;}
+  var p=sg.pl[SYSXP];
+  el.innerHTML='<h3 style="margin:.1em 0 .3em">\uD83E\uDE90 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
+   +'<p class="pv" style="margin-top:10px">'+esc(p.dp)+'.</p>'
+   +'<div class="pl">Donn\u00e9es orbitales</div>'
+   +'<p class="pv">Distance \u00e0 l\u2019\u00e9toile : '+p.ua+' UA \u00b7 P\u00e9riode : '+p.per+' ans</p>'
+   +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
+   +'<div class="pl">Points d\u2019int\u00e9r\u00eat</div>';
+  if(SYSXPOI){
+    el.innerHTML+='<p class="pv"><b>\uD83D\uDCCD '+esc(SYSXPOI.nom)+'</b></p><p class="pv" style="margin-top:6px">'+esc(SYSXPOI.desc)+'</p>';
+  }else{
+    el.innerHTML+='<p class="pv">Cliquez un rep\u00e8re sur le globe pour l\u2019examiner ('+p.pois.length+' d\u00e9tect\u00e9s).</p>';
+  }
+  el.innerHTML+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
+   +'<button class="btn ghost sm" id="sx-back" type="button">\u2190 Syst\u00e8me</button>'
+   +'<button class="btn ghost sm" id="sv-prev" type="button">\u2190 Pr\u00e9c.</button>'
+   +'<button class="btn solid sm" id="sv-next" type="button">Suiv. \u2192</button></div>';
+  $('sx-back').addEventListener('click',function(){SYSXP=-1;SYSXPOI=null;openSys(sg.star.si);});
+  $('sv-prev').addEventListener('click',function(){sysExplore(sg,(SYSXP-1+sg.pl.length)%sg.pl.length);});
+  $('sv-next').addEventListener('click',function(){sysExplore(sg,(SYSXP+1)%sg.pl.length);});
+}
+function sysExplore(sg,i){
+  if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
+  SYSXP=i;SYSXPOI=null;
+  var p=sg.pl[i];
+  if(!p.pois){
+    var rp=prng(sg.star.si*97+i*13+5);
+    var XN=['Ruines cyclop\u00e9ennes','\u00c9pave d\u2019un vaisseau','Signal intermittent','Anomalie \u00e9nerg\u00e9tique','Crat\u00e8re d\u2019impact','Structure m\u00e9tallique','Balise silencieuse','R\u00e9seau souterrain','Station abandonn\u00e9e','Source thermique'];
+    var XD=['Des traces d\u2019une civilisation oubli\u00e9e affleurent sous la poussi\u00e8re.','La coque bris\u00e9e d\u00e9rive ici depuis des si\u00e8cles ; personne n\u2019a jamais os\u00e9 y p\u00e9n\u00e9trer.','Un signal r\u00e9p\u00e9titif bat au rythme des mar\u00e9es magn\u00e9tiques.','Les capteurs saturent \u00e0 l\u2019approche : quelque chose rayonne sous la cro\u00fbte.','Un impact ancien a cristallis\u00e9 le sol en une dentelle noire.','Des angles trop parfaits pour \u00eatre naturels d\u00e9passent du relief.','Elle \u00e9mettait encore il y a peu ; d\u00e9sormais, silence radio.','Des cavit\u00e9s karstiques s\u2019\u00e9tendent sous la surface, id\u00e9al pour se cacher.','Les sas sont scell\u00e9s de l\u2019int\u00e9rieur.','Un panache chaud trahit une activit\u00e9 g\u00e9ologique r\u00e9cente.'];
+    var n=3+Math.floor(rp()*4);
+    p.pois=[];
+    for(var k=0;k<n;k++){
+      var an=rp()*6.2832,rr=90+rp()*190;
+      p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],x:500+Math.cos(an)*rr,y:500+Math.sin(an)*rr*0.96});
+    }
+  }
+  var ov=$('sysv');
+  var h='<div class="svhead"><div><b>'+esc(p.nom)+'</b> \u00b7 '+esc(p.type)+'<span class="svid">Vue plan\u00e8te</span></div><button type="button" id="sv-close" class="btn ghost sm">\u2190 Atlas</button></div>';
+  h+='<div class="svbody"><div class="svmap"><svg id="sv-svg" viewBox="0 0 1000 1000">';
+  h+='<defs><clipPath id="svx-c"><circle cx="500" cy="500" r="300"/></clipPath>'
+   +'<radialGradient id="svx-g" cx="38%" cy="32%"><stop offset="0%" stop-color="'+p.c1+'"/><stop offset="100%" stop-color="'+p.c2+'"/></radialGradient>'
+   +'<radialGradient id="svx-s"><stop offset="70%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>';
+  h+='<circle cx="500" cy="500" r="300" fill="url(#svx-g)"/>';
+  h+='<g id="svx-t" clip-path="url(#svx-c)">';
+  var r2=prng(sg.star.si*31+i*7+3);
+  if(p.type==='G\u00e9ante gazeuse'){
+    for(var b=0;b<7;b++){var by=200+b*80+(r2()*30-15);h+='<rect x="200" y="'+by.toFixed(0)+'" width="600" height="'+(24+r2()*34).toFixed(0)+'" fill="'+(b%2?p.c2:'#b8925f')+'" fill-opacity="'+(0.25+r2()*0.3).toFixed(2)+'"/>';}
+  }else if(p.type==='Oc\u00e9anique'){
+    for(var q2=0;q2<9;q2++){h+='<ellipse cx="'+(230+r2()*540).toFixed(0)+'" cy="'+(230+r2()*540).toFixed(0)+'" rx="'+(10+r2()*36).toFixed(0)+'" ry="'+(8+r2()*22).toFixed(0)+'" fill="#3a7a4e" fill-opacity="'+(0.5+r2()*0.4).toFixed(2)+'"/>';}
+  }else if(p.type==='Glaciaire'){
+    h+='<ellipse cx="500" cy="240" rx="290" ry="90" fill="#eaf6fb" fill-opacity=".85"/><ellipse cx="500" cy="770" rx="290" ry="80" fill="#eaf6fb" fill-opacity=".8"/>';
+    for(var q3=0;q3<8;q3++){h+='<path d="M'+(240+r2()*520).toFixed(0)+' '+(320+r2()*360).toFixed(0)+' q'+(20+r2()*40).toFixed(0)+' '+(10+r2()*30).toFixed(0)+' '+(40+r2()*60).toFixed(0)+' '+(5+r2()*20).toFixed(0)+'" stroke="#9fc4d4" stroke-opacity=".5" fill="none"/>';}
+  }else if(p.type==='Volcanique'){
+    for(var q4=0;q4<10;q4++){h+='<circle cx="'+(230+r2()*540).toFixed(0)+'" cy="'+(230+r2()*540).toFixed(0)+'" r="'+(6+r2()*20).toFixed(0)+'" fill="#ff7a45" fill-opacity="'+(0.4+r2()*0.5).toFixed(2)+'"/>';}
+  }else if(p.type==='St\u00e9rile'){
+    for(var q5=0;q5<14;q5++){var cx=(220+r2()*560).toFixed(0),cy=(220+r2()*560).toFixed(0),cr=(6+r2()*26).toFixed(0);h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+cr+'" fill="'+p.c2+'" fill-opacity=".5"/><circle cx="'+cx+'" cy="'+cy+'" r="'+cr+'" fill="none" stroke="#0a120f" stroke-opacity=".35"/>';}
+  }else if(p.type==='D\u00e9sertique'){
+    for(var q6=0;q6<9;q6++){h+='<path d="M'+(230+r2()*300).toFixed(0)+' '+(280+r2()*440).toFixed(0)+' q'+(40+r2()*60).toFixed(0)+' '+(14+r2()*26).toFixed(0)+' '+(90+r2()*120).toFixed(0)+' 0" stroke="#c98f4a" stroke-opacity=".45" fill="none" stroke-width="3"/>';}
+  }else{
+    for(var q7=0;q7<10;q7++){h+='<ellipse cx="'+(230+r2()*540).toFixed(0)+'" cy="'+(230+r2()*540).toFixed(0)+'" rx="'+(16+r2()*60).toFixed(0)+'" ry="'+(12+r2()*40).toFixed(0)+'" fill="'+p.c2+'" fill-opacity="'+(0.3+r2()*0.35).toFixed(2)+'"/>';}
+  }
+  h+='</g>';
+  h+='<g clip-path="url(#svx-c)" stroke="#2ee6c9" stroke-opacity=".14" fill="none">';
+  for(var c2=1;c2<6;c2++){h+='<line x1="'+(200+c2*100)+'" y1="200" x2="'+(200+c2*100)+'" y2="800"/><line x1="200" y1="'+(200+c2*100)+'" x2="800" y2="'+(200+c2*100)+'"/>';}
+  h+='</g>';
+  h+='<circle cx="500" cy="500" r="300" fill="url(#svx-s)"/>';
+  h+='<circle cx="500" cy="500" r="300" fill="none" stroke="#2ee6c9" stroke-opacity=".35"/>';
+  if(p.rings){h+='<ellipse cx="500" cy="500" rx="440" ry="120" fill="none" stroke="#e8d9b0" stroke-opacity=".4" transform="rotate(-18 500 500)"/>';}
+  p.pois.forEach(function(q8,pi){
+    h+='<g class="sxpoi" data-i="'+pi+'" data-sg="'+sg.star.si+'"><circle cx="'+q8.x.toFixed(0)+'" cy="'+q8.y.toFixed(0)+'" r="9" fill="#2ee6c9" fill-opacity=".9"/><circle cx="'+q8.x.toFixed(0)+'" cy="'+q8.y.toFixed(0)+'" r="15" fill="none" stroke="#2ee6c9" stroke-opacity=".5"/><title>'+esc(q8.nom)+'</title></g>';
+  });
+  h+='</svg></div></div>';
+  ov.innerHTML=h;
+  ov.style.display='';
+  $('sv-close').addEventListener('click',closeSys);
+  Array.prototype.forEach.call(ov.querySelectorAll('.sxpoi'),function(el){
+    el.addEventListener('click',function(ev){ev.stopPropagation();
+      var pi2=parseInt(el.getAttribute('data-i'),10);
+      SYSXPOI=p.pois[pi2];
+      Array.prototype.forEach.call(ov.querySelectorAll('.sxpoi circle'),function(c3){c3.setAttribute('fill','#2ee6c9');});
+      var dc=el.querySelector('circle');if(dc){dc.setAttribute('fill','#f0b24a');}
+      sysXInfo(sg);
+    });
+  });
+  sysXInfo(sg);
+  if(p.type!=='G\u00e9ante gazeuse'){
+    var ang=0,lst2=null;
+    var step2=function(ts2){
+      if(SYSXP<0){window._sxRaf=null;return;}
+      var tex=$('svx-t');if(!tex){window._sxRaf=null;return;}
+      if(lst2===null){lst2=ts2;}
+      var dt2=Math.min(0.1,(ts2-lst2)/1000);lst2=ts2;
+      ang=(ang+dt2*0.8)%360;
+      tex.setAttribute('transform','rotate('+ang.toFixed(2)+' 500 500)');
+      window._sxRaf=requestAnimationFrame(step2);
+    };
+    window._sxRaf=requestAnimationFrame(step2);
+  }
+}
 function closeSys(){
-  SYSV=null;
+  if(window._svRaf){cancelAnimationFrame(window._svRaf);window._svRaf=null;}
+  if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
+  SYSV=null;SYSXP=-1;SYSXPOI=null;
   var ov=$('sysv');if(ov){ov.style.display='none';ov.innerHTML='';}
+  renderPanel();
 }
 
 function legRender(){
