@@ -373,9 +373,9 @@ function sysStar(sg){
    +'<div class="pl">Plan\u00e8tes</div>';
   var h2='';
   sg.pl.forEach(function(p,i){
-    h2+='<button class="btn ghost sm svstar" data-i="'+i+'" type="button" style="margin:0 6px 6px 0">'
-     +'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+p.c1+';margin-right:6px"></span>'
-     +esc(p.nom)+' \u00b7 '+esc(p.type)+'</button>';
+    h2+='<button class="btn ghost sm svstar" data-i="'+i+'" type="button" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin:0 0 6px 0;text-align:left">'
+     +'<span style="display:inline-flex;align-items:center"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+p.c1+';margin-right:8px"></span>'
+     +esc(p.nom)+' \u00b7 '+esc(p.type)+'</span><span style="opacity:.7">'+p.ua+' UA</span></button>';
   });
   el.innerHTML+=h2+'<p class="pv" style="margin-top:8px">Cliquez une plan\u00e8te pour l\u2019examiner.</p>';
   Array.prototype.forEach.call(el.querySelectorAll('.svstar'),function(b){
@@ -393,11 +393,9 @@ function sysInfo(sg){
    +'<p class="pv">Distance \u00e0 l\u2019\u00e9toile : '+p.ua+' UA \u00b7 P\u00e9riode : '+p.per+' ans</p>'
    +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
    +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
-   +'<button class="btn ghost sm" id="sv-prev" type="button">\u2190 Pr\u00e9c.</button>'
-   +'<button class="btn ghost sm" id="sv-next" type="button">Suiv. \u2192</button>'
+   +'<button class="btn ghost sm" id="sv-back" type="button">\u2190 Syst\u00e8me</button>'
    +'<button class="btn solid sm" id="sv-x" type="button">Explorer</button></div>';
-  $('sv-prev').addEventListener('click',function(){sysSel(sg,idx-1);});
-  $('sv-next').addEventListener('click',function(){sysSel(sg,idx+1);});
+  $('sv-back').addEventListener('click',function(){sg.pl.forEach(function(x){x.sel=false;});sysStar(sg);sysHl(sg);});
   $('sv-x').addEventListener('click',function(){sysExplore(sg,idx);});
 }
 function sysSel(sg,i){
@@ -440,12 +438,8 @@ function sysXInfo(sg){
     el.innerHTML+='<p class="pv">Cliquez un rep\u00e8re sur le globe pour l\u2019examiner ('+p.pois.length+' d\u00e9tect\u00e9s).</p>';
   }
   el.innerHTML+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
-   +'<button class="btn ghost sm" id="sx-back" type="button">\u2190 Syst\u00e8me</button>'
-   +'<button class="btn ghost sm" id="sv-prev" type="button">\u2190 Pr\u00e9c.</button>'
-   +'<button class="btn solid sm" id="sv-next" type="button">Suiv. \u2192</button></div>';
+   +'<button class="btn ghost sm" id="sx-back" type="button">\u2190 Syst\u00e8me</button></div>';
   $('sx-back').addEventListener('click',function(){SYSXP=-1;SYSXPOI=null;openSys(sg.star.si);});
-  $('sv-prev').addEventListener('click',function(){sysExplore(sg,(SYSXP-1+sg.pl.length)%sg.pl.length);});
-  $('sv-next').addEventListener('click',function(){sysExplore(sg,(SYSXP+1)%sg.pl.length);});
 }
 function sysExplore(sg,i){
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
