@@ -552,11 +552,11 @@ function secHover(p){
   HOVSEC='C'+ci+'-L'+cl;
   var sv=$('a-svg');if(!sv){b.style.display='none';return;}
   var r=sv.getBoundingClientRect(),wr=sv.parentNode.getBoundingClientRect();
-  var lx=((ci-1)*70-VB.x)/VB.w*r.width+(r.left-wr.left);
+  var lx=(ci*70-VB.x)/VB.w*r.width+(r.left-wr.left);
   var ly=((cl-1)*75-VB.y)/VB.h*r.height+(r.top-wr.top);
   b.title='Afficher le secteur '+HOVSEC;
   b.style.display='';
-  b.style.left=(lx+7)+'px';
+  b.style.left=(lx-24-7)+'px';
   b.style.top=(ly+7)+'px';
 }
 function secItems(){
