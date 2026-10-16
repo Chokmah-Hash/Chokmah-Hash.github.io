@@ -364,10 +364,28 @@ function sysHl(sg){
     c.setAttribute('stroke',sg.pl[i].sel?'#2ee6c9':'#02060d');
   });
 }
+function sysStar(sg){
+  var el=$('g-panel');if(!el){return;}
+  var s=sg.star;
+  el.innerHTML='<h3>\u2b50 '+esc(s.des)+'</h3><span class="badge">classe '+esc(s.cls)+'</span>'
+   +'<p class="pv" style="margin-top:10px">Syst\u00e8me de '+sg.pl.length+' plan\u00e8te'+(sg.pl.length>1?'s':'')+' \u00b7 '+esc(s.seg)+'</p>'
+   +(s.note?'<p class="pv" style="margin-top:6px"><i>'+esc(s.note)+'</i></p>':'')
+   +'<div class="pl">Plan\u00e8tes</div>';
+  var h2='';
+  sg.pl.forEach(function(p,i){
+    h2+='<button class="btn ghost sm svstar" data-i="'+i+'" type="button" style="margin:0 6px 6px 0">'
+     +'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+p.c1+';margin-right:6px"></span>'
+     +esc(p.nom)+' \u00b7 '+esc(p.type)+'</button>';
+  });
+  el.innerHTML+=h2+'<p class="pv" style="margin-top:8px">Cliquez une plan\u00e8te pour l\u2019examiner.</p>';
+  Array.prototype.forEach.call(el.querySelectorAll('.svstar'),function(b){
+    b.addEventListener('click',function(){sysSel(sg,parseInt(b.getAttribute('data-i'),10));});
+  });
+}
 function sysInfo(sg){
   var el=$('g-panel');if(!el){return;}
   var p=null;sg.pl.forEach(function(x){if(x.sel){p=x;}});
-  if(!p){el.innerHTML='';return;}
+  if(!p){sysStar(sg);return;}
   var idx=sg.pl.indexOf(p);
   el.innerHTML='<h3>\uD83E\uDE90 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
    +'<p class="pv" style="margin-top:10px">'+esc(p.dp)+'.</p>'
