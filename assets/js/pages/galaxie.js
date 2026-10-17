@@ -1,4 +1,3 @@
-
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SYS=[],SEL=null,ATLAS=[],AMODE=false,SKIN='necro',CURSEC=null,SECS=[];
@@ -79,16 +78,7 @@ function crumbRender(){
   $('g-crumb').innerHTML=out;
   $('crumb-back').addEventListener('click',showGalaxy);
 }
-function pmSvg(seed){
-  var r=prng(seed*7919+13),s='<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Surface">';
-  s+='<defs><radialGradient id="pmg'+seed+'" cx="42%" cy="30%"><stop offset="0%" stop-color="#18261d"/><stop offset="100%" stop-color="#0a120f"/></radialGradient></defs>';
-  s+='<rect width="1000" height="700" fill="url(#pmg'+seed+')"/>';
-  for(var i=0;i<26;i++){var cx=(r()*1000).toFixed(0),cy=(r()*700).toFixed(0),rr=(10+r()*52).toFixed(0);
-    s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+rr+'" ry="'+(rr*0.62).toFixed(0)+'" fill="none" stroke="#22382c" stroke-opacity="0.65"/>';}
-  for(var j=1;j<4;j++){s+='<line x1="0" y1="'+(j*175)+'" x2="1000" y2="'+(j*175)+'" stroke="#2ee6c9" stroke-opacity="0.05"/>';}
-  for(var k=1;k<5;k++){s+='<line x1="'+(k*200)+'" y1="0" x2="'+(k*200)+'" y2="700" stroke="#2ee6c9" stroke-opacity="0.04"/>';}
-  return s+'</svg>';
-}
+/* Globe procédural fourni par assets/js/moteur-planetaire.js (window.pmSvg). */
 function select(id){SEL=id;if(!PLS[id]){PLS[id]=[];}loadPlanetes(id);renderPanel();}
 function loadPlanetes(id){
   fetchJ(SB+'planetes?select=*&galaxie_id=eq.'+id+'&order=id.asc').then(function(l){PLS[id]=l||[];if(SEL===id&&!CURPLA){renderPanel();}}).catch(function(){});
@@ -190,7 +180,7 @@ function genStars(){
   for(i=0;i<320;i++){st.push({x:4+r()*1392,y:4+r()*892});}
   st.forEach(function(s){var mx=s.x%70,j1=((s.y*1.618)%1)<0.5,j2=0.5+((s.y*2.618)%1)*1.5;if(mx<4){if(j1){s.x+=4-mx+j2-0.5;}else{s.x-=mx+j2-0.5;}}else if(mx>66){if(j1){s.x-=mx-66+j2-0.5;}else{s.x+=(70-mx)+j2-0.5;}}var my=s.y%75,k1=((s.x*1.618)%1)<0.5,k2=0.5+((s.x*2.618)%1)*1.5;if(my<4){if(k1){s.y+=4-my+k2-0.5;}else{s.y-=my+k2-0.5;}}else if(my>71){if(k1){s.y-=my-71+k2-0.5;}else{s.y+=(75-my)+k2-0.5;}}s.x=Math.max(4,Math.min(1396,s.x));s.y=Math.max(4,Math.min(896,s.y));});
   var CL=[['O','#9db8ff',1],['B','#aac4ff',3],['A','#dfe8ff',6],['F','#fff4e0',8],['G','#ffe9b0',12],['K','#ffd28a',20],['M','#ffb46b',50]];
-  var NOTES=['Monde agricole recens\u00e9','Ruines xenos non identifi\u00e9es','Signal r\u00e9current capt\u00e9','Station perdue depuis trois si\u00e8cles','Ceinture d\u2019ast\u00e9ro\u00efdes m\u00e9tallif\u00e8re','Temp\u00eate \u00e9lectromagn\u00e9tique en cours','N\u00e9buleuse protostellaire','Navire \u00e0 la d\u00e9rive signal\u00e9','Balise d\u2019alerte muette','Contrebandiers actifs dans le secteur','Monde-tombe h\u00e9raldique','Anomalie gravitationnelle l\u00e9g\u00e8re'];
+  var NOTES=['Monde agricole recensé','Ruines xenos non identifiées','Signal récurrent capté','Station perdue depuis trois siècles','Ceinture d’astéroïdes métallifère','Tempête électromagnétique en cours','Nébuleuse protostellaire','Navire à la dérive signalé','Balise d’alerte muette','Contrebandiers actifs dans le secteur','Monde-tombe héraldique','Anomalie gravitationnelle légère'];
   var gmap={};st=st.filter(function(sx){var gx=Math.floor(sx.x/3.2),gy=Math.floor(sx.y/3.2);for(var ddx=-1;ddx<=1;ddx++){for(var ddy=-1;ddy<=1;ddy++){if(gmap[(gx+ddx)+'_'+(gy+ddy)]){return false;}}}gmap[gx+'_'+gy]=1;return true;});
   st.forEach(function(s,idx){
     s.si=idx;
@@ -264,13 +254,13 @@ function renderAtlas(){
     var tip=$('star-tip'),wrap=$('a-map').parentNode;
     $('a-map').addEventListener('mousemove',function(ev){
       if(DRG){tip.style.display='none';var hb=$('sec-btn');if(hb){hb.style.display='none';}return;}
-      var spx=svgPt(ev);if(spx){secHover(spx);var lsec=$('leg-sec');if(lsec){lsec.textContent='Secteur : '+segGrid(spx.sx,spx.sy)+' \u00b7 '+segSub(spx.sx,spx.sy);}}
+      var spx=svgPt(ev);if(spx){secHover(spx);var lsec=$('leg-sec');if(lsec){lsec.textContent='Secteur : '+segGrid(spx.sx,spx.sy)+' · '+segSub(spx.sx,spx.sy);}}
       var t=ev.target;
       if(!t||!t.getAttribute||t.getAttribute('data-si')===null){tip.style.display='none';return;}
       var si=parseInt(t.getAttribute('data-si'),10);
       var s=SFLD&&SFLD[si];
       if(!s){tip.style.display='none';return;}
-      var sg2=sysGen(si);tip.innerHTML='<b>'+s.des+'</b> \u00b7 classe '+s.cls+' \u00b7 Secteur '+segGrid(s.x,s.y)+' \u00b7 '+segSub(s.x,s.y)+(sg2&&sg2.pl.length?'<br>'+sg2.pl.length+' plan\u00e8te'+(sg2.pl.length>1?'s':'')+' \u00b7 <i>clic pour explorer</i>':'')+(s.note?'<br><i>'+s.note+'</i>':'');
+      var sg2=sysGen(si);tip.innerHTML='<b>'+s.des+'</b> · classe '+s.cls+' · Secteur '+segGrid(s.x,s.y)+' · '+segSub(s.x,s.y)+(sg2&&sg2.pl.length?'<br>'+sg2.pl.length+' planète'+(sg2.pl.length>1?'s':'')+' · <i>clic pour explorer</i>':'')+(s.note?'<br><i>'+s.note+'</i>':'');
       tip.style.display='';
       var wr=wrap.getBoundingClientRect();
       var l=ev.clientX-wr.left+14,tp2=ev.clientY-wr.top+14;
@@ -312,171 +302,26 @@ function sysGen(si){
   if(r()<0.52){
     var ROM=['I','II','III','IV','V','VI'];
     var T=[
-      ['Tellurique','#b08968','#6e5138','Biosph\u00e8re r\u00e9siliente|Cro\u00fbte tectonique jeune|Plaines balay\u00e9es par les vents'],
-      ['Oc\u00e9anique','#4f86c9','#28527d','Mer mondiale unique|Archipels volcaniques \u00e9pars|Courants abyssaux violents'],
-      ['Glaciaire','#cfe8f2','#7d9db0','Calotte glaci\u00e8re perp\u00e9tuelle|Oc\u00e9an sous-glaciaire probable|Banquise \u00e9ternellement fig\u00e9e'],
-      ['D\u00e9sertique','#e0b36a','#8f6f3f','Dunes ocres \u00e0 perte de vue|Canyons cisaill\u00e9s par les temp\u00eates|Ruines ensevelies sous le sable'],
-      ['Volcanique','#c2454f','#7a2430','Cha\u00eenes de volcans actifs|Mers de lave incandescente|Cendres dans la haute atmosph\u00e8re'],
-      ['G\u00e9ante gazeuse','#d9a86a','#9c7a4a','Bandes d\u2019ammoniac en turbulence|Temp\u00eates multicentenaires|C\u0153ur de m\u00e9tal liquide'],
-      ['St\u00e9rile','#9aa3a8','#5c6467','Crat\u00e8res d\u2019impact s\u00e9culaires|Aucune atmosph\u00e8re notable|Silence radio absolu']
+      ['Tellurique','#b08968','#6e5138','Biosphère résiliente|Croûte tectonique jeune|Plaines balayées par les vents'],
+      ['Océanique','#4f86c9','#28527d','Mer mondiale unique|Archipels volcaniques épars|Courants abyssaux violents'],
+      ['Glaciaire','#cfe8f2','#7d9db0','Calotte glaciaire perpétuelle|Océan sous-glaciaire probable|Banquise éternellement figée'],
+      ['Désertique','#e0b36a','#8f6f3f','Dunes ocres à perte de vue|Canyons cisaillés par les tempêtes|Ruines ensevelies sous le sable'],
+      ['Volcanique','#c2454f','#7a2430','Chaînes de volcans actifs|Mers de lave incandescente|Cendres dans la haute atmosphère'],
+      ['Géante gazeuse','#d9a86a','#9c7a4a','Bandes d’ammoniac en turbulence|Tempêtes multicentenaires|Cœur de métal liquide'],
+      ['Stérile','#9aa3a8','#5c6467','Cratères d’impact séculaires|Aucune atmosphère notable|Silence radio absolu']
     ];
     var n=1+Math.floor(r()*6);
     for(var i=0;i<n;i++){
       var t=T[Math.floor(r()*T.length)];
       var orb=72+i*46+r()*18;
-      res.pl.push({nom:s0.des+' '+ROM[i],type:t[0],c1:t[1],c2:t[2],dp:t[3].split('|')[Math.floor(r()*3)],rad:6+r()*7,orb:orb,a:r()*6.2832,om:(0.028+0.05*r())/Math.sqrt(orb/72),rings:(t[0]==='G\u00e9ante gazeuse'&&r()<0.45),ua:(orb/60).toFixed(1),per:(1.4+i*1.9+r()*1.4).toFixed(1),sel:false});
+      res.pl.push({nom:s0.des+' '+ROM[i],type:t[0],c1:t[1],c2:t[2],dp:t[3].split('|')[Math.floor(r()*3)],rad:6+r()*7,orb:orb,a:r()*6.2832,om:(0.028+0.05*r())/Math.sqrt(orb/72),rings:(t[0]==='Géante gazeuse'&&r()<0.45),ua:(orb/60).toFixed(1),per:(1.4+i*1.9+r()*1.4).toFixed(1),sel:false});
     }
   }
   SYSG[si]=res;
   return res;
 }
-/* ===== Moteur procedurale des planetes v4 : rendu deterministe, 0 asset ===== */
-var PLTEX={};
-function pnoise(seed){
-  var r=prng(seed),b=[],p=[],i,j,t;
-  for(i=0;i<256;i++){b[i]=i;}
-  for(i=255;i>0;i--){j=Math.floor(r()*(i+1));t=b[i];b[i]=b[j];b[j]=t;}
-  for(i=0;i<512;i++){p[i]=b[i&255];}
-  function gv(ix,iy){return p[(p[ix&255]+(iy&255))&255]/255;}
-  return function(x,y){
-    var x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
-    fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
-    var a=gv(x0,y0),b2=gv(x0+1,y0),c2=gv(x0,y0+1),d2=gv(x0+1,y0+1);
-    return a+(b2-a)*fx+(c2-a)*fy+(a-b2-c2+d2)*fx*fy;
-  };
-}
-function fbmN(seed,oct){
-  var ns=[],i;
-  for(i=0;i<oct;i++){ns.push(pnoise(seed*7349+i*101+13));}
-  return function(x,y){
-    var v=0,a=1,t=0,f=1,k;
-    for(k=0;k<oct;k++){v+=ns[k](x*f,y*f)*a;t+=a;a*=0.5;f*=2;}
-    return v/t;
-  };
-}
-function ptypeCfg(type){
-  if(type==='Oc\u00e9anique'){return {sea:0.6,ocn:[[10,44,64],[14,50,58],[8,38,54]],land:[[128,156,104],[92,128,84],[74,106,68],[118,144,96]],ice:0.35,iceK:1.4,crat:0.62,strata:0.22};}
-  if(type==='Glaciaire'){return {sea:0.5,ocn:[[24,48,62],[20,42,56],[28,54,68]],land:[[150,168,180],[178,194,204],[204,216,224],[132,152,164]],ice:1,iceK:6,strata:0.18};}
-  if(type==='D\u00e9sertique'){return {sea:2,ocn:[[0,0,0]],land:[[216,180,124],[198,154,98],[166,122,74],[228,200,152]],ice:0.15,iceK:0.5,strata:0.45};}
-  if(type==='Volcanique'){return {sea:0.3,lava:true,ocn:[[0,0,0]],land:[[64,56,52],[92,82,76],[74,66,60],[108,98,90]],ice:0,iceK:0,strata:0.3};}
-  if(type==='St\u00e9rile'){return {sea:2,ocn:[[0,0,0]],land:[[170,172,174],[134,137,140],[104,107,110],[152,154,156]],ice:0.08,iceK:0.4,strata:0.25,grey:true};}
-  return {sea:0.51,ocn:[[18,52,70],[12,60,58],[26,46,86],[10,42,52],[40,42,66],[16,58,62]],land:[[188,168,138],[152,104,72],[120,100,88],[172,162,150]],ice:0.7,iceK:1,strata:0.3};
-}
-function genMap(seed,W,type){
-  var cfg=ptypeCfg(type),r=prng(seed*2654435761+1234);
-  var q=W/50,ck=cfg.crat||1,i;
-  var fbm=fbmN(seed+11,5),fs=fbmN(seed+23,4),fg=fbmN(seed+37,3),fr=fbmN(seed+71,2),fw=fbmN(seed+53,4);
-  var lob=pnoise(seed*13+5);
-  var cr=[];
-  for(i=0;i<12;i++){cr.push({x:r()*W,y:r()*W,rd:(35+r()*80)*(W/400)*ck,s:0.5+r()*0.3,ai:r()*97});}
-  var oc=cfg.ocn[Math.floor(r()*cfg.ocn.length)];
-  var hasIce=cfg.ice>0&&r()<cfg.ice;
-  var iceT=(0.002+0.028*r())*W*(cfg.iceK||1);
-  var capv=[],i2;
-  for(i2=0;i2<=65;i2++){capv.push(lob(i2*0.37,7.7));}
-  var out=new Uint8ClampedArray(W*W*4);
-  var sea=cfg.sea,nw=sea>=2,x,y;
-  for(y=0;y<W;y++){
-    for(x=0;x<W;x++){
-      var j=((y*W)+x)*4;
-      var bg=fbm(x/q,y/q);
-      var cont=0,near=0;
-      for(i=0;i<12;i++){
-        var c1=cr[i],dx=x-c1.x,dy=y-c1.y,d=Math.sqrt(dx*dx+dy*dy);
-        var an=Math.atan2(dy,dx);
-        var lb=0.35+1.1*lob(Math.cos(an)*7.5+c1.ai,Math.sin(an)*7.5+c1.ai);
-        var v=c1.s*1.5*(1-d/(c1.rd*lb));
-        if(v>cont){cont=v;}
-        var nd=1-d/(c1.rd*2.2);
-        if(nd>near){near=nd;}
-      }
-      var h=Math.max(cont,bg*(0.15+0.85*near));
-      var cr2=0,cg2=0,cb2=0,glow=0;
-      if(!nw&&h<=sea){
-        if(cfg.lava){
-          var dep=Math.max(0,Math.min(1,1-h/sea));
-          var lk=0.25+0.75*dep;
-          cr2=255*lk+40*(1-lk);cg2=90*lk+8*(1-lk);cb2=30*lk+10*(1-lk);
-          glow=dep*0.9;
-        }else{
-          var dep2=Math.max(0,Math.min(1,(sea-h)/sea));
-          var nap=1+0.08*(fw(x/q*1.4,y/q*1.4)-0.5)*2;
-          var rid=1+0.05*(fs(x/q*5,y/q*5)-0.5)*2;
-          var lum=(1.18-0.5*dep2)*nap*rid;
-          cr2=oc[0]*lum;cg2=oc[1]*lum;cb2=oc[2]*lum;
-        }
-      }else{
-        var e=nw?Math.min(1,h*0.95):Math.min(1,(h-sea)/Math.max(0.05,1-sea));
-        var st=1+cfg.strata*(fs(x/q*2.2,y/q*2.2)-0.5)*2;
-        var gn=1+0.12*(fg(x/(q*0.4),y/(q*0.4))-0.5)*2;
-        var P=cfg.land,seg=e*(P.length-1),bi=Math.min(P.length-2,Math.floor(seg)),ft=seg-bi;
-        var A=P[bi],B2=P[bi+1];
-        var mm=st*gn*(cfg.grey?(0.8+0.4*fr(x/q*1.8,y/q*1.8)):1);
-        cr2=(A[0]+(B2[0]-A[0])*ft)*mm;
-        cg2=(A[1]+(B2[1]-A[1])*ft)*mm;
-        cb2=(A[2]+(B2[2]-A[2])*ft)*mm;
-      }
-      if(hasIce&&iceT>0){
-        var kn=x/W*64,kf=Math.floor(kn),kt=kn-kf;
-        kt=kt*kt*(3-2*kt);
-        var n01=capv[kf]*(1-kt)+capv[kf+1]*kt;
-        var eN=iceT*(1+0.7*(n01-0.5)),eS=iceT*(0.9+0.7*(n01-0.5));
-        var tN=(eN*1.3-y)/(eN*0.6),tS=(eS*1.3-(W-1-y))/(eS*0.6);
-        var kI=Math.max(Math.min(1,1-tN),Math.min(1,1-tS));
-        kI=Math.max(0,kI);
-        if(kI>0){
-          kI=kI*kI*(3-2*kI);
-          cr2=cr2+(228-cr2)*kI;cg2=cg2+(240-cg2)*kI;cb2=cb2+(250-cb2)*kI;
-          glow=glow*(1-kI);
-        }
-      }
-      out[j]=Math.max(0,Math.min(255,cr2));
-      out[j+1]=Math.max(0,Math.min(255,cg2));
-      out[j+2]=Math.max(0,Math.min(255,cb2));
-      out[j+3]=glow*255;
-    }
-  }
-  return out;
-}
-function drawPlanet(cv,seed,size,type){
-  var ctx=cv.getContext('2d');
-  ctx.clearRect(0,0,size,size);
-  var d=genMap(seed,size,type);
-  var img=ctx.createImageData(size,size),o=img.data;
-  var c=size/2,rad=c-2,x,y;
-  for(y=0;y<size;y++){
-    var ny=(y-c)/rad;
-    for(x=0;x<size;x++){
-      var nx=(x-c)/rad,rr=nx*nx+ny*ny,j=((y*size)+x)*4;
-      if(rr>1){o[j+3]=0;continue;}
-      var l=1-0.45*rr*rr*rr;
-      var hi=1+0.24*Math.max(0,(-nx*0.7-ny*0.7))*(1-rr*0.55);
-      var g=d[j+3]/255;
-      var f=l*hi*(1-g)+(1.1+0.35*g)*g;
-      o[j]=Math.min(255,d[j]*f);
-      o[j+1]=Math.min(255,d[j+1]*f);
-      o[j+2]=Math.min(255,d[j+2]*f);
-      o[j+3]=255;
-    }
-  }
-  ctx.putImageData(img,0,0);
-  var halo=ctx.createRadialGradient(c,c,rad*0.97,c,c,rad*1.13);
-  halo.addColorStop(0,'rgba(110,180,225,0)');
-  halo.addColorStop(0.55,'rgba(110,180,225,.16)');
-  halo.addColorStop(1,'rgba(110,180,225,0)');
-  ctx.fillStyle=halo;
-  ctx.beginPath();ctx.arc(c,c,rad*1.13,0,6.2832);ctx.fill();
-  ctx.strokeStyle='rgba(190,225,255,.28)';ctx.lineWidth=Math.max(1,size/340);
-  ctx.beginPath();ctx.arc(c,c,rad,0,6.2832);ctx.stroke();
-}
-function planetTex(seed,size,type){
-  var k=seed+'_'+size+'_'+type;
-  if(PLTEX[k]){return PLTEX[k];}
-  var cv=document.createElement('canvas');cv.width=size;cv.height=size;
-  drawPlanet(cv,seed,size,type);
-  PLTEX[k]=cv.toDataURL();
-  return PLTEX[k];
-}
+/* ===== Moteur planétaire : voir assets/js/moteur-planetaire.js (V3, 9 recettes).
+   Les textures sont fournies par window.planetTex (PE.tex) chargé juste après. ===== */
 function sysCss(){
   if($('sysv-css')){return;}
   var c=document.createElement('style');c.id='sysv-css';
@@ -503,7 +348,7 @@ function openSys(si){
   var ov=$('sysv');
   if(!ov){ov=document.createElement('div');ov.id='sysv';wrap.appendChild(ov);}
   var s=sg.star;
-  var h='<div class="svhead"><div><b>'+esc(s.des)+'</b> \u00b7 classe '+s.cls+' \u00b7 '+esc(s.seg)+'<span class="svid">Vue syst\u00e8me</span></div><button type="button" id="sv-close" class="btn ghost sm">\u2190 Atlas</button></div>';
+  var h='<div class="svhead"><div><b>'+esc(s.des)+'</b> · classe '+s.cls+' · '+esc(s.seg)+'<span class="svid">Vue système</span></div><button type="button" id="sv-close" class="btn ghost sm">← Atlas</button></div>';
   h+='<div class="svbody"><div class="svmap"><svg id="sv-svg" viewBox="0 0 1000 1000">';
   h+='<defs><radialGradient id="sv-star"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="'+s.col+'"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>';
   sg.pl.forEach(function(p,i){h+='<radialGradient id="sv-p'+i+'" cx="35%" cy="30%"><stop offset="0%" stop-color="'+p.c1+'"/><stop offset="100%" stop-color="'+p.c2+'"/></radialGradient>';});
@@ -513,11 +358,7 @@ function openSys(si){
   sg.pl.forEach(function(p,i){
     var prd=p.rad.toFixed(1);
     h+='<g class="plg" data-i="'+i+'">';
-    if(p.type==='G\u00e9ante gazeuse'){
-      h+='<circle class="plc" r="'+prd+'" fill="url(#sv-p'+i+')" stroke="#02060d" stroke-opacity=".5" stroke-width="1"/>';
-    }else{
-      h+='<image href="'+planetTex(sg.star.si*97+i*31+7,96,p.type)+'" x="'+(-p.rad).toFixed(1)+'" y="'+(-p.rad).toFixed(1)+'" width="'+(p.rad*2).toFixed(1)+'" height="'+(p.rad*2).toFixed(1)+'"/><circle class="plc" r="'+prd+'" fill="none" stroke="#02060d" stroke-opacity=".5" stroke-width="1"/>';
-    }
+    h+='<image href="'+planetTex(sg.star.si*97+i*31+7,96,p.type)+'" x="'+(-p.rad).toFixed(1)+'" y="'+(-p.rad).toFixed(1)+'" width="'+(p.rad*2).toFixed(1)+'" height="'+(p.rad*2).toFixed(1)+'"/><circle class="plc" r="'+prd+'" fill="none" stroke="#02060d" stroke-opacity=".5" stroke-width="1"/>';
     if(p.rings){h+='<ellipse class="plr" rx="'+(p.rad*1.9).toFixed(1)+'" ry="'+(p.rad*0.55).toFixed(1)+'" fill="none" stroke="#e8d9b0" stroke-opacity=".5"/>';}
     h+='</g>';
   });
@@ -548,17 +389,17 @@ function sysHl(sg){
 function sysStar(sg){
   var el=$('g-panel');if(!el){return;}
   var s=sg.star;
-  el.innerHTML='<h3>\u2b50 '+esc(s.des)+'</h3><span class="badge">classe '+esc(s.cls)+'</span>'
-   +'<p class="pv" style="margin-top:10px">Syst\u00e8me de '+sg.pl.length+' plan\u00e8te'+(sg.pl.length>1?'s':'')+' \u00b7 '+esc(s.seg)+' \u00b7 Secteur '+segGrid(s.x,s.y)+' \u00b7 '+segSub(s.x,s.y)+'</p>'
+  el.innerHTML='<h3>⭐ '+esc(s.des)+'</h3><span class="badge">classe '+esc(s.cls)+'</span>'
+   +'<p class="pv" style="margin-top:10px">Système de '+sg.pl.length+' planète'+(sg.pl.length>1?'s':'')+' · '+esc(s.seg)+' · Secteur '+segGrid(s.x,s.y)+' · '+segSub(s.x,s.y)+'</p>'
    +(s.note?'<p class="pv" style="margin-top:6px"><i>'+esc(s.note)+'</i></p>':'')
-   +'<div class="pl">Plan\u00e8tes</div>';
+   +'<div class="pl">Planètes</div>';
   var h2='';
   sg.pl.forEach(function(p,i){
     h2+='<button class="btn ghost sm svstar" data-i="'+i+'" type="button" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin:0 0 6px 0;text-align:left">'
      +'<span style="display:inline-flex;align-items:center"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+p.c1+';margin-right:8px"></span>'
-     +esc(p.nom)+' \u00b7 '+esc(p.type)+'</span><span style="opacity:.7">'+p.ua+' UA</span></button>';
+     +esc(p.nom)+' · '+esc(p.type)+'</span><span style="opacity:.7">'+p.ua+' UA</span></button>';
   });
-  el.innerHTML+=h2+'<p class="pv" style="margin-top:8px">Cliquez une plan\u00e8te pour l\u2019examiner.</p>';
+  el.innerHTML+=h2+'<p class="pv" style="margin-top:8px">Cliquez une planète pour l’examiner.</p>';
   Array.prototype.forEach.call(el.querySelectorAll('.svstar'),function(b){
     b.addEventListener('click',function(){sysSel(sg,parseInt(b.getAttribute('data-i'),10));});
   });
@@ -568,13 +409,13 @@ function sysInfo(sg){
   var p=null;sg.pl.forEach(function(x){if(x.sel){p=x;}});
   if(!p){sysStar(sg);return;}
   var idx=sg.pl.indexOf(p);
-  el.innerHTML='<h3>\uD83E\uDE90 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
+  el.innerHTML='<h3>🪐 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
    +'<p class="pv" style="margin-top:10px">'+esc(p.dp)+'.</p>'
-   +'<div class="pl">Donn\u00e9es orbitales</div>'
-   +'<p class="pv">Distance \u00e0 l\u2019\u00e9toile : '+p.ua+' UA \u00b7 P\u00e9riode : '+p.per+' ans</p>'
-   +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
+   +'<div class="pl">Données orbitales</div>'
+   +'<p class="pv">Distance à l’étoile : '+p.ua+' UA · Période : '+p.per+' ans</p>'
+   +(p.rings?'<p class="pv">Système d’anneaux étendu</p>':'')
    +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
-   +'<button class="btn ghost sm" id="sv-back" type="button">\u2190 Syst\u00e8me</button></div>';
+   +'<button class="btn ghost sm" id="sv-back" type="button">← Système</button></div>';
   $('sv-back').addEventListener('click',function(){sg.pl.forEach(function(x){x.sel=false;});sysStar(sg);sysHl(sg);});
 }
 function sysSel(sg,i){
@@ -605,19 +446,19 @@ var SYSXP=-1,SYSXPOI=null;
 function sysXInfo(sg){
   var el=$('g-panel');if(!el){return;}
   var p=sg.pl[SYSXP];
-  el.innerHTML='<h3 style="margin:.1em 0 .3em">\uD83E\uDE90 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
+  el.innerHTML='<h3 style="margin:.1em 0 .3em">🪐 '+esc(p.nom)+'</h3><span class="badge">'+esc(p.type)+'</span>'
    +'<p class="pv" style="margin-top:10px">'+esc(p.dp)+'.</p>'
-   +'<div class="pl">Donn\u00e9es orbitales</div>'
-   +'<p class="pv">Distance \u00e0 l\u2019\u00e9toile : '+p.ua+' UA \u00b7 P\u00e9riode : '+p.per+' ans</p>'
-   +(p.rings?'<p class="pv">Syst\u00e8me d\u2019anneaux \u00e9tendu</p>':'')
-   +'<div class="pl">Points d\u2019int\u00e9r\u00eat</div>';
+   +'<div class="pl">Données orbitales</div>'
+   +'<p class="pv">Distance à l’étoile : '+p.ua+' UA · Période : '+p.per+' ans</p>'
+   +(p.rings?'<p class="pv">Système d’anneaux étendu</p>':'')
+   +'<div class="pl">Points d’intérêt</div>';
   if(SYSXPOI){
-    el.innerHTML+='<p class="pv"><b>\uD83D\uDCCD '+esc(SYSXPOI.nom)+'</b></p><p class="pv" style="margin-top:6px">'+esc(SYSXPOI.desc)+'</p>';
+    el.innerHTML+='<p class="pv"><b>📍 '+esc(SYSXPOI.nom)+'</b></p><p class="pv" style="margin-top:6px">'+esc(SYSXPOI.desc)+'</p>';
   }else{
-    el.innerHTML+='<p class="pv">Cliquez un rep\u00e8re sur le globe pour l\u2019examiner ('+p.pois.length+' d\u00e9tect\u00e9s).</p>';
+    el.innerHTML+='<p class="pv">Cliquez un repère sur le globe pour l’examiner ('+p.pois.length+' détectés).</p>';
   }
   el.innerHTML+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
-   +'<button class="btn ghost sm" id="sx-back" type="button">\u2190 Syst\u00e8me</button></div>';
+   +'<button class="btn ghost sm" id="sx-back" type="button">← Système</button></div>';
   $('sx-back').addEventListener('click',function(){SYSXP=-1;SYSXPOI=null;sg.pl.forEach(function(x){x.sel=false;});openSys(sg.star.si);});
 }
 function sysExplore(sg,i){
@@ -626,8 +467,8 @@ function sysExplore(sg,i){
   var p=sg.pl[i];
   if(!p.pois){
     var rp=prng(sg.star.si*97+i*13+5);
-    var XN=['Ruines cyclop\u00e9ennes','\u00c9pave d\u2019un vaisseau','Signal intermittent','Anomalie \u00e9nerg\u00e9tique','Crat\u00e8re d\u2019impact','Structure m\u00e9tallique','Balise silencieuse','R\u00e9seau souterrain','Station abandonn\u00e9e','Source thermique'];
-    var XD=['Des traces d\u2019une civilisation oubli\u00e9e affleurent sous la poussi\u00e8re.','La coque bris\u00e9e d\u00e9rive ici depuis des si\u00e8cles ; personne n\u2019a jamais os\u00e9 y p\u00e9n\u00e9trer.','Un signal r\u00e9p\u00e9titif bat au rythme des mar\u00e9es magn\u00e9tiques.','Les capteurs saturent \u00e0 l\u2019approche : quelque chose rayonne sous la cro\u00fbte.','Un impact ancien a cristallis\u00e9 le sol en une dentelle noire.','Des angles trop parfaits pour \u00eatre naturels d\u00e9passent du relief.','Elle \u00e9mettait encore il y a peu ; d\u00e9sormais, silence radio.','Des cavit\u00e9s karstiques s\u2019\u00e9tendent sous la surface, id\u00e9al pour se cacher.','Les sas sont scell\u00e9s de l\u2019int\u00e9rieur.','Un panache chaud trahit une activit\u00e9 g\u00e9ologique r\u00e9cente.'];
+    var XN=['Ruines cyclopéennes','Épave d’un vaisseau','Signal intermittent','Anomalie énergétique','Cratère d’impact','Structure métallique','Balise silencieuse','Réseau souterrain','Station abandonnée','Source thermique'];
+    var XD=['Des traces d’une civilisation oubliée affleurent sous la poussière.','La coque brisée dérive ici depuis des siècles ; personne n’a jamais osé y pénétrer.','Un signal répétitif bat au rythme des marées magnétiques.','Les capteurs saturent à l’approche : quelque chose rayonne sous la croûte.','Un impact ancien a cristallisé le sol en une dentelle noire.','Des angles trop parfaits pour être naturels dépassent du relief.','Elle émettait encore il y a peu ; désormais, silence radio.','Des cavités karstiques s’étendent sous la surface, idéal pour se cacher.','Les sas sont scellés de l’intérieur.','Un panache chaud trahit une activité géologique récente.'];
     var n=3+Math.floor(rp()*4);
     p.pois=[];
     for(var k=0;k<n;k++){
@@ -636,19 +477,14 @@ function sysExplore(sg,i){
     }
   }
   var ov=$('sysv');
-  var h='<div class="svhead"><div><b>'+esc(p.nom)+'</b> \u00b7 '+esc(p.type)+'<span class="svid">Vue plan\u00e8te</span></div><button type="button" id="sv-close" class="btn ghost sm">\u2190 Atlas</button></div>';
+  var h='<div class="svhead"><div><b>'+esc(p.nom)+'</b> · '+esc(p.type)+'<span class="svid">Vue planète</span></div><button type="button" id="sv-close" class="btn ghost sm">← Atlas</button></div>';
   h+='<div class="svbody"><div class="svmap"><svg id="sv-svg" viewBox="0 0 1000 1000">';
   h+='<defs><clipPath id="svx-c"><circle cx="500" cy="500" r="300"/></clipPath>'
    +'<radialGradient id="svx-g" cx="38%" cy="32%"><stop offset="0%" stop-color="'+p.c1+'"/><stop offset="100%" stop-color="'+p.c2+'"/></radialGradient>'
    +'<radialGradient id="svx-s"><stop offset="70%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>';
   h+='<circle cx="500" cy="500" r="300" fill="url(#svx-g)"/>';
   h+='<g id="svx-t" clip-path="url(#svx-c)">';
-  var r2=prng(sg.star.si*31+i*7+3);
-  if(p.type==='G\u00e9ante gazeuse'){
-    for(var b=0;b<7;b++){var by=200+b*80+(r2()*30-15);h+='<rect x="200" y="'+by.toFixed(0)+'" width="600" height="'+(24+r2()*34).toFixed(0)+'" fill="'+(b%2?p.c2:'#b8925f')+'" fill-opacity="'+(0.25+r2()*0.3).toFixed(2)+'"/>';}
-  }else{
-    h+='<image href="'+planetTex(sg.star.si*97+i*31+7,512,p.type)+'" x="200" y="200" width="600" height="600" preserveAspectRatio="none"/>';
-  }
+  h+='<image href="'+planetTex(sg.star.si*97+i*31+7,512,p.type)+'" x="200" y="200" width="600" height="600" preserveAspectRatio="none"/>';
   h+='</g>';
   h+='<g clip-path="url(#svx-c)" stroke="#2ee6c9" stroke-opacity=".14" fill="none">';
   for(var c2=1;c2<6;c2++){h+='<line x1="'+(200+c2*100)+'" y1="200" x2="'+(200+c2*100)+'" y2="800"/><line x1="200" y1="'+(200+c2*100)+'" x2="800" y2="'+(200+c2*100)+'"/>';}
@@ -674,7 +510,7 @@ function sysExplore(sg,i){
     });
   });
   sysXInfo(sg);
-  if(p.type!=='G\u00e9ante gazeuse'){
+  if(p.type!=='Géante gazeuse'){
     var ang=0,lst2=null;
     var step2=function(ts2){
       if(SYSXP<0){window._sxRaf=null;return;}
@@ -699,7 +535,7 @@ function closeSys(){
 function legRender(){
   var p=SKP[SKIN],d=$('leg-drop');
   if(AMODE){
-    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · '+genStars().length+' étoiles</span><span><i style="background:none;border:0"></i>Clic sur une \u00e9toile : syst\u00e8me</span><span id="leg-sec">Secteur : \u2014</span>';
+    d.innerHTML='<span><i style="background:#dfe8ff"></i>Champ stellaire · '+genStars().length+' étoiles</span><span><i style="background:none;border:0"></i>Clic sur une étoile : système</span><span id="leg-sec">Secteur : —</span>';
   }else{
     d.innerHTML='<span><i style="background:#2ee6c9"></i>Système</span><span><i style="background:#f0b24a"></i>Vaisseau</span><span><i style="background:rgba(46,230,201,.35)"></i>Nébuleuse</span><span><i style="background:none;border:1px dashed #93aca1"></i>Inexploré</span><span id="leg-sec">Secteur : '+(CURSEC||'Campagne')+'</span>';
   }
@@ -741,7 +577,7 @@ function setMode(gal){
   $('g-zoom').style.display='';
   $('g-search').value='';
   $('star-tip').style.display='none';
-  $('g-search').placeholder=AMODE?'🔎 Chercher un monde, une zone, une anomalie...':'\\uD83D\\uD0E Chercher un système, une planète...';
+  $('g-search').placeholder=AMODE?'🔎 Chercher un monde, une zone, une anomalie...':'🔎 Chercher un système, une planète...';
   if(AMODE){SEL=null;CURPLA=null;CURPOI=null;if(!ATLAS.length){loadAtlas();}else{renderAtlas();}}
   else{renderMap();}
   renderPanel();
