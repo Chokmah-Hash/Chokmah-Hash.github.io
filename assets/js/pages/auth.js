@@ -13,8 +13,9 @@ function show(loggedIn){
 }
 var CLIENT=null;
 function applySession(s){
-  if(s&&s.access_token){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}}
-  else{window.MJBEARER=null;show(false);}
+  var ok=!!(s&&s.access_token);
+  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}window.scrollTo(0,0);}
+  else{window.MJBEARER=null;show(false);try{document.body.classList.add('preauth');}catch(e0){}}
 }
 function boot(){
   if(typeof supabase==='undefined'||!supabase.createClient){msg('Bibliothèque Supabase introuvable.','err');return;}

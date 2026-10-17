@@ -85,9 +85,10 @@ textarea.gf{min-height:64px;resize:vertical}
 /* ————— Console du bestiaire (MJ) ————— */
 .bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
 .bgrid .glab{margin-top:0;color:var(--teal)}
+body.preauth .nav,body.preauth .subnav,body.preauth main>section:not(#auth-console),body.preauth .foot,body.preauth #pe-top{display:none}
 </style>
   </head>
-  <body>
+  <body class="preauth">
     <header class="nav">
       <div class="nav-in">
         <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
