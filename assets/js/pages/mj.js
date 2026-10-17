@@ -17,7 +17,7 @@ function mjTry(){
   if(!MJAUTO){try{localStorage.setItem("pe_mjpass",pass);}catch(e2){}}
   $("mj-content").innerHTML=txt.slice(5);
   $("mj-lock").style.display="none";
-  $("mj-intro").style.display="none";
+  var _i=$("mj-intro");if(_i){_i.style.display="none";}
   $("mj-content").style.display="block";
   var r=$("mj-relock");
   if(r){r.addEventListener("click",mjLock);}
@@ -27,7 +27,7 @@ function mjLock(){
   $("mj-content").style.display="none";
   $("mj-content").innerHTML="";
   $("mj-lock").style.display="block";
-  $("mj-intro").style.display="block";
+  var _j=$("mj-intro");if(_j){_j.style.display="block";}
   $("mj-pass").value="";
   $("mj-err").style.display="none";
   try{localStorage.removeItem("pe_mjpass");}catch(e2){}
