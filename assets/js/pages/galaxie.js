@@ -345,7 +345,7 @@ function sysCss(){
   +'#sysv .sxring{width:46px;height:46px;border:2px solid rgba(46,230,201,.18);border-top-color:#2ee6c9;border-radius:50%;animation:sxspin 1s linear infinite}'
   +'#sysv .sxrot{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:6}'
   +'#sysv .sxmlab{font-size:.72rem;color:#7cf5df;letter-spacing:.1em;text-transform:uppercase;min-width:140px;text-align:center}'
-  +'#sysv .sxtip{position:absolute;z-index:8;pointer-events:none;display:none;background:rgba(4,12,10,.94);border:1px solid rgba(46,230,201,.55);border-radius:8px;padding:8px 12px;max-width:240px;box-shadow:0 4px 18px rgba(0,0,0,.55);font-size:.85rem;line-height:1.35}'
+  +'#sysv .sxtip{position:absolute;z-index:8;pointer-events:none;display:none;background:rgba(6,16,13,.97);border:1px solid #2ee6c9;border-radius:8px;padding:9px 13px;max-width:250px;box-shadow:0 0 14px rgba(46,230,201,.35),0 6px 20px rgba(0,0,0,.65);font-size:.95rem;line-height:1.4}'
   +'#sysv .sxtip b{color:#f0b24a;font-family:Rajdhani;font-size:15px;letter-spacing:.02em}'
   +'#sysv .sxtip .sxc{color:#9dd8cc;margin-top:3px}'
   +'#sysv .sxtip .sxd{color:#c9ded7;font-style:italic}';
@@ -558,7 +558,7 @@ function sysExplore(sg,i){
       }else{sx=q8.x;sy=q8.y;}
       var on=SYSXPOI===q8;
       var col2=on?'#f0b24a':'#2ee6c9';
-      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/><title>'+esc(q8.nom)+'</title></g>';
+      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/><title>'+esc(q8.nom)+'</g>';
     });
     g2.innerHTML=h2;
     Array.prototype.forEach.call(g2.querySelectorAll('.sxpoi'),function(el){
@@ -586,7 +586,7 @@ function sysExplore(sg,i){
     }
     if(q8.desc){html+='<div class="sxc sxd">'+esc(q8.desc)+'</div>';}
     tip.innerHTML=html;
-    tip.style.display='';
+    tip.style.display='block';
     var wr=tip.parentNode.getBoundingClientRect();
     var r2=el.getBoundingClientRect();
     var lx=r2.left-wr.left+r2.width/2;
