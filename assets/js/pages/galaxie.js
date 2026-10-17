@@ -344,7 +344,11 @@ function sysCss(){
   +'@keyframes sxspin{to{transform:rotate(360deg)}}'
   +'#sysv .sxring{width:46px;height:46px;border:2px solid rgba(46,230,201,.18);border-top-color:#2ee6c9;border-radius:50%;animation:sxspin 1s linear infinite}'
   +'#sysv .sxrot{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:6}'
-  +'#sysv .sxmlab{font-size:.72rem;color:#7cf5df;letter-spacing:.1em;text-transform:uppercase;min-width:140px;text-align:center}';
+  +'#sysv .sxmlab{font-size:.72rem;color:#7cf5df;letter-spacing:.1em;text-transform:uppercase;min-width:140px;text-align:center}'
+  +'#sysv .sxtip{position:absolute;z-index:8;pointer-events:none;display:none;background:rgba(4,12,10,.94);border:1px solid rgba(46,230,201,.55);border-radius:8px;padding:8px 12px;max-width:240px;box-shadow:0 4px 18px rgba(0,0,0,.55);font-size:.85rem;line-height:1.35}'
+  +'#sysv .sxtip b{color:#f0b24a;font-family:Rajdhani;font-size:15px;letter-spacing:.02em}'
+  +'#sysv .sxtip .sxc{color:#9dd8cc;margin-top:3px}'
+  +'#sysv .sxtip .sxd{color:#c9ded7;font-style:italic}';
   document.head.appendChild(c);
 }
 function openSys(si){
@@ -512,7 +516,7 @@ function sysExplore(sg,i){
   }
   var ov=$('sysv');
   var h='<div class="svhead"><div><b>'+esc(p.nom)+'</b> · '+esc(p.type)+'<span class="svid">Vue planète</span></div><button type="button" id="sv-close" class="btn ghost sm">← Atlas</button></div>';
-  h+='<div class="svbody"><div class="svmap"><svg id="sv-svg" viewBox="0 0 1000 1000">';
+  h+='<div class="svbody"><div class="svmap"><div id="sx-tip" class="sxtip"></div><svg id="sv-svg" viewBox="0 0 1000 1000">';
   h+='<defs><clipPath id="svx-c"><circle cx="500" cy="500" r="300"/></clipPath>'
    +'<radialGradient id="svx-g" cx="38%" cy="32%"><stop offset="0%" stop-color="'+p.c1+'"/><stop offset="100%" stop-color="'+p.c2+'"/></radialGradient>'
    +'<radialGradient id="svx-s"><stop offset="70%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>';
@@ -554,28 +558,52 @@ function sysExplore(sg,i){
       }else{sx=q8.x;sy=q8.y;}
       var on=SYSXPOI===q8;
       var col2=on?'#f0b24a':'#2ee6c9';
-      var mtxt='';
-      if(inst&&inst.geo&&q8.world){
-        var mco=inst.geo.meridianOf(q8.X)+1;
-        var lco=inst.geo.latOf(q8.y);
-        mtxt='<text x="'+(sx+15).toFixed(0)+'" y="'+(sy+1).toFixed(0)+'" font-size="13" font-family="Rajdhani" font-weight="600" fill="'+col2+'" fill-opacity="'+(0.95*op).toFixed(2)+'">'+esc(q8.nom)+'</text><text x="'+(sx+15).toFixed(0)+'" y="'+(sy+15).toFixed(0)+'" font-size="10.5" font-family="Rajdhani" fill="#9dd8cc" fill-opacity="'+(0.75*op).toFixed(2)+'">M'+mco+' · '+Math.abs(Math.round(inst.geo.latOf(q8.y)))+'° '+(lco>=0?'N':'S')+'</text>';
-      }else{
-        mtxt='<text x="'+(sx+15).toFixed(0)+'" y="'+(sy+1).toFixed(0)+'" font-size="13" font-family="Rajdhani" font-weight="600" fill="'+col2+'" fill-opacity="'+(0.95*op).toFixed(2)+'">'+esc(q8.nom)+'</text>';
-      }
-      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/>'+mtxt+'<title>'+esc(q8.nom)+'</title></g>';
+      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/><title>'+esc(q8.nom)+'</title></g>';
     });
     g2.innerHTML=h2;
     Array.prototype.forEach.call(g2.querySelectorAll('.sxpoi'),function(el){
       el.addEventListener('click',function(ev){ev.stopPropagation();
         SYSXPOI=p.pois[parseInt(el.getAttribute('data-i'),10)];
+        if(window._sxTipFor){window._sxTipFor(SYSXPOI,el);}
         sxPoiRender();
         sysXInfo(sg);
+        if(window._sxTipT){clearTimeout(window._sxTipT);}
+        window._sxTipT=setTimeout(function(){var t2=$('sx-tip');if(t2){t2.style.display='none';}},2600);
       });
     });
   };
   window._sxPoiR=sxPoiRender;
   sxPoiRender();
   sysXInfo(sg);
+  var tip=$('sx-tip');
+  var tipFor=function(q8,el){
+    if(!tip){return;}
+    var html='<b>'+esc(q8.nom)+'</b>';
+    if(q8.world&&inst&&inst.geo){
+      var mco2=inst.geo.meridianOf(q8.X)+1;
+      var lco2=inst.geo.latOf(q8.y);
+      html+='<div class="sxc">Méridien '+mco2+' / '+inst.geo.N+' · '+Math.abs(Math.round(lco2))+'° '+(lco2>=0?'N':'S')+'</div>';
+    }
+    if(q8.desc){html+='<div class="sxc sxd">'+esc(q8.desc)+'</div>';}
+    tip.innerHTML=html;
+    tip.style.display='';
+    var wr=tip.parentNode.getBoundingClientRect();
+    var r2=el.getBoundingClientRect();
+    var lx=r2.left-wr.left+r2.width/2;
+    tip.style.left=Math.max(4,Math.min(wr.width-244,lx-120))+'px';
+    var th=tip.offsetHeight||64;
+    tip.style.top=((r2.top-wr.top-th-8>4)?(r2.top-wr.top-th-8):(r2.bottom-wr.top+8))+'px';
+  };
+  window._sxTipFor=tipFor;
+  var svs=$('sv-svg');
+  if(svs){
+    svs.addEventListener('mousemove',function(ev){
+      var t=(ev.target&&ev.target.closest)?ev.target.closest('.sxpoi'):null;
+      if(!t){if(tip){tip.style.display='none';}return;}
+      tipFor(p.pois[parseInt(t.getAttribute('data-i'),10)],t);
+    });
+    svs.addEventListener('mouseleave',function(){if(tip){tip.style.display='none';}});
+  }
   if(inst){
     var im=$('svx-img');
     var cv=document.createElement('canvas');cv.width=320;cv.height=320;
@@ -636,7 +664,7 @@ function closeSys(){
   if(window._svRaf){cancelAnimationFrame(window._svRaf);window._svRaf=null;}
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
   if(window._sxKey){window.removeEventListener('keydown',window._sxKey);window._sxKey=null;}
-  SYSV=null;SYSXP=-1;SYSXPOI=null;window._sxGeo=null;window._sxPoiR=null;window._sxMkPois=null;
+  SYSV=null;SYSXP=-1;SYSXPOI=null;window._sxGeo=null;window._sxPoiR=null;window._sxMkPois=null;window._sxTipFor=null;if(window._sxTipT){clearTimeout(window._sxTipT);}window._sxTipT=null;
   var ov=$('sysv');if(ov){ov.style.display='none';ov.innerHTML='';}
   renderPanel();
 }
