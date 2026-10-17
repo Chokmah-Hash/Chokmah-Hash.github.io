@@ -335,7 +335,13 @@ function sysCss(){
   +'#sysv .svinfo{flex:1;max-width:360px;border-left:1px solid #1d3a33;padding:14px 16px;overflow:auto}'
   +'#sv-svg .plg{cursor:pointer}'
   +'#sv-svg .plc{cursor:pointer}'
-  +'#sysv .sxpoi{cursor:pointer}';
+  +'#sysv .sxpoi{cursor:pointer}'
+  +'#sysv .svmap{position:relative}'
+  +'#sysv .sxload{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;background:radial-gradient(circle at 50% 46%,rgba(3,8,14,.05),rgba(3,8,14,.8));color:#7cf5df;letter-spacing:.14em;font-size:.8rem;text-align:center}'
+  +'@keyframes sxspin{to{transform:rotate(360deg)}}'
+  +'#sysv .sxring{width:46px;height:46px;border:2px solid rgba(46,230,201,.18);border-top-color:#2ee6c9;border-radius:50%;animation:sxspin 1s linear infinite}'
+  +'#sysv .sxrot{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:6}'
+  +'#sysv .sxmlab{font-size:.72rem;color:#7cf5df;letter-spacing:.1em;text-transform:uppercase;min-width:140px;text-align:center}';
   document.head.appendChild(c);
 }
 function openSys(si){
@@ -463,6 +469,7 @@ function sysXInfo(sg){
 }
 function sysExplore(sg,i){
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
+  if(window._sxKey){window.removeEventListener('keydown',window._sxKey);window._sxKey=null;}
   SYSXP=i;SYSXPOI=null;
   var p=sg.pl[i];
   if(!p.pois){
@@ -484,7 +491,7 @@ function sysExplore(sg,i){
    +'<radialGradient id="svx-s"><stop offset="70%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>';
   h+='<circle cx="500" cy="500" r="300" fill="url(#svx-g)"/>';
   h+='<g id="svx-t" clip-path="url(#svx-c)">';
-  h+='<image href="'+planetTex(sg.star.si*97+i*31+7,512,p.type)+'" x="200" y="200" width="600" height="600" preserveAspectRatio="none"/>';
+  h+='<image id="svx-img" href="'+planetTex(sg.star.si*97+i*31+7,512,p.type)+'" x="200" y="200" width="600" height="600" preserveAspectRatio="none"/>';
   h+='</g>';
   h+='<g clip-path="url(#svx-c)" stroke="#2ee6c9" stroke-opacity=".14" fill="none">';
   for(var c2=1;c2<6;c2++){h+='<line x1="'+(200+c2*100)+'" y1="200" x2="'+(200+c2*100)+'" y2="800"/><line x1="200" y1="'+(200+c2*100)+'" x2="800" y2="'+(200+c2*100)+'"/>';}
@@ -496,6 +503,10 @@ function sysExplore(sg,i){
     h+='<g class="sxpoi" data-i="'+pi+'" data-sg="'+sg.star.si+'"><circle cx="'+q8.x.toFixed(0)+'" cy="'+q8.y.toFixed(0)+'" r="9" fill="#2ee6c9" fill-opacity=".9"/><circle cx="'+q8.x.toFixed(0)+'" cy="'+q8.y.toFixed(0)+'" r="15" fill="none" stroke="#2ee6c9" stroke-opacity=".5"/><title>'+esc(q8.nom)+'</title></g>';
   });
   h+='</svg></div></div>';
+  var inst=null;
+  if(window.PER&&PER.supported(p.type)){try{inst=PER.create(p.type,sg.star.si*97+i*31+7,320,16);}catch(e){inst=null;}}
+  if(inst){h+='<div id="sx-load" class="sxload"><div class="sxring"></div><div id="sx-ltxt">CHARGEMENT DU SYSTÈME…</div></div>'
+   +'<div id="sx-rot" class="sxrot" style="display:none"><button type="button" id="sx-prev" class="btn ghost sm">◀</button><span id="sx-mlab" class="sxmlab">MÉRIDIEN — / 16</span><button type="button" id="sx-next" class="btn ghost sm">▶</button></div>';}
   ov.innerHTML=h;
   ov.style.display='';
   $('sv-close').addEventListener('click',closeSys);
@@ -510,7 +521,35 @@ function sysExplore(sg,i){
     });
   });
   sysXInfo(sg);
-  if(p.type!=='Géante gazeuse'){
+  if(inst){
+    var im=$('svx-img');
+    var cv=document.createElement('canvas');cv.width=320;cv.height=320;
+    var cx2=cv.getContext('2d');
+    var load=$('sx-load'),rot=$('sx-rot'),lab=$('sx-mlab');
+    inst.attach(cx2);
+    var refresh=function(){inst.attach(cx2);im.setAttribute('href',cv.toDataURL());};
+    var crank=function(d){
+      inst.step(d);refresh();
+      if(lab){lab.textContent='MÉRIDIEN '+((inst.idx%inst.count)+1)+' / '+inst.count;}
+    };
+    $('sx-prev').addEventListener('click',function(ev){ev.stopPropagation();crank(1);});
+    $('sx-next').addEventListener('click',function(ev){ev.stopPropagation();crank(-1);});
+    window._sxKey=function(ev2){
+      if(SYSXP!==i){return;}
+      if(ev2.key==='ArrowLeft'){crank(1);ev2.preventDefault();}
+      else if(ev2.key==='ArrowRight'){crank(-1);ev2.preventDefault();}
+    };
+    window.addEventListener('keydown',window._sxKey);
+    var poll=function(){
+      if(SYSXP!==i){return;}
+      var r=inst.tick(50);
+      var lt=$('sx-ltxt');
+      if(lt){lt.textContent='CHARGEMENT DU SYSTÈME… '+Math.round(r.pct)+'% · '+(r.phase==='relief'?'ANALYSE DU RELIEF':'SYNTHÈSE DES MÉRIDIENS');}
+      if(r.ready){refresh();if(load){load.style.display='none';}if(rot){rot.style.display='';}if(lab){lab.textContent='MÉRIDIEN 1 / '+inst.count;}return;}
+      window._sxRaf=requestAnimationFrame(poll);
+    };
+    window._sxRaf=requestAnimationFrame(poll);
+  } else if(p.type!=='Géante gazeuse'){
     var ang=0,lst2=null;
     var step2=function(ts2){
       if(SYSXP<0){window._sxRaf=null;return;}
@@ -527,6 +566,7 @@ function sysExplore(sg,i){
 function closeSys(){
   if(window._svRaf){cancelAnimationFrame(window._svRaf);window._svRaf=null;}
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
+  if(window._sxKey){window.removeEventListener('keydown',window._sxKey);window._sxKey=null;}
   SYSV=null;SYSXP=-1;SYSXPOI=null;
   var ov=$('sysv');if(ov){ov.style.display='none';ov.innerHTML='';}
   renderPanel();
