@@ -462,7 +462,14 @@ function sysXInfo(sg){
    +(p.rings?'<p class="pv">Système d’anneaux étendu</p>':'')
    +'<div class="pl">Points d’intérêt</div>';
   if(SYSXPOI){
-    el.innerHTML+='<p class="pv"><b>📍 '+esc(SYSXPOI.nom)+'</b></p><p class="pv" style="margin-top:6px">'+esc(SYSXPOI.desc)+'</p>';
+    var coord='';
+    if(SYSXPOI.world&&window._sxGeo){
+      var gg=window._sxGeo;
+      var mm=gg.meridianOf(SYSXPOI.X)+1;
+      var ll=gg.latOf(SYSXPOI.y);
+      coord='<p class="pv" style="margin-top:4px;color:#2ee6c9">Coordonnées : méridien '+mm+' / '+gg.N+' · '+Math.abs(Math.round(ll))+'° '+(ll>=0?'N':'S')+'</p>';
+    }
+    el.innerHTML+='<p class="pv"><b>📍 '+esc(SYSXPOI.nom)+'</b></p>'+coord+'<p class="pv" style="margin-top:6px">'+esc(SYSXPOI.desc)+'</p>';
   }else{
     el.innerHTML+='<p class="pv">Cliquez un repère sur le globe pour l’examiner ('+p.pois.length+' détectés).</p>';
   }
@@ -475,15 +482,25 @@ function sysExplore(sg,i){
   if(window._sxKey){window.removeEventListener('keydown',window._sxKey);window._sxKey=null;}
   SYSXP=i;SYSXPOI=null;
   var p=sg.pl[i];
+  var inst=null;
+  if(window.PER&&PER.supported(p.type)){try{inst=PER.create(p.type,sg.star.si*97+i*31+7,320,16);}catch(e){inst=null;}}
+  if(inst&&inst.geo){window._sxGeo=inst.geo;}
   if(!p.pois){
     var rp=prng(sg.star.si*97+i*13+5);
     var XN=['Ruines cyclopéennes','Épave d’un vaisseau','Signal intermittent','Anomalie énergétique','Cratère d’impact','Structure métallique','Balise silencieuse','Réseau souterrain','Station abandonnée','Source thermique'];
     var XD=['Des traces d’une civilisation oubliée affleurent sous la poussière.','La coque brisée dérive ici depuis des siècles ; personne n’a jamais osé y pénétrer.','Un signal répétitif bat au rythme des marées magnétiques.','Les capteurs saturent à l’approche : quelque chose rayonne sous la croûte.','Un impact ancien a cristallisé le sol en une dentelle noire.','Des angles trop parfaits pour être naturels dépassent du relief.','Elle émettait encore il y a peu ; désormais, silence radio.','Des cavités karstiques s’étendent sous la surface, idéal pour se cacher.','Les sas sont scellés de l’intérieur.','Un panache chaud trahit une activité géologique récente.'];
     var n=3+Math.floor(rp()*4);
     p.pois=[];
+    if(inst&&inst.geo){
+      var pts=inst.geo.landPoints(n,prng(sg.star.si*97+i*13+5));
+      for(var k=0;k<n;k++){
+        p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],X:pts[k].X,y:pts[k].y,world:true});
+      }
+    }else{
     for(var k=0;k<n;k++){
       var an=rp()*6.2832,rr=90+rp()*190;
       p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],x:500+Math.cos(an)*rr,y:500+Math.sin(an)*rr*0.96});
+    }
     }
   }
   var ov=$('sysv');
@@ -502,27 +519,41 @@ function sysExplore(sg,i){
   h+='<circle cx="500" cy="500" r="300" fill="url(#svx-s)"/>';
   h+='<circle cx="500" cy="500" r="300" fill="none" stroke="#2ee6c9" stroke-opacity=".35"/>';
   if(p.rings){h+='<ellipse cx="500" cy="500" rx="440" ry="120" fill="none" stroke="#e8d9b0" stroke-opacity=".4" transform="rotate(-18 500 500)"/>';}
-  p.pois.forEach(function(q8,pi){
-    h+='<g class="sxpoi" data-i="'+pi+'" data-sg="'+sg.star.si+'"><circle cx="'+q8.x.toFixed(0)+'" cy="'+q8.y.toFixed(0)+'" r="9" fill="#2ee6c9" fill-opacity=".9"/><circle cx="'+q8.x.toFixed(0)+'" cy="'+q8.y.toFixed(0)+'" r="15" fill="none" stroke="#2ee6c9" stroke-opacity=".5"/><title>'+esc(q8.nom)+'</title></g>';
-  });
+  h+='<g id="sx-pois"></g>';
   h+='</svg></div></div>';
-  var inst=null;
-  if(window.PER&&PER.supported(p.type)){try{inst=PER.create(p.type,sg.star.si*97+i*31+7,320,16);}catch(e){inst=null;}}
   if(inst){h+='<div id="sx-load" class="sxload"><div class="sxring"></div><div id="sx-ltxt">CHARGEMENT DU SYSTÈME…</div><div class="sxbar"><div id="sx-bar-in" class="sxbar-in"></div></div></div>'
    +'<div id="sx-rot" class="sxrot" style="display:none"><button type="button" id="sx-prev" class="btn ghost sm">◀</button><span id="sx-mlab" class="sxmlab">MÉRIDIEN — / 16</span><button type="button" id="sx-next" class="btn ghost sm">▶</button></div>';}
   ov.innerHTML=h;
   ov.style.display='';
   $('sv-close').addEventListener('click',closeSys);
   $('sv-close').textContent='← '+(AMODE?'Atlas':'Carte');
-  Array.prototype.forEach.call(ov.querySelectorAll('.sxpoi'),function(el){
-    el.addEventListener('click',function(ev){ev.stopPropagation();
-      var pi2=parseInt(el.getAttribute('data-i'),10);
-      SYSXPOI=p.pois[pi2];
-      Array.prototype.forEach.call(ov.querySelectorAll('.sxpoi circle'),function(c3){c3.setAttribute('fill','#2ee6c9');});
-      var dc=el.querySelector('circle');if(dc){dc.setAttribute('fill','#f0b24a');}
-      sysXInfo(sg);
+  var sxPoiRender=function(){
+    var g2=document.getElementById('sx-pois');if(!g2){return;}
+    var h2='';
+    p.pois.forEach(function(q8,pi){
+      var sx,sy,op=1;
+      if(q8.world&&inst){
+        var u=inst.geo.offsetAt(q8.X,inst.idx);
+        if(u==null){return;}
+        sx=200+u/inst.geo.W*600;
+        sy=200+q8.y/inst.geo.H*600;
+        op=Math.max(0,Math.min(1,Math.min(u,inst.geo.W-u)/34));
+        if(op<=0.02){return;}
+      }else{sx=q8.x;sy=q8.y;}
+      var on=SYSXPOI===q8;
+      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+(on?'#f0b24a':'#2ee6c9')+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+(on?'#f0b24a':'#2ee6c9')+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/><title>'+esc(q8.nom)+'</title></g>';
     });
-  });
+    g2.innerHTML=h2;
+    Array.prototype.forEach.call(g2.querySelectorAll('.sxpoi'),function(el){
+      el.addEventListener('click',function(ev){ev.stopPropagation();
+        SYSXPOI=p.pois[parseInt(el.getAttribute('data-i'),10)];
+        sxPoiRender();
+        sysXInfo(sg);
+      });
+    });
+  };
+  window._sxPoiR=sxPoiRender;
+  sxPoiRender();
   sysXInfo(sg);
   if(inst){
     var im=$('svx-img');
@@ -530,7 +561,7 @@ function sysExplore(sg,i){
     var cx2=cv.getContext('2d');
     var load=$('sx-load'),rot=$('sx-rot'),lab=$('sx-mlab');
     inst.attach(cx2);
-    var refresh=function(){inst.attach(cx2);im.setAttribute('href',cv.toDataURL());};
+    var refresh=function(){inst.attach(cx2);im.setAttribute('href',cv.toDataURL());if(window._sxPoiR){window._sxPoiR();}};
     var crank=function(d){
       inst.step(d);refresh();
       if(lab){lab.textContent='MÉRIDIEN '+((inst.idx%inst.count)+1)+' / '+inst.count;}
@@ -582,7 +613,7 @@ function closeSys(){
   if(window._svRaf){cancelAnimationFrame(window._svRaf);window._svRaf=null;}
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
   if(window._sxKey){window.removeEventListener('keydown',window._sxKey);window._sxKey=null;}
-  SYSV=null;SYSXP=-1;SYSXPOI=null;
+  SYSV=null;SYSXP=-1;SYSXPOI=null;window._sxGeo=null;window._sxPoiR=null;
   var ov=$('sysv');if(ov){ov.style.display='none';ov.innerHTML='';}
   renderPanel();
 }
