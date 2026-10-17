@@ -538,6 +538,11 @@ function sysExplore(sg,i){
         sx=200+u/inst.geo.W*600;
         sy=200+q8.y/inst.geo.H*600;
         op=Math.max(0,Math.min(1,Math.min(u,inst.geo.W-u)/34));
+        var hw=inst.geo.W/2,hh=inst.geo.H/2;
+        var lx=(u-hw)/hw,ly=(q8.y-hh)/hh;
+        var limb=1-Math.sqrt(lx*lx+ly*ly);
+        if(limb<=0.04){return;}
+        op=Math.min(op,Math.min(1,limb/0.16));
         if(op<=0.02){return;}
       }else{sx=q8.x;sy=q8.y;}
       var on=SYSXPOI===q8;
