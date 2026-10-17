@@ -1,7 +1,7 @@
-/* moteur-planetaire-rotation.js - V1.2 - rotation crantee (glissement rigide)
+/* moteur-planetaire-rotation.js - V1.3 - rotation crantee (glissement rigide)
    Generation partagee avec moteur-planetaire.js (meme seed = meme vignette).
-   5 types supportes : Tellurique, Desertique, Oceanique, Toxique, Geante gazeuse.
-   Non supportes (create -> null) : Glaciaire, Volcanique, Sterile. */
+   8 types supportes : Tellurique, Desertique, Oceanique, Toxique, Geante gazeuse,
+   Glaciaire, Volcanique, Sterile. */
 (function(global){
 "use strict";
 /* ---- palettes Toxique (mers acides, par seed%3) ---- */
@@ -22,9 +22,13 @@ function cfgFor(typeGal,seed){
     case "Toxique":        return {type:"toxic", toxOC:TOX[si].oc, atmo:TOX[si].atmo};
     case "G\u00e9ante gazeuse": return {type:"gas", gasPal:GAS[si].pal, gasBand:1.4,
                                    gasStorms:2+si, atmo:GAS[si].atmo};
+    case "Glaciaire":      return {type:"ice", atmo:"170,200,235"};
+    case "Volcanique":     return {type:"volcanic", atmo:"230,120,50"};
+    case "St\u00e9rile":      return {type:"dead", atmo:"140,140,145"};
     default: return null;
   }
 }
+
 function prng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 // parametres bornes : defaults = valeurs de la maquette. Chaque planete peut overrider.
 var PARAMS={
@@ -251,7 +255,7 @@ var hMax=0;
               e-=dd*c.s*1.6;                             // encaissement paroi+fond
               if(d2>=0.30){
                 var wall=(dd/0.12)*c.age;                // profondeur x age : les anciens s'effacent
-                if(wall>pitHit[y*SL.GW+X]){pitHit[y*SL.GW+X]=wall;pitAng[y*SL.GW+X]=Math.atan2(y-c.y,x-c.x);}
+                if(wall>pitHit[y*SL.GW+X]){pitHit[y*SL.GW+X]=wall;pitAng[y*SL.GW+X]=th;}   // th = angle wrappé (position-monde, rigide)
               } else {
                 floorHit[y*SL.GW+X]=Math.round(c.age*100);   // fond plat : intensite selon l'age
                 var lava=(0.30-d2)/0.30;               // 0 bord du fond -> 1 centre exact
@@ -320,7 +324,7 @@ function slideKey(){
   var SNOW0=SL.hMax*0.72;
   for(var y=0;y<H;y++){
     for(var x=fx0;x<W;x++){
-      var X=x+SL.k*SL.step;
+      var X=(x+SL.k*SL.step)%SL.GW;   // wrap monde : les tableaux GW (pitHit…) ne débordent jamais
       var e=Ew[y*W+x];
       var R,G,B;
       if(isGas){
@@ -392,8 +396,8 @@ function slideKey(){
       if(!isDead&&e<SEA){   // jamais d'océan sur un monde mort (les puits poussent e<0)
         if(isIce){
           // GLACIER D'OCEAN : banquise blanche, crevasses bleutees par le bruit
-          var iceN=fbm(x*1.4+401,y*1.4+23);
-          var iceC=fbm(x*5+91,y*5+63);
+          var iceN=fbm(X*1.5+401,y*1.4+23);
+          var iceC=fbm(X*5+91,y*5+63);
           R=225+16*iceN+8*iceC;G=231+14*iceN+6*iceC;B=240+10*iceN;
         } else {
         var wat=fbm((X)*1.5+401,y*1.5+23);
@@ -408,7 +412,7 @@ function slideKey(){
         if(isDead){
           // palette lunaire : gris minéraux + mers de basalte sombre + ejecta clairs
           var hD=h<0?0:(h>1?1:h);
-          var reg=fbm(x*0.55+901,y*0.55+444);         // grandes plaines basaltiques
+          var reg=fbm(X*0.5+901,y*0.55+444);         // grandes plaines basaltiques
           var baseD;
           // INVERSE des telluriques : les puits (h bas) sont SOMBRES, les rebords clairs
           if(hD<0.12)      baseD=[66,64,66];
@@ -454,7 +458,7 @@ function slideKey(){
           else            base=[74,64,56];    // sommets : gris-brun surcrevi
         } else if(isIce){
           // TERRES GIVREES : neige domine, roches sombres affleurantes par le bruit
-          var rn=fbm(x*3.1+157,y*3.1+283);
+          var rn=fbm(X*3+157,y*3.1+283);
           if(rn>0.72){                              // escarpements rocheux denudes
             var rk=(rn-0.72)/0.28;
             base=[168-30*rk,162-30*rk,158-32*rk];
@@ -487,8 +491,8 @@ function slideKey(){
         // (l'effet "neige orange" a été retiré sur demande).
         // appliqué APRÈS l'assignation partagée (sinon R=base*sh l'écraserait).
         if(isVolcanic&&h>=0.15){
-          var lv=fbm(x*2.9+808,y*2.9+555);        // reseau de coulees
-          var lv2=fbm(x*7.3+311,y*7.3+722);      // failles secondaires
+          var lv=fbm(X*3+808,y*2.9+555);        // reseau de coulees
+          var lv2=fbm(X*7.5+311,y*7.3+722);      // failles secondaires
           var sn=0;
           if(lv>0.64)      sn=Math.min(1,(lv-0.64)/0.22)*(0.7+0.3*lv2);
           else if(lv2>0.76)sn=0.4*(lv2-0.76)/0.24;
@@ -647,7 +651,6 @@ function projectDisc(pc,TPX,dst,koff,capP){
     dst[i4+3]=255;
   }
 }
-
 /* ================= API publique : window.PER ================= */
 function mkInstance(typeGal,seed,size,N){
   var cfg=cfgFor(typeGal,seed);
