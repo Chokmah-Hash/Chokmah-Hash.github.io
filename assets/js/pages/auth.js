@@ -14,7 +14,7 @@ function show(loggedIn){
 var CLIENT=null;
 function applySession(s){
   var ok=!!(s&&s.access_token);
-  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}window.scrollTo(0,0);}
+  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}if(window.MJSHOW){window.MJSHOW('mj-content');}window.scrollTo(0,0);}
   else{window.MJBEARER=null;show(false);try{document.body.classList.add('preauth');}catch(e0){}}
 }
 function boot(){

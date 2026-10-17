@@ -86,6 +86,7 @@ textarea.gf{min-height:64px;resize:vertical}
 .bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
 .bgrid .glab{margin-top:0;color:var(--teal)}
 body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none}
+.subnav-in a.active{color:var(--amber);font-weight:700}
 </style>
   </head>
   <body class="preauth">
@@ -105,11 +106,13 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none}
     <nav class="subnav" aria-label="Sections de la zone MJ">
       <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Sections</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
       <div class="subnav-in">
+          <a href="#mj-content">📜 Scénarios</a>
         <a href="#av-console">🎮 Aventures</a>
         <a href="#carte-console">🗺️ Carte</a>
         <a href="#best-console">🦴 Bestiaire</a>
         <a href="#img-console">🖼️ Images</a>
-        <a href="#auth-console">🔑 Compte</a>
+        <a href="#des-sect">🎲 Dés</a>
+          <a href="#auth-console">🔑 Compte</a>
       </div>
     </nav>
     <script src="assets/js/core.js"></script>
