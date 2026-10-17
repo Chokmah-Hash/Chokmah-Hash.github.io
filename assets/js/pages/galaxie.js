@@ -337,7 +337,10 @@ function sysCss(){
   +'#sv-svg .plc{cursor:pointer}'
   +'#sysv .sxpoi{cursor:pointer}'
   +'#sysv .svmap{position:relative}'
-  +'#sysv .sxload{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;background:radial-gradient(circle at 50% 46%,rgba(3,8,14,.05),rgba(3,8,14,.8));color:#7cf5df;letter-spacing:.14em;font-size:.8rem;text-align:center}'
+  +'#sysv .sxload{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:5;background:radial-gradient(circle at 50% 46%,#0a1524 0%,#060d18 70%,#04080f 100%);color:#7cf5df;letter-spacing:.14em;font-size:.8rem;text-align:center;transition:opacity .45s ease}'
+  +'#sysv .sxload.sxout{opacity:0;pointer-events:none}'
+  +'#sysv .sxbar{width:210px;height:5px;border-radius:3px;background:rgba(46,230,201,.14);overflow:hidden}'
+  +'#sysv .sxbar-in{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,#1a8f7d,#2ee6c9);box-shadow:0 0 8px rgba(46,230,201,.45);transition:width .25s ease}'
   +'@keyframes sxspin{to{transform:rotate(360deg)}}'
   +'#sysv .sxring{width:46px;height:46px;border:2px solid rgba(46,230,201,.18);border-top-color:#2ee6c9;border-radius:50%;animation:sxspin 1s linear infinite}'
   +'#sysv .sxrot{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:6}'
@@ -505,7 +508,7 @@ function sysExplore(sg,i){
   h+='</svg></div></div>';
   var inst=null;
   if(window.PER&&PER.supported(p.type)){try{inst=PER.create(p.type,sg.star.si*97+i*31+7,320,16);}catch(e){inst=null;}}
-  if(inst){h+='<div id="sx-load" class="sxload"><div class="sxring"></div><div id="sx-ltxt">CHARGEMENT DU SYSTÈME…</div></div>'
+  if(inst){h+='<div id="sx-load" class="sxload"><div class="sxring"></div><div id="sx-ltxt">CHARGEMENT DU SYSTÈME…</div><div class="sxbar"><div id="sx-bar-in" class="sxbar-in"></div></div></div>'
    +'<div id="sx-rot" class="sxrot" style="display:none"><button type="button" id="sx-prev" class="btn ghost sm">◀</button><span id="sx-mlab" class="sxmlab">MÉRIDIEN — / 16</span><button type="button" id="sx-next" class="btn ghost sm">▶</button></div>';}
   ov.innerHTML=h;
   ov.style.display='';
@@ -540,12 +543,24 @@ function sysExplore(sg,i){
       else if(ev2.key==='ArrowRight'){crank(-1);ev2.preventDefault();}
     };
     window.addEventListener('keydown',window._sxKey);
+    var t0=Date.now();var MINLOAD=1200;
     var poll=function(){
       if(SYSXP!==i){return;}
       var r=inst.tick(50);
       var lt=$('sx-ltxt');
       if(lt){lt.textContent='CHARGEMENT DU SYSTÈME… '+Math.round(r.pct)+'% · '+(r.phase==='relief'?'ANALYSE DU RELIEF':'SYNTHÈSE DES MÉRIDIENS');}
-      if(r.ready){refresh();if(load){load.style.display='none';}if(rot){rot.style.display='';}if(lab){lab.textContent='MÉRIDIEN 1 / '+inst.count;}return;}
+      var bi=$('sx-bar-in');
+      var el=Math.min(MINLOAD,Date.now()-t0);
+      if(bi){bi.style.width=Math.round(Math.min(100,r.pct*(el/MINLOAD)))+'%';}
+      if(r.ready&&el>=MINLOAD){
+        refresh();
+        if(lt){lt.textContent='SYSTÈME EN LIGNE';}
+        if(bi){bi.style.width='100%';}
+        if(load){load.classList.add('sxout');}
+        var fin=function(){if(rot){rot.style.display='';}if(lab){lab.textContent='MÉRIDIEN 1 / '+inst.count;}if(load&&load.parentNode){load.style.display='none';}};
+        setTimeout(fin,480);
+        return;
+      }
       window._sxRaf=requestAnimationFrame(poll);
     };
     window._sxRaf=requestAnimationFrame(poll);
