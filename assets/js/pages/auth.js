@@ -15,7 +15,8 @@ var CLIENT=null;
 function applySession(s){
   var ok=!!(s&&s.access_token);
   if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}if(window.MJSHOW){window.MJSHOW('mj-content');}window.scrollTo(0,0);
-  if(CLIENT){CLIENT.rpc('mj_cle').then(function(res){var k=res&&res.data;if(typeof k==='string'&&k.length>0){try{localStorage.setItem('pe_mjkey',k);}catch(e5){}['av-key','mj-key','b-key','img-key'].forEach(function(id2){var el=$id(id2);if(el){el.value=k;}});['av-go','mj-open','b-open','img-open'].forEach(function(id2){var b=$id(id2);if(b){b.click();}});}}).catch(function(){});}}
+  if(CLIENT){CLIENT.rpc('mj_cle').then(function(res){var k=res&&res.data;if(typeof k==='string'&&k.length>0){try{localStorage.setItem('pe_mjkey',k);}catch(e5){}['av-key','mj-key','b-key','img-key'].forEach(function(id2){var el=$id(id2);if(el){el.value=k;}});['av-go','mj-open','b-open','img-open'].forEach(function(id2){var b=$id(id2);if(b){b.click();}});
+    var mp=$id('mj-pass'),mg=$id('mj-go');if(mp&&mg&&(!mp.value||mp.value!==k)){mp.value=k;mg.click();}}}).catch(function(){});}}
   else{window.MJBEARER=null;show(false);try{document.body.classList.add('preauth');}catch(e0){}}
 }
 function boot(){
