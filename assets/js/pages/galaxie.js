@@ -33,7 +33,7 @@ function renderMap(){
     var lbl=(g.categorie==='inconnu')?'?':g.nom;
     var op=(g.categorie==='inconnu')?'0.75':'1';
     var lb=sysLabel(g).split(',');
-    svg+='<g class="sysg" data-id="'+g.id+'"'+(g.proc?' data-si="'+g.si+'"':'')+' id="sys-'+g.id+'">'+shape+'<text x="'+lb[0]+'" y="'+lb[1]+'" text-anchor="middle" fill="#e8f5f1" opacity="'+op+'" font-size="13" font-family="Rajdhani" font-weight="600" style="pointer-events:none">'+esc(lbl)+'</text>';
+    svg+='<g class="sysg" data-id="'+g.id+'"'+(g.proc?' data-si="'+g.si+'"':'')+' id="sys-'+g.id+'">'+impTgt(g)+shape+'<text x="'+lb[0]+'" y="'+lb[1]+'" text-anchor="middle" fill="#e8f5f1" opacity="'+op+'" font-size="13" font-family="Rajdhani" font-weight="600" style="pointer-events:none">'+esc(lbl)+'</text>';
     svg+='</g>';
   });
   svg+='</svg>';
@@ -63,6 +63,18 @@ function renderMap(){
     $('g-map').addEventListener('mouseleave',function(){tip2.style.display='none';});
   }
   applySearch();
+}
+function impTgt(g){
+  if(!g.data||!g.data.cible){return '';}
+  var x=g.x,y=g.y;
+  var s='<g style="pointer-events:none">';
+  s+='<circle cx="'+x+'" cy="'+y+'" r="26" fill="none" stroke="#f0b24a" stroke-width="1.6" stroke-opacity=".9"/>';
+  s+='<circle cx="'+x+'" cy="'+y+'" r="36" fill="none" stroke="#c2454f" stroke-width="1.2" stroke-dasharray="5 4" stroke-opacity=".85"/>';
+  s+='<line x1="'+(x-42)+'" y1="'+y+'" x2="'+(x-27)+'" y2="'+y+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  s+='<line x1="'+(x+27)+'" y1="'+y+'" x2="'+(x+42)+'" y2="'+y+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  s+='<line x1="'+x+'" y1="'+(y-42)+'" x2="'+x+'" y2="'+(y-27)+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  s+='<line x1="'+x+'" y1="'+(y+27)+'" x2="'+x+'" y2="'+(y+42)+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  return s+'</g>';
 }
 function catLabel(c){return c==='vaisseau'?'Vaisseau-tombe':c==='nebuleuse'?'Nébuleuse':c==='inconnu'?'Inexploré':'Système';}
 var PLS={},CURPLA=null,POIS=[],CURPOI=null;
