@@ -491,17 +491,24 @@ function sysExplore(sg,i){
     var XD=['Des traces d’une civilisation oubliée affleurent sous la poussière.','La coque brisée dérive ici depuis des siècles ; personne n’a jamais osé y pénétrer.','Un signal répétitif bat au rythme des marées magnétiques.','Les capteurs saturent à l’approche : quelque chose rayonne sous la croûte.','Un impact ancien a cristallisé le sol en une dentelle noire.','Des angles trop parfaits pour être naturels dépassent du relief.','Elle émettait encore il y a peu ; désormais, silence radio.','Des cavités karstiques s’étendent sous la surface, idéal pour se cacher.','Les sas sont scellés de l’intérieur.','Un panache chaud trahit une activité géologique récente.'];
     var n=3+Math.floor(rp()*4);
     p.pois=[];
-    if(inst&&inst.geo){
-      var pts=inst.geo.landPoints(n,prng(sg.star.si*97+i*13+5));
-      for(var k=0;k<n;k++){
-        p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],X:pts[k].X,y:pts[k].y,world:true});
+    // FIX : landPoints exige le relief (SL.E) calcule -> on differe la generation
+    // a la fin du chargement de l'instance PER ; avant cela E est vide et
+    // isLand repond "ocean partout" -> tous les POI tombaient a l'equateur.
+    window._sxMkPois=function(){
+      if(p.pois.length){return;}
+      if(inst&&inst.geo){
+        var pts=inst.geo.landPoints(n,prng(sg.star.si*97+i*13+5));
+        for(var k=0;k<n;k++){
+          p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],X:pts[k].X,y:pts[k].y,world:true});
+        }
+      }else{
+        for(var k2=0;k2<n;k2++){
+          var an=rp()*6.2832,rr=90+rp()*190;
+          p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],x:500+Math.cos(an)*rr,y:500+Math.sin(an)*rr*0.96});
+        }
       }
-    }else{
-    for(var k=0;k<n;k++){
-      var an=rp()*6.2832,rr=90+rp()*190;
-      p.pois.push({nom:XN[Math.floor(rp()*XN.length)],desc:XD[Math.floor(rp()*XD.length)],x:500+Math.cos(an)*rr,y:500+Math.sin(an)*rr*0.96});
-    }
-    }
+    };
+    if(!inst){window._sxMkPois();}
   }
   var ov=$('sysv');
   var h='<div class="svhead"><div><b>'+esc(p.nom)+'</b> · '+esc(p.type)+'<span class="svid">Vue planète</span></div><button type="button" id="sv-close" class="btn ghost sm">← Atlas</button></div>';
@@ -598,7 +605,9 @@ function sysExplore(sg,i){
       var el=Math.min(MINLOAD,Date.now()-t0);
       if(bi){bi.style.width=Math.round(Math.min(100,r.pct*(el/MINLOAD)))+'%';}
       if(r.ready&&el>=MINLOAD){
+        if(window._sxMkPois){window._sxMkPois();window._sxMkPois=null;}
         refresh();
+        sysXInfo(sg);
         if(lt){lt.textContent='SYSTÈME EN LIGNE';}
         if(bi){bi.style.width='100%';}
         if(load){load.classList.add('sxout');}
@@ -627,7 +636,7 @@ function closeSys(){
   if(window._svRaf){cancelAnimationFrame(window._svRaf);window._svRaf=null;}
   if(window._sxRaf){cancelAnimationFrame(window._sxRaf);window._sxRaf=null;}
   if(window._sxKey){window.removeEventListener('keydown',window._sxKey);window._sxKey=null;}
-  SYSV=null;SYSXP=-1;SYSXPOI=null;window._sxGeo=null;window._sxPoiR=null;
+  SYSV=null;SYSXP=-1;SYSXPOI=null;window._sxGeo=null;window._sxPoiR=null;window._sxMkPois=null;
   var ov=$('sysv');if(ov){ov.style.display='none';ov.innerHTML='';}
   renderPanel();
 }
