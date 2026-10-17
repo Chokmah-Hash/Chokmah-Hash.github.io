@@ -1,4 +1,4 @@
-/* moteur-planetaire-rotation.js - V1.4 - rotation crantee (glissement rigide)
+/* moteur-planetaire-rotation.js - V1.5 - rotation crantee + geo POI (glissement rigide)
    Generation partagee avec moteur-planetaire.js (meme seed = meme vignette).
    8 types supportes : Tellurique, Desertique, Oceanique, Toxique, Geante gazeuse,
    Glaciaire, Volcanique, Sterile. */
@@ -678,6 +678,38 @@ function mkInstance(typeGal,seed,size,N){
   slideInit(seed,size,size,N,cfg);
   var frames=[], dst=new Uint8ClampedArray(size*size*4);
   var phase=1, done=false, idx=0, ctx=null;
+  var gGW=SL.GW,gW=SL.W,gH=SL.H,gSt=SL.step,gN=N;
+  var geo={
+    GW:gGW,W:gW,H:gH,step:gSt,N:gN,
+    meridianOf:function(X){return ((Math.round((X-gW/2)/gSt))%gN+gN)%gN;},
+    offsetAt:function(X,k){var u=((X-k*gSt)%gGW+gGW)%gGW;return u<gW?u:null;},
+    latOf:function(y){return 90-(y/gH)*180;},
+    rowOf:function(lat){return (90-lat)/180*gH;},
+    isLand:function(X,y){if(SL.isGas){return true;}var xi=Math.round(X);xi=((xi%gGW)+gGW)%gGW;return SL.E[Math.round(y)*gGW+xi]>=SL.SEA;},
+    snapLand:function(X,y){
+      if(geo.isLand(X,y)){return {X:((Math.round(X)%gGW)+gGW)%gGW,y:Math.round(y),snap:0};}
+      for(var rr=3;rr<=52;rr+=3){
+        for(var aa=0;aa<16;aa++){
+          var th=aa/16*6.2832;
+          var X2=Math.round(X+Math.cos(th)*rr),y2=Math.round(y+Math.sin(th)*rr);
+          if(y2<4||y2>gH-5){continue;}
+          if(geo.isLand(X2,y2)){return {X:((X2%gGW)+gGW)%gGW,y:y2,snap:rr};}
+        }
+      }
+      return null;
+    },
+    landPoints:function(n,rnd){
+      rnd=rnd||Math.random;
+      var pts=[],tries=0;
+      while(pts.length<n&&tries<6000){
+        tries++;
+        var X=Math.floor(rnd()*gGW),y=Math.floor(20+rnd()*(gH-40));
+        if(geo.isLand(X,y)){pts.push({X:X,y:y});}
+      }
+      while(pts.length<n){pts.push({X:Math.floor(rnd()*gGW),y:Math.floor(gH/2)});}
+      return pts;
+    }
+  };
   function draw(){
     if(!ctx||!frames.length) return;
     ctx.putImageData(new ImageData(new Uint8ClampedArray(frames[idx]),size,size),0,0);
@@ -715,7 +747,8 @@ function mkInstance(typeGal,seed,size,N){
     },
     get ready(){ return done; },
     get count(){ return frames.length; },
-    get idx(){ return idx; }
+    get idx(){ return idx; },
+    geo:geo
   };
 }
 var PER={
