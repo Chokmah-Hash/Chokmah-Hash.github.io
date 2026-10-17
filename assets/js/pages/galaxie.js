@@ -546,7 +546,16 @@ function sysExplore(sg,i){
         if(op<=0.02){return;}
       }else{sx=q8.x;sy=q8.y;}
       var on=SYSXPOI===q8;
-      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+(on?'#f0b24a':'#2ee6c9')+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+(on?'#f0b24a':'#2ee6c9')+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/><title>'+esc(q8.nom)+'</title></g>';
+      var col2=on?'#f0b24a':'#2ee6c9';
+      var mtxt='';
+      if(inst&&inst.geo&&q8.world){
+        var mco=inst.geo.meridianOf(q8.X)+1;
+        var lco=inst.geo.latOf(q8.y);
+        mtxt='<text x="'+(sx+15).toFixed(0)+'" y="'+(sy+1).toFixed(0)+'" font-size="13" font-family="Rajdhani" font-weight="600" fill="'+col2+'" fill-opacity="'+(0.95*op).toFixed(2)+'">'+esc(q8.nom)+'</text><text x="'+(sx+15).toFixed(0)+'" y="'+(sy+15).toFixed(0)+'" font-size="10.5" font-family="Rajdhani" fill="#9dd8cc" fill-opacity="'+(0.75*op).toFixed(2)+'">M'+mco+' · '+Math.abs(Math.round(inst.geo.latOf(q8.y)))+'° '+(lco>=0?'N':'S')+'</text>';
+      }else{
+        mtxt='<text x="'+(sx+15).toFixed(0)+'" y="'+(sy+1).toFixed(0)+'" font-size="13" font-family="Rajdhani" font-weight="600" fill="'+col2+'" fill-opacity="'+(0.95*op).toFixed(2)+'">'+esc(q8.nom)+'</text>';
+      }
+      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/>'+mtxt+'<title>'+esc(q8.nom)+'</title></g>';
     });
     g2.innerHTML=h2;
     Array.prototype.forEach.call(g2.querySelectorAll('.sxpoi'),function(el){
