@@ -17,6 +17,18 @@ s+='<circle cx="500" cy="350" r="420" fill="none" stroke="#2ee6c9" stroke-opacit
 s+='<circle cx="500" cy="350" r="600" fill="none" stroke="#2ee6c9" stroke-opacity="0.02"/>';
 return s+'</g>';}
 function sysLabel(g){var x=Math.max(50,Math.min(950,g.x));var y=g.y>560?g.y-30:g.y+30;return String(x)+','+String(y);}
+function impTgt(g){
+  if(!g.data||!g.data.cible){return '';}
+  var x=g.x,y=g.y;
+  var s='<g style="pointer-events:none">';
+  s+='<circle cx="'+x+'" cy="'+y+'" r="26" fill="none" stroke="#f0b24a" stroke-width="1.6" stroke-opacity=".9"/>';
+  s+='<circle cx="'+x+'" cy="'+y+'" r="36" fill="none" stroke="#c2454f" stroke-width="1.2" stroke-dasharray="5 4" stroke-opacity=".85"/>';
+  s+='<line x1="'+(x-42)+'" y1="'+y+'" x2="'+(x-27)+'" y2="'+y+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  s+='<line x1="'+(x+27)+'" y1="'+y+'" x2="'+(x+42)+'" y2="'+y+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  s+='<line x1="'+x+'" y1="'+(y-42)+'" x2="'+x+'" y2="'+(y-27)+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  s+='<line x1="'+x+'" y1="'+(y+27)+'" x2="'+x+'" y2="'+(y+42)+'" stroke="#f0b24a" stroke-width="1.6"/>';
+  return s+'</g>';
+}
 function renderMap(){
   var svg='<svg id="g-svg" viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Carte de la galaxie">';
   svg+='<defs><radialGradient id="nebg"><stop offset="0%" stop-color="rgba(46,230,201,.35)"/><stop offset="100%" stop-color="rgba(46,230,201,0)"/></radialGradient></defs>';
@@ -37,7 +49,7 @@ function renderMap(){
     var lbl=(g.categorie==='inconnu')?'?':g.nom;
     var op=(g.categorie==='inconnu')?'0.75':'1';
     var lb=sysLabel(g).split(',');
-    svg+='<g class="sysg" data-id="'+g.id+'" id="sys-'+g.id+'">'+shape+'<text x="'+lb[0]+'" y="'+lb[1]+'" text-anchor="middle" fill="#e8f5f1" opacity="'+op+'" font-size="13" font-family="Rajdhani" font-weight="600" style="pointer-events:none">'+esc(lbl)+'</text>';
+    svg+='<g class="sysg" data-id="'+g.id+'" id="sys-'+g.id+'">'+impTgt(g)+shape+'<text x="'+lb[0]+'" y="'+lb[1]+'" text-anchor="middle" fill="#e8f5f1" opacity="'+op+'" font-size="13" font-family="Rajdhani" font-weight="600" style="pointer-events:none">'+esc(lbl)+'</text>';
     var ps=posIdx[g.id]||[];
     ps.forEach(function(p,i){
       var py=g.y-22-(i*15),px=g.x;
@@ -265,8 +277,8 @@ function renderPlaBox(){
 }
 function plaFormOpen(pl){
   $('p-form').style.display='';
-  if(pl){$('p-title').textContent='🪐 Modifier : '+pl.nom;$('p-id').value=pl.id;$('p-nom').value=pl.nom||'';$('p-desc').value=pl.description||'';$('p-image').value=pl.image||'';$('p-carte').value=pl.carte||'';}
-  else{$('p-title').textContent='🪐 Nouvelle planète';$('p-id').value='';['p-nom','p-desc','p-image','p-carte'].forEach(function(i){$(i).value='';});}
+  if(pl){$('p-title').textContent='🪐 Modifier : '+pl.nom;$('p-id').value=pl.id;$('p-nom').value=pl.nom||'';$('p-desc').value=pl.description||'';$('p-image').value=pl.image||'';$('p-carte').value=pl.carte||'';$('p-type').value=pmType(pl);}
+  else{$('p-title').textContent='🪐 Nouvelle planète';$('p-id').value='';['p-nom','p-desc','p-image','p-carte'].forEach(function(i){$(i).value='';});}$('p-type').value='Tellurique';
   msg('p-msg','');
 }
 $('p-cancel').addEventListener('click',function(){$('p-form').style.display='none';});
@@ -275,7 +287,10 @@ $('p-save').addEventListener('click',function(){
   var nom=$('p-nom').value.trim();
   if(!nom){msg('p-msg','Donne un nom à la planète.','err');return;}
   if(!SEL){msg('p-msg','Sélectionne d’abord un système sur la carte.','err');return;}
-  var body={galaxie_id:SEL,nom:nom,description:$('p-desc').value.trim(),image:$('p-image').value.trim(),carte:$('p-carte').value.trim()};
+  var pdata={type:$('p-type').value||'Tellurique'};
+  var pidv=$('p-id').value;
+  if(pidv){(PLS[SEL]||[]).forEach(function(q){if(String(q.id)===String(pidv)&&q.data){for(var k in q.data){if(k!=='type'){pdata[k]=q.data[k];}}}});}
+  var body={galaxie_id:SEL,nom:nom,description:$('p-desc').value.trim(),image:$('p-image').value.trim(),carte:$('p-carte').value.trim(),data:pdata};
   var id=$('p-id').value;
   var req=id?fetch(SB+'planetes?id=eq.'+id,{method:'PATCH',headers:HM(),body:JSON.stringify(body)})
             :fetch(SB+'planetes',{method:'POST',headers:HM(),body:JSON.stringify(body)});
@@ -299,14 +314,15 @@ function poiOpen(pl){
   PSELPLA=pl;PSEL=pl.id;
   $('poi-card').style.display='';
   $('poi-title').textContent='📍 Lieux — '+pl.nom;
-  $('poi-note').textContent='« Placer sur la mappemonde » puis clique sur la carte pour positionner, ou saisis X/Y directement.';
+  $('poi-note').textContent="Le globe tourne par crans de méridien (◀ ▶). « Placer sur le globe » arme le pointeur : le clic s'accroche à la terre ferme et lit les coordonnées méridien + latitude.";
+  PMG.inst=null;PMG.sel=null;PMG.armed=false;PMG.plid=pl.id;
   $('poi-form').style.display='none';
   loadPois();
 }
 function loadPois(){
   fetchJ(SB+'planetes_poi?select=*&planete_id=eq.'+PSEL+'&order=id.asc',{headers:HM()}).then(function(l){
-    POIS=l||[];renderPoiMap();renderPoiList();
-  }).catch(function(){POIS=[];renderPoiMap();renderPoiList();});
+    POIS=l||[];if(PMG.inst&&PMG.plid===PSEL){pmPoiRender();renderPoiList();}else{renderPoiMap();renderPoiList();}
+  }).catch(function(){POIS=[];if(PMG.inst&&PMG.plid===PSEL){pmPoiRender();renderPoiList();}else{renderPoiMap();renderPoiList();}});
 }
 function pmSvg(seed){
   var r=prng(seed*7919+13),s='<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Surface">';
@@ -318,27 +334,131 @@ function pmSvg(seed){
   for(var k=1;k<5;k++){s+='<line x1="'+(k*200)+'" y1="0" x2="'+(k*200)+'" y2="700" stroke="#2ee6c9" stroke-opacity="0.04"/>';}
   return s+'</svg>';
 }
-function renderPoiMap(){
-  var box=$('p-map');
-  var img=(PSELPLA&&PSELPLA.carte)?'<img class="pmimg" src="'+esc(PSELPLA.carte)+'" alt="">':'';
-  var h='<div class="pm">'+img+pmSvg(PSEL);
+var PMG={inst:null,plid:0,raf:null,armed:false,sel:null};
+var PMTYPES=['Tellurique','Désertique','Océanique','Toxique','Géante gazeuse','Glaciaire','Volcanique','Stérile'];
+function pmType(pl){var t=(pl&&pl.data&&pl.data.type)||'Tellurique';return PMTYPES.indexOf(t)>=0?t:'Tellurique';}
+function pmCoordStr(p){
+  var w=p.data&&p.data.world;
+  if(w&&PMG.inst&&PMG.inst.geo){var g=PMG.inst.geo;var m=g.meridianOf(w.X)+1,la=g.latOf(w.y);return "méridien "+m+" / "+g.N+" · "+Math.abs(Math.round(la))+"° "+(la>=0?"N":"S");}
+  return w?"coordonnées monde ("+Math.round(w.X)+" ; "+Math.round(w.y)+")":"ancien format ("+p.x+" ; "+p.y+")";
+}
+function pmCoordRefresh(){
+  var el=$('poi-coord');if(!el){return;}
+  if(!PMG.sel){el.textContent="— Non définie : « Placer sur le globe » puis touche le globe —";return;}
+  if(PMG.inst&&PMG.inst.geo){var g=PMG.inst.geo;var m=g.meridianOf(PMG.sel.X)+1,la=g.latOf(PMG.sel.y);el.textContent="✓ Méridien "+m+" / "+g.N+" · "+Math.abs(Math.round(la))+"° "+(la>=0?"N":"S")+(g.isLand(PMG.sel.X,PMG.sel.y)?" · terre ferme":" · océan");}
+  else{el.textContent="✓ Position monde ("+Math.round(PMG.sel.X)+" ; "+Math.round(PMG.sel.y)+")";}
+}
+function pmPoiRender(){
+  var g2=$('pm-pois');if(!g2||!PMG.inst||!PMG.inst.geo){return;}
+  var gg=PMG.inst.geo,h2='';
   POIS.forEach(function(p){
-    var lx=Math.max(6,Math.min(94,p.x/10)),ly=Math.max(6,Math.min(93,p.y/7));
-    h+='<div class="poid" style="left:'+lx+'%;top:'+ly+'%"></div>';
+    var w=p.data&&p.data.world;if(!w){return;}
+    var u=gg.offsetAt(w.X,PMG.inst.idx);if(u==null){return;}
+    var sx=200+u/gg.W*600,sy=200+w.y/gg.H*600;
+    var op=Math.max(0,Math.min(1,Math.min(u,gg.W-u)/34));
+    var hw=gg.W/2,hh=gg.H/2,lx=(u-hw)/hw,ly=(w.y-hh)/hh;
+    var limb=1-Math.sqrt(lx*lx+ly*ly);
+    if(limb<=0.04){return;}
+    op=Math.min(op,Math.min(1,limb/0.16));
+    if(op<=0.02){return;}
+    h2+='<circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="#f0b24a" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="#f0b24a" stroke-opacity="'+(0.5*op).toFixed(2)+'"/>';
   });
+  g2.innerHTML=h2;
+}
+function renderPoiMap(){
+  var box=$('p-map');if(!box||!PSELPLA){return;}
+  var pl=PSELPLA,ty=pmType(pl);
+  PMG.plid=pl.id;PMG.armed=false;
+  var h='<div class="pmg">';
+  h+='<svg id="pm-svg" viewBox="0 0 1000 1000">';
+  h+='<defs><clipPath id="pmx-c"><circle cx="500" cy="500" r="300"/></clipPath>'
+   +'<radialGradient id="pmx-g" cx="38%" cy="32%"><stop offset="0%" stop-color="#18261d"/><stop offset="100%" stop-color="#0a120f"/></radialGradient>'
+   +'<radialGradient id="pmx-s"><stop offset="70%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>';
+  h+='<circle cx="500" cy="500" r="300" fill="url(#pmx-g)"/>';
+  h+='<g id="pmx-t" clip-path="url(#pmx-c)"><image id="pm-img" x="200" y="200" width="600" height="600" preserveAspectRatio="none"/></g>';
+  h+='<g clip-path="url(#pmx-c)" stroke="#f0b24a" stroke-opacity=".12" fill="none">';
+  for(var c2=1;c2<6;c2++){h+='<line x1="'+(200+c2*100)+'" y1="200" x2="'+(200+c2*100)+'" y2="800"/><line x1="200" y1="'+(200+c2*100)+'" x2="800" y2="'+(200+c2*100)+'"/>';}
+  h+='</g>';
+  h+='<circle cx="500" cy="500" r="300" fill="url(#pmx-s)"/><circle cx="500" cy="500" r="300" fill="none" stroke="#f0b24a" stroke-opacity=".4"/>';
+  h+='<g id="pm-pois"></g>';
+  h+='<g id="pm-cross" style="display:none"><circle r="11" fill="none" stroke="#f0b24a" stroke-width="2"/><circle r="3" fill="#f0b24a"/></g>';
+  h+='</svg>';
+  h+='<div id="pm-rot" class="pmrotc"><button type="button" id="pm-prev" class="btn ghost sm">◀</button><span id="pm-mlab" class="pmmlab">MÉRIDIEN — / 16</span><button type="button" id="pm-next" class="btn ghost sm">▶</button></div>';
+  h+='<div id="pm-read" class="pmread">Initialisation du globe…</div>';
+  h+='<div id="pm-load" class="pmload"><div class="pmring"></div><div id="pm-ltxt">GENÈSE DU GLOBE…</div></div>';
   h+='</div>';
   box.innerHTML=h;
-  var im=box.querySelector('.pmimg');
-  if(im){im.addEventListener('error',function(){if(im.parentNode){im.parentNode.removeChild(im);}});}
-  var pm=box.querySelector('.pm');
-  pm.addEventListener('click',function(ev){
-    if(!PPLACING){return;}
-    var r=pm.getBoundingClientRect();
-    var px=Math.round(Math.max(5,Math.min(995,(ev.clientX-r.left)/r.width*1000)));
-    var py=Math.round(Math.max(5,Math.min(695,(ev.clientY-r.top)/r.height*700)));
-    $('poi-x').value=px;$('poi-y').value=py;PPLACING=false;
-    $('poi-place').textContent='📍 Placer sur la mappemonde';
-    msg('poi-msg','Position : '+px+' ; '+py+'.','ok');
+  var inst=null;
+  if(window.PER&&PER.supported(ty)){try{inst=PER.create(ty,pl.id*97+13,320,16);}catch(e){inst=null;}}
+  PMG.inst=inst;
+  var im=$('pm-img');
+  var cv=document.createElement('canvas');cv.width=320;cv.height=320;
+  var cx=cv.getContext('2d');
+  var refresh=function(){if(!inst){return;}inst.attach(cx);im.setAttribute('href',cv.toDataURL());pmPoiRender();pmCoordRefresh();};
+  window._pmR=refresh;
+  var crank=function(d){if(!inst){return;}inst.step(d);refresh();var lb=$('pm-mlab');if(lb){lb.textContent='MÉRIDIEN '+((inst.idx%inst.count)+1)+' / '+inst.count;}};
+  $('pm-prev').addEventListener('click',function(){crank(1);});
+  $('pm-next').addEventListener('click',function(){crank(-1);});
+  if(!inst){
+    var ld0=$('pm-load');if(ld0){ld0.style.display='none';}
+    var rd0=$('pm-read');if(rd0){rd0.textContent="Globe indisponible (moteur non chargé).";}
+    return;
+  }
+  inst.attach(cx);
+  if(PMG.raf){cancelAnimationFrame(PMG.raf);}
+  var poll=function(){
+    if(!PSELPLA||PSELPLA.id!==PMG.plid){PMG.raf=null;return;}
+    var r=inst.tick(50);
+    var lt=$('pm-ltxt');if(lt){lt.textContent='GENÈSE DU GLOBE… '+Math.round(r.pct)+'%';}
+    if(r.ready){
+      refresh();
+      var ld=$('pm-load');if(ld){ld.style.display='none';}
+      var rd=$('pm-read');if(rd){rd.textContent='Globe prêt — passe la souris pour lire les coordonnées.';}
+      pmCoordRefresh();
+      return;
+    }
+    PMG.raf=requestAnimationFrame(poll);
+  };
+  PMG.raf=requestAnimationFrame(poll);
+  var sv=$('pm-svg');
+  var wpt=function(ev){var r2=sv.getBoundingClientRect();return {sx:(ev.clientX-r2.left)/r2.width*1000,sy:(ev.clientY-r2.top)/r2.height*1000};};
+  var unproj=function(sx,sy){
+    var g=inst.geo;if(!g){return null;}
+    var u=(sx-200)/600*g.W,y=(sy-200)/600*g.H;
+    if(u<0||u>g.W||y<0||y>g.H){return null;}
+    var hw=g.W/2,hh=g.H/2,lx=(u-hw)/hw,ly=(y-hh)/hh;
+    if(lx*lx+ly*ly>1){return null;}
+    var best=null,bd=1e9;
+    for(var X=0;X<g.GW;X++){var o=g.offsetAt(X,inst.idx);if(o==null){continue;}var d=Math.abs(o-u);if(d<bd){bd=d;best=X;}}
+    return best==null?null:{X:best,y:Math.max(0,Math.min(g.H-1,Math.round(y)))};
+  };
+  sv.addEventListener('mousemove',function(ev){
+    if(!inst||!inst.geo){return;}
+    var cr=$('pm-cross'),rd=$('pm-read');if(!cr||!rd){return;}
+    var p2=wpt(ev);var c=unproj(p2.sx,p2.sy);
+    if(!c){cr.style.display='none';rd.textContent='— Hors du globe —';return;}
+    var land=inst.geo.isLand(c.X,c.y);
+    var m=inst.geo.meridianOf(c.X)+1,la=inst.geo.latOf(c.y);
+    rd.textContent='Méridien '+m+' / '+inst.geo.N+' · '+Math.abs(Math.round(la))+'° '+(la>=0?'N':'S')+' · '+(land?'terre ferme':'océan')+(PMG.armed?' — clique pour poser le repère':'');
+    cr.style.display='';cr.setAttribute('transform','translate('+p2.sx.toFixed(1)+' '+p2.sy.toFixed(1)+')');
+  });
+  sv.addEventListener('mouseleave',function(){var cr=$('pm-cross');if(cr){cr.style.display='none';}var rd=$('pm-read');if(rd){rd.textContent='Globe prêt.';}});
+  sv.addEventListener('click',function(ev){
+    if(!PMG.armed||!inst||!inst.geo){return;}
+    var p2=wpt(ev);var c=unproj(p2.sx,p2.sy);
+    if(!c){msg('poi-msg','Touche la face visible du globe.','err');return;}
+    var X=c.X,y=c.y;
+    if(inst.geo.snapLand){
+      var s=inst.geo.snapLand(c.X,c.y);
+      if(s&&s.X!=null&&inst.geo.isLand(s.X,s.y)){X=s.X;y=s.y;}
+    }
+    PMG.armed=false;
+    $('poi-place').textContent='📍 Placer sur le globe';
+    $('poi-x').value=Math.round(X);$('poi-y').value=Math.round(y);
+    PMG.sel={X:X,y:y};
+    pmCoordRefresh();
+    var m=inst.geo.meridianOf(X)+1,la=inst.geo.latOf(y);
+    msg('poi-msg','Position : méridien '+m+' / '+inst.geo.N+' · '+Math.abs(Math.round(la))+'° '+(la>=0?'N':'S')+(inst.geo.isLand(X,y)?' (terre ferme).':' (océan).'),'ok');
   });
 }
 function renderPoiList(){
@@ -346,7 +466,7 @@ function renderPoiList(){
   var out='';
   if(!POIS.length){out='<p class="pv">Aucun point d’intérêt. Ajoute le premier !</p>';}
   POIS.forEach(function(p){
-    out+='<div class="plrow"><div class="plinfo"><b>📍 '+esc(p.nom)+'</b><span>'+p.x+' ; '+p.y+(p.image?' — '+esc(p.image):'')+'</span></div>'
+    out+='<div class="plrow"><div class="plinfo"><b>📍 '+esc(p.nom)+'</b><span>'+esc(pmCoordStr(p))+(p.image?' — '+esc(p.image):'')+'</span></div>'
       +'<button class="btn amber sm" data-id="'+p.id+'" data-act="edit" type="button">✎ Modifier</button>'
       +'<button class="btn danger sm" data-id="'+p.id+'" data-act="del" type="button">🗑</button></div>';
   });
@@ -363,15 +483,18 @@ function renderPoiList(){
 }
 function poiFormOpen(p){
   $('poi-form').style.display='';
-  if(p){$('poi-id').value=p.id;$('poi-nom').value=p.nom||'';$('poi-desc').value=p.description||'';$('poi-image').value=p.image||'';$('poi-x').value=p.x;$('poi-y').value=p.y;$('poi-del').style.display='';}
-  else{$('poi-id').value='';['poi-nom','poi-desc','poi-image'].forEach(function(i){$(i).value='';});$('poi-x').value=500;$('poi-y').value=350;$('poi-del').style.display='none';}
+  if(p){$('poi-id').value=p.id;$('poi-nom').value=p.nom||'';$('poi-desc').value=p.description||'';$('poi-image').value=p.image||'';$('poi-del').style.display='';
+    PMG.sel=(p.data&&p.data.world)?{X:p.data.world.X,y:p.data.world.y}:null;}
+  else{$('poi-id').value='';['poi-nom','poi-desc','poi-image'].forEach(function(i){$(i).value='';});$('poi-del').style.display='none';PMG.sel=null;}
+  pmCoordRefresh();
   msg('poi-msg','');
 }
 $('poi-cancel').addEventListener('click',function(){$('poi-form').style.display='none';});
 $('poi-place').addEventListener('click',function(){
   if(!$('poi-form')||$('poi-form').style.display==='none'){msg('poi-msg','Ouvre d’abord un point (nouveau ou modification).','err');return;}
-  PPLACING=true;this.textContent='Clique sur la mappemonde…';
-  msg('poi-msg','Mode placement : touche la mappemonde à l’endroit voulu.','');
+  if(!PMG.inst){msg('poi-msg','Globe pas encore prêt — patiente un instant.','err');return;}
+  PMG.armed=true;this.textContent='Clique sur le globe…';
+  msg('poi-msg','Mode placement : touche le globe à l’endroit voulu (accroche à la terre ferme).','');
 });
 $('poi-del').addEventListener('click',function(){
   var id=$('poi-id').value;if(!id){return;}
@@ -386,11 +509,14 @@ $('poi-save').addEventListener('click',function(){
   var nom=$('poi-nom').value.trim();
   if(!nom){msg('poi-msg','Donne un nom au lieu.','err');return;}
   if(!PSEL){msg('poi-msg','Aucune planète sélectionnée.','err');return;}
-  var body={planete_id:PSEL,nom:nom,description:$('poi-desc').value.trim(),image:$('poi-image').value.trim(),x:parseInt($('poi-x').value,10)||500,y:parseInt($('poi-y').value,10)||350};
+  var wd=null;
+  if(PMG.sel){wd={world:{X:Math.round(PMG.sel.X),y:Math.round(PMG.sel.y)}};}
+  else{var eid=$('poi-id').value;POIS.forEach(function(q){if(String(q.id)===String(eid)&&q.data&&q.data.world){wd=q.data;}});}
+  var body={planete_id:PSEL,nom:nom,description:$('poi-desc').value.trim(),image:$('poi-image').value.trim(),x:parseInt($('poi-x').value,10)||0,y:parseInt($('poi-y').value,10)||0,data:wd};
   var id=$('poi-id').value;
   var req=id?fetch(SB+'planetes_poi?id=eq.'+id,{method:'PATCH',headers:HM(),body:JSON.stringify(body)})
             :fetch(SB+'planetes_poi',{method:'POST',headers:HM(),body:JSON.stringify(body)});
   req.then(function(r){if(!r.ok){throw new Error('HTTP '+r.status);}}).then(function(){
-    msg('poi-msg','Point enregistré.','ok');$('poi-form').style.display='none';loadPois();
+    PMG.sel=null;msg('poi-msg','Point enregistré.','ok');$('poi-form').style.display='none';loadPois();
   }).catch(function(){msg('poi-msg','Enregistrement impossible — vérifie ta clé.','err');});
 });
