@@ -345,7 +345,7 @@ function sysCss(){
   +'#sysv .sxring{width:46px;height:46px;border:2px solid rgba(46,230,201,.18);border-top-color:#2ee6c9;border-radius:50%;animation:sxspin 1s linear infinite}'
   +'#sysv .sxrot{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:6}'
   +'#sysv .sxmlab{font-size:.72rem;color:#7cf5df;letter-spacing:.1em;text-transform:uppercase;min-width:140px;text-align:center}'
-  +'#sysv .sxtip{position:absolute;z-index:8;pointer-events:none;display:none;background:rgba(6,16,13,.97);border:1px solid #2ee6c9;border-radius:8px;padding:9px 13px;max-width:250px;box-shadow:0 0 14px rgba(46,230,201,.35),0 6px 20px rgba(0,0,0,.65);font-size:.95rem;line-height:1.4}'
+  +'#sysv .sxtip{position:absolute;z-index:30;pointer-events:none;display:none;background:rgba(6,16,13,.97);border:1px solid #2ee6c9;border-radius:8px;padding:9px 13px;max-width:250px;box-shadow:0 0 14px rgba(46,230,201,.35),0 6px 20px rgba(0,0,0,.65);font-size:.95rem;line-height:1.4}'
   +'#sysv .sxtip b{color:#f0b24a;font-family:Rajdhani;font-size:15px;letter-spacing:.02em}'
   +'#sysv .sxtip .sxc{color:#9dd8cc;margin-top:3px}'
   +'#sysv .sxtip .sxd{color:#c9ded7;font-style:italic}';
@@ -516,7 +516,7 @@ function sysExplore(sg,i){
   }
   var ov=$('sysv');
   var h='<div class="svhead"><div><b>'+esc(p.nom)+'</b> · '+esc(p.type)+'<span class="svid">Vue planète</span></div><button type="button" id="sv-close" class="btn ghost sm">← Atlas</button></div>';
-  h+='<div class="svbody"><div class="svmap"><div id="sx-tip" class="sxtip"></div><svg id="sv-svg" viewBox="0 0 1000 1000">';
+  h+='<div class="svbody"><div class="svmap"><svg id="sv-svg" viewBox="0 0 1000 1000">';
   h+='<defs><clipPath id="svx-c"><circle cx="500" cy="500" r="300"/></clipPath>'
    +'<radialGradient id="svx-g" cx="38%" cy="32%"><stop offset="0%" stop-color="'+p.c1+'"/><stop offset="100%" stop-color="'+p.c2+'"/></radialGradient>'
    +'<radialGradient id="svx-s"><stop offset="70%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>';
@@ -531,7 +531,7 @@ function sysExplore(sg,i){
   h+='<circle cx="500" cy="500" r="300" fill="none" stroke="#2ee6c9" stroke-opacity=".35"/>';
   if(p.rings){h+='<ellipse cx="500" cy="500" rx="440" ry="120" fill="none" stroke="#e8d9b0" stroke-opacity=".4" transform="rotate(-18 500 500)"/>';}
   h+='<g id="sx-pois"></g>';
-  h+='</svg></div></div>';
+  h+='</svg><div id="sx-tip" class="sxtip"></div></div></div>';
   if(inst){h+='<div id="sx-load" class="sxload"><div class="sxring"></div><div id="sx-ltxt">CHARGEMENT DU SYSTÈME…</div><div class="sxbar"><div id="sx-bar-in" class="sxbar-in"></div></div></div>'
    +'<div id="sx-rot" class="sxrot" style="display:none"><button type="button" id="sx-prev" class="btn ghost sm">◀</button><span id="sx-mlab" class="sxmlab">MÉRIDIEN — / 16</span><button type="button" id="sx-next" class="btn ghost sm">▶</button></div>';}
   ov.innerHTML=h;
@@ -558,7 +558,7 @@ function sysExplore(sg,i){
       }else{sx=q8.x;sy=q8.y;}
       var on=SYSXPOI===q8;
       var col2=on?'#f0b24a':'#2ee6c9';
-      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/><title>'+esc(q8.nom)+'</g>';
+      h2+='<g class="sxpoi" data-i="'+pi+'"><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="9" fill="'+col2+'" fill-opacity="'+(0.9*op).toFixed(2)+'"/><circle cx="'+sx.toFixed(0)+'" cy="'+sy.toFixed(0)+'" r="15" fill="none" stroke="'+col2+'" stroke-opacity="'+(0.5*op).toFixed(2)+'"/></g>';
     });
     g2.innerHTML=h2;
     Array.prototype.forEach.call(g2.querySelectorAll('.sxpoi'),function(el){
