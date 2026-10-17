@@ -189,6 +189,7 @@ function showTab(id){
   TABS.forEach(function(t){if(t==="mj-content"||t==="mj-lock"){return;}var s=document.getElementById(t);if(s){s.style.display=(t===id)?"block":"none";}});
   if(id==="mj-content"){if(c&&c.innerHTML.trim()){c.style.display="block";if(l){l.style.display="none";}}else{if(c){c.style.display="none";}if(l){l.style.display="";}}}
   else{if(c){c.style.display="none";}if(l){l.style.display="none";}}
+  var sh=document.getElementById("scenar-head");if(sh){sh.style.display=(id==="mj-content"||id==="mj-lock")?"block":"none";}
   Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){a.classList.toggle("active",(a.getAttribute("href")||"")==="#"+id);});
 }
 Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){
