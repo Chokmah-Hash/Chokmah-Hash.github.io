@@ -16,6 +16,7 @@ function mjTry(){
   if(txt.slice(0,5)!=="MJOK|"){mjErr();return;}
   if(!MJAUTO){try{localStorage.setItem("pe_mjpass",pass);}catch(e2){}}
   $("mj-content").innerHTML=txt.slice(5);
+  Array.prototype.forEach.call($("mj-content").children,function(ch){if(ch.className==="sect"){var c=document.createElement("div");c.className="card amber";c.style.marginTop="18px";ch.parentNode.insertBefore(c,ch);c.appendChild(ch);}});
   $("mj-lock").style.display="none";
   var _i=$("mj-intro");if(_i){_i.style.display="none";}
   $("mj-content").style.display="block";
