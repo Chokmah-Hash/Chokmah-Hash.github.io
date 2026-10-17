@@ -1,4 +1,4 @@
-/* moteur-planetaire-rotation.js - V1.3 - rotation crantee (glissement rigide)
+/* moteur-planetaire-rotation.js - V1.4 - rotation crantee (glissement rigide)
    Generation partagee avec moteur-planetaire.js (meme seed = meme vignette).
    8 types supportes : Tellurique, Desertique, Oceanique, Toxique, Geante gazeuse,
    Glaciaire, Volcanique, Sterile. */
@@ -88,6 +88,12 @@ function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a
       var rx0=W*(0.045+rnd()*0.035);
       storms.push({x:(0.30+rnd()*0.40)*W,y:H*(0.38+rnd()*0.24),rx:rx0,ry:rx0*0.55});
     }
+    // V3.4 : tempetes de l'hemisphere arriere (x en unites W sur [0.5,1.0)*W
+    // -> apres mise a l'echelle xGW/W elles tombent sur [P,GW), inedites).
+    for(var s3b=0;s3b<nSt;s3b++){
+      var rx1=W*(0.045+rnd()*0.035);
+      storms.push({x:(0.50+rnd()*0.50)*W,y:H*(0.38+rnd()*0.24),rx:rx1,ry:rx1*0.55});
+    }
   }
   // SEUIL D'OCEAN EFFECTIF : tres remonte pour l'océan intégral (seuls les
   // sommets de cratons emergent -> archipels, ~p97 de l'elevation), a zero
@@ -101,11 +107,16 @@ function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a
     // impacts DISPERSES sur tout le disque + QUOTAS PAR CLASSE DE TAILLE.
     // cratQuotas = [[diamMin,diamMax,nMin,nMax],...] : pour chaque classe on
     // tire un nombre dans [nMin,nMax], positions restent stratifiees.
-    var rd2=Math.min(W,H)/2, cxm=W/2, cym=H/2;
+    // V3.4 : le placement tourne DEUX FOIS (hemisphere avant [0,P), arriere [P,2P))
+    // -> le dos de la planete est INEDIT, plus une repetition a 180 degres.
+    var rd2=Math.min(W,H)/2, cym=H/2;
     var quotas=PARAMS.cratQuotas||[[20,39,20,40],[40,74,10,20],[75,124,5,10],[125,239,2,4],[240,320,0,2]];
     var total=0,qi;
     for(qi=0;qi<quotas.length;qi++)total+=quotas[qi][2]+Math.floor(rnd()*(quotas[qi][3]-quotas[qi][2]+1));
     var step=Math.max(16,Math.sqrt(Math.PI*rd2*rd2/Math.max(1,total)));   // ~1 cellule par cratere
+    var PD=(Math.ceil(W/8)+2)*8;        // demi-monde (P) : l'arriere est place sur [PD,2*PD)
+    for(var h2=0;h2<2;h2++){
+    var cxm=W/2+h2*PD, xLo=h2*PD, xHi=h2*PD+W;
     var cells=[];
     for(var gy=(cym-rd2)/step;gy<=(cym+rd2)/step;gy++){
       for(var gx=(cxm-rd2)/step;gx<=(cxm+rd2)/step;gx++){
@@ -119,8 +130,7 @@ function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a
       var tmp=cells[si];cells[si]=cells[sj];cells[sj]=tmp;
     }
     var used=0;
-    var bigPlaced=[];      // gros cratères déjà posés (pour la distance minimale)
-    // test de répulsion pour les gros : assez loin des autres gros ?
+    var bigPlaced=[];      // gros cratères déjà posés (pour la distance minimale)    // test de répulsion pour les gros : assez loin des autres gros ?
     var fitsBig=function(cxy,dia){
       for(var bi=0;bi<bigPlaced.length;bi++){
         var ddx=cxy[0]-bigPlaced[bi][0],ddy=cxy[1]-bigPlaced[bi][1];
@@ -146,7 +156,7 @@ function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a
         // la texture, sinon le cadre le coupe d'une ligne droite visible.
         var infX=0.85*dia/2, infY=0.85*dia/2;    // rayon de l'anneau (cercles ronds)
         var fit=function(cxy){
-          return cxy[0]-infX>=0&&cxy[0]+infX<=W&&cxy[1]-infY>=0&&cxy[1]+infY<=H;
+          return cxy[0]-infX>=xLo&&cxy[0]+infX<=xHi&&cxy[1]-infY>=0&&cxy[1]+infY<=H;
         };
         if(!fit(cc)){
           // cherche une cellule ou le cratere tient entier (24 essais)
@@ -172,7 +182,7 @@ function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a
         }
         // position finale : jitter borné pour rester entier dans la texture
         var fx=cc[0]+(rnd()-0.5)*step*jit, fy=cc[1]+(rnd()-0.5)*step*jit;
-        if(fx<infX)fx=infX; if(fx>W-infX)fx=W-infX;
+        if(fx<xLo+infX)fx=xLo+infX; if(fx>xHi-infX)fx=xHi-infX;
         if(fy<infY)fy=infY; if(fy>H-infY)fy=H-infY;
         // AGE : 70% recents (nets), 30% anciens (erodes, "fondus" dans le terrain)
         var ageR=rnd();
@@ -181,8 +191,13 @@ function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a
         used++;
       }
     }
+    }   // fin boucle hemispheres (h2) : avant + arriere inedit
   } else if(!isGas) {
     for(var ci2=0;ci2<PARAMS.nCrat;ci2++){crat.push({x:rnd()*W,y:rnd()*H,r:bt(rnd,PARAMS.cratR),s:bt(rnd,PARAMS.cratS),ai2:rnd()*400});}
+    // V3.4 : HEMISPHERE ARRIERE inedit - meme loi de placement, tires APRES
+    // (le PRNG continue : l'avant reste identique au seed), sur [P, 2P).
+    var PB=(Math.ceil(W/8)+2)*8;
+    for(var ci3=0;ci3<PARAMS.nCrat;ci3++){crat.push({x:PB+rnd()*(PB),y:rnd()*H,r:bt(rnd,PARAMS.cratR),s:bt(rnd,PARAMS.cratS),ai2:rnd()*400});}
   }
   
     var P=(Math.ceil(W/8)+2)*8, GW=2*P;
@@ -232,7 +247,7 @@ var hMax=0;
       var near=0;
       for(var k=0;k<crat.length;k++){
         var c=crat[k];
-        var dx=X-c.x,dy=y-c.y;dx=(dx%P+P)%P;if(dx>=P/2)dx-=P;
+        var dx=X-c.x,dy=y-c.y;dx=(dx%SL.GW+SL.GW)%SL.GW;if(dx>=SL.GW/2)dx-=SL.GW;   // V3.4 : wrap MONDE complet (360 deg), pas demi-monde
         var d2=(dx*dx+dy*dy)/(c.r*c.r);           // impacts RONDS (pas d'aplatissement 1.25)
         if(d2<2.6){                                  // rayon d'influence etendu
           var edge=1-d2/2.6;
@@ -271,7 +286,10 @@ var hMax=0;
       e=e*(0.15+0.85*near);
       E[y*SL.GW+X]=e;
       var h0=(e-SEA)/0.6;
-      if(h0>hMax)hMax=h0;
+      // V3.4 : hMax (seuil neige) calcule sur la FENETRE VISIBLE [0,W) uniquement,
+      // sinon les cratons arrieres (plus hauts) deplaceraient la ligne de neige
+      // de l'avant -> decalage vs vignette statique (meme domaine que genMap).
+      if(X<SL.W){var h0=(e-SEA)/0.6;if(h0>hMax)hMax=h0;}
     }
   }
   
@@ -374,7 +392,7 @@ function slideKey(){
         R*=pd;G*=pd;B*=pd;
         for(var si2=0;si2<storms.length;si2++){       // TEMPETES ovales
           var st=storms[si2];
-          var sdx=X-st.x; sdx=(sdx%SL.P+SL.P)%SL.P; if(sdx>=SL.P/2)sdx-=SL.P;
+          var sdx=X-st.x; sdx=(sdx%SL.GW+SL.GW)%SL.GW; if(sdx>=SL.GW/2)sdx-=SL.GW;   // V3.4 : wrap monde complet
           var dxs=sdx/st.rx, dys=(y-st.y)/st.ry;
           var q=dxs*dxs+dys*dys;
           if(q<1){
@@ -651,6 +669,7 @@ function projectDisc(pc,TPX,dst,koff,capP){
     dst[i4+3]=255;
   }
 }
+
 /* ================= API publique : window.PER ================= */
 function mkInstance(typeGal,seed,size,N){
   var cfg=cfgFor(typeGal,seed);
