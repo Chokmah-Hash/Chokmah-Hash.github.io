@@ -14,8 +14,8 @@ function show(loggedIn){
 var CLIENT=null;
 function applySession(s){
   var ok=!!(s&&s.access_token);
-  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}var _tab=null;try{_tab=localStorage.getItem('pe_mjtab');}catch(e6){}
-  if(window.MJSHOW){window.MJSHOW(_tab&&['mj-content','av-console','carte-console','best-console','img-console','auth-console','des-sect'].indexOf(_tab)>=0?_tab:'mj-content');}window.scrollTo(0,0);
+  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}var ac=$id('auth-console');if(ac){ac.style.display='none';}try{document.body.classList.remove('preauth');}catch(e0){}var _tab=null;try{_tab=localStorage.getItem('pe_mjtab');}catch(e6){}
+  if(window.MJSHOW){window.MJSHOW(_tab&&['mj-content','av-console','carte-console','best-console','img-console','des-sect'].indexOf(_tab)>=0?_tab:'mj-content');}window.scrollTo(0,0);
   if(CLIENT){CLIENT.rpc('mj_cle').then(function(res){var k=res&&res.data;if(typeof k==='string'&&k.length>0){try{localStorage.setItem('pe_mjkey',k);}catch(e5){}['av-key','mj-key','b-key','img-key'].forEach(function(id2){var el=$id(id2);if(el){el.value=k;}});['av-go','mj-open','b-open','img-open'].forEach(function(id2){var b=$id(id2);if(b){b.click();}});
     ['av-key','mj-key','b-key','img-key'].forEach(function(id2){var el=$id(id2);if(!el){return;}var row=el.closest('.cta-row');if(row){row.style.display='none';}});
     var lb=$id('av-lockbox');if(lb){lb.style.display='none';}
@@ -26,6 +26,7 @@ function applySession(s){
   var p2=$id('mj-pass');if(p2){p2.value='';}
   var er2=$id('mj-err');if(er2){er2.style.display='none';}
   var al2=$id('av-lockbox');if(al2){al2.style.display='';}
+  var ac2=$id('auth-console');if(ac2){ac2.style.display='';}
   ['mj-key','b-key','img-key','av-key'].forEach(function(id3){var el=$id(id3);if(!el){return;}el.value='';var row=el.closest('.cta-row');if(row){row.style.display='';}});
   ['mj-tools','b-tools','img-tools','av-panel'].forEach(function(id3){var t=$id(id3);if(t){t.style.display='none';}});
   Array.prototype.forEach.call(document.querySelectorAll('.subnav-in a'),function(a2){a2.classList.remove('active');});
@@ -38,6 +39,7 @@ function boot(){
   CLIENT.auth.onAuthStateChange(function(evt,s){applySession(s);});
   $id('auth-go').addEventListener('click',doLogin);
   $id('auth-pass').addEventListener('keydown',function(e){if(e.key==='Enter'){doLogin();}});
+  var lo=$id('mj-logout');if(lo){lo.addEventListener('click',function(ev){ev.preventDefault();if(CLIENT){CLIENT.auth.signOut();}applySession(null);msg('Déconnecté.','');});}
   $id('auth-out').addEventListener('click',function(){
     if(CLIENT){CLIENT.auth.signOut();}
     applySession(null);
