@@ -1,7 +1,7 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
-/* PE_BUILD 2026.10.18-des8 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
+/* PE_BUILD 2026.10.18-des9 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
 (function(){
-var PE_BUILD='2026.10.18-des8';
+var PE_BUILD='2026.10.18-des9';
 window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -18,7 +18,7 @@ var NB_MAX=10; /* nombre de jets affiches */
 var MAX_LIGNES=4; /* groupes de des max par lancer */
 var GHOSTS=[]; /* jets fantomes : memoire du navigateur uniquement, jamais envoyes nulle part */
 var st=document.createElement('style');
-st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}'
+st.textContent='#des-box .d-tools{display:block;margin:12px 0;border:1px solid var(--tealline);border-radius:12px;background:var(--panel);padding:16px}'
 +'#des-box .d-lbl{display:block;font-size:.68rem;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:0 0 4px}'
 +'#des-box .d-fld{background:var(--panel2);border:1px solid var(--tealline);border-radius:8px;color:var(--text);font-family:inherit;font-size:.95rem;padding:10px 12px;min-height:46px;box-sizing:border-box}'
 +'#des-box .d-fld:focus{outline:none;border-color:var(--teal)}'
@@ -43,6 +43,7 @@ st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-ite
 +'#des-box .d-drama.show{opacity:1}'
 +'#des-box .d-drama.result{font-style:normal}'
 +'#des-box .d-drama.ghostd{color:var(--muted)}'
++'#des-box #d-list{border:1px solid var(--tealline);border-radius:12px;background:var(--panel);padding:12px 16px;margin-top:12px;max-height:520px;overflow-y:auto}'
 +'#des-box .d-roll{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:8px 12px;border:1px dashed var(--tealline);border-radius:10px;margin:7px 0;background:var(--panel2)}'
 +'#des-box .d-roll.rolling{animation:dpulse .9s ease-in-out infinite}'
 +'#des-box .d-who{font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.04em;color:var(--teal)}'
