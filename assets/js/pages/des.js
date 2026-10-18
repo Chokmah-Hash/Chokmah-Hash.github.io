@@ -65,13 +65,13 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function setStatus(t,err){var e=g('d-status');if(e){e.textContent=t;e.className='d-status'+(err?' err':'');}}
 box.innerHTML='<div class="d-tools">'
 +'<div class="d-setup"><select class="d-fld" id="d-type">'
-+'<option value="normal">🎲 Jet normal (partagé)</option>'
-+'<option value="fantome">👻 Jet fantôme (local)</option>'
++'<option value="normal">Jet normal (partagé)</option>'
++'<option value="fantome">Jet fantôme (local)</option>'
 +'<option value="attaque">⚔️ Jet d\'attaque</option>'
 +'</select>'
 +'<div class="d-rowsline" id="d-rows"></div>'
 +'<button class="d-add-sq" id="d-add" type="button" title="Ajouter un groupe de dés">+</button></div>'
-+'<div class="d-acts"><button class="btn primary" id="d-roll-btn" type="button">🎲 Lancer</button>'
++'<div class="d-acts"><button class="btn primary" id="d-roll-btn" type="button"><span class="pe-star"></span> Lancer</button>'
 +'<span class="d-drama" id="d-drama"></span></div>'
 +'<p class="d-hint" id="d-hint"></p>'
 +'</div>'
@@ -129,7 +129,7 @@ function rollingRow(label,gr){
   +'<span class="d-type">'+esc(typeWord())+'</span>'
   +'<span class="d-detail">'+esc(label)+' : <span class="d-fx"></span></span>'
   +'<span class="d-total">= <span class="d-fx2">?</span></span>'
-  +'<span class="d-when">🎲…</span>';
+  +'<span class="d-when">⬥</span>';
   var list=g('d-list');
   list.insertBefore(d,list.firstChild);
   var f=d.querySelector('.d-fx'),t2=d.querySelector('.d-fx2');
@@ -175,7 +175,7 @@ function refresh(){
 /* ————— Publication console : l'identite suit la ZONE, pas les sessions presentes ————— */
 function consolePub(label,det,tot){
   try{
-    var contenu='🎲 '+label+' : '+(det||[]).join(' + ')+' = '+tot;
+    var contenu='⬥ '+label+' : '+(det||[]).join(' + ')+' = '+tot;
     var send=function(h){fetch(SB+'rest/v1/rpc/console_envoyer',{method:'POST',headers:h,body:JSON.stringify({p_contenu:contenu,p_dest:[],p_type:'de'})}).catch(function(){});};
     if(EST_ZONE_MJ){
       if(window.supabase&&window.supabase.createClient){

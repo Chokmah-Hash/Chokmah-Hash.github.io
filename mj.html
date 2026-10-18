@@ -92,29 +92,29 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
   <body class="preauth">
     <header class="nav">
       <div class="nav-in">
-        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <a class="brand" href="/"><span class="pe-star lg"></span> PROTOCOLES ÉTERNELS</a>
         <nav class="nav-links">
           <a href="/">Accueil</a>
           <a href="/console.html">Console</a>
           <a href="/regles.html">Règles</a>
           <a href="/bestiaire.html">Bestiaire</a>
           <a href="/galaxie.html">Cartes</a>
-          <a href="/joueur.html" class="pj">🔐 Zone joueurs</a>
-          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+          <a href="/joueur.html" class="pj"><span class="pe-star"></span> Zone joueurs</a>
+          <a href="/mj.html" class="mj"><span class="pe-star"></span> Zone MJ</a>
         </nav>
       </div>
     </header>
     <nav class="subnav" aria-label="Sections de la zone MJ">
       <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Sections</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
       <div class="subnav-in">
-          <a href="#mj-content">📜 Scénarios</a>
-        <a href="#av-console">🎮 Aventures</a>
-        <a href="#carte-console">🗺️ Carte</a>
-        <a href="#best-console">🦴 Bestiaire</a>
-        <a href="#img-console">🖼️ Images</a>
-        <a href="#des-sect">🎲 Dés</a>
-          <a href="#comptes-console">👥 Configuration</a>
-          <a href="#logout" id="mj-logout">🚪 Se déconnecter</a>
+          <a href="#mj-content"><span class="pe-star"></span> Scénarios</a>
+        <a href="#av-console"><span class="pe-star"></span> Aventures</a>
+        <a href="#carte-console"><span class="pe-star"></span> Carte</a>
+        <a href="#best-console"><span class="pe-star"></span> Bestiaire</a>
+        <a href="#img-console"><span class="pe-star"></span> Images</a>
+        <a href="#des-sect"><span class="pe-star"></span> Dés</a>
+          <a href="#comptes-console"><span class="pe-star"></span> Configuration</a>
+          <a href="#logout" id="mj-logout"><span class="pe-star"></span> Se déconnecter</a>
       </div>
     </nav>
     <script src="assets/js/core.js"></script>
@@ -123,11 +123,11 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
 
     <main class="wrap">
       <section class="sect rev d1" id="scenar-head">
-        <h2>📜 Console des scénarios</h2>
+        <h2><span class="pe-star lg"></span> Console des scénarios</h2>
       </section>
       <section id="mj-lock" class="rev d1">
         <div class="card amber">
-          <span class="ico">🔒</span>
+          <span class="ico"><span class="pe-star lg"></span></span>
           <h3>Accès protégé</h3>
           <p>Entrez le mot de passe MJ. Il n'est stocké nulle part sur ce site — ni dans la page, ni sur le serveur.</p>
           <input type="password" id="mj-pass" placeholder="Mot de passe" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -137,9 +137,9 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       </section>
       <section id="mj-content" style="display:none"></section>
       <section class="sect rev d2" id="av-console">
-        <h2>🎮 Console des aventures en ligne</h2>
+        <h2><span class="pe-star lg"></span> Console des aventures en ligne</h2>
         <div class="card amber" id="av-lockbox">
-          <span class="ico">🔑</span>
+          <span class="ico"><span class="pe-star lg"></span></span>
           <h3>Ouvrir la console</h3>
           <p>Prépare tes aventures en brouillon, enclenche-les pour les joueuses, et suis en direct qui les consulte. La clé saisie sert uniquement à signer les opérations : elle n&rsquo;est enregistrée nulle part.</p>
           <span class="glabc" for="av-key">Clé MJ</span>
@@ -156,7 +156,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
           <p class="gmsgc" id="av-msg2"></p>
           <div id="av-list"></div>
           <div class="sect" style="margin-top:28px">
-            <h3 style="margin-top:0">📡 Joueurs connectés</h3>
+            <h3 style="margin-top:0"><span class="pe-star lg"></span> Joueurs connectés</h3>
             <p class="gmsgc" id="mon-msg"></p>
             <div id="mon-list"></div>
           </div>
@@ -165,9 +165,9 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       </section>
 
       <section class="sect" id="carte-console">
-        <h2>🗺️ Console de la carte</h2>
+        <h2><span class="pe-star lg"></span> Console de la carte</h2>
         <div class="note-box amber">
-          <strong>🎮 Console du Maître de la Tombe :</strong> saisis ta clé MJ pour révéler les vérités cachées, voir la position des joueurs en direct, et modifier la carte. La clé ne sert qu'à signer les opérations — elle n'est jamais stockée.
+          <strong><span class="pe-star"></span> Console du Maître de la Tombe :</strong> saisis ta clé MJ pour révéler les vérités cachées, voir la position des joueurs en direct, et modifier la carte. La clé ne sert qu'à signer les opérations — elle n'est jamais stockée.
           <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
             <input class="gf" id="mj-key" type="password" placeholder="Clé MJ" style="max-width:220px">
             <button class="btn amber" id="mj-open" type="button">Ouvrir la console</button>
@@ -178,12 +178,12 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
           <div class="gmap-wrap"><div class="gmap" id="g-map"></div></div>
           <div class="card" id="g-panel" style="margin-top:14px;min-height:140px"></div>
           <div class="card amber" style="margin-top:18px">
-            <h3>📍 Joueurs localisés</h3>
+            <h3><span class="pe-star lg"></span> Joueurs localisés</h3>
             <div class="tscroll"><table class="rt amber"><thead><tr><th>Joueur</th><th>Système</th><th>Lieu</th><th>Statut</th></tr></thead><tbody id="mj-positions"></tbody></table></div>
             <p class="gmsgc" id="mj-note"></p>
           </div>
           <div class="card amber" style="margin-top:18px">
-            <h3 id="g-form-title">🛠️ Nouveau système</h3>
+            <h3 id="g-form-title"><span class="pe-star lg"></span> Nouveau système</h3>
             <div id="g-form">
               <input type="hidden" id="g-id" value="">
               <div class="mjgrid">
@@ -205,20 +205,20 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
               <label class="glab" for="g-secret">Vérités cachées MJ (réservées à ta clé)</label>
               <textarea class="gf" id="g-secret" rows="2" placeholder="Ce que TOI seul vois en mode MJ…"></textarea>
               <div class="cta-row" style="justify-content:flex-start;margin-top:14px">
-                <button class="btn amber" id="g-place" type="button">📍 Placer sur la carte</button>
-                <button class="btn primary" id="g-save" type="button">💾 Enregistrer</button>
+                <button class="btn amber" id="g-place" type="button">Placer sur la carte</button>
+                <button class="btn primary" id="g-save" type="button">Enregistrer</button>
                 <button class="btn ghost" id="g-new" type="button">✚ Nouveau</button>
-                <button class="btn danger" id="g-del" type="button" style="display:none">🗑 Supprimer</button>
+                <button class="btn danger" id="g-del" type="button" style="display:none">Supprimer</button>
               </div>
               <p class="gmsgc" id="g-msg"></p>
             </div>
           </div>
           <div class="card amber" style="margin-top:18px">
-            <h3>🪐 Planètes du système</h3>
+            <h3><span class="pe-star lg"></span> Planètes du système</h3>
             <div id="g-pla-box"></div>
             <p class="gmsgc" id="p-msg"></p>
             <div id="p-form" style="display:none">
-              <h3 id="p-title" style="margin-top:14px">🪐 Nouvelle planète</h3>
+              <h3 id="p-title" style="margin-top:14px"><span class="pe-star lg"></span> Nouvelle planète</h3>
               <input type="hidden" id="p-id" value="">
               <div class="mjgrid">
                 <div><label class="glab" for="p-nom">Nom de la planète</label><input class="gf" id="p-nom" type="text" placeholder="Ex. 9-Héra"></div>
@@ -232,13 +232,13 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
               <label class="glab" for="p-desc">Description (visible par tous)</label>
               <textarea class="gf" id="p-desc" rows="3" placeholder="Ce que voient les joueurs en cliquant…"></textarea>
               <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
-                <button class="btn primary" id="p-save" type="button">💾 Enregistrer</button>
+                <button class="btn primary" id="p-save" type="button">Enregistrer</button>
                 <button class="btn ghost" id="p-cancel" type="button">Annuler</button>
               </div>
             </div>
           </div>
           <div class="card amber" id="poi-card" style="display:none;margin-top:18px">
-            <h3 id="poi-title">📍 Points d'intérêt</h3>
+            <h3 id="poi-title"><span class="pe-star lg"></span> Points d'intérêt</h3>
             <p class="gmsgc" id="poi-note"></p>
             <div id="p-map"></div>
             <div id="poi-list"></div>
@@ -254,10 +254,10 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
               <label class="glab" for="poi-desc">Description (visible par tous)</label>
               <textarea class="gf" id="poi-desc" rows="3" placeholder="Ce que voient les joueurs…"></textarea>
               <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
-                <button class="btn amber" id="poi-place" type="button">📍 Placer sur le globe</button>
-                <button class="btn primary" id="poi-save" type="button">💾 Enregistrer</button>
+                <button class="btn amber" id="poi-place" type="button">Placer sur le globe</button>
+                <button class="btn primary" id="poi-save" type="button">Enregistrer</button>
                 <button class="btn ghost" id="poi-cancel" type="button">Annuler</button>
-                <button class="btn danger" id="poi-del" type="button" style="display:none">🗑 Supprimer</button>
+                <button class="btn danger" id="poi-del" type="button" style="display:none">Supprimer</button>
               </div>
               <p class="gmsgc" id="poi-msg"></p>
             </div>
@@ -267,9 +267,9 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       </section>
 
       <section class="sect" id="best-console">
-        <h2>🦴 Console du bestiaire</h2>
+        <h2><span class="pe-star lg"></span> Console du bestiaire</h2>
         <div class="note-box amber">
-          <strong>🦴 Console du bestiaire :</strong> crée et modifie les fiches de créatures que les joueuses voient sur la page publique <a href="/bestiaire.html">Bestiaire</a>. La clé saisie sert uniquement à signer les opérations — elle n'est jamais stockée.
+          <strong><span class="pe-star"></span> Console du bestiaire :</strong> crée et modifie les fiches de créatures que les joueuses voient sur la page publique <a href="/bestiaire.html">Bestiaire</a>. La clé saisie sert uniquement à signer les opérations — elle n'est jamais stockée.
           <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
             <input class="gf" id="b-key" type="password" placeholder="Clé MJ" style="max-width:220px">
             <button class="btn amber" id="b-open" type="button">Ouvrir la console</button>
@@ -278,7 +278,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
         </div>
         <div id="b-tools" style="display:none">
           <div class="card amber" style="margin-top:18px">
-            <h3 id="b-form-title">🦴 Nouvelle créature</h3>
+            <h3 id="b-form-title"><span class="pe-star lg"></span> Nouvelle créature</h3>
             <input type="hidden" id="b-old" value="">
             <div class="mjgrid">
               <div><label class="glab" for="b-nom">Nom de la créature</label><input class="gf" id="b-nom" type="text" placeholder="Ex. Chasseur de la 7e crypte"></div>
@@ -304,14 +304,14 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
             <label class="glab" for="b-notes">Notes de campagne (facultatif)</label>
             <textarea class="gf" id="b-notes" rows="2" placeholder="Lore, capacités spéciales, première rencontre…"></textarea>
             <div class="cta-row" style="justify-content:flex-start;margin-top:14px">
-              <button class="btn primary" id="b-save" type="button">💾 Enregistrer</button>
+              <button class="btn primary" id="b-save" type="button">Enregistrer</button>
               <button class="btn ghost" id="b-clear" type="button">↺ Vider le formulaire</button>
-              <button class="btn danger" id="b-del" type="button" style="display:none">🗑 Supprimer ce nom</button>
+              <button class="btn danger" id="b-del" type="button" style="display:none">Supprimer ce nom</button>
             </div>
             <p class="gmsgc" id="b-fmsg"></p>
           </div>
           <div class="card amber" style="margin-top:18px">
-            <h3>📋 Fiches existantes</h3>
+            <h3><span class="pe-star lg"></span> Fiches existantes</h3>
             <div id="b-list"></div>
             <p class="gmsgc" id="b-lmsg"></p>
           </div>
@@ -319,9 +319,9 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
         <div class="note-box amber">Les fiches enregistrées ici apparaissent immédiatement sur la page publique <a href="/bestiaire.html">Bestiaire</a> — et les créatures signalées sur la carte y sont reliées automatiquement.</div>
       </section>
         <section class="sect" id="img-console">
-      <h2>🖼️ Console des images</h2>
+      <h2><span class="pe-star lg"></span> Console des images</h2>
       <div class="note-box amber">
-        <strong>🖼️ Console des images :</strong> envoie ici tes illustrations (planètes, mappemondes, points d’intérêt…) — 5 Mo maximum par fichier (png, jpeg, webp, gif, svg). Copie l’adresse publique affichée et colle-la dans les champs « Illustration » ou « Mappemonde » des consoles Carte et Bestiaire. La clé saisie sert uniquement à signer les opérations.
+        <strong><span class="pe-star"></span> Console des images :</strong> envoie ici tes illustrations (planètes, mappemondes, points d’intérêt…) — 5 Mo maximum par fichier (png, jpeg, webp, gif, svg). Copie l’adresse publique affichée et colle-la dans les champs « Illustration » ou « Mappemonde » des consoles Carte et Bestiaire. La clé saisie sert uniquement à signer les opérations.
         <div class="cta-row" style="justify-content:flex-start;margin-top:12px">
           <input class="gf" id="img-key" type="password" placeholder="Clé MJ" style="max-width:220px">
           <button class="btn amber" id="img-open" type="button">Ouvrir la console</button>
@@ -341,7 +341,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
           <p class="gmsgc" id="img-upmsg"></p>
         </div>
         <div class="card amber" style="margin-top:18px">
-          <h3>🗂️ Images du bucket</h3>
+          <h3><span class="pe-star lg"></span> Images du bucket</h3>
           <p class="gmsgc" id="img-lmsg"></p>
           <div id="img-list"></div>
         </div>
@@ -350,9 +350,9 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
     </section>
 
     <section class="sect rev" id="auth-console">
-      <h2>🔑 Connexion du Maître de la Tombe</h2>
+      <h2><span class="pe-star lg"></span> Connexion du Maître de la Tombe</h2>
       <div class="card amber" id="auth-box">
-        <span class="ico">🔑</span>
+        <span class="ico"><span class="pe-star lg"></span></span>
         <h3>Connexion du Maître de la Tombe</h3>
         <p>Connecte-toi pour ouvrir la Zone MJ : les consoles, les scénarios et les vérités cachées de la campagne.</p>
         <div id="auth-form">
@@ -371,14 +371,14 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
     </section>
 
 <section class="sect rev" id="des-sect">
-      <h2>🎲 Jets de dés</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin:.2em 0 .4em">Lance pour le groupe ou pour les PNJ : chaque jet est signé et horodaté dans la base partagée, et apparaît en direct dans l'onglet 🎲 Dés de la Zone joueurs.</p>
+      <h2><span class="pe-star lg"></span> Jets de dés</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin:.2em 0 .4em">Lance pour le groupe ou pour les PNJ : chaque jet est signé et horodaté dans la base partagée, et apparaît en direct dans l'onglet Dés de la Zone joueurs.</p>
       <div id="des-box"></div>
     </section>
     <section class="sect" id="comptes-console">
-        <h2>👥 Configuration</h2>
+        <h2><span class="pe-star lg"></span> Configuration</h2>
         <div class="card amber">
-          <h3>📋 Joueurs</h3>
+          <h3><span class="pe-star lg"></span> Joueurs</h3>
           <p class="gmsgc" id="cj-lmsg"></p>
           <div id="cj-list"></div>
         </div>
@@ -406,7 +406,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       </section>
     </main>
     <footer class="foot">
-      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
       <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
       <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
     </footer>

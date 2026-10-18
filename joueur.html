@@ -73,32 +73,32 @@ textarea.fld{resize:vertical;min-height:64px}
   <body>
     <header class="nav">
       <div class="nav-in">
-        <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
+        <a class="brand" href="/"><span class="pe-star lg"></span> PROTOCOLES ÉTERNELS</a>
         <nav class="nav-links">
           <a href="/">Accueil</a>
           <a href="/console.html">Console</a>
           <a href="/regles.html">Règles</a>
           <a href="/bestiaire.html">Bestiaire</a>
           <a href="/galaxie.html">Cartes</a>
-          <a href="/joueur.html" class="pj active">🔐 Zone joueurs</a>
-          <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+          <a href="/joueur.html" class="pj active"><span class="pe-star"></span> Zone joueurs</a>
+          <a href="/mj.html" class="mj"><span class="pe-star"></span> Zone MJ</a>
         </nav>
       </div>
     </header>
     <nav class="subnav" id="app-subnav" aria-label="Navigation de la zone joueurs" hidden>
       <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Menu</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
       <div class="subnav-in">
-        <button type="button" class="active" data-t="av">⚡ Aventure</button>
-        <button type="button" data-t="pj">👤 Personnages</button>
-        <button type="button" data-t="notes">📝 Notes</button>
-        <button type="button" data-t="des">🎲 Dés</button>
+        <button type="button" class="active" data-t="av"><span class="pe-star"></span> Aventure</button>
+        <button type="button" data-t="pj"><span class="pe-star"></span> Personnages</button>
+        <button type="button" data-t="notes"><span class="pe-star"></span> Notes</button>
+        <button type="button" data-t="des"><span class="pe-star"></span> Dés</button>
       
-        <a href="#logout" id="app-logout" style="margin-left:auto">🚪 Se déconnecter<span id="logout-who"></span></a></div>
+        <a href="#logout" id="app-logout" style="margin-left:auto"><span class="pe-star"></span> Se déconnecter<span id="logout-who"></span></a></div>
     </nav>
 
     <main class="wrap">
       <section class="hero rev" id="app-hero">
-        <div class="glyphrow">⚡ ⬥ ⚡</div>
+        <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
         <h1>Mon <b>Espace</b></h1>
         <div class="tagline">Aventure · Personnages · Notes</div>
         <p class="pitch">Ton espace personnel : l'aventure en cours, tes personnages avec leur inventaire, et tes notes de campagne. Tout est sauvegardé dans la base partagée du groupe — accessible depuis n'importe quel appareil, suffit de te reconnecter.</p>
@@ -108,7 +108,7 @@ textarea.fld{resize:vertical;min-height:64px}
       <div id="auth-view">
         <section class="rev d1">
           <div class="card authcard">
-            <span class="ico">🔐</span>
+            <span class="ico"><span class="pe-star lg"></span></span>
             <h3 style="margin-top:0">Connexion</h3>
             <form id="f-login">
               <label class="glab" for="l-user">Pseudo</label>
@@ -117,12 +117,12 @@ textarea.fld{resize:vertical;min-height:64px}
               <input class="fld tealfld" id="l-pass" type="password" autocomplete="current-password" required>
               <div style="margin-top:18px"><button type="submit" class="btn primary" style="width:100%">→ Entrer</button></div>
             </form>
-            <div id="mdp-row" style="margin-top:10px;text-align:center"><button class="btn ghost small" id="mdp-oublie" type="button">🔑 Mot de passe oublié ?</button></div>
+            <div id="mdp-row" style="margin-top:10px;text-align:center"><button class="btn ghost small" id="mdp-oublie" type="button">Mot de passe oublié ?</button></div>
             <div id="f-reset" style="display:none">
               <form id="r-ask">
                 <label class="glab" for="r-user">Ton nom (pseudo de connexion)</label>
                 <input class="fld tealfld" id="r-user" type="text" autocomplete="username" required>
-                <div style="margin-top:14px"><button type="submit" class="btn primary" style="width:100%">📨 Envoyer ma demande au Maître de la Tombe</button></div>
+                <div style="margin-top:14px"><button type="submit" class="btn primary" style="width:100%">Envoyer ma demande au Maître de la Tombe</button></div>
               </form>
               <p class="gmsg" id="r-status"></p>
               <form id="r-form" style="display:none">
@@ -176,7 +176,7 @@ textarea.fld{resize:vertical;min-height:64px}
         <section class="tabpane" id="tab-pj">
           <div class="sect rev d1">
             <h2>Mes personnages</h2>
-            <p style="margin:0 0 14px"><a class="btn ghost" href="/fiches.html">🧬 Ouvrir mes fiches d'unité</a></p>
+            <p style="margin:0 0 14px"><a class="btn ghost" href="/fiches.html"><span class="pe-star"></span> Ouvrir mes fiches d'unité</a></p>
             <p id="pj-status" class="gmsg">Chargement…</p>
             <div id="pj-list"></div>
           </div>
@@ -217,8 +217,8 @@ textarea.fld{resize:vertical;min-height:64px}
                 <label class="glab" for="p-notes">Notes de personnage (facultatif)</label>
                 <textarea class="fld" id="p-notes" placeholder="Historique, blessures, objectifs secrets…"></textarea>
                 <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
-                  <button type="submit" class="btn amber">💾 Enregistrer</button>
-                  <button type="button" class="btn danger" id="p-del" style="display:none">🗑 Supprimer</button>
+                  <button type="submit" class="btn amber">Enregistrer</button>
+                  <button type="button" class="btn danger" id="p-del" style="display:none">Supprimer</button>
                   <button type="button" class="btn ghost" id="p-clear">↺ Vider</button>
                 </div>
                 <p class="gmsg" id="pj-msg"></p>
@@ -240,7 +240,7 @@ textarea.fld{resize:vertical;min-height:64px}
         <!-- Onglet Dés -->
         <section class="tabpane" id="tab-des">
           <div class="sect rev d1">
-            <h2>🎲 Jets de dés</h2>
+            <h2><span class="pe-star lg"></span> Jets de dés</h2>
             <p class="gmsg" style="margin-bottom:6px">Lance tes dés en solo ou avec le groupe : les jets fantômes restent ton secret, les autres sont signés, horodatés et visibles de tous, en direct.</p>
             <div id="des-box"></div>
           </div>
@@ -248,7 +248,7 @@ textarea.fld{resize:vertical;min-height:64px}
       </div>
     </main>
     <footer class="foot">
-      <div class="glyphrow">⚡ ⬥ ⚡</div>
+      <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
       <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
     </footer>
     <script src="assets/js/core.js"></script>
