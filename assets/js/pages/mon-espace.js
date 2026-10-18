@@ -59,12 +59,16 @@ var RID=null,RTIMER=null;
 function rMsg(t,cls){setMsg('r-status',t,cls);}
 function stopReset(){RID=null;if(RTIMER){clearInterval(RTIMER);RTIMER=null;}}
 $('mdp-oublie').addEventListener('click',function(){
-  var u=$('l-user').value.trim();
-  if(!u){authMsg('Saisis ton pseudo dans « Pseudo » puis clique sur ce bouton.','err');return;}
-  authMsg('');$('f-reset').style.display='';$('r-form').style.display='none';rMsg('Transmission de la demande au Maître de la Tombe…','');
+  authMsg('');rMsg('');$('r-form').style.display='none';$('r-ask').style.display='';$('f-reset').style.display='';$('r-user').value=$('l-user').value.trim();$('r-user').focus();
+});
+$('r-ask').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var u=$('r-user').value.trim();
+  if(!u){rMsg('Saisis ton nom pour envoyer la demande.','err');return;}
+  $('r-ask').style.display='none';rMsg('Transmission de la demande au Maître de la Tombe…','');
   api(SB+'rpc/demander_reset',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u})}).then(function(r){if(!r.ok){throw new Error('http');}return r.json();}).then(function(rep0){
     var rep=Array.isArray(rep0)?rep0[0]:rep0;
-    if(!rep||rep.erreur||!rep.id){rMsg((rep&&rep.erreur)||'Demande impossible.','err');return;}
+    if(!rep||rep.erreur||!rep.id){rMsg((rep&&rep.erreur)||'Demande impossible.','err');$('r-ask').style.display='';return;}
     RID=rep.id;
     rMsg('⏳ Demande transmise au Maître de la Tombe. Garde cette page ouverte : dès qu’il l’autorise, un champ « Nouveau mot de passe » apparaît ici — à utiliser dans les 5 minutes.','');
     if(RTIMER){clearInterval(RTIMER);}
@@ -77,12 +81,12 @@ $('mdp-oublie').addEventListener('click',function(){
         else if(s.statut==='expire'){stopReset();$('r-form').style.display='none';rMsg('⏳ Autorisation expirée — clique à nouveau sur « Mot de passe oublié ? ».','err');}
       }).catch(function(){});
     },8000);
-  }).catch(function(){rMsg('Demande impossible — vérifie ta connexion internet.','err');});
+  }).catch(function(){rMsg('Demande impossible — vérifie ta connexion internet.','err');$('r-ask').style.display='';});
 });
-$('r-cancel').addEventListener('click',function(){stopReset();$('f-reset').style.display='none';rMsg('');});
+$('r-cancel').addEventListener('click',function(){stopReset();$('f-reset').style.display='none';$('r-ask').style.display='';rMsg('');});
 $('r-form').addEventListener('submit',function(ev){
   ev.preventDefault();
-  var u=$('l-user').value.trim(),p=$('r-pass').value,p2=$('r-pass2').value;
+  var u=$('r-user').value.trim(),p=$('r-pass').value,p2=$('r-pass2').value;
   if(p!==p2){rMsg('Les deux mots de passe ne correspondent pas.','err');return;}
   if(p.length<4){rMsg('Mot de passe trop court (4 caractères minimum).','err');return;}
   if(!RID){rMsg('Demande inconnue — relance « Mot de passe oublié ? ».','err');return;}
@@ -95,9 +99,9 @@ $('r-form').addEventListener('submit',function(ev){
       if(!j||!j.token){throw new Error('sess');}
       SESS={id:j.id,login:u,nom:j.nom||u,token:j.token};
       try{localStorage.setItem('pe_session',JSON.stringify(SESS));}catch(e){}
-      stopReset();$('f-reset').style.display='none';$('r-pass').value='';$('r-pass2').value='';rMsg('');
+      stopReset();$('f-reset').style.display='none';$('r-ask').style.display='';$('r-pass').value='';$('r-pass2').value='';rMsg('');
       enterApp();
-    }).catch(function(){stopReset();$('f-reset').style.display='none');authMsg('Mot de passe mis à jour — connecte-toi ci-dessus.','ok');});
+    }).catch(function(){stopReset();$('f-reset').style.display='none';$('r-ask').style.display='';authMsg('Mot de passe mis à jour — connecte-toi ci-dessus.','ok');});
   }).catch(function(){rMsg('Echec du reset — vérifie ta connexion internet.','err');});
 });
 function logout(msg){

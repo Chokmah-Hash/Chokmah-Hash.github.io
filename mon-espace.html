@@ -117,6 +117,11 @@ textarea.fld{resize:vertical;min-height:64px}
             </form>
             <div style="margin-top:10px;text-align:center"><button class="btn ghost small" id="mdp-oublie" type="button">🔑 Mot de passe oublié ?</button></div>
             <div id="f-reset" style="display:none">
+              <form id="r-ask">
+                <label class="glab" for="r-user">Ton nom (pseudo de connexion)</label>
+                <input class="fld tealfld" id="r-user" type="text" autocomplete="username" required>
+                <div style="margin-top:14px"><button type="submit" class="btn primary" style="width:100%">📨 Envoyer ma demande au Maître de la Tombe</button></div>
+              </form>
               <p class="gmsg" id="r-status"></p>
               <form id="r-form" style="display:none">
                 <label class="glab" for="r-pass">Nouveau mot de passe</label>
