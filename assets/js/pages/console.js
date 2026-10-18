@@ -4,6 +4,12 @@ var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 var SESS=null, MJSIDE=false, LAST=0, RT=null, BOX=null;
+/* ————— /debug : erreurs capturees en memoire ————— */
+var ERRS=[];
+try{
+window.addEventListener('error',function(e){ERRS.push('E:'+(e.message||'?')+' @'+(e.filename||'')+':'+(e.lineno||0));if(ERRS.length>12){ERRS.shift();}});
+window.addEventListener('unhandledrejection',function(e){ERRS.push('P:'+String(e.reason).slice(0,180));if(ERRS.length>12){ERRS.shift();}});
+}catch(e){}
 function hdr(){var h={'apikey':SBK,'Content-Type':'application/json'};if(SESS&&SESS.token){h['x-token']=SESS.token;}return h;}
 function authHdr(tk){return {'apikey':SBK,'Authorization':'Bearer '+tk,'Content-Type':'application/json'};}
 function api(url,opt){return fetch(url,opt);}
@@ -54,9 +60,66 @@ function freshMJToken(){
   try{if(window.CLIENT&&CLIENT.auth&&CLIENT.auth.getSession){return CLIENT.auth.getSession().then(function(s){return (s&&s.data&&s.data.session&&s.data.session.access_token)||window.MJBEARER||SBK;},function(){return window.MJBEARER||SBK;});}}catch(e){}
   return Promise.resolve(window.MJBEARER||SBK);
 }
+/* ————— /debug : collecte + encodage (local uniquement, rien n'est envoye) ————— */
+function dbgB64(str){
+  try{return btoa(unescape(encodeURIComponent(str)));}catch(e){return 'ENC_ERR';}
+}
+function lsKeys(){
+  var k=[];try{for(var i=0;i<localStorage.length;i++){k.push(localStorage.key(i));}}catch(e){}
+  return k;
+}
+function collectDebug(){
+  var n=navigator, scr=screen, d=document, w=window;
+  var cssOk=false;
+  try{cssOk=!!(getComputedStyle(d.querySelector('.card')||d.body).borderRadius);}catch(e){}
+  var rtState='aucun';
+  try{if(RT&&RT.state){rtState=String(RT.state());}else if(RT){rtState=String(RT);}}catch(e){rtState='err';}
+  var data={
+    v:1, t:new Date().toISOString(),
+    url:location.href, ref:d.referrer||'',
+    ua:n.userAgent, plat:n.platform, lang:n.language, langs:(n.languages||[]).slice(0,4),
+    online:n.onLine, cookie:n.cookieEnabled,
+    tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'?', tzOff:new Date().getTimezoneOffset(),
+    screen:{w:scr.width,h:scr.height,d:scr.depth,dpw:scr.width*(w.devicePixelRatio||1)},
+    vp:{w:w.innerWidth,h:w.innerHeight,dpr:w.devicePixelRatio||1,scrollY:w.scrollY},
+    sessJoueur:!!SESS, nomJoueur:(SESS&&SESS.nom)||null, mj:MJSIDE,
+    last:LAST, msgsAffiches:(BOX?BOX.children.length:0),
+    boxH:(BOX?BOX.scrollHeight:0),
+    supabaseJs:typeof w.supabase!=='undefined', client:!!w.CLIENT,
+    realtime:rtState,
+    lsKeys:lsKeys(),
+    sw:('serviceWorker' in n)?(n.serviceWorker.controller?'actif':'non-contrôlé'):'absent',
+    cssCharge:cssOk,
+    perfMem:(w.performance&&w.performance.memory)?Math.round(w.performance.memory.usedJSHeapSize/1048576)+'Mo':null,
+    conn:(n.connection&&n.connection.effectiveType)||null,
+    errs:ERRS.slice()
+  };
+  return 'PEDBG1-'+dbgB64(JSON.stringify(data));
+}
+function showDebug(){
+  var code=collectDebug();
+  BOX=BOX||$('c-box');
+  var div=document.createElement('div');
+  div.className='cm cm-mj cm-private';
+  div.innerHTML='<span class="cm-who">🔍 Debug</span> <button class="btn ghost btn sm" style="min-height:26px;font-size:.68rem;padding:2px 10px">📋 Copier</button>'+
+    '<div style="margin:6px 0 2px;padding:8px 10px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-family:monospace;font-size:.72rem;word-break:break-all;max-height:180px;overflow-y:auto">'+esc(code)+'</div>'+
+    '<span class="cm-priv">Code à copier-coller au développeur. Ne contient aucun mot de passe.</span>';
+  div.querySelector('button').addEventListener('click',function(){
+    var ok=false;
+    try{navigator.clipboard.writeText(code).then(function(){setStatus('Code debug copié.','ok');});ok=true;}catch(e){}
+    if(!ok){var ta=document.createElement('textarea');ta.value=code;d.body.appendChild(ta);ta.select();try{d.execCommand('copy');setStatus('Code debug copié.','ok');}catch(e){setStatus('Copie impossible — sélectionne le code manuellement.','err');}d.body.removeChild(ta);}
+  });
+  BOX.appendChild(div);
+  BOX.scrollTop=BOX.scrollHeight;
+  setStatus('Debug généré — copie le code en un clic (1 clic = copié).','ok');
+}
 function sendMessage(){
   var inp=$('c-input'), txt=inp.value.trim();
   if(!txt){return;}
+  if(txt==='/debug'){
+    if(!MJSIDE){setStatus('Commande réservée au Maître de la Tombe.','err');return;}
+    inp.value='';showDebug();return;
+  }
   var cmd=parseCmd(txt);
   var dest='[]';
   var body=txt;
@@ -82,13 +145,6 @@ function sendMessage(){
 function initSession(){
   try{var s=localStorage.getItem('pe_session');if(s){SESS=JSON.parse(s);}else{SESS=null;}}catch(e){SESS=null;}
   MJSIDE=false;
-  try{
-    var raw=localStorage.getItem('pe-mj-auth');
-    if(raw&&window.supabase){
-      // session MJ persistee -> verifier
-    }
-  }catch(e){}
-  // MJ detection: tenter getSession si supabase charge et cle pe-mj-auth
   if(window.supabase){
     try{
       var client=supabase.createClient(SB.replace('/rest/v1/',''),SBK,{auth:{persistSession:true,storageKey:'pe-mj-auth'}});
@@ -96,7 +152,7 @@ function initSession(){
       client.auth.getSession().then(function(s){
         if(s&&s.data&&s.data.session){
           MJSIDE=true;
-          setStatus('Vue Maître de la Tombe — tu vois tous les messages.','');
+          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug disponible.','');
           loadMessages();
         }else if(!SESS){
           setStatus('Vue anonyme — connecte-toi depuis la Zone joueurs pour écrire.','');
