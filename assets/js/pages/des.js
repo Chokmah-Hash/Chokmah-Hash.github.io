@@ -7,7 +7,7 @@ var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var box=document.getElementById('des-box');
 if(!box){return;}
-/* Identite par zone : mj.html => MJ, mon-espace.html => joueur connecte */
+/* Identite par zone : mj.html => MJ, joueur.html => joueur connecte */
 var EST_ZONE_MJ=location.pathname.indexOf('/mj.html')>-1;
 function quiLance(){
   if(EST_ZONE_MJ){return 'MJ';}

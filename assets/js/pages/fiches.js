@@ -1,11 +1,11 @@
 
 (function(){
 "use strict";
-/* Accès réservé : sans session joueur (mon-espace), renvoi vers Mon espace */
+/* Accès réservé : sans session joueur (joueur), renvoi vers Mon espace */
 try{
   var _sess=JSON.parse(localStorage.getItem("pe_session")||"null");
-  if(!_sess||!_sess.id||!_sess.token){location.replace("https://chokmah-hash.github.io/mon-espace.html");return;}
-}catch(e){location.replace("https://chokmah-hash.github.io/mon-espace.html");return;}
+  if(!_sess||!_sess.id||!_sess.token){location.replace("https://chokmah-hash.github.io/joueur.html");return;}
+}catch(e){location.replace("https://chokmah-hash.github.io/joueur.html");return;}
 var LSKEY="pe_fiches_v1";
 var SUPA_URL="https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1";
 var SUPA_KEY="sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
