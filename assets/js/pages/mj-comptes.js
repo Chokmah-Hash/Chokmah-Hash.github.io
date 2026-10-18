@@ -8,9 +8,9 @@ function rpc(name,body){return fetch(SB+'rpc/'+name,{method:'POST',headers:{'api
 function loadList(){
   if(!window.MJBEARER){msgL('Console non ouverte.','err');return;}
   rpc('mj_liste_joueurs',{}).then(function(rep0){
-    var rep=Array.isArray(rep0)?rep0[0]:rep0;
-    var arr=Array.isArray(rep)?rep:(rep&&Array.isArray(rep[0])?rep[0]:null);
-    if(!arr){msgL('Liste impossible.','err');return;}
+    if(rep0&&rep0.erreur){msgL(rep0.erreur,'err');return;}
+    var arr=Array.isArray(rep0)?rep0:(rep0&&Array.isArray(rep0[0])?rep0[0]:null);
+    if(!arr){msgL('Liste impossible — réouvre la console si besoin.','err');return;}
     if(!arr.length){$('cj-list').innerHTML='<p class="gmsgc">Aucun joueur pour l\'instant — crée le premier ci-dessus.</p>';msgL('','');return;}
     var rows='';
     arr.forEach(function(j){
@@ -37,7 +37,7 @@ $('cj-create').addEventListener('click',function(){
   if(p.length<4){msg('Mot de passe trop court (4 caractères minimum).','err');return;}
   msg('Création du compte…','');
   rpc('mj_creer_joueur',{p_login:l,p_mdp:p,p_nom:n||l}).then(function(rep0){
-    var rep=Array.isArray(rep0)?rep0[0]:rep0;
+    var rep=(Array.isArray(rep0)&&rep0.length)?rep0[0]:rep0;
     if(!rep||rep.erreur){msg((rep&&rep.erreur)||'Création impossible.','err');return;}
     msg('✅ Compte créé — transmets au joueur : pseudo '+l+' / mot de passe '+p,'ok');
     $('cj-login').value='';$('cj-nom').value='';$('cj-pass').value='';

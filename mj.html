@@ -373,10 +373,14 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       <p style="color:var(--muted);font-size:.9rem;margin:.2em 0 .4em">Lance pour le groupe ou pour les PNJ : chaque jet est signé et horodaté dans la base partagée, et apparaît en direct dans l'onglet 🎲 Dés de la Zone joueurs.</p>
       <div id="des-box"></div>
     </section>
-    </main>
     <section class="sect" id="comptes-console">
         <h2>👥 Console des comptes joueurs</h2>
         <div class="card amber">
+          <h3>📋 Joueurs</h3>
+          <p class="gmsgc" id="cj-lmsg"></p>
+          <div id="cj-list"></div>
+        </div>
+        <div class="card amber" style="margin-top:18px">
           <h3>✚ Nouveau joueur</h3>
           <div class="mjgrid">
             <div><label class="glab" for="cj-login">Pseudo (connexion)</label><input class="gf" id="cj-login" type="text" placeholder="Ex. Signa-3"></div>
@@ -387,13 +391,9 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
           <div class="cta-row" style="justify-content:flex-start;margin-top:12px"><button class="btn amber" id="cj-create" type="button">✚ Créer le compte</button></div>
           <p class="gmsgc" id="cj-msg"></p>
         </div>
-        <div class="card amber" style="margin-top:18px">
-          <h3>📋 Joueurs</h3>
-          <p class="gmsgc" id="cj-lmsg"></p>
-          <div id="cj-list"></div>
-        </div>
       </section>
-      <footer class="foot">
+    </main>
+    <footer class="foot">
       <div class="glyphrow">⚡ ⬥ ⚡</div>
       <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
       <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
