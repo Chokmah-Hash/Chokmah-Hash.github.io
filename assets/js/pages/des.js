@@ -1,7 +1,7 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
-/* PE_BUILD 2026.10.18-des7 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
+/* PE_BUILD 2026.10.18-des8 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
 (function(){
-var PE_BUILD='2026.10.18-des7';
+var PE_BUILD='2026.10.18-des8';
 window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -32,32 +32,46 @@ st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-ite
 +'#des-box .d-status{color:var(--muted);font-size:.88rem;margin:8px 0 4px;min-height:1.3em}'
 +'#des-box .d-status.err{color:var(--danger)}'
 +'#des-box .d-hint{color:var(--muted);font-size:.85rem;margin:6px 0 0;width:100%;min-height:1.2em}'
-+'#des-box .d-roll{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;grid-template-areas:\'who type detail total when\';gap:4px 14px;align-items:baseline;padding:9px 13px;border:1px solid var(--tealline);border-radius:10px;margin:7px 0;background:var(--panel2)}'
-+'#des-box .d-roll.mine{border-color:var(--amberline)}'
-+'#des-box .d-roll.ghost{border-style:dashed;opacity:.92}'
-+'#des-box .d-who{grid-area:who;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.04em;color:var(--teal)}'
-+'#des-box .d-detail{grid-area:detail;color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}'
-+'#des-box .d-total{grid-area:total;font-family:Rajdhani,sans-serif;font-weight:700;font-size:1.12rem;color:var(--amber);white-space:nowrap}'
-+'#des-box .d-type{grid-area:type;font-family:Rajdhani,sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--amber)}'
-+'#des-box .d-when{grid-area:when;justify-self:end;color:var(--muted);font-size:.78rem;white-space:nowrap}'
++'#des-box .d-setup{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 0}'
++'#des-box .d-rowsline{display:flex;flex-wrap:wrap;gap:10px;align-items:center}'
++'#des-box .d-row{display:flex;align-items:center;gap:6px;margin:0}'
++'#des-box .d-add-sq{background:transparent;border:1px solid var(--tealline);color:var(--teal);border-radius:8px;width:38px;height:46px;cursor:pointer;font-size:1.4rem;line-height:1;font-family:Rajdhani,sans-serif;font-weight:700}'
++'#des-box .d-add-sq:hover{background:var(--tealsoft)}'
++'#des-box .d-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:12px 0 0}'
++'#des-box .d-acts .d-drama{flex:1 1 auto;text-align:center;align-self:center}'
++'#des-box .d-drama{font-family:Rajdhani,sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;color:var(--amber);font-style:italic;opacity:0;transition:opacity .3s}'
++'#des-box .d-drama.show{opacity:1}'
++'#des-box .d-drama.result{font-style:normal}'
++'#des-box .d-drama.ghostd{color:var(--muted)}'
++'#des-box .d-roll{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:8px 12px;border:1px dashed var(--tealline);border-radius:10px;margin:7px 0;background:var(--panel2)}'
++'#des-box .d-roll.rolling{animation:dpulse .9s ease-in-out infinite}'
++'#des-box .d-who{font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.04em;color:var(--teal)}'
++'#des-box .d-type{font-family:Rajdhani,sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--amber)}'
++'#des-box .d-detail{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}'
++'#des-box .d-total{font-family:Rajdhani,sans-serif;font-weight:700;font-size:1.12rem;color:var(--amber);white-space:nowrap}'
 +'#des-box .d-fx,#des-box .d-fx2{font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber)}'
-+'#des-box .d-roll.rolling{border-style:dashed;animation:dpulse .9s ease-in-out infinite}'
-+'#des-box .d-roll.rolling .d-total{color:var(--muted)}'
 +'@keyframes dpulse{50%{opacity:.55}}'
-+'@media(max-width:600px){#des-box .d-roll{grid-template-columns:1fr auto;grid-template-areas:\'who when\' \'type type\' \'detail detail\' \'total total\'}}';
++'#des-box .cm-roll{padding:3px 0;line-height:1.45;word-wrap:break-word;font-size:.95rem;border-bottom:1px solid rgba(63,214,192,.08)}'
++'#des-box .cm-roll .cm-who{font-weight:700;font-family:Rajdhani,sans-serif;color:var(--teal)}'
++'#des-box .cm-roll.cm-mj .cm-who{color:var(--amber)}'
++'#des-box .cm-roll .cm-time{color:var(--muted);font-size:.75rem}'
++'#des-box .cm-roll .cm-total{font-weight:700;color:var(--amber)}'
++'#des-box .cm-dghost{opacity:.85;font-style:italic}'
++'#des-box .cm-ghostnote{color:var(--muted);font-size:.75rem;font-style:normal}';
 document.head.appendChild(st);
 function g(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function setStatus(t,err){var e=g('d-status');if(e){e.textContent=t;e.className='d-status'+(err?' err':'');}}
 box.innerHTML='<div class="d-tools">'
-+'<div><label class="d-lbl" for="d-type">Type de jet</label><select class="d-fld" id="d-type">'
++'<div class="d-setup"><select class="d-fld" id="d-type">'
 +'<option value="normal">🎲 Jet normal (partagé)</option>'
 +'<option value="fantome">👻 Jet fantôme (local)</option>'
 +'<option value="attaque">⚔️ Jet d\'attaque</option>'
-+'</select></div>'
-+'<div><span class="d-lbl">Dés — un groupe par ligne</span><div id="d-rows"></div></div>'
-+'<div class="d-acts"><button class="d-add" id="d-add" type="button">+ Ajouter un dé</button>'
-+'<button class="btn primary" id="d-roll-btn" type="button">🎲 Lancer</button></div>'
++'</select>'
++'<div class="d-rowsline" id="d-rows"></div>'
++'<button class="d-add-sq" id="d-add" type="button" title="Ajouter un groupe de dés">+</button></div>'
++'<div class="d-acts"><button class="btn primary" id="d-roll-btn" type="button">🎲 Lancer</button>'
++'<span class="d-drama" id="d-drama"></span></div>'
 +'<p class="d-hint" id="d-hint"></p>'
 +'</div>'
 +'<p class="d-status" id="d-status"></p>'
@@ -105,7 +119,7 @@ function hint(){
 }
 g('d-type').addEventListener('change',function(){g('d-hint').textContent=hint();setStatus('');});
 function typeLib(j){return j.ghost?'Jet fantôme (local)':'Jet normal';}
-var ANIM_MS=1400;
+var ANIM_MS=3000;
 function typeWord(){var t=g('d-type').value;return t==='fantome'?'Jet fantôme (local)':'Jet normal';}
 function rollingRow(label,gr){
   var d=document.createElement('div');
@@ -140,14 +154,13 @@ function render(list){
   all=all.slice(0,NB_MAX);
   var out='';
   all.forEach(function(j){
-    out+='<div class="d-roll'+(j.ghost?' ghost':'')+((!j.ghost&&me&&j.joueur===me)?' mine':'')+'">'
-    +'<span class="d-who">'+(j.ghost?'👻 ':'')+esc(j.joueur)+'</span>'
-    +'<span class=\"d-type\">'+esc(typeLib(j))+'</span>'
-+'<span>'+esc(j.label||(j.n+'D'+j.faces))+' :</span>'
-    +'<span class="d-detail">'+(j.detail||[]).join(' + ')+'</span>'
-    +'<span class="d-total">= '+j.total+'</span>'
-    +(j.ghost?'<span class="d-ghost-tag">jet fantôme — local</span>':'')
-    +'<span class="d-when">'+fmtWhen(j.created_at)+'</span>'
+    var cls='cm cm-roll'+((!j.ghost&&me&&j.joueur===me)?' cm-mj':'')+(j.ghost?' cm-dghost':'');
+    out+='<div class="'+cls+'">'
+    +'<span class="cm-time">'+fmtWhen(j.created_at)+'</span> '
+    +'<span class="cm-who">'+esc(j.joueur)+'</span> : '
+    +esc(typeLib(j))+' — '+esc(j.label||(j.n+'D'+j.faces))+' : '+esc((j.detail||[]).join(' + '))
+    +' = <span class="cm-total">'+j.total+'</span>'
+    +(j.ghost?' <span class="cm-ghostnote">(fantôme — visible de toi seul)</span>':'')
     +'</div>';
   });
   g('d-list').innerHTML=out||'<p style="color:var(--muted);font-size:.9rem">Aucun jet pour l\'instant — lance le premier !</p>';
@@ -183,6 +196,10 @@ function consolePub(label,det,tot){
 function groups(){
   return ROWS.map(function(r){return {n:Math.max(1,parseInt(r.n,10)||1),faces:Math.max(2,parseInt(r.f,10)||20)};});
 }
+var DRAMA=['Vas-tu réussir ton action ?','Le destin hésite…','Les Protocoles scrutent les dés…','Les échos du warp se taisent…','Ta main tremble-t-elle ?','La machine calcule ton sort…','Les étoiles retiennent leur souffle…','Le trépas ou la gloire ?'];
+var DRAMA_GHOST=['Personne ne verra ce jet… sauf toi.','Un secret scellé dans le silence…','Les fantômes ne laissent pas de trace…'];
+function dramaOn(gh){var pool=gh?DRAMA_GHOST:DRAMA;var el=g('d-drama');if(!el){return;}el.textContent=pool[Math.floor(Math.random()*pool.length)];el.className='d-drama show'+(gh?' ghostd':'');}
+function dramaResult(label,det,tot,gh){var el=g('d-drama');if(!el){return;}el.textContent='• '+label+' → '+tot+' ('+(det||[]).join(' + ')+')'+(gh?' — fantôme, visible de toi seul':'');el.className='d-drama show result'+(gh?' ghostd':'');}
 function roll(){
   var type=g('d-type').value;
   var nom=quiLance();
@@ -195,13 +212,18 @@ function roll(){
   if(type==='fantome'){
     var det=[],tot=0;
     gr.forEach(function(r){for(var i=0;i<r.n;i++){var v=1+Math.floor(Math.random()*r.faces);det.push(v);tot+=v;}});
-    GHOSTS.push({joueur:nom,label:label,detail:det,total:tot,created_at:new Date().toISOString(),ghost:true});
-    if(GHOSTS.length>30){GHOSTS.shift();}
-    setStatus('👻 '+label+' → total '+tot+' ('+det.join(' + ')+') — jet fantôme, visible de toi seul.');
-    refresh();
+    var phg=rollingRow(label,gr);
+    dramaOn(true);
+    Promise.all([Promise.resolve(),phg]).then(function(){
+      GHOSTS.push({joueur:nom,label:label,detail:det,total:tot,created_at:new Date().toISOString(),ghost:true});
+      if(GHOSTS.length>30){GHOSTS.shift();}
+      dramaResult(label,det,tot,true);
+      refresh();
+    });
     return;
   }
-  setStatus('Les dés roulent…');
+
+  dramaOn(false);
   var ph=rollingRow(label,gr);
   var results=[];
   var chain=Promise.resolve();
@@ -219,7 +241,7 @@ function roll(){
       if(Array.isArray(d)&&d.length){d.forEach(function(v){det.push(v);tot+=v;});}
       else{var t=(x.j&&x.j.total)||0;det.push(t);tot+=t;}
     });
-    setStatus('🎲 '+label+' → total '+tot+' ('+det.join(' + ')+')');
+    dramaResult(label,det,tot,false);
     refresh();
     consolePub(label,det,tot);
   })
