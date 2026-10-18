@@ -60,7 +60,7 @@ function freshMJToken(){
   try{if(window.CLIENT&&CLIENT.auth&&CLIENT.auth.getSession){return CLIENT.auth.getSession().then(function(s){return (s&&s.data&&s.data.session&&s.data.session.access_token)||window.MJBEARER||SBK;},function(){return window.MJBEARER||SBK;});}}catch(e){}
   return Promise.resolve(window.MJBEARER||SBK);
 }
-/* ————— /debug : collecte + encodage (local uniquement, rien n'est envoye) ————— */
+/* ————— /debug : moteur de sections (local uniquement, rien n'est envoye) ————— */
 function dbgB64(str){
   try{return btoa(unescape(encodeURIComponent(str)));}catch(e){return 'ENC_ERR';}
 }
@@ -86,58 +86,116 @@ function rtState(){
     return String(st||'?');
   }catch(e){return 'err';}
 }
-function collectDebug(){
+/* — style : styles calcules reels des elements cles — */
+var DBG_STY_SEL=['body','.nav','.card','.ctn-chat','#c-form-row','#c-input','.btn','.cm'];
+var DBG_STY_PROPS=['display','position','height','maxHeight','border','borderRadius','backgroundColor','color','fontFamily','fontSize','overflowY','padding','margin'];
+function collectStyles(){
+  var out={};
+  var n=document.styleSheets?document.styleSheets.length:0;
+  var sheets=[];
+  try{
+    for(var i=0;i<Math.min(n,8);i++){
+      var sh=document.styleSheets[i];
+      sheets.push({href:(sh.href||'inline').split('/').slice(-1)[0],rules:(sh.cssRules?sh.cssRules.length:'?')});
+    }
+  }catch(e){sheets.push({err:String(e).slice(0,80)});}
+  for(var s=0;s<DBG_STY_SEL.length;s++){
+    var sel=DBG_STY_SEL[s], el=null;
+    try{el=document.querySelector(sel);}catch(e){}
+    if(!el){out[sel]='ABSENT';continue;}
+    var cs;
+    try{cs=getComputedStyle(el);}catch(e){out[sel]='ERR:'+String(e).slice(0,60);continue;}
+    var rec={};
+    for(var p=0;p<DBG_STY_PROPS.length;p++){try{rec[DBG_STY_PROPS[p]]=cs[DBG_STY_PROPS[p]];}catch(e){rec[DBG_STY_PROPS[p]]='?';}}
+    try{rec.rect={w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)};}catch(e){}
+    rec.existe=true;
+    out[sel]=rec;
+  }
+  return {sheets:sheets, nbSheets:n, styles:out};
+}
+function collectVar(){
+  return {
+    last:LAST, msgsAffiches:(BOX?BOX.children.length:0), boxH:(BOX?BOX.scrollHeight:0),
+    boxVisibleH:(BOX?Math.round(BOX.getBoundingClientRect().height):0),
+    mj:MJSIDE, joueur:(SESS?{nom:SESS.nom,avecToken:!!SESS.token}:null),
+    realtime:rtState(), errs:ERRS.slice(), scrollY:window.scrollY,
+    inputVide:!($('c-input')&&$('c-input').value)
+  };
+}
+function collectRt(){
+  var n=navigator;
+  return {
+    realtime:rtState(), canal:'console-live',
+    supabaseJs:typeof window.supabase!=='undefined', client:!!window.CLIENT,
+    online:n.onLine, conn:(n.connection&&n.connection.effectiveType)||null,
+    rtt:(n.connection&&n.connection.rtt)||null,
+    perfMem:(window.performance&&window.performance.memory)?Math.round(window.performance.memory.usedJSHeapSize/1048576)+'Mo':null,
+    t:Date.now(), errs:ERRS.slice()
+  };
+}
+function collectSess(){
+  return {
+    mj:MJSIDE, joueurPresent:!!SESS, nomJoueur:(SESS&&SESS.nom)||null,
+    joueurAvecToken:!!(SESS&&SESS.token),
+    lsKeys:lsKeys(),
+    cookies:(function(){try{return document.cookie?('presents:'+document.cookie.split(';').length):'aucun';}catch(e){return 'err';}})()
+  };
+}
+function collectFull(){
   var n=navigator, scr=screen, d=document, w=window;
-  var cssOk=false;
-  try{cssOk=!!(getComputedStyle(d.querySelector('.card')||d.body).borderRadius);}catch(e){}
-  var data={
-    v:2, t:new Date().toISOString(),
+  return {
+    v:2, t:new Date().toISOString(), sec:'full',
     url:location.href, ref:d.referrer||'',
     ua:n.userAgent, plat:n.platform, lang:n.language, langs:(n.languages||[]).slice(0,4),
     online:n.onLine, cookie:n.cookieEnabled,
     tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'?', tzOff:new Date().getTimezoneOffset(),
     screen:{w:scr.width,h:scr.height,d:scr.depth,dpw:scr.width*(w.devicePixelRatio||1)},
     vp:{w:w.innerWidth,h:w.innerHeight,dpr:w.devicePixelRatio||1,scrollY:w.scrollY},
-    sessJoueur:!!SESS, nomJoueur:(SESS&&SESS.nom)||null, mj:MJSIDE,
-    last:LAST, msgsAffiches:(BOX?BOX.children.length:0),
-    boxH:(BOX?BOX.scrollHeight:0),
-    supabaseJs:typeof w.supabase!=='undefined', client:!!w.CLIENT,
-    realtime:rtState(),
+    etat:collectVar(),
+    realtime:collectRt(),
+    style:{nbSheets:collectStyles().nbSheets},
     lsKeys:lsKeys(),
-    sw:('serviceWorker' in n)?(n.serviceWorker.controller?'actif':'non-controle'):'absent',
-    cssCharge:cssOk,
-    perfMem:(w.performance&&w.performance.memory)?Math.round(w.performance.memory.usedJSHeapSize/1048576)+'Mo':null,
-    conn:(n.connection&&n.connection.effectiveType)||null,
-    errs:ERRS.slice()
+    sw:('serviceWorker' in n)?(n.serviceWorker.controller?'actif':'non-controle'):'absent'
   };
-  var json=JSON.stringify(data);
-  var b64code=dbgB64(json);
-  /* Format PEDBG2 : longueur JSON (hex 4) + somme (hex 4) + base64 — detecte toute troncature */
-  return 'PEDBG2-'+dbgHex(json.length,4)+'-'+dbgHex(dbgSum(json),4)+'-'+b64code;
 }
-function showDebug(){
-  var code=collectDebug();
+function collectDebug(sec){
+  var data;
+  if(sec==='var'){data={v:2,sec:'var',t:new Date().toISOString(),url:location.href,etat:collectVar()};}
+  else if(sec==='style'){data={v:2,sec:'style',t:new Date().toISOString(),url:location.href,style:collectStyles()};}
+  else if(sec==='rt'){data={v:2,sec:'rt',t:new Date().toISOString(),url:location.href,rt:collectRt()};}
+  else if(sec==='sess'){data={v:2,sec:'sess',t:new Date().toISOString(),url:location.href,sess:collectSess()};}
+  else{data=collectFull();}
+  var json=JSON.stringify(data);
+  return 'PEDBG2-'+dbgHex(json.length,4)+'-'+dbgHex(dbgSum(json),4)+'-'+dbgB64(json);
+}
+var DBG_SECTIONS={'':'complet',var:'variables',style:'styles',rt:'temps-reel',sess:'sessions'};
+function showDebug(sec){
+  var code=collectDebug(sec);
   BOX=BOX||$('c-box');
   var div=document.createElement('div');
   div.className='cm cm-mj cm-private';
-  div.innerHTML='<span class="cm-who">🔍 Debug</span> <button class="btn ghost btn sm" style="min-height:26px;font-size:.68rem;padding:2px 10px">📋 Copier</button>'+
+  var titre='🔍 Debug — '+(DBG_SECTIONS[sec]||sec);
+  div.innerHTML='<span class="cm-who">'+esc(titre)+'</span> <button class="btn ghost btn sm" style="min-height:26px;font-size:.68rem;padding:2px 10px">📋 Copier</button>'+
     '<div style="margin:6px 0 2px;padding:8px 10px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-family:monospace;font-size:.72rem;word-break:break-all;max-height:180px;overflow-y:auto">'+esc(code)+'</div>'+
-    '<span class="cm-priv">Code à copier-coller au développeur. Ne contient aucun mot de passe.</span>';
+    '<span class="cm-priv">Sections : /debug (complet) · /debug var · /debug style · /debug rt · /debug sess — aucun mot de passe dans le code.</span>';
   div.querySelector('button').addEventListener('click',function(){
     var ok=false;
     try{navigator.clipboard.writeText(code).then(function(){setStatus('Code debug copié.','ok');});ok=true;}catch(e){}
-    if(!ok){var ta=document.createElement('textarea');ta.value=code;d.body.appendChild(ta);ta.select();try{d.execCommand('copy');setStatus('Code debug copié.','ok');}catch(e){setStatus('Copie impossible — sélectionne le code manuellement.','err');}d.body.removeChild(ta);}
+    if(!ok){var ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');setStatus('Code debug copié.','ok');}catch(e){setStatus('Copie impossible — sélectionne le code manuellement.','err');}document.body.removeChild(ta);}
   });
   BOX.appendChild(div);
   BOX.scrollTop=BOX.scrollHeight;
-  setStatus('Debug généré — 1 clic sur Copier et le code est en mémoire.','ok');
+  setStatus('Debug '+(DBG_SECTIONS[sec]||sec)+' généré — 1 clic sur Copier.','ok');
 }
 function sendMessage(){
   var inp=$('c-input'), txt=inp.value.trim();
   if(!txt){return;}
-  if(txt==='/debug'){
+  var dbg=/^\/debug(\s+(\S+))?\s*$/.exec(txt);
+  if(dbg){
     if(!MJSIDE){setStatus('Commande réservée au Maître de la Tombe.','err');return;}
-    inp.value='';showDebug();return;
+    var sec=(dbg[2]||'').toLowerCase();
+    if(!(sec in DBG_SECTIONS)){setStatus('Section inconnue : '+sec+'. Sections : (complet), var, style, rt, sess.','err');return;}
+    inp.value='';showDebug(sec);return;
   }
   var cmd=parseCmd(txt);
   var dest='[]';
@@ -171,7 +229,7 @@ function initSession(){
       client.auth.getSession().then(function(s){
         if(s&&s.data&&s.data.session){
           MJSIDE=true;
-          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug disponible.','');
+          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug [var|style|rt|sess] disponible.','');
           loadMessages();
         }else if(!SESS){
           setStatus('Vue anonyme — connecte-toi depuis la Zone joueurs pour écrire.','');
