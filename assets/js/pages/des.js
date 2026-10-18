@@ -1,7 +1,7 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
-/* PE_BUILD 2026.10.18-des6 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
+/* PE_BUILD 2026.10.18-des7 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
 (function(){
-var PE_BUILD='2026.10.18-des6';
+var PE_BUILD='2026.10.18-des7';
 window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -20,11 +20,11 @@ var GHOSTS=[]; /* jets fantomes : memoire du navigateur uniquement, jamais envoy
 var st=document.createElement('style');
 st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}'
 +'#des-box .d-lbl{display:block;font-size:.68rem;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:0 0 4px}'
-+'#des-box .d-fld{background:var(--panel);border:1px solid var(--tealline);border-radius:9px;color:var(--text);font-family:inherit;font-size:.95rem;padding:9px 12px}'
++'#des-box .d-fld{background:var(--panel2);border:1px solid var(--tealline);border-radius:8px;color:var(--text);font-family:inherit;font-size:.95rem;padding:10px 12px;min-height:46px;box-sizing:border-box}'
 +'#des-box .d-fld:focus{outline:none;border-color:var(--teal)}'
 +'#des-box .d-row{display:flex;align-items:center;gap:6px;margin:6px 0}'
 +'#des-box .d-plus{color:var(--teal);font-family:Rajdhani,sans-serif;font-weight:700}'
-+'#des-box .d-x{background:transparent;border:1px solid rgba(226,96,79,.5);color:var(--danger);border-radius:8px;width:32px;height:34px;font-size:.85rem;cursor:pointer}'
++'#des-box .d-x{background:transparent;border:1px solid rgba(226,96,79,.5);color:var(--danger);border-radius:8px;width:38px;height:46px;font-size:.9rem;cursor:pointer}'
 +'#des-box .d-x:hover{background:rgba(226,96,79,.1)}'
 +'#des-box .d-add{background:transparent;border:1.5px solid var(--tealline);color:var(--teal);cursor:pointer;min-height:46px;padding:10px 22px;border-radius:9px;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.88rem}'
 +'#des-box .d-add:hover{background:var(--tealsoft)}'
@@ -32,14 +32,19 @@ st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-ite
 +'#des-box .d-status{color:var(--muted);font-size:.88rem;margin:8px 0 4px;min-height:1.3em}'
 +'#des-box .d-status.err{color:var(--danger)}'
 +'#des-box .d-hint{color:var(--muted);font-size:.85rem;margin:6px 0 0;width:100%;min-height:1.2em}'
-+'#des-box .d-roll{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:9px 13px;border:1px solid var(--tealline);border-radius:10px;margin:7px 0;background:var(--panel2)}'
++'#des-box .d-roll{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;grid-template-areas:\'who type detail total when\';gap:4px 14px;align-items:baseline;padding:9px 13px;border:1px solid var(--tealline);border-radius:10px;margin:7px 0;background:var(--panel2)}'
 +'#des-box .d-roll.mine{border-color:var(--amberline)}'
 +'#des-box .d-roll.ghost{border-style:dashed;opacity:.92}'
-+'#des-box .d-who{font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.04em;color:var(--teal)}'
-+'#des-box .d-detail{color:var(--muted);font-size:.88rem}'
-+'#des-box .d-total{font-family:Rajdhani,sans-serif;font-weight:700;font-size:1.12rem;color:var(--amber)}'
-+'#des-box .d-ghost-tag{font-size:.72rem;color:var(--muted);font-style:italic}'
-+'#des-box .d-when{margin-left:auto;color:var(--muted);font-size:.78rem}';
++'#des-box .d-who{grid-area:who;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.04em;color:var(--teal)}'
++'#des-box .d-detail{grid-area:detail;color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}'
++'#des-box .d-total{grid-area:total;font-family:Rajdhani,sans-serif;font-weight:700;font-size:1.12rem;color:var(--amber);white-space:nowrap}'
++'#des-box .d-type{grid-area:type;font-family:Rajdhani,sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--amber)}'
++'#des-box .d-when{grid-area:when;justify-self:end;color:var(--muted);font-size:.78rem;white-space:nowrap}'
++'#des-box .d-fx,#des-box .d-fx2{font-family:Rajdhani,sans-serif;font-weight:700;color:var(--amber)}'
++'#des-box .d-roll.rolling{border-style:dashed;animation:dpulse .9s ease-in-out infinite}'
++'#des-box .d-roll.rolling .d-total{color:var(--muted)}'
++'@keyframes dpulse{50%{opacity:.55}}'
++'@media(max-width:600px){#des-box .d-roll{grid-template-columns:1fr auto;grid-template-areas:\'who when\' \'type type\' \'detail detail\' \'total total\'}}';
 document.head.appendChild(st);
 function g(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -53,7 +58,6 @@ box.innerHTML='<div class="d-tools">'
 +'<div><span class="d-lbl">Dés — un groupe par ligne</span><div id="d-rows"></div></div>'
 +'<div class="d-acts"><button class="d-add" id="d-add" type="button">+ Ajouter un dé</button>'
 +'<button class="btn primary" id="d-roll-btn" type="button">🎲 Lancer</button></div>'
-+'<div><span class="d-lbl">Lanceur</span><span class="d-who" id="d-qui"></span></div>'
 +'<p class="d-hint" id="d-hint"></p>'
 +'</div>'
 +'<p class="d-status" id="d-status"></p>'
@@ -100,8 +104,28 @@ function hint(){
   return '';
 }
 g('d-type').addEventListener('change',function(){g('d-hint').textContent=hint();setStatus('');});
-function refreshQui(){g('d-qui').textContent=quiLance();}
-refreshQui();
+function typeLib(j){return j.ghost?'Jet fantôme (local)':'Jet normal';}
+var ANIM_MS=1400;
+function typeWord(){var t=g('d-type').value;return t==='fantome'?'Jet fantôme (local)':'Jet normal';}
+function rollingRow(label,gr){
+  var d=document.createElement('div');
+  d.className='d-roll rolling';
+  d.innerHTML='<span class="d-who">'+esc(quiLance())+'</span>'
+  +'<span class="d-type">'+esc(typeWord())+'</span>'
+  +'<span class="d-detail">'+esc(label)+' : <span class="d-fx"></span></span>'
+  +'<span class="d-total">= <span class="d-fx2">?</span></span>'
+  +'<span class="d-when">🎲…</span>';
+  var list=g('d-list');
+  list.insertBefore(d,list.firstChild);
+  var f=d.querySelector('.d-fx'),t2=d.querySelector('.d-fx2');
+  var iv=setInterval(function(){
+    var s=[],tot=0;
+    gr.forEach(function(r){for(var k=0;k<r.n;k++){var v=1+Math.floor(Math.random()*r.faces);s.push(v);tot+=v;}});
+    f.textContent=s.join(' + ');
+    t2.textContent=tot;
+  },90);
+  return new Promise(function(res){setTimeout(function(){clearInterval(iv);d.remove();res();},ANIM_MS);});
+}
 function hdr(){return{'apikey':SBK,'Authorization':'Bearer '+SBK};}
 function fmtWhen(iso){
   var d=new Date(iso),now=new Date();
@@ -118,7 +142,8 @@ function render(list){
   all.forEach(function(j){
     out+='<div class="d-roll'+(j.ghost?' ghost':'')+((!j.ghost&&me&&j.joueur===me)?' mine':'')+'">'
     +'<span class="d-who">'+(j.ghost?'👻 ':'')+esc(j.joueur)+'</span>'
-    +'<span>'+esc(j.label||(j.n+'D'+j.faces))+' :</span>'
+    +'<span class=\"d-type\">'+esc(typeLib(j))+'</span>'
++'<span>'+esc(j.label||(j.n+'D'+j.faces))+' :</span>'
     +'<span class="d-detail">'+(j.detail||[]).join(' + ')+'</span>'
     +'<span class="d-total">= '+j.total+'</span>'
     +(j.ghost?'<span class="d-ghost-tag">jet fantôme — local</span>':'')
@@ -177,6 +202,7 @@ function roll(){
     return;
   }
   setStatus('Les dés roulent…');
+  var ph=rollingRow(label,gr);
   var results=[];
   var chain=Promise.resolve();
   gr.forEach(function(r){
@@ -186,7 +212,7 @@ function roll(){
       .then(function(j){results.push({r:r,j:j});});
     });
   });
-  chain.then(function(){
+  Promise.all([chain,ph]).then(function(){
     var det=[],tot=0;
     results.forEach(function(x){
       var d=(x.j&&x.j.detail)||[];
