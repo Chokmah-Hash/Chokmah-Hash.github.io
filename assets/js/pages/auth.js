@@ -30,7 +30,7 @@ function applySession(s){
   ['mj-key','b-key','img-key','av-key'].forEach(function(id3){var el=$id(id3);if(!el){return;}el.value='';var row=el.closest('.cta-row');if(row){row.style.display='';}});
   ['mj-tools','b-tools','img-tools','av-panel'].forEach(function(id3){var t=$id(id3);if(t){t.style.display='none';}});
   Array.prototype.forEach.call(document.querySelectorAll('.subnav-in a'),function(a2){a2.classList.remove('active');});
-  try{localStorage.removeItem('pe_mjpass');}catch(e7){}}
+  try{localStorage.removeItem('pe_mjpass');localStorage.removeItem('pe_mjtab');}catch(e7){}}
 }
 function boot(){
   if(typeof supabase==='undefined'||!supabase.createClient){msg('Bibliothèque Supabase introuvable.','err');return;}
