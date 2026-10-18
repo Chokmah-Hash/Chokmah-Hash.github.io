@@ -1,5 +1,5 @@
 (function(){
-/* PE_BUILD 2026.10.18-dbg4 — version du moteur console (voir /debug) */
+/* PE_BUILD 2026.10.18-con3 — plus récent en haut (ordre chrono inversé) */
 var PE_BUILD='2026.10.18-dbg4';
 window.PE_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
@@ -26,7 +26,7 @@ function fmtTime(s){if(!s){return '';}var d=new Date(s.replace(' ','T')+'Z');if(
 function renderMsgs(arr){
   BOX=BOX||$('c-box');
   var html='';
-  arr.forEach(function(m){
+  arr.slice().reverse().forEach(function(m){
     var cls='cm '+(m.mjside?'cm-mj':'');
     var who=esc(m.auteur)+(m.mjside?' 📜':'');
     var tag='';
@@ -39,8 +39,8 @@ function renderMsgs(arr){
     if(m.type==='de'){cls+=' cm-de';}
     html+='<div class="'+cls+'"><span class="cm-time">'+fmtTime(m.cree)+'</span> <span class="cm-who">'+who+'</span>'+tag+': '+body+'</div>';
   });
-  BOX.innerHTML+=html;
-  BOX.scrollTop=BOX.scrollHeight;
+  BOX.innerHTML=html+BOX.innerHTML;
+  BOX.scrollTop=0;
 }
 function loadMessages(){
   var tk=SESS&&SESS.token;
@@ -194,8 +194,8 @@ function showHelp(){
     '<b>/debug sess</b> — sessions : joueur, MJ, clés stockées<br>'+
     '<b>/debug help</b> — cette liste<br>'+
     '<span style="color:var(--muted)">Réservé au Maître de la Tombe. 100 % local, aucun mot de passe dans les codes. Moteur '+esc(PE_BUILD)+'.</span></div>';
-  BOX.appendChild(div);
-  BOX.scrollTop=BOX.scrollHeight;
+  BOX.insertBefore(div,BOX.firstChild);
+  BOX.scrollTop=0;
   setStatus('Aide debug affichée (moteur '+PE_BUILD+').','ok');
 }
 function showDebug(sec){
@@ -212,8 +212,8 @@ function showDebug(sec){
     try{navigator.clipboard.writeText(code).then(function(){setStatus('Code debug copié.','ok');});ok=true;}catch(e){}
     if(!ok){var ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');setStatus('Code debug copié.','ok');}catch(e){setStatus('Copie impossible — sélectionne le code manuellement.','err');}document.body.removeChild(ta);}
   });
-  BOX.appendChild(div);
-  BOX.scrollTop=BOX.scrollHeight;
+  BOX.insertBefore(div,BOX.firstChild);
+  BOX.scrollTop=0;
   setStatus('Debug '+(DBG_SECTIONS[sec]||sec)+' généré — 1 clic sur Copier.','ok');
 }
 function sendMessage(){
