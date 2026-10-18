@@ -1,7 +1,7 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
-/* PE_BUILD 2026.10.18-des5 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
+/* PE_BUILD 2026.10.18-des6 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
 (function(){
-var PE_BUILD='2026.10.18-des5';
+var PE_BUILD='2026.10.18-des6';
 window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -26,8 +26,9 @@ st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-ite
 +'#des-box .d-plus{color:var(--teal);font-family:Rajdhani,sans-serif;font-weight:700}'
 +'#des-box .d-x{background:transparent;border:1px solid rgba(226,96,79,.5);color:var(--danger);border-radius:8px;width:32px;height:34px;font-size:.85rem;cursor:pointer}'
 +'#des-box .d-x:hover{background:rgba(226,96,79,.1)}'
-+'#des-box .d-add{background:transparent;border:1px dashed var(--tealline);color:var(--teal);cursor:pointer;font-size:.82rem;min-height:34px}'
++'#des-box .d-add{background:transparent;border:1.5px solid var(--tealline);color:var(--teal);cursor:pointer;min-height:46px;padding:10px 22px;border-radius:9px;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.88rem}'
 +'#des-box .d-add:hover{background:var(--tealsoft)}'
++'#des-box .d-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}'
 +'#des-box .d-status{color:var(--muted);font-size:.88rem;margin:8px 0 4px;min-height:1.3em}'
 +'#des-box .d-status.err{color:var(--danger)}'
 +'#des-box .d-hint{color:var(--muted);font-size:.85rem;margin:6px 0 0;width:100%;min-height:1.2em}'
@@ -49,9 +50,9 @@ box.innerHTML='<div class="d-tools">'
 +'<option value="fantome">👻 Jet fantôme (local)</option>'
 +'<option value="attaque">⚔️ Jet d\'attaque</option>'
 +'</select></div>'
-+'<div><span class="d-lbl">Dés — un groupe par ligne</span><div id="d-rows"></div>'
-+'<div class="d-row"><button class="d-fld d-add" id="d-add" type="button">+ Ajouter un dé</button></div></div>'
-+'<div><button class="btn primary" id="d-roll-btn" type="button" style="min-height:42px">🎲 Lancer</button></div>'
++'<div><span class="d-lbl">Dés — un groupe par ligne</span><div id="d-rows"></div></div>'
++'<div class="d-acts"><button class="d-add" id="d-add" type="button">+ Ajouter un dé</button>'
++'<button class="btn primary" id="d-roll-btn" type="button">🎲 Lancer</button></div>'
 +'<div><span class="d-lbl">Lanceur</span><span class="d-who" id="d-qui"></span></div>'
 +'<p class="d-hint" id="d-hint"></p>'
 +'</div>'
