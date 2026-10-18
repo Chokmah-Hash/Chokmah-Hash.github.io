@@ -169,6 +169,23 @@ function collectDebug(sec){
   return 'PEDBG2-'+dbgHex(json.length,4)+'-'+dbgHex(dbgSum(json),4)+'-'+dbgB64(json);
 }
 var DBG_SECTIONS={'':'complet',var:'variables',style:'styles',rt:'temps-reel',sess:'sessions'};
+function showHelp(){
+  BOX=BOX||$('c-box');
+  var div=document.createElement('div');
+  div.className='cm cm-mj cm-private';
+  div.innerHTML='<span class="cm-who">🔍 Debug — aide</span>'+
+    '<div style="margin:6px 0 2px;padding:8px 12px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-size:.85rem;line-height:1.7">'+
+    '<b>/debug</b> — dump complet (environnement + état + réseau)<br>'+
+    '<b>/debug var</b> — variables d\'état : messages chargés, sessions, erreurs<br>'+
+    '<b>/debug style</b> — styles réellement appliqués aux cadres et éléments<br>'+
+    '<b>/debug rt</b> — temps réel : canal, connexion, latence, mémoire<br>'+
+    '<b>/debug sess</b> — sessions : joueur, MJ, clés stockées<br>'+
+    '<b>/debug help</b> — cette liste<br>'+
+    '<span style="color:var(--muted)">Réservé au Maître de la Tombe. 100 % local, aucun mot de passe dans les codes.</span></div>';
+  BOX.appendChild(div);
+  BOX.scrollTop=BOX.scrollHeight;
+  setStatus('Aide debug affichée.','ok');
+}
 function showDebug(sec){
   var code=collectDebug(sec);
   BOX=BOX||$('c-box');
@@ -177,7 +194,7 @@ function showDebug(sec){
   var titre='🔍 Debug — '+(DBG_SECTIONS[sec]||sec);
   div.innerHTML='<span class="cm-who">'+esc(titre)+'</span> <button class="btn ghost btn sm" style="min-height:26px;font-size:.68rem;padding:2px 10px">📋 Copier</button>'+
     '<div style="margin:6px 0 2px;padding:8px 10px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-family:monospace;font-size:.72rem;word-break:break-all;max-height:180px;overflow-y:auto">'+esc(code)+'</div>'+
-    '<span class="cm-priv">Sections : /debug (complet) · /debug var · /debug style · /debug rt · /debug sess — aucun mot de passe dans le code.</span>';
+    '<span class="cm-priv">Sections : /debug (complet) · /debug var · /debug style · /debug rt · /debug sess · /debug help — aucun mot de passe dans le code.</span>';
   div.querySelector('button').addEventListener('click',function(){
     var ok=false;
     try{navigator.clipboard.writeText(code).then(function(){setStatus('Code debug copié.','ok');});ok=true;}catch(e){}
@@ -194,7 +211,8 @@ function sendMessage(){
   if(dbg){
     if(!MJSIDE){setStatus('Commande réservée au Maître de la Tombe.','err');return;}
     var sec=(dbg[2]||'').toLowerCase();
-    if(!(sec in DBG_SECTIONS)){setStatus('Section inconnue : '+sec+'. Sections : (complet), var, style, rt, sess.','err');return;}
+    if(sec==='help'){inp.value='';showHelp();return;}
+    if(!(sec in DBG_SECTIONS)){setStatus('Section inconnue : '+sec+'. Tape /debug help pour la liste.','err');return;}
     inp.value='';showDebug(sec);return;
   }
   var cmd=parseCmd(txt);
@@ -229,7 +247,7 @@ function initSession(){
       client.auth.getSession().then(function(s){
         if(s&&s.data&&s.data.session){
           MJSIDE=true;
-          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug [var|style|rt|sess] disponible.','');
+          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug help pour les commandes.','');
           loadMessages();
         }else if(!SESS){
           setStatus('Vue anonyme — connecte-toi depuis la Zone joueurs pour écrire.','');
