@@ -119,3 +119,14 @@ section[id]{scroll-margin-top:110px}
 #c-form-row{display:flex;gap:8px;margin-top:10px}
 #c-form-row .fld{flex:1}
 @media(max-width:640px){#c-form-row{flex-direction:column}}
+
+/* ===== Console v2 : cadre carte (meme style que consoles MJ) ===== */
+.gmsgc{margin:10px 0 6px;font-size:.93rem;color:var(--muted);min-height:1.4em}
+.gmsgc.ok{color:var(--teal)}
+.gmsgc.err{color:var(--danger)}
+.fld{background:var(--panel2);border:1px solid var(--tealline);border-radius:8px;color:var(--text);padding:10px 12px;font-family:'Exo 2',system-ui,sans-serif;font-size:.95rem;flex:1;min-width:0}
+.fld:focus{outline:none;border-color:var(--teal)}
+.ctn-chat{height:52vh;min-height:280px;overflow-y:auto;border:1px solid var(--tealline);border-radius:10px;padding:12px 14px;background:var(--panel2);margin:8px 0 12px}
+#c-form-row{display:flex;gap:8px}
+@media(max-width:640px){#c-form-row{flex-direction:column}#c-form-row .btn{width:100%}}
+/* fin console v2 */

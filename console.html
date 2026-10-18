@@ -16,7 +16,7 @@
 <body>
   <header class="nav rev">
     <div class="nav-in">
-      <a class="logo" href="/">⚡ Les Protocoles Éternels</a>
+      <a class="brand" href="/">⚡ PROTOCOLES ÉTERNELS</a>
       <nav class="nav-links">
         <a href="/">Accueil</a>
         <a href="/console.html" class="active">Console</a>
@@ -32,15 +32,18 @@
   <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 
   <main class="wrap">
-    <section class="rev d1">
+    <section class="sect rev d1" id="console">
       <h2>📡 Console</h2>
-      <p class="gmsg" id="c-status">Chargement…</p>
-      <div id="c-box" class="ctn-chat"></div>
-      <div id="c-form-row">
-        <input class="fld tealfld" id="c-input" type="text" placeholder="Ton message… (ou /mj, /pseudo)" maxlength="1000">
-        <button class="btn primary" id="c-send">→ Envoyer</button>
+      <div class="card">
+        <h3>💬 Salon de la campagne</h3>
+        <p class="gmsgc" id="c-status">Chargement…</p>
+        <div id="c-box" class="ctn-chat"></div>
+        <div id="c-form-row">
+          <input class="fld" id="c-input" type="text" placeholder="Ton message… (ou /mj, /pseudo)" maxlength="1000">
+          <button class="btn primary" id="c-send">→ Envoyer</button>
+        </div>
+        <p class="gmsgc" id="c-hint">Commandes : /mj "texte" · /pseudo "texte" · /pseudo1+pseudo2 "texte"</p>
       </div>
-      <p class="gmsg" id="c-hint" style="color:var(--muted)">Commandes : /mj "texte" · /pseudo "texte" · /pseudo1+pseudo2 "texte"</p>
     </section>
   </main>
 
