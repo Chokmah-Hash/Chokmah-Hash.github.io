@@ -18,7 +18,7 @@ var NB_MAX=10; /* nombre de jets affiches */
 var MAX_LIGNES=4; /* groupes de des max par lancer */
 var GHOSTS=[]; /* jets fantomes : memoire du navigateur uniquement, jamais envoyes nulle part */
 var st=document.createElement('style');
-st.textContent='#des-box .d-tools{display:block;margin:12px 0;border:1px solid var(--tealline);border-radius:12px;background:var(--panel);padding:16px}'
+st.textContent='#des-box .d-tools{display:block;margin:12px 0;border:1px solid var(--tealline);border-radius:12px;background:var(--panel);padding:10px 14px}'
 +'#des-box .d-lbl{display:block;font-size:.68rem;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:0 0 4px}'
 +'#des-box .d-fld{background:var(--panel2);border:1px solid var(--tealline);border-radius:8px;color:var(--text);font-family:inherit;font-size:.95rem;padding:10px 12px;min-height:46px;box-sizing:border-box}'
 +'#des-box .d-fld:focus{outline:none;border-color:var(--teal)}'
@@ -32,12 +32,12 @@ st.textContent='#des-box .d-tools{display:block;margin:12px 0;border:1px solid v
 +'#des-box .d-status{color:var(--muted);font-size:.88rem;margin:8px 0 4px;min-height:1.3em}'
 +'#des-box .d-status.err{color:var(--danger)}'
 +'#des-box .d-hint{color:var(--muted);font-size:.85rem;margin:6px 0 0;width:100%;min-height:1.2em}'
-+'#des-box .d-setup{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 0}'
++'#des-box .d-setup{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 0}'
 +'#des-box .d-rowsline{display:flex;flex-wrap:wrap;gap:10px;align-items:center}'
 +'#des-box .d-row{display:flex;align-items:center;gap:6px;margin:0}'
 +'#des-box .d-add-sq{background:transparent;border:1px solid var(--tealline);color:var(--teal);border-radius:8px;width:38px;height:46px;cursor:pointer;font-size:1.4rem;line-height:1;font-family:Rajdhani,sans-serif;font-weight:700}'
 +'#des-box .d-add-sq:hover{background:var(--tealsoft)}'
-+'#des-box .d-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:12px 0 0}'
++'#des-box .d-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:8px 0 0}'
 +'#des-box .d-acts .d-drama{flex:1 1 auto;text-align:center;align-self:center}'
 +'#des-box .d-drama{font-family:Rajdhani,sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;color:var(--amber);font-style:italic;opacity:0;transition:opacity .3s}'
 +'#des-box .d-drama.show{opacity:1}'
