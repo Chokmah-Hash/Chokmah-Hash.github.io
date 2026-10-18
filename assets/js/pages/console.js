@@ -1,6 +1,6 @@
 (function(){
 /* PE_BUILD 2026.10.18-con3 — plus récent en haut (ordre chrono inversé) */
-var PE_BUILD='2026.10.18-dbg4';
+var PE_BUILD='2026.10.18-con3';
 window.PE_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
