@@ -76,7 +76,7 @@ $('r-ask').addEventListener('submit',function(ev){
       api(SB+'rpc/statut_reset',{method:'POST',headers:hdr(),body:JSON.stringify({p_id:RID})}).then(function(r2){if(!r2.ok){throw new Error('http');}return r2.json();}).then(function(s0){
         var s=Array.isArray(s0)?s0[0]:s0;
         if(!s){return;}
-        if(s.statut==='valide'){stopReset();$('r-form').style.display='';rMsg('✅ Le Maître de la Tombe a autorisé ta demande — saisis ton nouveau mot de passe (5 minutes).','ok');}
+        if(s.statut==='valide'){if(RTIMER){clearInterval(RTIMER);RTIMER=null;}$('r-form').style.display='';rMsg('✅ Le Maître de la Tombe a autorisé ta demande — saisis ton nouveau mot de passe (5 minutes).','ok');}
         else if(s.statut==='terminee'){stopReset();rMsg('Demande déjà traitée.','ok');}
         else if(s.statut==='expire'){stopReset();$('r-form').style.display='none';rMsg('⏳ Autorisation expirée — clique à nouveau sur « Mot de passe oublié ? ».','err');}
       }).catch(function(){});
