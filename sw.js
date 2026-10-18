@@ -1,5 +1,5 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-18-build1';
+var CACHE='pe-v2026-10-18-theme2';
 var PRECACHE=[
  '/', '/index.html', '/regles.html', '/console.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/joueur.html', '/mj.html', '/404.html',
  '/assets/css/main.css', '/assets/js/core.js', '/assets/js/vendor/supabase.js',
@@ -27,10 +27,10 @@ self.addEventListener('fetch',function(e){
  }
  e.respondWith(
   fetch(req).then(function(res){
-    if(res&&res.ok){var copy=res.clone();caches.open(CACHE).then(function(c){return c.put(req,copy);});}
+    if(res&&res.ok){var copy=res.clone();caches.open(CACHE).then(function(c){c.put(req,copy);});}
     return res;
   }).catch(function(){
-   return caches.match(req,{ignoreSearch:true}).then(function(r){
+    return caches.match(req,{ignoreSearch:true}).then(function(r){
     if(r){return r;}
     if(req.mode==='navigate'){return caches.match('/');}
     return new Response('Hors ligne',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});

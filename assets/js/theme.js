@@ -1,5 +1,6 @@
-/* Thème Imperium / Necrons — Les Protocoles Éternels — 2026.10.18-theme1 */
-var PE_THEME_BUILD='2026.10.18-theme1';
+/* Thème Imperium / Necrons — Les Protocoles Éternels — PE_BUILD 2026.10.18-theme2 */
+var PE_BUILD='2026.10.18-theme2';
+window.PE_BUILD=PE_BUILD;
 (function(){
   var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
   var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -24,7 +25,9 @@ var PE_THEME_BUILD='2026.10.18-theme1';
   window.PE_THEME={
     set:function(v){
       apply(v);
-      fetch(SB+'rest/v1/parametres',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+SBK,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key:'pack',valeur:v,maj_at:new Date().toISOString()})}).catch(function(){});
+      var k='';
+      try{k=localStorage.getItem('pe_mjkey')||''}catch(e){}
+      fetch(SB+'rest/v1/parametres',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+SBK,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates','x-mj-key':k},body:JSON.stringify({key:'pack',valeur:v,maj_at:new Date().toISOString()})}).catch(function(){});
     }
   };
   document.addEventListener('change',function(ev){
