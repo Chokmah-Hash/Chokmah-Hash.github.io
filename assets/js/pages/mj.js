@@ -194,7 +194,7 @@ function showTab(id){
   Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){a.classList.toggle("active",(a.getAttribute("href")||"")==="#"+id);});
 }
 Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){
-  a.addEventListener("click",function(ev){var id=(a.getAttribute("href")||"").slice(1);if(TABS.indexOf(id)<0){return;}ev.preventDefault();showTab(id);});
+  a.addEventListener("click",function(ev){var id=(a.getAttribute("href")||"").slice(1);if(TABS.indexOf(id)<0){return;}ev.preventDefault();showTab(id);try{localStorage.setItem("pe_mjtab",id);}catch(e6){}});
 });
 window.MJSHOW=showTab;
 })();

@@ -14,12 +14,22 @@ function show(loggedIn){
 var CLIENT=null;
 function applySession(s){
   var ok=!!(s&&s.access_token);
-  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}if(window.MJSHOW){window.MJSHOW('mj-content');}window.scrollTo(0,0);
+  if(ok){window.MJBEARER=s.access_token;show(true);if(s.user&&s.user.email){$id('auth-who').textContent=s.user.email;}try{document.body.classList.remove('preauth');}catch(e0){}var _tab=null;try{_tab=localStorage.getItem('pe_mjtab');}catch(e6){}
+  if(window.MJSHOW){window.MJSHOW(_tab&&['mj-content','av-console','carte-console','best-console','img-console','auth-console','des-sect'].indexOf(_tab)>=0?_tab:'mj-content');}window.scrollTo(0,0);
   if(CLIENT){CLIENT.rpc('mj_cle').then(function(res){var k=res&&res.data;if(typeof k==='string'&&k.length>0){try{localStorage.setItem('pe_mjkey',k);}catch(e5){}['av-key','mj-key','b-key','img-key'].forEach(function(id2){var el=$id(id2);if(el){el.value=k;}});['av-go','mj-open','b-open','img-open'].forEach(function(id2){var b=$id(id2);if(b){b.click();}});
     ['av-key','mj-key','b-key','img-key'].forEach(function(id2){var el=$id(id2);if(!el){return;}var row=el.closest('.cta-row');if(row){row.style.display='none';}});
     var lb=$id('av-lockbox');if(lb){lb.style.display='none';}
     var mp=$id('mj-pass'),mg=$id('mj-go');if(mp&&mg&&(!mp.value||mp.value!==k)){mp.value=k;mg.click();}}}).catch(function(){});}}
-  else{window.MJBEARER=null;show(false);try{document.body.classList.add('preauth');}catch(e0){}}
+  else{window.MJBEARER=null;show(false);try{document.body.classList.add('preauth');}catch(e0){}
+  var c2=$id('mj-content');if(c2){c2.innerHTML='';c2.style.display='none';}
+  var lk2=$id('mj-lock');if(lk2){lk2.style.display='';}
+  var p2=$id('mj-pass');if(p2){p2.value='';}
+  var er2=$id('mj-err');if(er2){er2.style.display='none';}
+  var al2=$id('av-lockbox');if(al2){al2.style.display='';}
+  ['mj-key','b-key','img-key','av-key'].forEach(function(id3){var el=$id(id3);if(!el){return;}el.value='';var row=el.closest('.cta-row');if(row){row.style.display='';}});
+  ['mj-tools','b-tools','img-tools','av-panel'].forEach(function(id3){var t=$id(id3);if(t){t.style.display='none';}});
+  Array.prototype.forEach.call(document.querySelectorAll('.subnav-in a'),function(a2){a2.classList.remove('active');});
+  try{localStorage.removeItem('pe_mjpass');}catch(e7){}}
 }
 function boot(){
   if(typeof supabase==='undefined'||!supabase.createClient){msg('Bibliothèque Supabase introuvable.','err');return;}
