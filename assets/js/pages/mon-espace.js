@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.18-pj2 — onglet memorise (pe_pjtab) */
+/* PE_BUILD 2026.10.18-pj3 — hero Mon Espace masque dans l app, deconnexion (nom) dans la sous-nav */
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SESS=null;
@@ -112,16 +112,18 @@ function logout(msg){
   $('app-view').style.display='none';
   $('auth-view').style.display='';
   $('app-subnav').hidden=true;
+  $('app-hero').style.display='';
+  $('logout-who').textContent='';
   $('f-login').style.display='';$('mdp-row').style.display='';
   if(msg){authMsg(msg,'');}
 }
-$('btn-logout').addEventListener('click',function(){logout('');$('l-user').value='';$('l-pass').value='';});
 $('app-logout').addEventListener('click',function(ev){ev.preventDefault();logout('');$('l-user').value='';$('l-pass').value='';});
 function enterApp(){
   $('auth-view').style.display='none';
   $('app-view').style.display='';
   $('app-subnav').hidden=false;
-  $('who-name').textContent=SESS.nom+' ('+SESS.login+')';
+  $('app-hero').style.display='none';
+  $('logout-who').textContent=' ('+SESS.nom+')';
   loadAventure();
   loadPersos();
   loadNotes();
