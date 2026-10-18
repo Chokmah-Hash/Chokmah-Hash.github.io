@@ -1,14 +1,19 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
-/* PE_BUILD 2026.10.18-des3 — identité du lanceur = zone (page), pas session disponible */
+/* PE_BUILD 2026.10.18-des4 — plus de champ "Qui lance ?" : identite auto par zone */
 (function(){
-var PE_BUILD='2026.10.18-des3';
+var PE_BUILD='2026.10.18-des4';
 window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var box=document.getElementById('des-box');
 if(!box){return;}
-/* Identite par zone : mon-espace = joueur, mj = MJ — jamais l'inverse */
+/* Identite par zone : mj.html => MJ, mon-espace.html => joueur connecte */
 var EST_ZONE_MJ=location.pathname.indexOf('/mj.html')>-1;
+function quiLance(){
+  if(EST_ZONE_MJ){return 'MJ';}
+  try{var s=JSON.parse(localStorage.getItem('pe_session')||'null');if(s&&s.nom){return s.nom;}}catch(e){}
+  return 'Joueur';
+}
 var st=document.createElement('style');
 st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}'
 +'#des-box .d-lbl{display:block;font-size:.68rem;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:0 0 4px}'
@@ -26,19 +31,11 @@ document.head.appendChild(st);
 function g(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function setStatus(t,err){var e=g('d-status');if(e){e.textContent=t;e.className='d-status'+(err?' err':'');}}
-function defNom(){
-  var n='';
-  try{n=localStorage.getItem('pe_des_nom')||'';}catch(e){}
-  if(!n){
-    try{var s=JSON.parse(localStorage.getItem('pe_session')||'null');if(s&&s.nom){n=s.nom;}}catch(e){}
-  }
-  return n||(EST_ZONE_MJ?'MJ':'Joueur');
-}
 box.innerHTML='<div class="d-tools">'
-+'<div><label class="d-lbl" for="d-nom">Qui lance ?</label><input class="d-fld" id="d-nom" type="text" maxlength="30" style="max-width:170px"></div>'
 +'<div><label class="d-lbl" for="d-n">Nombre</label><select class="d-fld" id="d-n"></select></div>'
 +'<div><label class="d-lbl" for="d-faces">Dé</label><select class="d-fld" id="d-faces"></select></div>'
 +'<div><button class="btn primary" id="d-roll-btn" type="button" style="min-height:42px">🎲 Lancer</button></div>'
++'<div><span class="d-lbl">Lanceur</span><span class="d-who" id="d-qui"></span></div>'
 +'</div>'
 +'<p class="d-status" id="d-status"></p>'
 +'<div id="d-list"></div>';
@@ -50,10 +47,8 @@ box.innerHTML='<div class="d-tools">'
   [4,6,8,10,12,20,100].forEach(function(v){f+='<option value="'+v+'"'+(v===20?' selected':'')+'>D'+v+'</option>';});
   g('d-faces').innerHTML=f;
 })();
-g('d-nom').value=defNom();
-g('d-nom').addEventListener('change',function(){
-  try{localStorage.setItem('pe_des_nom',g('d-nom').value.trim());}catch(e){}
-});
+function refreshQui(){g('d-qui').textContent=quiLance();}
+refreshQui();
 function hdr(){return{'apikey':SBK,'Authorization':'Bearer '+SBK};}
 function fmtWhen(iso){
   var d=new Date(iso),now=new Date();
@@ -62,7 +57,7 @@ function fmtWhen(iso){
   return d.getDate()+'/'+(d.getMonth()+1)+' '+hh+':'+mm;
 }
 function render(list){
-  var me=g('d-nom').value.trim();
+  var me=quiLance();
   var out='';
   (list||[]).forEach(function(j){
     out+='<div class="d-roll'+(me&&j.joueur===me?' mine':'')+'">'
@@ -87,7 +82,6 @@ function consolePub(n,faces,j){
     var contenu='🎲 '+n+'D'+faces+' : '+((j&&j.detail)||[]).join(' + ')+' = '+(j&&j.total);
     var send=function(h){fetch(SB+'rest/v1/rpc/console_envoyer',{method:'POST',headers:h,body:JSON.stringify({p_contenu:contenu,p_dest:[],p_type:'de'})}).catch(function(){});};
     if(EST_ZONE_MJ){
-      /* Zone MJ : signe MJ uniquement (session supabase pe-mj-auth) */
       if(window.supabase&&window.supabase.createClient){
         var c=window.supabase.createClient(SB,SBK,{auth:{persistSession:true,storageKey:'pe-mj-auth'}});
         c.auth.getSession().then(function(r){
@@ -96,7 +90,6 @@ function consolePub(n,faces,j){
         }).catch(function(){});
       }
     }else{
-      /* Zone joueurs : signe joueur uniquement (token pe_session) */
       try{
         var s=JSON.parse(localStorage.getItem('pe_session')||'null');
         if(s&&s.token){send({'apikey':SBK,'x-token':s.token,'Content-Type':'application/json'});}
@@ -105,8 +98,7 @@ function consolePub(n,faces,j){
   }catch(e){}
 }
 function roll(){
-  var nom=g('d-nom').value.trim()||'Anonyme';
-  try{localStorage.setItem('pe_des_nom',nom);}catch(e){}
+  var nom=quiLance();
   var n=parseInt(g('d-n').value,10)||1;
   var faces=parseInt(g('d-faces').value,10)||20;
   setStatus('Les dés roulent…');

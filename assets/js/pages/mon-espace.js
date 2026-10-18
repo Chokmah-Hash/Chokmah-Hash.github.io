@@ -1,4 +1,5 @@
 
+/* PE_BUILD 2026.10.18-pj2 — onglet memorise (pe_pjtab) */
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SESS=null;
@@ -128,6 +129,7 @@ function enterApp(){
   if(PING_TIMER){clearInterval(PING_TIMER);}
   PING_TIMER=setInterval(function(){pingPresence();pingPosition();},20000);
   setTimeout(pingPresence,1500);
+  try{var pt=localStorage.getItem('pe_pjtab');if(pt){var pb=document.querySelector('.subnav [data-t="'+pt+'"],.tabs .tab[data-t="'+pt+'"]');if(pb){pb.click();}}}catch(e){}
 }
 /* ——— Onglets ——— */
 Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .tab[data-t]'),function(b){
@@ -141,6 +143,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .
     });
     if(t==='av'){loadAventure();}
     if(t==='pj'){loadPersos();}
+    try{localStorage.setItem('pe_pjtab',t);}catch(e){}
   });
 });
 /* ——— Aventure ——— */
