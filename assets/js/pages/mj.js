@@ -184,12 +184,13 @@ $$id('av-key').addEventListener('keydown',function(e){if(e.key==='Enter'){avOpen
 $$id('av-create').addEventListener('click',avCreate);
 
 (function(){
-var TABS=["mj-content","mj-lock","av-console","carte-console","best-console","img-console","auth-console","des-sect"];
+var TABS=["mj-content","mj-lock","av-console","carte-console","best-console","img-console","auth-console","comptes-console","des-sect"];
 function showTab(id){
   var c=document.getElementById("mj-content"),l=document.getElementById("mj-lock");
   TABS.forEach(function(t){if(t==="mj-content"||t==="mj-lock"){return;}var s=document.getElementById(t);if(s){s.style.display=(t===id)?"block":"none";}});
   if(id==="mj-content"){if(c&&c.innerHTML.trim()){c.style.display="block";if(l){l.style.display="none";}}else{if(c){c.style.display="none";}if(l){l.style.display="";}}}
   else{if(c){c.style.display="none";}if(l){l.style.display="none";}}
+  if(id==="comptes-console"&&window.MJCOMPTES_REFRESH){try{window.MJCOMPTES_REFRESH();}catch(e8){}}
   var sh=document.getElementById("scenar-head");if(sh){sh.style.display=(id==="mj-content"||id==="mj-lock")?"block":"none";}
   Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){a.classList.toggle("active",(a.getAttribute("href")||"")==="#"+id);});
 }

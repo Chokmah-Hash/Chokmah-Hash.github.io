@@ -112,6 +112,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
         <a href="#best-console">🦴 Bestiaire</a>
         <a href="#img-console">🖼️ Images</a>
         <a href="#des-sect">🎲 Dés</a>
+          <a href="#comptes-console">👥 Compte</a>
           <a href="#logout" id="mj-logout">🚪 Se déconnecter</a>
       </div>
     </nav>
@@ -373,7 +374,26 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       <div id="des-box"></div>
     </section>
     </main>
-    <footer class="foot">
+    <section class="sect" id="comptes-console">
+        <h2>👥 Console des comptes joueurs</h2>
+        <div class="card amber">
+          <h3>✚ Nouveau joueur</h3>
+          <div class="mjgrid">
+            <div><label class="glab" for="cj-login">Pseudo (connexion)</label><input class="gf" id="cj-login" type="text" placeholder="Ex. Signa-3"></div>
+            <div><label class="glab" for="cj-nom">Nom affiché (facultatif)</label><input class="gf" id="cj-nom" type="text" placeholder="Ex. Signa-3"></div>
+          </div>
+          <label class="glab" for="cj-pass">Mot de passe</label>
+          <input class="gf" id="cj-pass" type="password" autocomplete="off" placeholder="Mot de passe à donner au joueur">
+          <div class="cta-row" style="justify-content:flex-start;margin-top:12px"><button class="btn amber" id="cj-create" type="button">✚ Créer le compte</button></div>
+          <p class="gmsgc" id="cj-msg"></p>
+        </div>
+        <div class="card amber" style="margin-top:18px">
+          <h3>📋 Joueurs</h3>
+          <p class="gmsgc" id="cj-lmsg"></p>
+          <div id="cj-list"></div>
+        </div>
+      </section>
+      <footer class="foot">
       <div class="glyphrow">⚡ ⬥ ⚡</div>
       <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
       <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
@@ -383,6 +403,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
         <script src="assets/js/moteur-planetaire-rotation.js"></script>
     <script src="assets/js/pages/mj-carte.js"></script>
     <script src="assets/js/pages/mj-bestiaire.js"></script>
+  <script src="assets/js/pages/mj-comptes.js"></script>
     <script src="assets/js/vendor/supabase.js"></script>
     <script src="assets/js/pages/des.js"></script>
     <script src="assets/js/pages/auth.js"></script>
