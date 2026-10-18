@@ -70,7 +70,7 @@ function renderMap(){
     var px=Math.round(Math.max(5,Math.min(995,(ev.clientX-r.left)/r.width*1000)));
     var py=Math.round(Math.max(5,Math.min(695,(ev.clientY-r.top)/r.height*700)));
     $('g-x').value=px;$('g-y').value=py;PLACING=false;
-    $('g-place').textContent='📍 Placer sur la carte';
+    $('g-place').textContent='Placer sur la carte';
     msg('g-msg','Position : '+px+', '+py+' — clique sur Enregistrer.','ok');
   });
 }
@@ -85,7 +85,7 @@ function renderPanel(){
   var out='<h3 style="margin:.1em 0 .3em">'+esc(g.nom)+'</h3><span class="badge'+(g.categorie==='vaisseau'?' amber':'')+'">'+esc(catLabel(g.categorie))+'</span>';
   if(g.description){out+='<p class="pv" style="margin-top:10px">'+esc(g.description)+'</p>';}
   (d.planetes||[]).forEach(function(pl){
-    out+='<div class="pl">🪐 '+esc(pl.nom)+'</div>';
+    out+='<div class="pl">✦ '+esc(pl.nom)+'</div>';
     if(pl.infos){out+='<p class="pv">'+esc(pl.infos)+'</p>';}
     (pl.lieux||[]).forEach(function(l){out+='<div class="lieu"><b>'+esc(l.nom)+'</b>'+(l.infos?' — '+esc(l.infos):'')+'</div>';});
   });
@@ -97,10 +97,10 @@ function renderPanel(){
   }
   if(MJMODE){
     var sec=SECRETS[g.id];
-    if(sec){out+='<div class="note-box amber" style="margin-top:12px"><strong>🔒 Vérités cachées :</strong> '+esc(sec)+'</div>';}
+    if(sec){out+='<div class="note-box amber" style="margin-top:12px"><strong>Vérités cachées :</strong> '+esc(sec)+'</div>';}
     out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
       +'<button class="btn amber sm" id="g-edit" type="button">✎ Modifier ce système</button>'
-      +'<button class="btn danger sm" id="g-del2" type="button">🗑 Supprimer</button></div>';
+      +'<button class="btn danger sm" id="g-del2" type="button">✕ Supprimer</button></div>';
   }
   el.innerHTML=out;
   var be=$('g-edit');if(be){be.addEventListener('click',function(){fillForm(g);});}
@@ -157,7 +157,7 @@ $('mj-open').addEventListener('click',function(){
   });
 });
 function fillForm(g){
-  $('g-form-title').textContent='🛠️ Modifier : '+g.nom;
+  $('g-form-title').textContent='Modifier : '+g.nom;
   $('g-id').value=g.id;$('g-nom').value=g.nom;$('g-cat').value=g.categorie;
   $('g-x').value=g.x;$('g-y').value=g.y;$('g-desc').value=g.description||'';
   var d=g.data||{},pla=[],lieux=[],crea=[];
@@ -170,7 +170,7 @@ function fillForm(g){
   msg('g-msg','Formulaire chargé. Le bouton « Placer sur la carte » permet de repositionner par un clic.','');
 }
 function clearForm(){
-  $('g-form-title').textContent='🛠️ Nouveau système';
+  $('g-form-title').textContent='Nouveau système';
   ['g-id','g-nom','g-desc','g-pla','g-lieux','g-crea','g-secret'].forEach(function(i){$(i).value='';});
   $('g-x').value=500;$('g-y').value=350;$('g-cat').value='systeme';
   $('g-del').style.display='none';msg('g-msg','');
@@ -255,10 +255,10 @@ function renderPlaBox(){
   if(!l.length){out='<p class="pv">Aucune planète rattachée à ce système.</p>';}
   l.forEach(function(pl){
     out+='<div class="plrow">'
-      +'<div class="plinfo"><b>🪐 '+esc(pl.nom)+'</b><span>'+(pl.carte?'Carte : '+esc(pl.carte):'Pas de mappemonde')+'</span></div>'
-      +'<button class="btn primary sm" data-act="poi" data-id="'+pl.id+'" type="button">📍 Lieux</button>'
+      +'<div class="plinfo"><b>✦ '+esc(pl.nom)+'</b><span>'+(pl.carte?'Carte : '+esc(pl.carte):'Pas de mappemonde')+'</span></div>'
+      +'<button class="btn primary sm" data-act="poi" data-id="'+pl.id+'" type="button">⬥ Lieux</button>'
       +'<button class="btn amber sm" data-act="edit" data-id="'+pl.id+'" type="button">✎ Modifier</button>'
-      +'<button class="btn danger sm" data-act="del" data-id="'+pl.id+'" type="button">🗑</button>'
+      +'<button class="btn danger sm" data-act="del" data-id="'+pl.id+'" type="button">✕</button>'
       +'</div>';
   });
   out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px"><button class="btn ghost sm" id="p-new" type="button">✚ Nouvelle planète</button></div>';
@@ -277,8 +277,8 @@ function renderPlaBox(){
 }
 function plaFormOpen(pl){
   $('p-form').style.display='';
-  if(pl){$('p-title').textContent='🪐 Modifier : '+pl.nom;$('p-id').value=pl.id;$('p-nom').value=pl.nom||'';$('p-desc').value=pl.description||'';$('p-image').value=pl.image||'';$('p-carte').value=pl.carte||'';$('p-type').value=pmType(pl);}
-  else{$('p-title').textContent='🪐 Nouvelle planète';$('p-id').value='';['p-nom','p-desc','p-image','p-carte'].forEach(function(i){$(i).value='';});}$('p-type').value='Tellurique';
+  if(pl){$('p-title').textContent='✦ Modifier : '+pl.nom;$('p-id').value=pl.id;$('p-nom').value=pl.nom||'';$('p-desc').value=pl.description||'';$('p-image').value=pl.image||'';$('p-carte').value=pl.carte||'';$('p-type').value=pmType(pl);}
+  else{$('p-title').textContent='✦ Nouvelle planète';$('p-id').value='';['p-nom','p-desc','p-image','p-carte'].forEach(function(i){$(i).value='';});}$('p-type').value='Tellurique';
   msg('p-msg','');
 }
 $('p-cancel').addEventListener('click',function(){$('p-form').style.display='none';});
@@ -313,7 +313,7 @@ function delPlanete(pl){
 function poiOpen(pl){
   PSELPLA=pl;PSEL=pl.id;
   $('poi-card').style.display='';
-  $('poi-title').textContent='📍 Lieux — '+pl.nom;
+  $('poi-title').textContent='⬥ Lieux — '+pl.nom;
   $('poi-note').textContent="Le globe tourne par crans de méridien (◀ ▶). « Placer sur le globe » arme le pointeur : le clic s'accroche à la terre ferme et lit les coordonnées méridien + latitude.";
   PMG.inst=null;PMG.sel=null;PMG.armed=false;PMG.plid=pl.id;
   $('poi-form').style.display='none';
@@ -453,7 +453,7 @@ function renderPoiMap(){
       if(s&&s.X!=null&&inst.geo.isLand(s.X,s.y)){X=s.X;y=s.y;}
     }
     PMG.armed=false;
-    $('poi-place').textContent='📍 Placer sur le globe';
+    $('poi-place').textContent='Placer sur le globe';
     $('poi-x').value=Math.round(X);$('poi-y').value=Math.round(y);
     PMG.sel={X:X,y:y};
     pmCoordRefresh();
@@ -466,9 +466,9 @@ function renderPoiList(){
   var out='';
   if(!POIS.length){out='<p class="pv">Aucun point d’intérêt. Ajoute le premier !</p>';}
   POIS.forEach(function(p){
-    out+='<div class="plrow"><div class="plinfo"><b>📍 '+esc(p.nom)+'</b><span>'+esc(pmCoordStr(p))+(p.image?' — '+esc(p.image):'')+'</span></div>'
+    out+='<div class="plrow"><div class="plinfo"><b>⬥ '+esc(p.nom)+'</b><span>'+esc(pmCoordStr(p))+(p.image?' — '+esc(p.image):'')+'</span></div>'
       +'<button class="btn amber sm" data-id="'+p.id+'" data-act="edit" type="button">✎ Modifier</button>'
-      +'<button class="btn danger sm" data-id="'+p.id+'" data-act="del" type="button">🗑</button></div>';
+      +'<button class="btn danger sm" data-id="'+p.id+'" data-act="del" type="button">✕</button></div>';
   });
   out+='<div class="cta-row" style="justify-content:flex-start;margin-top:10px"><button class="btn ghost sm" id="poi-new" type="button">✚ Nouveau point</button></div>';
   box.innerHTML=out;

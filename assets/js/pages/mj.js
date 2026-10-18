@@ -4,34 +4,34 @@ function $(id){return document.getElementById(id);}
 var MJAUTO=false;
 function mjErr(){if(MJAUTO){MJAUTO=false;try{localStorage.removeItem("pe_mjpass");}catch(e2){}return;}var e=$("mj-err");e.style.display="block";var p=$("mj-pass");p.value="";p.focus();}
 function mjTry(){
-  var pass=$("mj-pass").value;
-  if(!pass){return;}
-  var bin=null;
-  try{bin=atob(MJDATA);}catch(e){bin=null;}
-  if(bin===null){mjErr();return;}
-  var n=bin.length,bytes=new Uint8Array(n);
-  for(var i=0;i<n;i++){bytes[i]=bin.charCodeAt(i)^pass.charCodeAt(i%pass.length);}
-  var txt="";
-  try{txt=new TextDecoder("utf-8").decode(bytes);}catch(e){txt="";}
-  if(txt.slice(0,5)!=="MJOK|"){mjErr();return;}
-  if(!MJAUTO){try{localStorage.setItem("pe_mjpass",pass);}catch(e2){}}
-  $("mj-content").innerHTML=txt.slice(5);
-  Array.prototype.forEach.call($("mj-content").children,function(ch){if(ch.className==="sect"){var c=document.createElement("div");c.className="card amber";c.style.marginTop="18px";ch.parentNode.insertBefore(c,ch);c.appendChild(ch);}});
-  $("mj-lock").style.display="none";
-  var _i=$("mj-intro");if(_i){_i.style.display="none";}
-  $("mj-content").style.display="block";
-  var r=$("mj-relock");
-  if(r){r.addEventListener("click",mjLock);}
-  window.scrollTo(0,0);
+ var pass=$("mj-pass").value;
+ if(!pass){return;}
+ var bin=null;
+ try{bin=atob(MJDATA);}catch(e){bin=null;}
+ if(bin===null){mjErr();return;}
+ var n=bin.length,bytes=new Uint8Array(n);
+ for(var i=0;i<n;i++){bytes[i]=bin.charCodeAt(i)^pass.charCodeAt(i%pass.length);}
+ var txt="";
+ try{txt=new TextDecoder("utf-8").decode(bytes);}catch(e){txt="";}
+ if(txt.slice(0,5)!=="MJOK|"){mjErr();return;}
+ if(!MJAUTO){try{localStorage.setItem("pe_mjpass",pass);}catch(e2){}}
+ $("mj-content").innerHTML=txt.slice(5);
+ Array.prototype.forEach.call($("mj-content").children,function(ch){if(ch.className==="sect"){var c=document.createElement("div");c.className="card amber";c.style.marginTop="18px";ch.parentNode.insertBefore(c,ch);c.appendChild(ch);}});
+ $("mj-lock").style.display="none";
+ var _i=$("mj-intro");if(_i){_i.style.display="none";}
+ $("mj-content").style.display="block";
+ var r=$("mj-relock");
+ if(r){r.addEventListener("click",mjLock);}
+ window.scrollTo(0,0);
 }
 function mjLock(){
-  $("mj-content").style.display="none";
-  $("mj-content").innerHTML="";
-  $("mj-lock").style.display="block";
-  var _j=$("mj-intro");if(_j){_j.style.display="block";}
-  $("mj-pass").value="";
-  $("mj-err").style.display="none";
-  try{localStorage.removeItem("pe_mjpass");}catch(e2){}
+ $("mj-content").style.display="none";
+ $("mj-content").innerHTML="";
+ $("mj-lock").style.display="block";
+ var _j=$("mj-intro");if(_j){_j.style.display="block";}
+ $("mj-pass").value="";
+ $("mj-err").style.display="none";
+ try{localStorage.removeItem("pe_mjpass");}catch(e2){}
 }
 $("mj-go").addEventListener("click",mjTry);
 $("mj-pass").addEventListener("keydown",function(e){if(e.key==="Enter"){mjTry();}});
@@ -50,134 +50,134 @@ function avmsg2(t,cls){var m=$$id('av-msg2');if(m){m.textContent=t;m.className='
 function avesc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtD(iso){if(!iso){return '—';}var d=new Date(iso);if(isNaN(d)){return '—';}return d.toLocaleString('fr-FR');}
 function avOpen(){
-  CONKEY=$$id('av-key').value;
-  if(!CONKEY){avmsg('Saisis ta clé MJ.','err');return;}
-  avmsg('Vérification de la clé…','');
-  fetch(SB+'aventures?select=*&order=cree.desc',{headers:avhdr()}).then(function(r){
-    if(r.status===401||r.status===403){throw new Error('cle');}
-    if(!r.ok){throw new Error('http');}
-    return r.json();
-  }).then(function(list){
-    AVS=list||[];
-    $$id('av-lockbox').style.display='none';
-    $$id('av-panel').style.display='';
-    avmsg('','');
-    avRender();
-    avMonitor();
-    if(CONTIMER){clearInterval(CONTIMER);}
-    CONTIMER=setInterval(avMonitor,15000);
-  }).catch(function(e){avmsg(e&&e.message==='cle'?'Clé incorrecte.':'Connexion impossible — vérifie internet.','err');});
+ CONKEY=$$id('av-key').value;
+ if(!CONKEY){avmsg('Saisis ta clé MJ.','err');return;}
+ avmsg('Vérification de la clé…','');
+ fetch(SB+'aventures?select=*&order=cree.desc',{headers:avhdr()}).then(function(r){
+  if(r.status===401||r.status===403){throw new Error('cle');}
+  if(!r.ok){throw new Error('http');}
+  return r.json();
+ }).then(function(list){
+  AVS=list||[];
+  $$id('av-lockbox').style.display='none';
+  $$id('av-panel').style.display='';
+  avmsg('','');
+  avRender();
+  avMonitor();
+  if(CONTIMER){clearInterval(CONTIMER);}
+  CONTIMER=setInterval(avMonitor,15000);
+ }).catch(function(e){avmsg(e&&e.message==='cle'?'Clé incorrecte.':'Connexion impossible — vérifie internet.','err');});
 }
 function avReload(){
-  fetch(SB+'aventures?select=*&order=cree.desc',{headers:avhdr()}).then(function(r){if(!r.ok){throw new Error('http');}return r.json();}).then(function(list){AVS=list||[];avRender();avMonitor();}).catch(function(){});
+ fetch(SB+'aventures?select=*&order=cree.desc',{headers:avhdr()}).then(function(r){if(!r.ok){throw new Error('http');}return r.json();}).then(function(list){AVS=list||[];avRender();avMonitor();}).catch(function(){});
 }
 function badgeFor(s){var cls=s==='active'?'ally':(s==='brouillon'?'amber':'neutral');var lbl=s==='active'?'Active':(s==='brouillon'?'Brouillon':'Terminée');return '<span class="badge '+cls+'">'+lbl+'</span>';}
 function avRender(){
-  var out='';
-  if(!AVS.length){out='<div class="empty-boxc">Aucune aventure pour l’instant — crée la première ci-dessus.</div>';}
-  AVS.forEach(function(a,i){
-    var blocs=a.blocs||[];
-    var bhtml='';
-    blocs.forEach(function(b,j){
-      bhtml+='<div class="bedit" data-av="'+i+'" data-b="'+j+'">'
-        +'<span class="glabc" style="color:var(--teal)">Bloc '+(j+1)+' — titre</span>'
-        +'<input type="text" class="fldb btitre" value="'+avesc(b.titre||'')+'">'
-        +'<span class="glabc" style="color:var(--teal)">Texte affiché aux joueuses</span>'
-        +'<textarea class="fldb btexte">'+avesc(b.texte||'')+'</textarea>'
-        +'<div style="margin-top:6px"><button type="button" class="btn danger smallbtn" data-delb="'+i+'" data-delj="'+j+'">🗑 Retirer ce bloc</button></div>'
-        +'</div>';
-    });
-    var btnAct=a.statut==='active';
-    out+='<div class="avedit">'
-      +'<h3>'+avesc(a.titre||'')+' '+badgeFor(a.statut)+'</h3>'
-      +'<span class="glabc">Titre</span><input type="text" class="fldb atitre" data-av="'+i+'" value="'+avesc(a.titre||'')+'">'
-      +'<span class="glabc">Blocs de l’aventure (titres + textes vus par les joueuses)</span>'
-      +bhtml
-      +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
-      +'<button type="button" class="btn ghost smallbtn" data-addb="'+i+'">✚ Ajouter un bloc</button>'
-      +'<button type="button" class="btn amber smallbtn" data-save="'+i+'">💾 Enregistrer</button>'
-      +(btnAct?'':'<button type="button" class="btn primary smallbtn" data-act="'+i+'">▶ Activer pour les joueuses</button>')
-      +(btnAct?'<button type="button" class="btn ghost smallbtn" data-term="'+i+'">⏹ Terminer</button>':'')
-      +(a.statut==='brouillon'?'':'<button type="button" class="btn ghost smallbtn" data-draft="'+i+'">↩ Brouillon</button>')
-      +'<button type="button" class="btn danger smallbtn" data-del="'+i+'">🗑 Supprimer</button>'
-      +'</div></div>';
+ var out='';
+ if(!AVS.length){out='<div class="empty-boxc">Aucune aventure pour l’instant — crée la première ci-dessus.</div>';}
+ AVS.forEach(function(a,i){
+  var blocs=a.blocs||[];
+  var bhtml='';
+  blocs.forEach(function(b,j){
+   bhtml+='<div class="bedit" data-av="'+i+'" data-b="'+j+'">'
+    +'<span class="glabc" style="color:var(--teal)">Bloc '+(j+1)+' — titre</span>'
+    +'<input type="text" class="fldb btitre" value="'+avesc(b.titre||'')+'">'
+    +'<span class="glabc" style="color:var(--teal)">Texte affiché aux joueuses</span>'
+    +'<textarea class="fldb btexte">'+avesc(b.texte||'')+'</textarea>'
+    +'<div style="margin-top:6px"><button type="button" class="btn danger smallbtn" data-delb="'+i+'" data-delj="'+j+'">✕ Retirer ce bloc</button></div>'
+    +'</div>';
   });
-  $$id('av-list').innerHTML=out;
-  Array.prototype.forEach.call(document.querySelectorAll('#av-list .atitre'),function(inp){inp.addEventListener('input',function(){AVS[parseInt(inp.getAttribute('data-av'),10)].titre=inp.value;});});
-  Array.prototype.forEach.call(document.querySelectorAll('#av-list .btitre'),function(inp){inp.addEventListener('input',function(){var d=inp.closest('.bedit');var i=parseInt(d.getAttribute('data-av'),10),j=parseInt(d.getAttribute('data-b'),10);AVS[i].blocs[j].titre=inp.value;});});
-  Array.prototype.forEach.call(document.querySelectorAll('#av-list .btexte'),function(ta){ta.addEventListener('input',function(){var d=ta.closest('.bedit');var i=parseInt(d.getAttribute('data-av'),10),j=parseInt(d.getAttribute('data-b'),10);AVS[i].blocs[j].texte=ta.value;});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-addb]'),function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-addb'),10);if(!AVS[i].blocs){AVS[i].blocs=[];}AVS[i].blocs.push({titre:'Nouveau bloc',texte:''});avRender();});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-delb]'),function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-delb'),10),j=parseInt(b.getAttribute('data-delj'),10);AVS[i].blocs.splice(j,1);avRender();});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-save]'),function(b){b.addEventListener('click',function(){avSave(parseInt(b.getAttribute('data-save'),10));});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){b.addEventListener('click',function(){avActivate(parseInt(b.getAttribute('data-act'),10));});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-term]'),function(b){b.addEventListener('click',function(){avSetStatut(parseInt(b.getAttribute('data-term'),10),'terminee','Aventure terminée.');});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-draft]'),function(b){b.addEventListener('click',function(){avSetStatut(parseInt(b.getAttribute('data-draft'),10),'brouillon','Aventure repassée en brouillon.');});});
-  Array.prototype.forEach.call(document.querySelectorAll('[data-del]'),function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-del'),10);if(!window.confirm('Supprimer « '+(AVS[i].titre||'')+' » ?')){return;}fetch(SB+'aventures?id=eq.'+AVS[i].id,{method:'DELETE',headers:avhdr()}).then(function(r){if(!r.ok){throw new Error('http');}avReload();}).catch(function(){avmsg2('Échec de la suppression.','err');});});});
+  var btnAct=a.statut==='active';
+  out+='<div class="avedit">'
+   +'<h3>'+avesc(a.titre||'')+' '+badgeFor(a.statut)+'</h3>'
+   +'<span class="glabc">Titre</span><input type="text" class="fldb atitre" data-av="'+i+'" value="'+avesc(a.titre||'')+'">'
+   +'<span class="glabc">Blocs de l’aventure (titres + textes vus par les joueuses)</span>'
+   +bhtml
+   +'<div class="cta-row" style="justify-content:flex-start;margin-top:10px">'
+   +'<button type="button" class="btn ghost smallbtn" data-addb="'+i+'">✚ Ajouter un bloc</button>'
+   +'<button type="button" class="btn amber smallbtn" data-save="'+i+'">Enregistrer</button>'
+   +(btnAct?'':'<button type="button" class="btn primary smallbtn" data-act="'+i+'">▶ Activer pour les joueuses</button>')
+   +(btnAct?'<button type="button" class="btn ghost smallbtn" data-term="'+i+'">⏹ Terminer</button>':'')
+   +(a.statut==='brouillon'?'':'<button type="button" class="btn ghost smallbtn" data-draft="'+i+'">↩ Brouillon</button>')
+   +'<button type="button" class="btn danger smallbtn" data-del="'+i+'">✕ Supprimer</button>'
+   +'</div></div>';
+ });
+ $$id('av-list').innerHTML=out;
+ Array.prototype.forEach.call(document.querySelectorAll('#av-list .atitre'),function(inp){inp.addEventListener('input',function(){AVS[parseInt(inp.getAttribute('data-av'),10)].titre=inp.value;});});
+ Array.prototype.forEach.call(document.querySelectorAll('#av-list .btitre'),function(inp){inp.addEventListener('input',function(){var d=inp.closest('.bedit');var i=parseInt(d.getAttribute('data-av'),10),j=parseInt(d.getAttribute('data-b'),10);AVS[i].blocs[j].titre=inp.value;});});
+ Array.prototype.forEach.call(document.querySelectorAll('#av-list .btexte'),function(ta){ta.addEventListener('input',function(){var d=ta.closest('.bedit');var i=parseInt(d.getAttribute('data-av'),10),j=parseInt(d.getAttribute('data-b'),10);AVS[i].blocs[j].texte=ta.value;});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-addb]'),function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-addb'),10);if(!AVS[i].blocs){AVS[i].blocs=[];}AVS[i].blocs.push({titre:'Nouveau bloc',texte:''});avRender();});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-delb]'),function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-delb'),10),j=parseInt(b.getAttribute('data-delj'),10);AVS[i].blocs.splice(j,1);avRender();});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-save]'),function(b){b.addEventListener('click',function(){avSave(parseInt(b.getAttribute('data-save'),10));});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-act]'),function(b){b.addEventListener('click',function(){avActivate(parseInt(b.getAttribute('data-act'),10));});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-term]'),function(b){b.addEventListener('click',function(){avSetStatut(parseInt(b.getAttribute('data-term'),10),'terminee','Aventure terminée.');});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-draft]'),function(b){b.addEventListener('click',function(){avSetStatut(parseInt(b.getAttribute('data-draft'),10),'brouillon','Aventure repassée en brouillon.');});});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-del]'),function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-del'),10);if(!window.confirm('Supprimer « '+(AVS[i].titre||'')+' » ?')){return;}fetch(SB+'aventures?id=eq.'+AVS[i].id,{method:'DELETE',headers:avhdr()}).then(function(r){if(!r.ok){throw new Error('http');}avReload();}).catch(function(){avmsg2('Échec de la suppression.','err');});});});
 }
 function avSave(i){
-  var a=AVS[i];
-  fetch(SB+'aventures?id=eq.'+a.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({titre:a.titre,blocs:a.blocs||[]})}).then(function(r){
-    if(!r.ok){throw new Error('http');}
-    avmsg2('« '+(a.titre||'')+' » enregistré ✅','ok');
-  }).catch(function(){avmsg2('Échec de l’enregistrement — réessaie.','err');});
+ var a=AVS[i];
+ fetch(SB+'aventures?id=eq.'+a.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({titre:a.titre,blocs:a.blocs||[]})}).then(function(r){
+  if(!r.ok){throw new Error('http');}
+  avmsg2('« '+(a.titre||'')+' » enregistré','ok');
+ }).catch(function(){avmsg2('Échec de l’enregistrement — réessaie.','err');});
 }
 function avSetStatut(i,st,msg){
-  var a=AVS[i];
-  fetch(SB+'aventures?id=eq.'+a.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({statut:st})}).then(function(r){
-    if(!r.ok){throw new Error('http');}
-    avmsg2(msg,'ok');
-    avReload();
-  }).catch(function(){avmsg2('Échec du changement de statut.','err');});
+ var a=AVS[i];
+ fetch(SB+'aventures?id=eq.'+a.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({statut:st})}).then(function(r){
+  if(!r.ok){throw new Error('http');}
+  avmsg2(msg,'ok');
+  avReload();
+ }).catch(function(){avmsg2('Échec du changement de statut.','err');});
 }
 function avActivate(i){
-  var a=AVS[i];
-  avmsg2('Activation de « '+(a.titre||'')+' »…','');
-  var others=AVS.filter(function(x){return x.statut==='active'&&x.id!==a.id;});
-  var chain=Promise.resolve();
-  others.forEach(function(o){
-    chain=chain.then(function(){return fetch(SB+'aventures?id=eq.'+o.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({statut:'terminee'})});});
-  });
-  chain.then(function(){return fetch(SB+'aventures?id=eq.'+a.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({statut:'active'})});}).then(function(r){
-    if(!r.ok){throw new Error('http');}
-    avmsg2('« '+(a.titre||'')+' » est ACTIVE — les joueuses la voient maintenant dans leur espace ✅','ok');
-    avReload();
-  }).catch(function(){avmsg2('Échec de l’activation.','err');});
+ var a=AVS[i];
+ avmsg2('Activation de « '+(a.titre||'')+' »…','');
+ var others=AVS.filter(function(x){return x.statut==='active'&&x.id!==a.id;});
+ var chain=Promise.resolve();
+ others.forEach(function(o){
+  chain=chain.then(function(){return fetch(SB+'aventures?id=eq.'+o.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({statut:'terminee'})});});
+ });
+ chain.then(function(){return fetch(SB+'aventures?id=eq.'+a.id,{method:'PATCH',headers:avhdr(),body:JSON.stringify({statut:'active'})});}).then(function(r){
+  if(!r.ok){throw new Error('http');}
+  avmsg2('« '+(a.titre||'')+' » est ACTIVE — les joueuses la voient maintenant dans leur espace','ok');
+  avReload();
+ }).catch(function(){avmsg2('Échec de l’activation.','err');});
 }
 function avCreate(){
-  var t=$$id('av-new').value.trim();
-  if(!t){avmsg2('Donne un titre à la nouvelle aventure.','err');return;}
-  fetch(SB+'aventures',{method:'POST',headers:avhdr({'Prefer':'return=minimal'}),body:JSON.stringify({titre:t,statut:'brouillon',blocs:[]})}).then(function(r){
-    if(!r.ok){throw new Error('http');}
-    $$id('av-new').value='';
-    avmsg2('« '+t+' » créée en brouillon ✅','ok');
-    avReload();
-  }).catch(function(){avmsg2('Échec de la création.','err');});
+ var t=$$id('av-new').value.trim();
+ if(!t){avmsg2('Donne un titre à la nouvelle aventure.','err');return;}
+ fetch(SB+'aventures',{method:'POST',headers:avhdr({'Prefer':'return=minimal'}),body:JSON.stringify({titre:t,statut:'brouillon',blocs:[]})}).then(function(r){
+  if(!r.ok){throw new Error('http');}
+  $$id('av-new').value='';
+  avmsg2('« '+t+' » créée en brouillon','ok');
+  avReload();
+ }).catch(function(){avmsg2('Échec de la création.','err');});
 }
 function avMonitor(){
-  var actives=AVS.filter(function(a){return a.statut==='active';});
-  Promise.all([
-    fetch(SB+'aventures_joueurs?select=*',{headers:avhdr()}).then(function(r){return r.json();}),
-    fetch(SB+'comptes?select=id,login,nom',{headers:avhdr()}).then(function(r){return r.json();})
-  ]).then(function(res){
-    var pres=res[0]||[],comptes=res[1]||[];
-    var cby={};comptes.forEach(function(c){cby[c.id]=c;});
-    var out='';
-    if(!actives.length){out='<div class="empty-boxc">Aucune aventure active — aucun suivi pour l’instant.</div>';}
-    actives.forEach(function(a){
-      var rows=pres.filter(function(p){return p.aventure_id===a.id;});
-      out+='<h3 style="margin-top:16px">'+avesc(a.titre||'')+'</h3>';
-      if(!rows.length){out+='<div class="empty-boxc">Aucune joueuse n’a encore consulté cette aventure.</div>';return;}
-      out+='<div class="tscroll"><table class="rt montab"><tr><th>Nom</th><th>Pseudo</th><th>Dernier accès</th><th>Statut</th></tr>';
-      rows.forEach(function(p){
-        var c=cby[p.compte_id]||{};
-        var online=p.ping&&(Date.now()-Date.parse(p.ping))<60000;
-        out+='<tr><td>'+avesc(c.nom||'?')+'</td><td>'+avesc(c.login||'?')+'</td><td>'+avesc(fmtD(p.dernier_acces))+'</td><td>'+(online?'<span class="monline">● En ligne</span>':'<span class="monoff">○ Hors ligne</span>')+'</td></tr>';
-      });
-      out+='</table></div>';
-    });
-    $$id('mon-list').innerHTML=out;
-    var m=$$id('mon-msg');if(m){m.textContent='';}
-  }).catch(function(){var m=$$id('mon-msg');if(m){m.textContent='Aperçu indisponible (connexion ?).';m.className='gmsgc err';}});
+ var actives=AVS.filter(function(a){return a.statut==='active';});
+ Promise.all([
+  fetch(SB+'aventures_joueurs?select=*',{headers:avhdr()}).then(function(r){return r.json();}),
+  fetch(SB+'comptes?select=id,login,nom',{headers:avhdr()}).then(function(r){return r.json();})
+ ]).then(function(res){
+  var pres=res[0]||[],comptes=res[1]||[];
+  var cby={};comptes.forEach(function(c){cby[c.id]=c;});
+  var out='';
+  if(!actives.length){out='<div class="empty-boxc">Aucune aventure active — aucun suivi pour l’instant.</div>';}
+  actives.forEach(function(a){
+   var rows=pres.filter(function(p){return p.aventure_id===a.id;});
+   out+='<h3 style="margin-top:16px">'+avesc(a.titre||'')+'</h3>';
+   if(!rows.length){out+='<div class="empty-boxc">Aucune joueuse n’a encore consulté cette aventure.</div>';return;}
+   out+='<div class="tscroll"><table class="rt montab"><tr><th>Nom</th><th>Pseudo</th><th>Dernier accès</th><th>Statut</th></tr>';
+   rows.forEach(function(p){
+    var c=cby[p.compte_id]||{};
+    var online=p.ping&&(Date.now()-Date.parse(p.ping))<60000;
+    out+='<tr><td>'+avesc(c.nom||'?')+'</td><td>'+avesc(c.login||'?')+'</td><td>'+avesc(fmtD(p.dernier_acces))+'</td><td>'+(online?'<span class="monline">● En ligne</span>':'<span class="monoff">○ Hors ligne</span>')+'</td></tr>';
+   });
+   out+='</table></div>';
+  });
+  $$id('mon-list').innerHTML=out;
+  var m=$$id('mon-msg');if(m){m.textContent='';}
+ }).catch(function(){var m=$$id('mon-msg');if(m){m.textContent='Aperçu indisponible (connexion ?).';m.className='gmsgc err';}});
 }
 $$id('av-go').addEventListener('click',avOpen);
 $$id('av-key').addEventListener('keydown',function(e){if(e.key==='Enter'){avOpen();}});
@@ -186,16 +186,16 @@ $$id('av-create').addEventListener('click',avCreate);
 (function(){
 var TABS=["mj-content","mj-lock","av-console","carte-console","best-console","img-console","auth-console","comptes-console","des-sect"];
 function showTab(id){
-  var c=document.getElementById("mj-content"),l=document.getElementById("mj-lock");
-  TABS.forEach(function(t){if(t==="mj-content"||t==="mj-lock"){return;}var s=document.getElementById(t);if(s){s.style.display=(t===id)?"block":"none";}});
-  if(id==="mj-content"){if(c&&c.innerHTML.trim()){c.style.display="block";if(l){l.style.display="none";}}else{if(c){c.style.display="none";}if(l){l.style.display="";}}}
-  else{if(c){c.style.display="none";}if(l){l.style.display="none";}}
-  if(id==="comptes-console"&&window.MJCOMPTES_REFRESH){try{window.MJCOMPTES_REFRESH();}catch(e8){}}
-  var sh=document.getElementById("scenar-head");if(sh){sh.style.display=(id==="mj-content"||id==="mj-lock")?"block":"none";}
-  Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){a.classList.toggle("active",(a.getAttribute("href")||"")==="#"+id);});
+ var c=document.getElementById("mj-content"),l=document.getElementById("mj-lock");
+ TABS.forEach(function(t){if(t==="mj-content"||t==="mj-lock"){return;}var s=document.getElementById(t);if(s){s.style.display=(t===id)?"block":"none";}});
+ if(id==="mj-content"){if(c&&c.innerHTML.trim()){c.style.display="block";if(l){l.style.display="none";}}else{if(c){c.style.display="none";}if(l){l.style.display="";}}}
+ else{if(c){c.style.display="none";}if(l){l.style.display="none";}}
+ if(id==="comptes-console"&&window.MJCOMPTES_REFRESH){try{window.MJCOMPTES_REFRESH();}catch(e8){}}
+ var sh=document.getElementById("scenar-head");if(sh){sh.style.display=(id==="mj-content"||id==="mj-lock")?"block":"none";}
+ Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){a.classList.toggle("active",(a.getAttribute("href")||"")==="#"+id);});
 }
 Array.prototype.forEach.call(document.querySelectorAll(".subnav-in a"),function(a){
-  a.addEventListener("click",function(ev){var id=(a.getAttribute("href")||"").slice(1);if(TABS.indexOf(id)<0){return;}ev.preventDefault();showTab(id);try{localStorage.setItem("pe_mjtab",id);}catch(e6){}});
+ a.addEventListener("click",function(ev){var id=(a.getAttribute("href")||"").slice(1);if(TABS.indexOf(id)<0){return;}ev.preventDefault();showTab(id);try{localStorage.setItem("pe_mjtab",id);}catch(e6){}});
 });
 window.MJSHOW=showTab;
 })();

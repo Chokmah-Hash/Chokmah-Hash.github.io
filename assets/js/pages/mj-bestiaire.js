@@ -20,7 +20,7 @@ function bjList(){
     var ar=((b.data&&b.data.armes)||[]).length;
     out+='<div class="plrow"><div class="plinfo"><b>'+esc(b.nom)+'</b><span>'+esc(campLabelB(b.camp))+' · '+esc(b.faction||'—')+' · '+ar+' arme(s)</span></span></div>'
       +'<button class="btn amber sm" data-act="edit" data-nom="'+esc(b.nom)+'" type="button">✎ Modifier</button>'
-      +'<button class="btn danger sm" data-act="del" data-nom="'+esc(b.nom)+'" type="button">🗑</button></div>';
+      +'<button class="btn danger sm" data-act="del" data-nom="'+esc(b.nom)+'" type="button">✕</button></div>';
   });
   box.innerHTML=out;
   Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
@@ -39,12 +39,12 @@ function bjFill(nom){
   ['m','cc','ct','f','e','pv','a','cd','sv','rfx'].forEach(function(k){$('b-'+k).value=st[k]||'';});
   $('b-armes').value=((b.data&&b.data.armes)||[]).join('\n');
   $('b-notes').value=(b.data&&b.data.notes)||'';
-  $('b-form-title').textContent='🦴 Modifier : '+(b.nom||'');
+  $('b-form-title').textContent='Modifier : '+(b.nom||'');
   $('b-del').style.display='';
   bmsg('b-fmsg','« '+(b.nom||'')+' » chargé dans le formulaire — modifie puis enregistre.','');
 }
 function bjClear(){
-  $('b-form-title').textContent='🦴 Nouvelle créature';
+  $('b-form-title').textContent='Nouvelle créature';
   $('b-old').value='';$('b-nom').value='';$('b-camp').value='ennemi';$('b-faction').value='';
   ['m','cc','ct','f','e','pv','a','cd','sv','rfx'].forEach(function(k){$('b-'+k).value='';});
   $('b-armes').value='';$('b-notes').value='';
@@ -119,7 +119,7 @@ $('b-save').addEventListener('click',function(){
       return {created:true};
     });
   }).then(function(res){
-    bmsg('b-fmsg',res.created?('« '+nom+' » ajouté au bestiaire ✅'):('« '+nom+' » mis à jour ✅'),'ok');
+    bmsg('b-fmsg',res.created?('« '+nom+' » ajouté au bestiaire'):('« '+nom+' » mis à jour'),'ok');
     $('b-old').value=nom;
     bjLoad();
   }).catch(function(e){

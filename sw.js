@@ -1,5 +1,5 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-18-theme3';
+var CACHE='pe-v2026-10-18-theme4';
 var PRECACHE=[
  '/', '/index.html', '/regles.html', '/console.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/joueur.html', '/mj.html', '/404.html',
  '/assets/css/main.css', '/assets/js/core.js', '/assets/js/vendor/supabase.js',
