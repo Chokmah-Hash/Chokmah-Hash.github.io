@@ -93,11 +93,11 @@ textarea.fld{resize:vertical;min-height:64px}
         <button type="button" data-t="notes">📝 Notes</button>
         <button type="button" data-t="des">🎲 Dés</button>
       
-        <a href="#logout" id="app-logout" style="margin-left:auto">🚪 Se déconnecter</a></div>
+        <a href="#logout" id="app-logout" style="margin-left:auto">🚪 Se déconnecter<span id="logout-who"></span></a></div>
     </nav>
 
     <main class="wrap">
-      <section class="hero rev">
+      <section class="hero rev" id="app-hero">
         <div class="glyphrow">⚡ ⬥ ⚡</div>
         <h1>Mon <b>Espace</b></h1>
         <div class="tagline">Aventure · Personnages · Notes</div>
@@ -144,10 +144,6 @@ textarea.fld{resize:vertical;min-height:64px}
 
             <!-- ============ VUE CONNECTÉE ============ -->
       <div id="app-view" style="display:none">
-        <div class="session-bar rev">
-          <span class="who">⚡ <span id="who-name"></span></span>
-          <button class="btn ghost small" id="btn-logout" type="button">Déconnexion</button>
-        </div>
 
         <!-- Onglet Aventure -->
         <section class="tabpane on" id="tab-av">
