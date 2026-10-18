@@ -38,8 +38,6 @@ function newToken(){
 }
 /* ——— Auth ——— */
 function authMsg(t,cls){setMsg('auth-msg',t,cls);}
-$('t-login').addEventListener('click',function(){$('t-login').classList.add('on');$('t-signup').classList.remove('on');$('f-login').style.display='';$('f-signup').style.display='none';authMsg('');});
-$('t-signup').addEventListener('click',function(){$('t-signup').classList.add('on');$('t-login').classList.remove('on');$('f-signup').style.display='';$('f-login').style.display='none';authMsg('');});
 $('f-login').addEventListener('submit',function(ev){
 
   ev.preventDefault();
@@ -57,24 +55,50 @@ $('f-login').addEventListener('submit',function(ev){
     enterApp();
   }).catch(function(){authMsg('Connexion impossible — vérifie ta connexion internet.','err');});
 });
-$('f-signup').addEventListener('submit',function(ev){
-
-  ev.preventDefault();
-  var u=$('s-user').value.trim(),nom=$('s-nom').value.trim(),p=$('s-pass').value,p2=$('s-pass2').value;
-  if(!u||!p){return;}
-  if(p!==p2){authMsg('Les deux mots de passe ne correspondent pas.','err');return;}
-  if(p.length<4){authMsg('Mot de passe trop court (4 caractères minimum).','err');return;}
-  authMsg('Création du compte…','');
-  api(SB+'rpc/creer_compte',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u,p_mdp:p,p_nom:nom||u})}).then(function(r){
-    if(!r.ok){throw new Error('http');}
-    return r.json();
-  }).then(function(rep0){
+var RID=null,RTIMER=null;
+function rMsg(t,cls){setMsg('r-status',t,cls);}
+function stopReset(){RID=null;if(RTIMER){clearInterval(RTIMER);RTIMER=null;}}
+$('mdp-oublie').addEventListener('click',function(){
+  var u=$('l-user').value.trim();
+  if(!u){authMsg('Saisis ton pseudo dans « Pseudo » puis clique sur ce bouton.','err');return;}
+  authMsg('');$('f-reset').style.display='';$('r-form').style.display='none';rMsg('Transmission de la demande au Maître de la Tombe…','');
+  api(SB+'rpc/demander_reset',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u})}).then(function(r){if(!r.ok){throw new Error('http');}return r.json();}).then(function(rep0){
     var rep=Array.isArray(rep0)?rep0[0]:rep0;
-    if(!rep||rep.erreur||!rep.token){authMsg((rep&&rep.erreur)||'Création impossible.','err');return;}
-    SESS={id:rep.id,login:rep.login||u,nom:rep.nom||u,token:rep.token};
-    try{localStorage.setItem('pe_session',JSON.stringify(SESS));}catch(e){}
-    enterApp();
-  }).catch(function(){authMsg('Création impossible — vérifie ta connexion internet.','err');});
+    if(!rep||rep.erreur||!rep.id){rMsg((rep&&rep.erreur)||'Demande impossible.','err');return;}
+    RID=rep.id;
+    rMsg('⏳ Demande transmise au Maître de la Tombe. Garde cette page ouverte : dès qu’il l’autorise, un champ « Nouveau mot de passe » apparaît ici — à utiliser dans les 5 minutes.','');
+    if(RTIMER){clearInterval(RTIMER);}
+    RTIMER=setInterval(function(){
+      api(SB+'rpc/statut_reset',{method:'POST',headers:hdr(),body:JSON.stringify({p_id:RID})}).then(function(r2){if(!r2.ok){throw new Error('http');}return r2.json();}).then(function(s0){
+        var s=Array.isArray(s0)?s0[0]:s0;
+        if(!s){return;}
+        if(s.statut==='valide'){stopReset();$('r-form').style.display='';rMsg('✅ Le Maître de la Tombe a autorisé ta demande — saisis ton nouveau mot de passe (5 minutes).','ok');}
+        else if(s.statut==='terminee'){stopReset();rMsg('Demande déjà traitée.','ok');}
+        else if(s.statut==='expire'){stopReset();$('r-form').style.display='none';rMsg('⏳ Autorisation expirée — clique à nouveau sur « Mot de passe oublié ? ».','err');}
+      }).catch(function(){});
+    },8000);
+  }).catch(function(){rMsg('Demande impossible — vérifie ta connexion internet.','err');});
+});
+$('r-cancel').addEventListener('click',function(){stopReset();$('f-reset').style.display='none';rMsg('');});
+$('r-form').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var u=$('l-user').value.trim(),p=$('r-pass').value,p2=$('r-pass2').value;
+  if(p!==p2){rMsg('Les deux mots de passe ne correspondent pas.','err');return;}
+  if(p.length<4){rMsg('Mot de passe trop court (4 caractères minimum).','err');return;}
+  if(!RID){rMsg('Demande inconnue — relance « Mot de passe oublié ? ».','err');return;}
+  rMsg('Enregistrement du nouveau mot de passe…','');
+  api(SB+'rpc/completer_reset',{method:'POST',headers:hdr(),body:JSON.stringify({p_id:RID,p_login:u,p_mdp:p})}).then(function(r){if(!r.ok){throw new Error('http');}return r.json();}).then(function(rep0){
+    var rep=Array.isArray(rep0)?rep0[0]:rep0;
+    if(!rep||rep.erreur||!rep.ok){rMsg((rep&&rep.erreur)||'Echec du reset.','err');return;}
+    api(SB+'rpc/connexion_joueur',{method:'POST',headers:hdr(),body:JSON.stringify({p_login:u,p_mdp:p})}).then(function(r2){if(!r2.ok){throw new Error('http');}return r2.json();}).then(function(j0){
+      var j=Array.isArray(j0)?j0[0]:j0;
+      if(!j||!j.token){throw new Error('sess');}
+      SESS={id:j.id,login:u,nom:j.nom||u,token:j.token};
+      try{localStorage.setItem('pe_session',JSON.stringify(SESS));}catch(e){}
+      stopReset();$('f-reset').style.display='none';$('r-pass').value='';$('r-pass2').value='';rMsg('');
+      enterApp();
+    }).catch(function(){stopReset();$('f-reset').style.display='none');authMsg('Mot de passe mis à jour — connecte-toi ci-dessus.','ok');});
+  }).catch(function(){rMsg('Echec du reset — vérifie ta connexion internet.','err');});
 });
 function logout(msg){
   try{localStorage.removeItem('pe_session');}catch(e){}
