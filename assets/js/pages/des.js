@@ -1,5 +1,8 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
+/* PE_BUILD 2026.10.18-des2 — dés + publication console */
 (function(){
+var PE_BUILD='2026.10.18-des2';
+window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var box=document.getElementById('des-box');
@@ -76,6 +79,29 @@ function refresh(){
   .then(function(l){render(l||[]);})
   .catch(function(){});
 }
+/* ————— Publication du jet sur la console (type 'de', visible par tous) ————— */
+function consolePub(n,faces,j){
+  try{
+    var contenu='🎲 '+n+'D'+faces+' : '+((j&&j.detail)||[]).join(' + ')+' = '+(j&&j.total);
+    var send=function(h){fetch(SB+'rest/v1/rpc/console_envoyer',{method:'POST',headers:h,body:JSON.stringify({p_contenu:contenu,p_dest:[],p_type:'de'})}).catch(function(){});};
+    var tryPlayer=function(){
+      try{
+        var s=JSON.parse(localStorage.getItem('pe_session')||'null');
+        if(s&&s.token){send({'apikey':SBK,'x-token':s.token,'Content-Type':'application/json'});}
+      }catch(e){}
+    };
+    if(window.supabase&&window.supabase.createClient){
+      try{
+        var cli=window.supabase.createClient(SB,SBK,{auth:{persistSession:true,storageKey:'pe-mj-auth'}});
+        cli.auth.getSession().then(function(r){
+          var t=r&&r.data&&r.data.session&&r.data.session.access_token;
+          if(t){send({'apikey':SBK,'Authorization':'Bearer '+t,'Content-Type':'application/json'});}
+          else{tryPlayer();}
+        }).catch(function(){tryPlayer();});
+      }catch(e){tryPlayer();}
+    }else{tryPlayer();}
+  }catch(e){}
+}
 function roll(){
   var nom=g('d-nom').value.trim()||'Anonyme';
   try{localStorage.setItem('pe_des_nom',nom);}catch(e){}
@@ -84,7 +110,7 @@ function roll(){
   setStatus('Les dés roulent…');
   fetch(SB+'rest/v1/rpc/lancer_des',{method:'POST',headers:{'apikey':SBK,'Authorization':'Bearer '+SBK,'Content-Type':'application/json'},body:JSON.stringify({n:n,faces:faces,joueur:nom})})
   .then(function(r){if(!r.ok){throw new Error('http '+r.status);}return r.json();})
-  .then(function(j){setStatus('🎲 '+n+'D'+faces+' → total '+(j&&j.total)+' ('+((j&&j.detail)||[]).join(' + ')+')');refresh();})
+  .then(function(j){setStatus('🎲 '+n+'D'+faces+' → total '+(j&&j.total)+' ('+((j&&j.detail)||[]).join(' + ')+')');refresh();consolePub(n,faces,j);})
   .catch(function(){setStatus('Lancer impossible — vérifie ta connexion internet.',true);});
 }
 g('d-roll-btn').addEventListener('click',roll);
