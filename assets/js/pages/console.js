@@ -1,4 +1,7 @@
 (function(){
+/* PE_BUILD 2026.10.18-dbg4 — version du moteur console (voir /debug) */
+var PE_BUILD='2026.10.18-dbg4';
+window.PE_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 function $(id){return document.getElementById(id);}
@@ -86,6 +89,12 @@ function rtState(){
     return String(st||'?');
   }catch(e){return 'err';}
 }
+/* — version : build du moteur + build html de la page — */
+function dbgVersion(){
+  var htmlB='?';
+  try{htmlB=document.documentElement.getAttribute('data-pe-build')||'absent';}catch(e){}
+  return {js:PE_BUILD, html:htmlB};
+}
 /* — style : styles calcules reels des elements cles — */
 var DBG_STY_SEL=['body','.nav','.card','.ctn-chat','#c-form-row','#c-input','.btn','.cm'];
 var DBG_STY_PROPS=['display','position','height','maxHeight','border','borderRadius','backgroundColor','color','fontFamily','fontSize','overflowY','padding','margin'];
@@ -115,6 +124,7 @@ function collectStyles(){
 }
 function collectVar(){
   return {
+    build:dbgVersion(),
     last:LAST, msgsAffiches:(BOX?BOX.children.length:0), boxH:(BOX?BOX.scrollHeight:0),
     boxVisibleH:(BOX?Math.round(BOX.getBoundingClientRect().height):0),
     mj:MJSIDE, joueur:(SESS?{nom:SESS.nom,avecToken:!!SESS.token}:null),
@@ -125,6 +135,7 @@ function collectVar(){
 function collectRt(){
   var n=navigator;
   return {
+    build:dbgVersion(),
     realtime:rtState(), canal:'console-live',
     supabaseJs:typeof window.supabase!=='undefined', client:!!window.CLIENT,
     online:n.onLine, conn:(n.connection&&n.connection.effectiveType)||null,
@@ -135,6 +146,7 @@ function collectRt(){
 }
 function collectSess(){
   return {
+    build:dbgVersion(),
     mj:MJSIDE, joueurPresent:!!SESS, nomJoueur:(SESS&&SESS.nom)||null,
     joueurAvecToken:!!(SESS&&SESS.token),
     lsKeys:lsKeys(),
@@ -144,7 +156,7 @@ function collectSess(){
 function collectFull(){
   var n=navigator, scr=screen, d=document, w=window;
   return {
-    v:2, t:new Date().toISOString(), sec:'full',
+    v:2, t:new Date().toISOString(), sec:'full', build:dbgVersion(),
     url:location.href, ref:d.referrer||'',
     ua:n.userAgent, plat:n.platform, lang:n.language, langs:(n.languages||[]).slice(0,4),
     online:n.onLine, cookie:n.cookieEnabled,
@@ -176,22 +188,22 @@ function showHelp(){
   div.innerHTML='<span class="cm-who">🔍 Debug — aide</span>'+
     '<div style="margin:6px 0 2px;padding:8px 12px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-size:.85rem;line-height:1.7">'+
     '<b>/debug</b> — dump complet (environnement + état + réseau)<br>'+
-    '<b>/debug var</b> — variables d\'état : messages chargés, sessions, erreurs<br>'+
+    '<b>/debug var</b> — variables d\'état : version, messages chargés, sessions, erreurs<br>'+
     '<b>/debug style</b> — styles réellement appliqués aux cadres et éléments<br>'+
     '<b>/debug rt</b> — temps réel : canal, connexion, latence, mémoire<br>'+
     '<b>/debug sess</b> — sessions : joueur, MJ, clés stockées<br>'+
     '<b>/debug help</b> — cette liste<br>'+
-    '<span style="color:var(--muted)">Réservé au Maître de la Tombe. 100 % local, aucun mot de passe dans les codes.</span></div>';
+    '<span style="color:var(--muted)">Réservé au Maître de la Tombe. 100 % local, aucun mot de passe dans les codes. Moteur '+esc(PE_BUILD)+'.</span></div>';
   BOX.appendChild(div);
   BOX.scrollTop=BOX.scrollHeight;
-  setStatus('Aide debug affichée.','ok');
+  setStatus('Aide debug affichée (moteur '+PE_BUILD+').','ok');
 }
 function showDebug(sec){
   var code=collectDebug(sec);
   BOX=BOX||$('c-box');
   var div=document.createElement('div');
   div.className='cm cm-mj cm-private';
-  var titre='🔍 Debug — '+(DBG_SECTIONS[sec]||sec);
+  var titre='🔍 Debug — '+(DBG_SECTIONS[sec]||sec)+' ('+PE_BUILD+')';
   div.innerHTML='<span class="cm-who">'+esc(titre)+'</span> <button class="btn ghost btn sm" style="min-height:26px;font-size:.68rem;padding:2px 10px">📋 Copier</button>'+
     '<div style="margin:6px 0 2px;padding:8px 10px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-family:monospace;font-size:.72rem;word-break:break-all;max-height:180px;overflow-y:auto">'+esc(code)+'</div>'+
     '<span class="cm-priv">Sections : /debug (complet) · /debug var · /debug style · /debug rt · /debug sess · /debug help — aucun mot de passe dans le code.</span>';
@@ -247,7 +259,7 @@ function initSession(){
       client.auth.getSession().then(function(s){
         if(s&&s.data&&s.data.session){
           MJSIDE=true;
-          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug help pour les commandes.','');
+          setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug help pour les commandes. (moteur '+PE_BUILD+')','');
           loadMessages();
         }else if(!SESS){
           setStatus('Vue anonyme — connecte-toi depuis la Zone joueurs pour écrire.','');
