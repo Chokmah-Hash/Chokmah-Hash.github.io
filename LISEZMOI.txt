@@ -9,6 +9,7 @@ Pages :
 - bestiaire.html  : bestiaire partage (fiches filtrees par faction + creatures reperees sur la carte)
 - galaxie.html    : carte de la galaxie (systemes, planetes, mappemondes et POI explorables)
 - mon-espace.html : espace joueur (connexion, position sur la carte, notes, jets de des partages)
+- console.html    : salon de discussion partage (messages du groupe et jets visibles en direct)
 - fiches.html     : fiches d'unites (acces uniquement depuis la Zone joueurs)
 - mj.html         : page du MJ (scenarios proteges, consoles aventures, carte et bestiaire, planetes et POI, jets de des)
 - 404.html        : page d'erreur autonome
