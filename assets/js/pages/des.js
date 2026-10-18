@@ -1,12 +1,14 @@
 /* Jets de dés partagés — Les Protocoles Éternels */
-/* PE_BUILD 2026.10.18-des2 — dés + publication console */
+/* PE_BUILD 2026.10.18-des3 — identité du lanceur = zone (page), pas session disponible */
 (function(){
-var PE_BUILD='2026.10.18-des2';
+var PE_BUILD='2026.10.18-des3';
 window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var box=document.getElementById('des-box');
 if(!box){return;}
+/* Identite par zone : mon-espace = joueur, mj = MJ — jamais l'inverse */
+var EST_ZONE_MJ=location.pathname.indexOf('/mj.html')>-1;
 var st=document.createElement('style');
 st.textContent='#des-box .d-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}'
 +'#des-box .d-lbl{display:block;font-size:.68rem;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:0 0 4px}'
@@ -30,7 +32,7 @@ function defNom(){
   if(!n){
     try{var s=JSON.parse(localStorage.getItem('pe_session')||'null');if(s&&s.nom){n=s.nom;}}catch(e){}
   }
-  return n||'MJ';
+  return n||(EST_ZONE_MJ?'MJ':'Joueur');
 }
 box.innerHTML='<div class="d-tools">'
 +'<div><label class="d-lbl" for="d-nom">Qui lance ?</label><input class="d-fld" id="d-nom" type="text" maxlength="30" style="max-width:170px"></div>'
@@ -79,27 +81,27 @@ function refresh(){
   .then(function(l){render(l||[]);})
   .catch(function(){});
 }
-/* ————— Publication du jet sur la console (type 'de', visible par tous) ————— */
+/* ————— Publication console : l'identite suit la ZONE, pas les sessions presentes ————— */
 function consolePub(n,faces,j){
   try{
     var contenu='🎲 '+n+'D'+faces+' : '+((j&&j.detail)||[]).join(' + ')+' = '+(j&&j.total);
     var send=function(h){fetch(SB+'rest/v1/rpc/console_envoyer',{method:'POST',headers:h,body:JSON.stringify({p_contenu:contenu,p_dest:[],p_type:'de'})}).catch(function(){});};
-    var tryPlayer=function(){
+    if(EST_ZONE_MJ){
+      /* Zone MJ : signe MJ uniquement (session supabase pe-mj-auth) */
+      if(window.supabase&&window.supabase.createClient){
+        var c=window.supabase.createClient(SB,SBK,{auth:{persistSession:true,storageKey:'pe-mj-auth'}});
+        c.auth.getSession().then(function(r){
+          var t=r&&r.data&&r.data.session&&r.data.session.access_token;
+          if(t){send({'apikey':SBK,'Authorization':'Bearer '+t,'Content-Type':'application/json'});}
+        }).catch(function(){});
+      }
+    }else{
+      /* Zone joueurs : signe joueur uniquement (token pe_session) */
       try{
         var s=JSON.parse(localStorage.getItem('pe_session')||'null');
         if(s&&s.token){send({'apikey':SBK,'x-token':s.token,'Content-Type':'application/json'});}
       }catch(e){}
-    };
-    if(window.supabase&&window.supabase.createClient){
-      try{
-        var cli=window.supabase.createClient(SB,SBK,{auth:{persistSession:true,storageKey:'pe-mj-auth'}});
-        cli.auth.getSession().then(function(r){
-          var t=r&&r.data&&r.data.session&&r.data.session.access_token;
-          if(t){send({'apikey':SBK,'Authorization':'Bearer '+t,'Content-Type':'application/json'});}
-          else{tryPlayer();}
-        }).catch(function(){tryPlayer();});
-      }catch(e){tryPlayer();}
-    }else{tryPlayer();}
+    }
   }catch(e){}
 }
 function roll(){
