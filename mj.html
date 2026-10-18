@@ -113,11 +113,12 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
         <a href="#best-console">🦴 Bestiaire</a>
         <a href="#img-console">🖼️ Images</a>
         <a href="#des-sect">🎲 Dés</a>
-          <a href="#comptes-console">👥 Compte</a>
+          <a href="#comptes-console">👥 Configuration</a>
           <a href="#logout" id="mj-logout">🚪 Se déconnecter</a>
       </div>
     </nav>
     <script src="assets/js/core.js"></script>
+    <script src="assets/js/theme.js"></script>
     <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
 
     <main class="wrap">
@@ -375,7 +376,7 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       <div id="des-box"></div>
     </section>
     <section class="sect" id="comptes-console">
-        <h2>👥 Console des comptes joueurs</h2>
+        <h2>👥 Configuration</h2>
         <div class="card amber">
           <h3>📋 Joueurs</h3>
           <p class="gmsgc" id="cj-lmsg"></p>
@@ -392,6 +393,16 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
           <div class="cta-row" style="justify-content:flex-start;margin-top:12px"><button class="btn amber" id="cj-create" type="button">✚ Créer le compte</button></div>
           <p class="gmsgc" id="cj-msg"></p>
         </div>
+                <div class="card amber" style="margin-top:18px">
+            <h3>Apparence du site</h3>
+            <p class="gmsgc">Choisis le pack de theme affiche sur tout le site, pour tous les joueurs : Imperium (ambre et or, defaut) ou Necrons (vert gaussique).</p>
+            <label class="glab" for="packsel">Pack de theme</label>
+            <select class="gf" id="packsel">
+              <option value="imperium">Imperium - ambre et or (defaut)</option>
+              <option value="necrons">Necrons - vert gaussique</option>
+            </select>
+            <p class="gmsgc" id="pack-msg"></p>
+          </div>
       </section>
     </main>
     <footer class="foot">
