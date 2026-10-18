@@ -105,3 +105,17 @@ section[id]{scroll-margin-top:110px}
 .nav.open .nav-links{position:absolute;top:100%;left:0;right:0;display:flex;flex-direction:column;gap:2px;padding:8px 14px 12px;background:rgba(10,18,15,.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
 .nav.open .nav-links a{padding:12px;min-height:44px}
 .nav.open .nav-links a.active{box-shadow:inset 2px 0 0 var(--teal);border-radius:8px}
+
+
+/* ===== Console (chat) ===== */
+.ctn-chat{height:52vh;min-height:280px;overflow-y:auto;border:1px solid var(--tealine);border-radius:8px;padding:10px 14px;background:rgba(6,16,13,.5);margin-top:10px}
+.cm{padding:3px 0;line-height:1.45;word-wrap:break-word}
+.cm-time{color:var(--muted);font-size:.75rem;font-family:'Exo 2',sans-serif}
+.cm-who{font-weight:700;font-family:'Rajdhani',sans-serif;color:var(--teal)}
+.cm-mj .cm-who{color:var(--amber)}
+.cm-priv{color:var(--amber);font-size:.8rem}
+.cm-private{border-left:2px solid var(--amber);padding-left:8px}
+.cm-de{color:#9dd8cc}
+#c-form-row{display:flex;gap:8px;margin-top:10px}
+#c-form-row .fld{flex:1}
+@media(max-width:640px){#c-form-row{flex-direction:column}}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Console — Les Protocoles Éternels</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:ital,wght@0,400;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+  <header class="nav rev">
+    <div class="nav-in">
+      <a class="logo" href="/">⚡ Les Protocoles Éternels</a>
+      <nav class="nav-links">
+        <a href="/">Accueil</a>
+        <a href="/console.html" class="active">Console</a>
+        <a href="/regles.html">Règles</a>
+        <a href="/bestiaire.html">Bestiaire</a>
+        <a href="/galaxie.html">Cartes</a>
+        <a href="/mon-espace.html" class="pj">🔐 Zone joueurs</a>
+        <a href="/mj.html" class="mj">🔒 Zone MJ</a>
+      </nav>
+    </div>
+  </header>
+  <script src="assets/js/core.js"></script>
+  <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+
+  <main class="wrap">
+    <section class="rev d1">
+      <h2>📡 Console</h2>
+      <p class="gmsg" id="c-status">Chargement…</p>
+      <div id="c-box" class="ctn-chat"></div>
+      <div id="c-form-row">
+        <input class="fld tealfld" id="c-input" type="text" placeholder="Ton message… (ou /mj, /pseudo)" maxlength="1000">
+        <button class="btn primary" id="c-send">→ Envoyer</button>
+      </div>
+      <p class="gmsg" id="c-hint" style="color:var(--muted)">Commandes : /mj "texte" · /pseudo "texte" · /pseudo1+pseudo2 "texte"</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="glyphrow">⚡ ⬥ ⚡</div>
+    <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+    <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne.</p>
+  </footer>
+
+  <script src="assets/js/vendor/supabase.js"></script>
+  <script src="assets/js/pages/console.js"></script>
+</body>
+</html>
