@@ -1,6 +1,6 @@
 (function(){
-/* PE_BUILD 2026.10.18-con3 — plus récent en haut (ordre chrono inversé) */
-var PE_BUILD='2026.10.18-con3';
+/* PE_BUILD 2026.10.20-con4 — plus récent en haut (ordre chrono inversé) */
+var PE_BUILD='2026.10.20-con4';
 window.PE_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -216,6 +216,40 @@ function showDebug(sec){
  BOX.scrollTop=0;
  setStatus('Debug '+(DBG_SECTIONS[sec]||sec)+' généré — 1 clic sur Copier.','ok');
 }
+/* ————— L'Oracle : interrogation IA (lecture seule, reponse visible uniquement ici) ————— */
+function oracleTime(){var d=new Date();return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
+function sendOracle(question,style){
+ BOX=BOX||$('c-box');
+ var wait=document.createElement('div');
+ wait.className='cm';
+ wait.innerHTML='<span class="cm-time">'+oracleTime()+'</span> <span class="cm-who"> ⟁ L\'Oracle</span>'+
+  '<div style="margin:6px 0 2px;padding:8px 12px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-size:.85rem">L\'Oracle médite…</div>';
+ BOX.insertBefore(wait,BOX.firstChild);
+ BOX.scrollTop=0;
+ setStatus('L\'Oracle médite…','');
+ var url='https://dnbnkdakmobufqcrqzpq.supabase.co/functions/v1/oracle';
+ var p;
+ if(MJSIDE){
+  p=freshMJToken().then(function(tk){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tk},body:JSON.stringify({question:question,style:style})});});
+ }else{
+  p=fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-token':(SESS&&SESS.token)||''},body:JSON.stringify({question:question,style:style})});
+ }
+ p.then(function(r){return r.json().then(function(rep){return {ok:r.ok,rep:rep};});}).then(function(o){
+  if(!o.ok||!o.rep||!o.rep.ok){
+   if(wait.parentNode){wait.parentNode.removeChild(wait);}
+   setStatus((o.rep&&o.rep.erreur)||'L\'Oracle reste silencieux.','err');
+   return;
+  }
+  var titre=' ⟁ L\'Oracle'+(style==='net'?' (neutre)':'');
+  wait.innerHTML='<span class="cm-time">'+oracleTime()+'</span> <span class="cm-who">'+titre+'</span>'+
+   '<div style="margin:6px 0 2px;padding:8px 12px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-size:.85rem;line-height:1.7">'+esc(o.rep.reponse)+'</div>'+
+   '<span class="cm-priv">Réponse de l\'Oracle — visible uniquement ici.</span>';
+  setStatus('L\'Oracle a répondu.','ok');
+ }).catch(function(){
+  if(wait.parentNode){wait.parentNode.removeChild(wait);}
+  setStatus('L\'Oracle est injoignable — vérifie ta connexion.','err');
+ });
+}
 function sendMessage(){
  var inp=$('c-input'), txt=inp.value.trim();
  if(!txt){return;}
@@ -227,6 +261,17 @@ function sendMessage(){
   if(!(sec in DBG_SECTIONS)){setStatus('Section inconnue : '+sec+'. Tape /debug help pour la liste.','err');return;}
   inp.value='';showDebug(sec);return;
  }
+  var orc=null,orcq='',orcStyle='tombe';
+ orc=/^\/oracle-net\s+"([\s\S]*)"\s*$/.exec(txt)||/^\/oracle-net\s+([\s\S]+?)\s*$/.exec(txt);
+ if(orc){orcq=orc[1];orcStyle='net';}
+ else{orc=/^\/oracle\s+"([\s\S]*)"\s*$/.exec(txt)||/^\/oracle\s+([\s\S]+?)\s*$/.exec(txt);if(orc){orcq=orc[1];}}
+ if(orcq){
+  if(!SESS&&!MJSIDE){setStatus('Connecte-toi (Zone joueurs) pour interroger l\'Oracle.','err');return;}
+  inp.value='';
+  sendOracle(orcq,orcStyle);
+  return;
+ }
+ if(/^\/oracle(-net)?\s*$/.test(txt)){setStatus('Pose ta question : /oracle "question" (voix de la Tombe) · /oracle-net "question" (neutre).','err');return;}
  var cmd=parseCmd(txt);
  var dest='[]';
  var body=txt;
