@@ -12,6 +12,7 @@ Pages :
 - console.html    : salon de discussion partage (messages du groupe et jets visibles en direct)
 - fiches.html     : fiches d'unites (acces uniquement depuis la Zone joueurs)
 - mj.html         : page du MJ (scenarios proteges, consoles aventures, carte et bestiaire, planetes et POI, jets de des)
+- espace-mj/moteur.html : moteur d'aventure du MJ (scenes, combats, inventaires ; sauvegarde locale + export/import JSON ; JSX React compile dans le navigateur, protege par la session Zone MJ)
 - 404.html        : page d'erreur autonome
 
 Assets :
@@ -21,7 +22,7 @@ Assets :
 - assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
                          service worker, menu et sous-menu mobiles)
 - assets/js/vendor/supabase.js : bibliotheque Supabase locale (temps reel, prechargee hors ligne)
-- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, joueur, mj, mj-carte, mj-bestiaire, des, auth, images)
+- assets/js/pages/     : un script par page (bestiaire, fiches, galaxie, joueur, mj, mj-carte, mj-bestiaire, des, auth, images, moteur)
 - icons/               : icones PWA (icon-192.png, apple-touch-icon.png)
 - images/              : illustrations (planetes, mappemondes, points d'interet)
 - Storage Supabase     : bucket public "images" pour heberger de nouvelles illustrations (URL a coller dans les consoles MJ)

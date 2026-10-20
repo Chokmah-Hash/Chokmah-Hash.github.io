@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr" data-pe-build="2026.10.20-mot1">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  
+
+    <meta name="robots" content="noindex, nofollow"><title>Moteur d'aventure — Les Protocoles Éternels</title>
+    <style>
+body.preauth main>section:not(#auth-console){display:none!important}
+/* Préflight Tailwind désactivé (config ci-dessous) — équivalent local, scopé au moteur */
+.pe-moteur :where(*,::before,::after){box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}
+.pe-moteur :where(h1,h2,h3,h4,h5,h6,p,ul,ol,figure,blockquote){margin:0}
+.pe-moteur :where(button,input,optgroup,select,textarea){font-family:inherit;font-size:100%;line-height:inherit;margin:0;padding:0;color:inherit}
+.pe-moteur button{cursor:pointer}
+#pe-moteur-racine{min-height:120px}
+</style>
+  </head>
+  <body class="preauth">
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/"><span class="pe-star lg"></span> PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/console.html">Console</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/bestiaire.html">Bestiaire</a>
+          <a href="/galaxie.html">Cartes</a>
+          <a href="/joueur.html" class="pj"><span class="pe-star"></span> Zone joueurs</a>
+          <a href="/mj.html" class="mj"><span class="pe-star"></span> Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <script src="assets/js/core.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
+
+    <main class="wrap">
+      <section class="sect rev" id="auth-console">
+      <h2><span class="pe-star lg"></span> Connexion du Maître de la Tombe</h2>
+      <div class="card amber" id="auth-box">
+        <span class="ico"><span class="pe-star lg"></span></span>
+        <h3>Connexion du Maître de la Tombe</h3>
+        <p>Connecte-toi pour ouvrir la Zone MJ : les consoles, les scénarios et les vérités cachées de la campagne.</p>
+        <div id="auth-form">
+          <span class="glabc" for="auth-email">E-mail</span>
+          <input type="email" id="auth-email" class="fldc" autocomplete="off" placeholder="mj@protocoles.jdr">
+          <span class="glabc" for="auth-pass">Mot de passe</span>
+          <input type="password" id="auth-pass" class="fldc" autocomplete="off" placeholder="Mot de passe">
+          <div style="margin-top:12px"><button class="btn amber" id="auth-go" type="button">Se connecter</button></div>
+        </div>
+        <div id="auth-user" style="display:none">
+          <p class="monline" id="auth-who"></p>
+          <div style="margin-top:10px"><button class="btn ghost" id="auth-out" type="button">Se déconnecter</button></div>
+        </div>
+        <p class="gmsgc" id="auth-msg"></p>
+      </div>
+    </section>
+
+      <section class="sect rev" id="moteur-sect">
+        <h2><span class="pe-star lg"></span> Moteur d'aventure</h2>
+        <div class="note-box amber">La sauvegarde vit dans le stockage local de ce navigateur (clé <code>pe_sim_mj</code>) : elle ne quitte jamais l'appareil. Utilise le bouton « ⇅ Export / Import JSON » de la barre du haut pour la transférer vers la simulation, ou vers un autre navigateur.</div>
+        <div id="pe-moteur-racine" class="pe-moteur"></div>
+      </section>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+    </footer>
+
+    <script src="assets/js/vendor/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={corePlugins:{preflight:false}}</script>
+    <script src="assets/js/pages/auth.js"></script>
+    <script type="text/babel" data-presets="react" src="/assets/js/pages/moteur.jsx"></script>
+  </body>
+</html>
