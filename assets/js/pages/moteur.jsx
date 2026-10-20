@@ -1,8 +1,11 @@
 /* Moteur d'aventure — Espace MJ — Les Protocoles Éternels
-   PE_BUILD 2026.10.20-mot3 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
+   PE_BUILD 2026.10.20-mot4 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
    Source de vérité : canvas « simulation-espace-mj » — resync live = recopier le corps React ici
    Sauvegarde : localStorage « pe_sim_mj » (export/import JSON intégré pour migrer entre origines) */
-var PE_BUILD = "2026.10.20-mot3";
+var PE_BUILD = "2026.10.20-mot4";
+var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
+var SBRPC='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_publier_aventure';
+var SBORACLE='https://dnbnkdakmobufqcrqzpq.supabase.co/functions/v1/oracle';
 window.PE_BUILD = PE_BUILD;
 const { useState, useEffect } = React;
 
@@ -359,6 +362,9 @@ function VueAventure({ etat, maj, avId, retour, basculerEdit }) {
   const [pickJoueur, setPickJoueur] = useState(JOUEURS[0].id);
   const [noteTxt, setNoteTxt] = useState("");
   const [confirmVider, setConfirmVider] = useState(false);
+  const [oracleMsg, setOracleMsg] = useState(null);
+  const [oracleAttente, setOracleAttente] = useState(false);
+  const [pubMsg, setPubMsg] = useState(null);
 
   const nbCoches = cibles ? cibles.checks.filter(Boolean).length : 0;
 
@@ -433,6 +439,52 @@ function VueAventure({ etat, maj, avId, retour, basculerEdit }) {
     const pp = avecPartie(p, avId);
     pp.journal = [];
   });
+
+  const mjBearer = () => window.MJBEARER || null;
+
+  const demanderResume = () => {
+    const tok = mjBearer();
+    if (!tok) { setOracleMsg("Connecte-toi en haut de page (Maître de la Tombe)."); return; }
+    const lignes = (partie.journal || []).slice(-30).map(l => String((l && l.txt) || l).slice(0, 280));
+    if (!lignes.length) { setOracleMsg("Le journal est vide — joue un peu d'abord."); return; }
+    setOracleAttente(true); setOracleMsg(null);
+    fetch(SBORACLE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tok },
+      body: JSON.stringify({
+        question: "Journal de la séance de l'aventure « " + (av ? (av.titre || "") : "") + " » :\n- " + lignes.join("\n- "),
+        style: "resume"
+      })
+    }).then(r => r.json()).then(rep => {
+      setOracleAttente(false);
+      if (rep && rep.ok) {
+        maj(p => { const pp = avecPartie(p, avId); pp.resume = rep.reponse; });
+      } else {
+        setOracleMsg((rep && rep.erreur) || "L'Oracle reste silencieux.");
+      }
+    }).catch(() => { setOracleAttente(false); setOracleMsg("L'Oracle est injoignable — vérifie ta connexion."); });
+  };
+
+  const publierAuxJoueurs = () => {
+    const tok = mjBearer();
+    if (!tok) { setPubMsg("Connecte-toi en haut de page (Maître de la Tombe)."); return; }
+    setPubMsg("Publication en cours…");
+    const blocs = [
+      { titre: "Scène en cours", texte: scene ? (scene.titre || "—") : "—" },
+      { titre: "Statut", texte: st === "finie" ? "Aventure terminée" : "Aventure en cours" },
+      { titre: "Derniers événements", texte: (partie.journal || []).slice(-8).map(l => String((l && l.txt) || l)).join("\n") || "—" }
+    ];
+    if (partie.resume) blocs.push({ titre: "Résumé de séance", texte: partie.resume });
+    fetch(SBRPC, {
+      method: "POST",
+      headers: { "apikey": SBK, "Authorization": "Bearer " + tok, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_titre: (av && av.titre) || "Aventure", p_statut: st === "finie" ? "terminee" : "active", p_blocs: blocs })
+    }).then(r => {
+      if (r.ok) { setPubMsg("✓ Publié — visible dans la Zone joueurs (onglet Aventure)."); }
+      else { return r.json().then(e => setPubMsg("Échec : " + ((e && e.message) || "réessaie."))); }
+    }).catch(() => setPubMsg("Publication impossible — vérifie ta connexion."));
+  };
+
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -547,7 +599,25 @@ function VueAventure({ etat, maj, avId, retour, basculerEdit }) {
                 ) : (
                   <button className={BTN_MJ + " w-full"} onClick={() => changerStatut("finie")}>✅ Aventure finie</button>
                 )}
-                <div className={ETIQ + " mt-3 text-[#f0b24a]"}>Dégâts encaissés</div>
+                                <div className={ETIQ + " mt-3 text-[#f0b24a]"}>L'Oracle — résumé de séance</div>
+                <button className={BTN_MJ + " w-full"} disabled={oracleAttente} onClick={() => demanderResume()}>{oracleAttente ? "⟁ L'Oracle rédige…" : "⟁ Résumé de séance (l'Oracle)"}</button>
+                {oracleMsg && <div className="mt-1 text-xs text-[#f0b24a]">{oracleMsg}</div>}
+                {partie.resume && (
+                  <div className="mt-2 rounded-lg border border-[#f0b24a]/20 bg-[#0d120a] p-2 text-xs text-[#c8e9df]">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#f0b24a]">Compte rendu de séance</span>
+                      <span className="flex gap-2">
+                        <button className="text-[10px] text-[#c8e9df] underline" onClick={() => { try { navigator.clipboard.writeText(partie.resume || ""); } catch (err) {} }}>⧉ Copier</button>
+                        <button className="text-[10px] text-[#7a9187] underline" onClick={() => maj(p => { const pp = avecPartie(p, avId); delete pp.resume; })}>✕ Effacer</button>
+                      </span>
+                    </div>
+                    <div className="mt-1 whitespace-pre-wrap">{partie.resume}</div>
+                  </div>
+                )}
+                <div className={ETIQ + " mt-3 text-[#f0b24a]"}>Publication — Zone joueurs</div>
+                <button className={BTN_MJ + " w-full"} onClick={() => publierAuxJoueurs()}>📡 Publier l'aventure aux joueurs</button>
+                {pubMsg && <div className="mt-1 text-xs text-[#c8e9df]">{pubMsg}</div>}
+<div className={ETIQ + " mt-3 text-[#f0b24a]"}>Dégâts encaissés</div>
                 <div className="grid grid-cols-2 gap-1 text-xs text-[#c8e9df]">
                   {JOUEURS.map(j => (
                     <span key={j.id}>{j.nom} : <b className={(partie.degats && partie.degats[j.id]) ? "text-red-300" : "text-[#7a9187]"}>{(partie.degats && partie.degats[j.id]) || 0}</b></span>

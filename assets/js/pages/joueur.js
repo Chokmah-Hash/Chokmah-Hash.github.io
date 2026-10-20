@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.18-pj3 — hero Mon Espace masque dans l app, deconnexion (nom) dans la sous-nav */
+/* PE_BUILD 2026.10.20-pj4 — hero Mon Espace masque dans l app, deconnexion (nom) dans la sous-nav */
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SESS=null;
@@ -149,9 +149,9 @@ Array.prototype.forEach.call(document.querySelectorAll('.subnav [data-t],.tabs .
  });
 });
 /* ——— Aventure ——— */
-function loadAventure(){
+function loadAventure(silence){
  if(!SESS){return;}
- setMsg('av-status','Chargement de l\u2019aventure…','');
+ if(!silence){setMsg('av-status','Chargement de l\u2019aventure…','');}
  api(SB+'aventures?select=id,titre,blocs,cree&statut=eq.active&order=cree.desc',{headers:hdr()}).then(function(r){
   if(!r.ok){throw new Error('http');}
   return r.json();
@@ -193,6 +193,7 @@ function renderAventure(err){
  $('av-list').innerHTML=out;
 }
 function pingPresence(){
+ if($('tab-av')&&$('tab-av').classList.contains('on')){loadAventure(true);}
  if(!SESS||!SESS.id||!AVS.length){return;}
  var t=nowIso();
  AVS.forEach(function(a){
