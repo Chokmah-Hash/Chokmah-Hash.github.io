@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-pe-build="2026.10.20-mot5">
+<html lang="fr" data-pe-build="2026.10.20-mot6">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +16,7 @@
     <meta name="robots" content="noindex, nofollow"><title>Moteur d'aventure — Les Protocoles Éternels</title>
     <style>
 body.preauth main>section:not(#auth-console),body.preauth .subnav{display:none!important}
+.subnav-in a.active,.subnav-in button.active{color:var(--amber);font-weight:700}
 /* Préflight Tailwind désactivé (config ci-dessous) — équivalent local, scopé au moteur */
 .pe-moteur :where(*,::before,::after){box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}
 .pe-moteur :where(h1,h2,h3,h4,h5,h6,p,ul,ol,figure,blockquote){margin:0}
@@ -44,7 +45,7 @@ body.preauth main>section:not(#auth-console),body.preauth .subnav{display:none!i
       <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Sections</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
       <div class="subnav-in">
           <a href="/mj.html#mj-content"><span class="pe-star"></span> Scénarios</a>
-        <a class="active" href="#moteur-sect"><span class="pe-star"></span> Aventures</a>
+        <button class="active" type="button" aria-current="page"><span class="pe-star"></span> Aventures</button>
         <a href="/mj.html#carte-console"><span class="pe-star"></span> Carte</a>
         <a href="/mj.html#best-console"><span class="pe-star"></span> Bestiaire</a>
         <a href="/mj.html#img-console"><span class="pe-star"></span> Images</a>
