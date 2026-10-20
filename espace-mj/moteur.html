@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-pe-build="2026.10.20-mot4">
+<html lang="fr" data-pe-build="2026.10.20-mot5">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@
 
     <meta name="robots" content="noindex, nofollow"><title>Moteur d'aventure — Les Protocoles Éternels</title>
     <style>
-body.preauth main>section:not(#auth-console){display:none!important}
+body.preauth main>section:not(#auth-console),body.preauth .subnav{display:none!important}
 /* Préflight Tailwind désactivé (config ci-dessous) — équivalent local, scopé au moteur */
 .pe-moteur :where(*,::before,::after){box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}
 .pe-moteur :where(h1,h2,h3,h4,h5,h6,p,ul,ol,figure,blockquote){margin:0}
@@ -40,6 +40,19 @@ body.preauth main>section:not(#auth-console){display:none!important}
         </nav>
       </div>
     </header>
+    <nav class="subnav" aria-label="Sections de la zone MJ">
+      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Sections</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
+      <div class="subnav-in">
+          <a href="/mj.html#mj-content"><span class="pe-star"></span> Scénarios</a>
+        <a class="active" href="#moteur-sect"><span class="pe-star"></span> Aventures</a>
+        <a href="/mj.html#carte-console"><span class="pe-star"></span> Carte</a>
+        <a href="/mj.html#best-console"><span class="pe-star"></span> Bestiaire</a>
+        <a href="/mj.html#img-console"><span class="pe-star"></span> Images</a>
+        <a href="/mj.html#des-sect"><span class="pe-star"></span> Dés</a>
+          <a href="/mj.html#comptes-console"><span class="pe-star"></span> Configuration</a>
+          <a href="#logout" id="mj-logout"><span class="pe-star"></span> Se déconnecter</a>
+      </div>
+    </nav>
     <script src="/assets/js/core.js"></script>
     <script src="/assets/js/theme.js"></script>
     <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
