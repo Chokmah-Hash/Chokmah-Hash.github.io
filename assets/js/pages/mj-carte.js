@@ -395,7 +395,6 @@ function renderPoiMap(){
   var cv=document.createElement('canvas');cv.width=320;cv.height=320;
   var cx=cv.getContext('2d');
   var refresh=function(){if(!inst){return;}inst.attach(cx);im.setAttribute('href',cv.toDataURL());pmPoiRender();pmCoordRefresh();};
-  window._pmR=refresh;
   var crank=function(d){if(!inst){return;}inst.step(d);refresh();var lb=$('pm-mlab');if(lb){lb.textContent='MÉRIDIEN '+((inst.idx%inst.count)+1)+' / '+inst.count;}};
   $('pm-prev').addEventListener('click',function(){crank(1);});
   $('pm-next').addEventListener('click',function(){crank(-1);});

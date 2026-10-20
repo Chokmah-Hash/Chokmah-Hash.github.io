@@ -25,18 +25,6 @@ function api(url,opt){return fetch(url,opt).then(function(r){
  if(r.status===401&&SESS&&url.indexOf('rpc/')<0){logout('Session expirée — reconnecte-toi.');throw new Error('session');}
  return r;
 });}
-function sha256hex(s){
- if(!(window.crypto&&crypto.subtle)){return Promise.reject(new Error('crypto'));}
- return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(function(buf){
-  var u=new Uint8Array(buf),out='';
-  for(var i=0;i<u.length;i++){out+=('0'+u[i].toString(16)).slice(-2);}
-  return out;
- });
-}
-function newToken(){
- if(window.crypto&&crypto.randomUUID){return crypto.randomUUID().replace(/-/g,'');}
- var s='';for(var i=0;i<2;i++){s+=Math.random().toString(36).slice(2)+Date.now().toString(36);}return s.slice(0,32);
-}
 /* ——— Auth ——— */
 function authMsg(t,cls){setMsg('auth-msg',t,cls);}
 $('f-login').addEventListener('submit',function(ev){

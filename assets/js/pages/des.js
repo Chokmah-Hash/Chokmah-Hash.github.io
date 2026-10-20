@@ -2,7 +2,6 @@
 /* PE_BUILD 2026.10.18-des9 — multi-groupes (3D6 + 1D20), type de jet (normal / fantôme local / attaque à venir), 10 derniers jets */
 (function(){
 var PE_BUILD='2026.10.18-des9';
-window.PE_DES_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var box=document.getElementById('des-box');
