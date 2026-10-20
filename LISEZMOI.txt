@@ -15,6 +15,8 @@ Pages :
 - 404.html        : page d'erreur autonome
 
 Assets :
+- assets/css/tokens.css : charte graphique du site (palette des packs, polices, geometrie) - voir THEME.md
+- THEME.md           : catalogue des objets de design du site
 - assets/css/main.css  : theme commun a toutes les pages (404.html exceptee)
 - assets/js/core.js    : noyau partage (lien de nav actif, bouton haut de page,
                          service worker, menu et sous-menu mobiles)

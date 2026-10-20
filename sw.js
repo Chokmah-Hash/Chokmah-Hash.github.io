@@ -1,8 +1,8 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-18-theme2';
+var CACHE='pe-v2026-10-19-template1';
 var PRECACHE=[
  '/', '/index.html', '/regles.html', '/console.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/joueur.html', '/mj.html', '/404.html',
- '/assets/css/main.css', '/assets/js/core.js', '/assets/js/vendor/supabase.js',
+ '/assets/css/tokens.css', '/assets/css/main.css', '/assets/js/core.js', '/assets/js/vendor/supabase.js',
  '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/joueur.js', '/assets/js/pages/console.js', '/assets/js/pages/mj.js', '/assets/js/pages/mj-carte.js', '/assets/js/pages/mj-bestiaire.js', '/assets/js/pages/des.js', '/assets/js/pages/auth.js', '/assets/js/pages/images.js', '/assets/js/pages/mj-comptes.js', '/assets/js/moteur-planetaire.js', '/assets/js/moteur-planetaire-rotation.js',
  '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
 ];
