@@ -1,8 +1,8 @@
 /* Moteur d'aventure — Espace MJ — Les Protocoles Éternels
-   PE_BUILD 2026.10.20-mot1 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
+   PE_BUILD 2026.10.20-mot3 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
    Source de vérité : canvas « simulation-espace-mj » — resync live = recopier le corps React ici
    Sauvegarde : localStorage « pe_sim_mj » (export/import JSON intégré pour migrer entre origines) */
-var PE_BUILD = "2026.10.20-mot1";
+var PE_BUILD = "2026.10.20-mot3";
 window.PE_BUILD = PE_BUILD;
 const { useState, useEffect } = React;
 
@@ -254,14 +254,6 @@ function Entete({ onglet, setOnglet, ouvrirExp }) {
           </span>
         </div>
       </div>
-      <nav className="mx-auto flex max-w-5xl gap-1 px-4 pb-2">
-        {[["aventures", "Aventures"], ["inventaires", "Inventaires"], ["monde", "Monde"]].map(o => (
-          <button key={o[0]} onClick={() => setOnglet(o[0])}
-            className={(onglet === o[0] ? "border-[#2ee6c9] text-[#2ee6c9]" : "border-transparent text-[#7a9187] hover:text-[#c8e9df]") + " border-b-2 px-3 py-1 text-sm font-bold tracking-wide"}>
-            {o[1]}
-          </button>
-        ))}
-      </nav>
     </header>
   );
 }
@@ -323,36 +315,32 @@ function Bibliotheque({ etat, ouvrir, editer, creer, supprEnCours, setSupprEnCou
         <h2 className="text-xl font-bold text-[#2ee6c9]">Bibliothèque d'aventures</h2>
         <button className={BTN} onClick={creer}>✚ Nouvelle aventure</button>
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-2">
         {(etat.aventures || []).map(av => {
           const st = etat.statuts[av.id] || "en_cours";
           const nb = (av.scenes || []).length;
           return (
-            <div key={av.id} className={CADRE + " hover:border-[#2ee6c9]/50"}>
-              <div className="flex items-start justify-between gap-2">
-                <button className="text-left" onClick={() => ouvrir(av.id)}>
-                  <div className="text-lg font-bold text-[#c8e9df] hover:text-[#2ee6c9]">{av.titre || "Aventure sans titre"}</div>
-                  <div className="mt-1 text-xs text-[#7a9187]">{nb} scène{nb > 1 ? "s" : ""} · {st === "finie" ? "finie" : "en cours"}</div>
-                </button>
-                <span className="flex shrink-0 items-center gap-1">
-                  <span className={(st === "finie" ? "bg-[#f0b24a]/15 text-[#f0b24a]" : "bg-[#2ee6c9]/10 text-[#2ee6c9]") + " rounded-full px-2 py-0.5 text-[10px] font-bold"}>
-                    {st === "finie" ? "FINIE" : "EN COURS"}
-                  </span>
-                  {av.test && <span className="rounded-full bg-[#7a9187]/15 px-2 py-0.5 text-[10px] text-[#7a9187]">TEST</span>}
+            <div key={av.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2ee6c9]/25 bg-[#0d1a15] px-3 py-2 hover:border-[#2ee6c9]/50">
+              <button className="text-left" onClick={() => ouvrir(av.id)}>
+                <span className="text-sm font-bold text-[#c8e9df] hover:text-[#2ee6c9]">{av.titre || "Aventure sans titre"}</span>
+                <span className="ml-2 text-xs text-[#7a9187]">{nb} scène{nb > 1 ? "s" : ""} · {st === "finie" ? "finie" : "en cours"}</span>
+              </button>
+              <span className="flex shrink-0 flex-wrap items-center gap-2">
+                <span className={(st === "finie" ? "bg-[#f0b24a]/15 text-[#f0b24a]" : "bg-[#2ee6c9]/10 text-[#2ee6c9]") + " rounded-full px-2 py-0.5 text-[10px] font-bold"}>
+                  {st === "finie" ? "FINIE" : "EN COURS"}
                 </span>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button className={BTN} onClick={() => ouvrir(av.id)}>Ouvrir</button>
-                <button className={BTN_MJ} onClick={() => editer(av.id)}>✎ Modifier</button>
+                {av.test && <span className="rounded-full bg-[#7a9187]/15 px-2 py-0.5 text-[10px] text-[#7a9187]">TEST</span>}
+                <button className={BTN + " text-xs"} onClick={() => ouvrir(av.id)}>Ouvrir</button>
+                <button className={BTN_MJ + " text-xs"} onClick={() => editer(av.id)}>✎ Modifier</button>
                 {!av.test && (supprEnCours !== av.id ? (
-                  <button className={BTN_DANGER} onClick={() => setSupprEnCours(av.id)}>✕ Supprimer</button>
+                  <button className={BTN_DANGER + " text-xs"} onClick={() => setSupprEnCours(av.id)}>✕ Supprimer</button>
                 ) : (
                   <span className="flex gap-2">
-                    <button className={BTN_DANGER} onClick={() => confirmerSuppr(av.id)}>✅ Supprimer définitivement</button>
-                    <button className={BTN} onClick={() => setSupprEnCours(null)}>Annuler</button>
+                    <button className={BTN_DANGER + " text-xs"} onClick={() => confirmerSuppr(av.id)}>✅ Supprimer définitivement</button>
+                    <button className={BTN + " text-xs"} onClick={() => setSupprEnCours(null)}>Annuler</button>
                   </span>
                 ))}
-              </div>
+              </span>
             </div>
           );
         })}
@@ -1144,6 +1132,16 @@ function App() {
       ))}
       {onglet === "inventaires" && <Inventaires etat={etat} />}
       {onglet === "monde" && <Monde etat={etat} />}
+      <div className="mx-auto max-w-5xl px-4 pt-2 pb-8">
+        <div className="flex flex-wrap justify-center gap-2">
+          {[["aventures", "Aventures"], ["inventaires", "Inventaires"], ["monde", "Monde"]].map(o => (
+            <button key={o[0]} onClick={() => setOnglet(o[0])}
+              className={(onglet === o[0] ? "border-[#2ee6c9] bg-[#123326] text-[#2ee6c9]" : "border-[#2ee6c9]/25 text-[#7a9187] hover:text-[#c8e9df]") + " rounded-full border px-3 py-1 text-xs font-bold tracking-wide"}>
+              {o[1]}
+            </button>
+          ))}
+        </div>
+      </div>
       {panneauExp && <PanneauExport etat={etat} importer={importer} fermer={() => setPanneauExp(false)} />}
     </div>
   );

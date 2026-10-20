@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-pe-build="2026.10.20-mj2">
+<html lang="fr" data-pe-build="2026.10.20-mj3">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -109,13 +109,12 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
       <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Sections</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
       <div class="subnav-in">
           <a href="#mj-content"><span class="pe-star"></span> Scénarios</a>
-        <a href="#av-console"><span class="pe-star"></span> Aventures</a>
+        <a href="/espace-mj/moteur.html"><span class="pe-star"></span> Aventures</a>
         <a href="#carte-console"><span class="pe-star"></span> Carte</a>
         <a href="#best-console"><span class="pe-star"></span> Bestiaire</a>
         <a href="#img-console"><span class="pe-star"></span> Images</a>
         <a href="#des-sect"><span class="pe-star"></span> Dés</a>
           <a href="#comptes-console"><span class="pe-star"></span> Configuration</a>
-          <a href="/espace-mj/moteur.html"><span class="pe-star"></span> Moteur d'aventure</a>
           <a href="#logout" id="mj-logout"><span class="pe-star"></span> Se déconnecter</a>
       </div>
     </nav>
@@ -138,33 +137,6 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
         </div>
       </section>
       <section id="mj-content" style="display:none"></section>
-      <section class="sect rev d2" id="av-console">
-        <h2><span class="pe-star lg"></span> Console des aventures en ligne</h2>
-        <div class="card amber" id="av-lockbox">
-          <span class="ico"><span class="pe-star lg"></span></span>
-          <h3>Ouvrir la console</h3>
-          <p>Prépare tes aventures en brouillon, enclenche-les pour les joueuses, et suis en direct qui les consulte. La clé saisie sert uniquement à signer les opérations : elle n&rsquo;est enregistrée nulle part.</p>
-          <span class="glabc" for="av-key">Clé MJ</span>
-          <input type="password" id="av-key" class="fldc" autocomplete="off" placeholder="Clé MJ">
-          <div style="margin-top:14px"><button class="btn amber" id="av-go" type="button">→ Ouvrir la console</button></div>
-          <p class="gmsgc" id="av-msg"></p>
-        </div>
-        <div id="av-panel" style="display:none">
-          <div class="card amber">
-            <span class="glabc" for="av-new">Nouvelle aventure — titre</span>
-            <input type="text" id="av-new" class="fldc" placeholder="Ex. L&rsquo;éveil de la crypte">
-            <div style="margin-top:12px"><button class="btn amber smallbtn" id="av-create" type="button">✚ Créer en brouillon</button></div>
-          </div>
-          <p class="gmsgc" id="av-msg2"></p>
-          <div id="av-list"></div>
-          <div class="sect" style="margin-top:28px">
-            <h3 style="margin-top:0"><span class="pe-star lg"></span> Joueurs connectés</h3>
-            <p class="gmsgc" id="mon-msg"></p>
-            <div id="mon-list"></div>
-          </div>
-        </div>
-        <div class="note-box amber">Une seule aventure peut être « active » à la fois : en activer une termine automatiquement la précédente. L&rsquo;aventure active apparaît dans l&rsquo;espace de chaque joueuse connectée — et tu vois qui la consulte, rafraîchi toutes les 15 secondes.</div>
-      </section>
 
       <section class="sect" id="carte-console">
         <h2><span class="pe-star lg"></span> Console de la carte</h2>
