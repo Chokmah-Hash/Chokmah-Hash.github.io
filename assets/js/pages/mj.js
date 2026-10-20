@@ -185,6 +185,7 @@ function avMonitor(){
 (function(){
 var TABS=["mj-content","mj-lock","carte-console","best-console","img-console","auth-console","comptes-console","des-sect"];
 function showTab(id){
+ try{localStorage.setItem("pe_mjzone",id);localStorage.setItem("pe_mjtab",id);}catch(e9){}
  var c=document.getElementById("mj-content"),l=document.getElementById("mj-lock");
  TABS.forEach(function(t){if(t==="mj-content"||t==="mj-lock"){return;}var s=document.getElementById(t);if(s){s.style.display=(t===id)?"block":"none";}});
  if(id==="mj-content"){if(c&&c.innerHTML.trim()){c.style.display="block";if(l){l.style.display="none";}}else{if(c){c.style.display="none";}if(l){l.style.display="";}}}

@@ -1,7 +1,8 @@
 /* Les Protocoles Éternels — core.js : lien de nav actif, bouton retour en haut, enregistrement du service worker */
 (function(){
 function init(){
-(function(){var p=location.pathname;document.querySelectorAll('.nav-links a').forEach(function(a){var h=a.getAttribute('href')||'';var n=h.replace(/\.html$/,'');if(n===''||n==='/'){if(p==='/'||p==='/index.html'){a.classList.add('active');}}else if(p===h||p===n||p.indexOf(n)===0){a.classList.add('active');}});})();
+(function(){var p=location.pathname;document.querySelectorAll('.nav-links a').forEach(function(a){var h=(a.getAttribute('href')||'').split('#')[0];var n=h.replace(/\.html$/,'');if(n===''||n==='/'){if(p==='/'||p==='/index.html'){a.classList.add('active');}}else if(p===h||p===n||p.indexOf(n)===0){a.classList.add('active');}});})();
+(function(){var a=document.querySelector('.nav-links a.mj');if(!a){return;}if(location.pathname.indexOf('/espace-mj/moteur.html')===0){return;}var z=null;try{z=localStorage.getItem('pe_mjzone');}catch(e){}if(!z){return;}if(z==='aventures'){a.setAttribute('href','/espace-mj/moteur.html');return;}if(['mj-content','carte-console','best-console','img-console','comptes-console','des-sect'].indexOf(z)>=0){a.setAttribute('href','/mj.html#'+z);}})();
 (function(){var b=document.getElementById('pe-top');if(!b){return;}window.addEventListener('scroll',function(){if(window.scrollY>300){b.classList.add('show');}else{b.classList.remove('show');}},{passive:true});b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});})();
 }
 /* Navigations repliables : hauteur de la barre principale (sticky), hamburger (barre du haut + sous-menu) dès que les liens débordent, lien actif au scroll */
