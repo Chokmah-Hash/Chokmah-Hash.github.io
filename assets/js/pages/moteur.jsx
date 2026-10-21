@@ -1,9 +1,10 @@
 /* Moteur d'aventure — Espace MJ — Les Protocoles Éternels
-   PE_BUILD 2026.10.21-mot10 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
+   PE_BUILD 2026.10.21-mot10b — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
    Source de vérité : canvas « simulation-espace-mj » — resync live = recopier le corps React ici
    Sauvegarde : serveur (RPC moteur_sauvegarder / moteur_charger, compte Maître de la Tombe) + copie locale « pe_sim_mj »
-   Onglet Équipement : vrais personnages des joueurs (RPC mj_lister_personnages / mj_donner_equipement) */
-var PE_BUILD = "2026.10.21-mot10";
+   Onglet Équipement : vrais personnages des joueurs (RPC mj_lister_personnages / mj_donner_equipement)
+   Navigation Aventures/Équipement/Monde : cadre en HAUT de page (mot10b, l'ancien bas de page est supprimé) */
+var PE_BUILD = "2026.10.21-mot10b";
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SBRPC='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_publier_aventure';
 var SBSAVE='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_sauvegarder';
@@ -1424,6 +1425,16 @@ function App() {
   return (
     <div style={FOND} className="min-h-screen bg-[#0a120f] pb-10 text-[#c8d6cf]">
       <Entete onglet={onglet} setOnglet={setOnglet} ouvrirExp={() => setPanneauExp(true)} nuageTxt={nuage.txt} nuageOk={nuage.ok} />
+      <div className="mx-auto max-w-5xl px-4 pt-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[#f0b24a]/30 bg-[#f0b24a]/5 px-3 py-2">
+          {[["aventures", "Aventures"], ["inventaires", "Équipement"], ["monde", "Monde"]].map(o => (
+            <button key={o[0]} onClick={() => setOnglet(o[0])}
+              className={(onglet === o[0] ? "border-[#2ee6c9] bg-[#123326] text-[#2ee6c9]" : "border-[#2ee6c9]/25 text-[#7a9187] hover:text-[#c8e9df]") + " rounded-full border px-3 py-1 text-xs font-bold tracking-wide"}>
+              {o[1]}
+            </button>
+          ))}
+        </div>
+      </div>
       {onglet === "aventures" && (!sel ? (
         <Bibliotheque
           etat={etat} ouvrir={ouvrir} editer={editer} creer={creer}
@@ -1444,16 +1455,6 @@ function App() {
       ))}
       {onglet === "inventaires" && <Inventaires />}
       {onglet === "monde" && <Monde etat={etat} />}
-      <div className="mx-auto max-w-5xl px-4 pt-2 pb-8">
-        <div className="flex flex-wrap justify-center gap-2">
-          {[["aventures", "Aventures"], ["inventaires", "Équipement"], ["monde", "Monde"]].map(o => (
-            <button key={o[0]} onClick={() => setOnglet(o[0])}
-              className={(onglet === o[0] ? "border-[#2ee6c9] bg-[#123326] text-[#2ee6c9]" : "border-[#2ee6c9]/25 text-[#7a9187] hover:text-[#c8e9df]") + " rounded-full border px-3 py-1 text-xs font-bold tracking-wide"}>
-              {o[1]}
-            </button>
-          ))}
-        </div>
-      </div>
       {panneauExp && <PanneauExport etat={etat} importer={importer} fermer={() => setPanneauExp(false)} />}
     </div>
   );
