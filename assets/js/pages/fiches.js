@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.21-f3 — fiches : fusion modules (mot12), cadre Châssis interactif, migration wargear → modules */
+/* PE_BUILD 2026.10.21-f4 — fiches : fusion complète armes+modules dans le châssis, Inventaire du personnage (mot13) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -27,22 +27,7 @@ var CH=[
 ];
 var CODES=["Éternel","Pragmatique","Sanguinaire","Solaire","Tutélaire","Fondateur"];
 var COMPS=["Perception","Furtivité","Technologie","Érudition","Commandement","Intimidation","Athlétisme","Pilotage"];
-var ARMES=[
- ["Fusil magnétique","48 m","1","5","-1","1","Perforation"],
- ["Canon magnétique","48 m","1","6","-1","1","Perforation"],
- ["Mitrailleur magnétique","36 m","2","6","-2","1","Perforation"],
- ["Canon longue-portée","72 m","1","7","-2","2","Précis : ignore le couvert"],
- ["Carabine à arcs","28 m","2","5","-1","1","Arc : critique = 1 dégât irréversible en plus"],
- ["Bâton d'énergie","24 m","1","5","-2","2","Aussi utilisable en mêlée"],
- ["Sceptre tactique","18 m","1","6","-1","2","Relance 1 au toucher, 1×/bataille"],
- ["Pistolets jumelés ×6","12 m","3","5","-2","1","Tir défensif sur un ennemi qui approche"],
- ["Bâton d'énergie (mêlée)","A","F+1","-2","2","—"],
- ["Lame désagrégatrice","A","F+1","-3","2","—"],
- ["Lames jumelles (paire)","A+1","F+1","-2","2","+1 A si deux lames"],
- ["Faucheuse lourde","A","F+2","-4","D3","Lourde : -1 à l'initiative"],
- ["Grappins déchiqueteurs","A+1","F+1","-2","1","Terreur : Cd -1 en face"],
- ["Sceptre de duel","A","F+2","-3","2","Critique sur 5+ en duel"]
-];
+
 var EQUIP=[
  ["Noyau de réparation","1×/bataille : un allié à 6 m relance son Protocole de Secours avec +2"],
  ["Écran de phase","Sauvegarde invulnérable 4++"],
@@ -60,8 +45,7 @@ function uid(){return "c"+Date.now().toString(36)+Math.random().toString(36).sli
 function byId(id){for(var i=0;i<state.chars.length;i++){if(state.chars[i].id===id)return state.chars[i];}return null;}
 function chByName(n){for(var i=0;i<CH.length;i++){if(CH[i].n===n)return CH[i];}return CH[0];}
 function norm(c){
-  if(!c.arm)c.arm=[{},{},{}];
-  while(c.arm.length<3)c.arm.push({});
+  if(!c.armes)c.armes=[];
   /* — modules (fusion mot12) + migration des anciennes lignes « Équipement » — */
   if(!c.modules)c.modules={capteurs:[],coeur:null,noyau:null,bouclier:null};
   if(!c.modules.capteurs)c.modules.capteurs=[];
@@ -80,6 +64,21 @@ function norm(c){
     });
     delete c.eq;
   }
+  /* — migration des anciennes lignes « Arsenal » vers le système d'armes (mot13) — */
+  if(c.arm&&c.arm.length){
+    var chx=EQ?EQ.chassiParNom(c.ch||""):null;
+    c.arm.forEach(function(r){
+      if(!r||!r.w){return;}
+      var a=EQ?EQ.armeParNom(r.w):null;
+      if(a){
+        if(chx&&a.taille<=chx.armes.t&&c.armes.length<chx.armes.n){c.armes.push(a.id);}
+        else{c.inv.push({uid:uid(),kind:"arme",id:a.id});}
+      }else{
+        c.inv.push({uid:uid(),kind:"armelibre",nom:r.w,po:r.po||"",at:r.at||"",f:r.f||"",pa:r.pa||"",d:r.d||"",sp:r.sp||"",taille:1});
+      }
+    });
+    delete c.arm;
+  }
   if(!c.pv)c.pv=[];
   while(c.pv.length<30)c.pv.push(false);
   if(c.pv.length>30)c.pv=c.pv.slice(0,30);
@@ -97,7 +96,7 @@ function blankChar(chName){
   return {id:uid(),nom:"",ch:c.n,code:"",fonction:"",emotion:"",opinion:"",
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
-   arm:[{},{},{}],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
+   armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
    xp:"",notes:"",maj:new Date().toISOString()};
 }
@@ -200,12 +199,6 @@ function fillForm(){
   pvNodes.forEach(function(el,i){el.classList.toggle("on",!!ch.pv[i]);});
   $("ech-0").classList.toggle("on",!!ch.ech[0]);$("ech-1").classList.toggle("on",!!ch.ech[1]);
   compsNodes.forEach(function(o){var on=ch.comps.indexOf(o.name)>=0;o.box.checked=on;o.lab.classList.toggle("on",on);});
-  for(var i=0;i<3;i++){
-    var a=ch.arm[i]||{};
-    setSelect("ar"+i+"-w",a.w||"");
-    $("ar"+i+"-po").value=a.po||"";$("ar"+i+"-at").value=a.at||"";$("ar"+i+"-f").value=a.f||"";
-    $("ar"+i+"-pa").value=a.pa||"";$("ar"+i+"-d").value=a.d||"";$("ar"+i+"-sp").value=a.sp||"";
-  }
   $("f-apt").value=ch.apt||"";$("f-aptA").value=ch.aptA||"";
   $("f-p1").value=ch.p1.t||"";$("f-p1u").checked=!!ch.p1.used;
   $("f-p2").value=ch.p2.t||"";$("f-p2u").checked=!!ch.p2.used;
@@ -220,9 +213,6 @@ function collect(){
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
   ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
-  for(var i=0;i<3;i++){
-    ch.arm[i]={w:$("ar"+i+"-w").value,po:$("ar"+i+"-po").value,at:$("ar"+i+"-at").value,f:$("ar"+i+"-f").value,pa:$("ar"+i+"-pa").value,d:$("ar"+i+"-d").value,sp:$("ar"+i+"-sp").value};
-  }
   ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;
   ch.p1={t:$("f-p1").value,used:$("f-p1u").checked};
   ch.p2={t:$("f-p2").value,used:$("f-p2u").checked};
@@ -235,7 +225,25 @@ function collect(){
 /* ===== Modules : cadre Châssis + inventaire (fusion mot12) ===== */
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function chFiche(c){return EQ&&EQ.chassiParNom?EQ.chassiParNom(c.ch||""):null;}
-function dAdapte(c){var ch=chFiche(c);return {chassis:ch?ch.id:null,armes:[],modules:c.modules,inventaire:c.inv};}
+function dAdapte(c){var ch=chFiche(c);return {chassis:ch?ch.id:null,armes:(c.armes||[]),modules:c.modules,inventaire:c.inv};}
+function nomArme(w){if(typeof w==="string"){var a=EQ.armeDe(w);return a?a.nom:w;}return (w&&w.nom)||"Arme";}
+function statsArmeLibre(w){
+  var s=[w.po,w.at,w.f,w.pa,w.d].map(function(x){return (x||"").toString().trim();}).filter(Boolean);
+  if(w.sp&&w.sp!=="—"){s.push(w.sp);}
+  return s.join(" · ");
+}
+function peutEquiperItem(c,it){
+  var ch=chFiche(c);
+  if(!ch){return {ok:false,raison:"châssis inconnu"};}
+  if(it.kind==="module"){return EQ.peutEquiper(dAdapte(c),it);}
+  if(it.kind==="arme"||it.kind==="armelibre"){
+    if((c.armes||[]).length>=ch.armes.n){return {ok:false,raison:"plus d'emplacement d'arme ("+ch.armes.n+"/"+ch.armes.n+")"};}
+    var t=(it.kind==="arme")?(EQ.armeDe(it.id)?EQ.armeDe(it.id).taille:0):(parseInt(it.taille,10)||1);
+    if(t>ch.armes.t){return {ok:false,raison:"taille "+EQ.T(t)+" > "+EQ.T(ch.armes.t)+" max du châssis"};}
+    return {ok:true};
+  }
+  return {ok:false,raison:"objet sans emplacement"};
+}
 function modMsg(t,cls){var m=$("mod-status");if(m){m.textContent=t||"";m.className="gmsg "+(cls||"");}}
 function badgeT(t){
   var coul=t>=4?"#e2604f":(t===3?"#f0b24a":(t===2?"#2ee6c9":"#7a9187"));
@@ -258,6 +266,20 @@ function ligneModule(nom,taille,desc,btn){
   +(desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div>':'')+'</div>'+(btn||'')+'</div>';
 }
 function videMsg(txt){return '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">'+txt+'</div>';}
+function ligneArme(w,idx){
+  if(typeof w==="string"){
+    var a=EQ.armeDe(w);
+    var badges=a?('<span class="badge">'+esc(a.portee)+'</span><span class="badge">Att '+esc(a.att)+'</span><span class="badge">F '+esc(a.f)+'</span><span class="badge">PA '+esc(a.pa)+'</span><span class="badge">D '+esc(a.d)+'</span>'):'';
+    return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:5px">'
+     +'<div><span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nomArme(w))+'</span> '+(a?badgeT(a.taille):'')
+     +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">'+badges+(a&&a.regle&&a.regle!=="—"?'<span style="font-size:.72rem;color:var(--muted);align-self:center">'+esc(a.regle)+'</span>':'')+'</div></div>'
+     +petitBtn("Ranger",'data-wrq="'+idx+'"')+'</div>';
+  }
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:5px">'
+   +'<div><span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nomArme(w))+'</span> '+badgeT(w.taille||1)
+   +(statsArmeLibre(w)?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(statsArmeLibre(w))+'</div>':'')+'</div>'
+   +petitBtn("Ranger",'data-wrq="'+idx+'"')+'</div>';
+}
 function renderModules(){
   var mc=$("mod-chassis"),mi=$("mod-inv");
   if(!mc||!mi){return;}
@@ -270,6 +292,7 @@ function renderModules(){
     return;
   }
   var m;
+  var cArmes=(cur.armes||[]).map(function(w,k){return ligneArme(w,k);}).join('')||videMsg("Aucune arme équipée — équipe depuis ton inventaire.");
   var nCap=(cur.modules.capteurs||[]).length;
   var cCap=(cur.modules.capteurs||[]).map(function(mid,k){
     m=EQ.moduleDe(mid);if(!m){return '';}
@@ -282,7 +305,8 @@ function renderModules(){
   m=EQ.moduleDe(cur.modules.bouclier);
   var cBo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="bouclier:0"')):videMsg("Aucun bouclier équipé.");
   mc.innerHTML=cadreChassis("Châssis — emplacements : armes "+EQ.T(ch.armes.t)+" max ×"+ch.armes.n,
-     sousCadre("Capteurs ("+nCap+"/"+ch.capteurs.n+" — "+EQ.T(ch.capteurs.t)+" max)",cCap)
+     sousCadre("Armes équipées ("+(cur.armes||[]).length+"/"+ch.armes.n+" — "+EQ.T(ch.armes.t)+" max)",cArmes)
+    +sousCadre("Capteurs ("+nCap+"/"+ch.capteurs.n+" — "+EQ.T(ch.capteurs.t)+" max)",cCap)
     +sousCadre("Cœur énergétique ("+EQ.T(ch.coeur.t)+" max)",cCo)
     +sousCadre("Noyau énergétique ("+EQ.T(ch.noyau.t)+" max)",cNo)
     +sousCadre(ch.bouclier.n?("Bouclier ("+EQ.T(ch.bouclier.t)+" max)"):"Bouclier (aucun emplacement)",cBo));
@@ -290,11 +314,12 @@ function renderModules(){
   inv.forEach(function(it){
     var nom,desc="",taille=null;
     if(it.kind==="module"){m=EQ.moduleDe(it.id);nom=m?m.nom:it.id;desc=m?m.desc:"";taille=m?m.taille:null;}
-    else if(it.kind==="arme"){var a=EQ.armeDe(it.id);nom=a?a.nom:it.id;taille=a?a.taille:null;}
+    else if(it.kind==="arme"){var a=EQ.armeDe(it.id);nom=a?a.nom:it.id;desc=a?((a.regle&&a.regle!=="—"?a.regle+" — ":"")+a.portee+" · Att "+a.att+" · F "+a.f+" · PA "+a.pa+" · D "+a.d):"";taille=a?a.taille:null;}
+    else if(it.kind==="armelibre"){nom=it.nom||"Arme";desc=statsArmeLibre(it);taille=parseInt(it.taille,10)||1;}
     else{nom=it.nom||"Objet";desc=it.effet||"";}
     var btns="";
-    if(it.kind==="module"){
-      var v=EQ.peutEquiper(dAdapte(cur),it);
+    if(it.kind==="module"||it.kind==="arme"||it.kind==="armelibre"){
+      var v=peutEquiperItem(cur,it);
       btns+=v.ok?petitBtn("Équiper",'data-meq="'+it.uid+'"'):('<span style="font-size:.68rem;color:var(--muted)" title="'+esc(v.raison)+'">'+esc(v.raison)+'</span>');
     }
     if(it.kind==="libre"){btns+=petitBtn(it.utilise?"✓ utilisé":"Marquer utilisé",'data-mut="'+it.uid+'"');}
@@ -311,28 +336,72 @@ function renderModules(){
     EQ.MODULES_DB.forEach(function(mo){if(mo.cat===cat){opts+='<option value="'+mo.id+'">'+esc(mo.nom)+" ("+EQ.T(mo.taille)+")</option>";}});
     opts+="</optgroup>";
   });
-  mi.innerHTML=(inv.length?'<ul style="padding:0;margin:6px 0 0">'+items+"</ul>":videMsg("Aucun module rangé. Ajoute-en un ci-dessous, puis équipe-le dans son emplacement."))
+  var optsA='<option value="">— choisir une arme —</option>';
+  EQ.ARMES_DB.forEach(function(ar){optsA+='<option value="'+ar.id+'">'+esc(ar.nom)+" ("+EQ.T(ar.taille)+")</option>";});
+  var optsT=["T1","T2","T3","T4"].map(function(t,k){return '<option value="'+(k+1)+'"'+(k===0?" selected":"")+'>'+t+"</option>";}).join("");
+  mi.innerHTML=(inv.length?'<ul style="padding:0;margin:6px 0 0">'+items+"</ul>":videMsg("Inventaire vide — tout ce qui est équipé vit dans le châssis ci-dessus ; ajoute ci-dessous armes, modules et objets."))
    +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">'
    +'<select id="mod-add" style="flex:1;min-width:200px">'+opts+"</select>"
    +petitBtn("＋ Ajouter le module",'data-madd="1"')
    +"</div>"
    +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">'
-   +'<input id="mod-lib-nom" type="text" placeholder="Objet libre — nom (relique, wargear…)" style="flex:1;min-width:160px">'
+   +'<select id="w-add" style="flex:1;min-width:200px">'+optsA+"</select>"
+   +petitBtn("＋ Ajouter l'arme",'data-wadd="1"')
+   +"</div>"
+   +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">'
+   +'<input id="w-lib-nom" type="text" placeholder="Arme personnalisée — nom (relique…)" style="flex:1;min-width:160px">'
+   +'<select id="w-lib-t" title="Taille" style="width:64px">'+optsT+"</select>"
+   +'<input id="w-lib-stats" type="text" placeholder="Profil — ex. 24 m · Att 1 · F5 · PA-1 · D2 · règle" style="flex:2;min-width:200px">'
+   +petitBtn("＋ Ajouter l'arme perso",'data-wlib="1"')
+   +"</div>"
+   +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">'
+   +'<input id="mod-lib-nom" type="text" placeholder="Objet libre — nom (wargear, relique non-arme…)" style="flex:1;min-width:160px">'
    +'<input id="mod-lib-eff" type="text" placeholder="Effet" style="flex:1;min-width:140px">'
    +petitBtn("＋ Ajouter l'objet",'data-mlib="1"')
    +"</div>";
 }
 function apresMod(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderModules();if(msg){modMsg(msg,"ok");}}
-function equiperModule(u){
+function equiperItem(u){
   var it=null,j;
   for(j=0;j<cur.inv.length;j++){if(cur.inv[j].uid===u){it=cur.inv[j];break;}}
   if(!it){return;}
-  var v=EQ.peutEquiper(dAdapte(cur),it);
+  var v=peutEquiperItem(cur,it);
   if(!v.ok){modMsg("Impossible d'équiper « "+EQ.nomItem(it)+" » : "+v.raison+".","err");return;}
   cur.inv.splice(j,1);
-  var mo=EQ.moduleDe(it.id);
-  if(mo.cat==="capteur"){cur.modules.capteurs.push(mo.id);}else{cur.modules[mo.cat]=mo.id;}
+  if(it.kind==="module"){
+    var mo=EQ.moduleDe(it.id);
+    if(mo.cat==="capteur"){cur.modules.capteurs.push(mo.id);}else{cur.modules[mo.cat]=mo.id;}
+  }else if(it.kind==="arme"){
+    cur.armes.push(it.id);
+  }else if(it.kind==="armelibre"){
+    cur.armes.push({uid:it.uid,libre:true,nom:it.nom,po:it.po,at:it.at,f:it.f,pa:it.pa,d:it.d,sp:it.sp,taille:parseInt(it.taille,10)||1});
+  }
   apresMod("« "+EQ.nomItem(it)+" » équipé.");
+}
+function rangerArme(idx){
+  var w=(cur.armes||[])[idx];
+  if(w===undefined){return;}
+  cur.armes.splice(idx,1);
+  if(typeof w==="string"){
+    cur.inv.push({uid:uid(),kind:"arme",id:w});
+  }else{
+    cur.inv.push({uid:w.uid||uid(),kind:"armelibre",nom:w.nom,po:w.po,at:w.at,f:w.f,pa:w.pa,d:w.d,sp:w.sp,taille:w.taille||1});
+  }
+  apresMod("« "+nomArme(w)+" » rangé dans l'inventaire.");
+}
+function ajouterArme(){
+  var s=$("w-add");
+  if(!s||!s.value){modMsg("Choisis d'abord une arme dans la liste.","err");return;}
+  var a=EQ.armeDe(s.value);if(!a){return;}
+  cur.inv.push({uid:uid(),kind:"arme",id:a.id});
+  apresMod("« "+a.nom+" » ajouté à l'inventaire — équipe-le dans le châssis.");
+}
+function ajouterArmeLibre(){
+  var n=$("w-lib-nom"),st=$("w-lib-stats"),t=$("w-lib-t");
+  var nom=(n?n.value:"").trim();
+  if(!nom){modMsg("Donne un nom à l'arme personnalisée.","err");return;}
+  cur.inv.push({uid:uid(),kind:"armelibre",nom:nom,sp:(st?st.value:"").trim(),taille:parseInt(t?t.value:"1",10)||1});
+  apresMod("« "+nom+" » ajouté à l'inventaire — équipe-la dans le châssis.");
 }
 function rangerModule(cat,idx){
   var mid=null;
@@ -367,6 +436,17 @@ function ajouterLibre(){
 function rangeModulesSurChangement(nomCh){
   var ch=EQ.chassiParNom(nomCh);if(!ch){return [];}
   var ranges=[],caps=[];
+  var armesGardes=[];
+  (cur.armes||[]).forEach(function(w){
+    var t=(typeof w==="string")?(EQ.armeDe(w)?EQ.armeDe(w).taille:99):(w.taille||1);
+    if(t<=ch.armes.t&&armesGardes.length<ch.armes.n){armesGardes.push(w);}
+    else{
+      ranges.push(nomArme(w));
+      if(typeof w==="string"){cur.inv.push({uid:uid(),kind:"arme",id:w});}
+      else{cur.inv.push({uid:w.uid||uid(),kind:"armelibre",nom:w.nom,po:w.po,at:w.at,f:w.f,pa:w.pa,d:w.d,sp:w.sp,taille:w.taille||1});}
+    }
+  });
+  cur.armes=armesGardes;
   (cur.modules.capteurs||[]).forEach(function(mid){
     var m=EQ.moduleDe(mid);
     if(m&&m.taille<=ch.capteurs.t&&caps.length<ch.capteurs.n){caps.push(mid);}
@@ -392,19 +472,6 @@ function init(){
   var codeSel=$("f-code");
   var oEmpty=document.createElement("option");oEmpty.value="";oEmpty.textContent="— aucune —";codeSel.appendChild(oEmpty);
   CODES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;codeSel.appendChild(o);});
-  for(var i=0;i<3;i++){
-    (function(i){
-      var sel=$("ar"+i+"-w");
-      var o0=document.createElement("option");o0.value="";o0.textContent="— arme personnalisée / vide —";sel.appendChild(o0);
-      ARMES.forEach(function(a){var o=document.createElement("option");o.value=a[0];o.textContent=a[0];sel.appendChild(o);});
-      sel.addEventListener("change",function(){
-        if(sel.value===""){return;}
-        ARMES.forEach(function(a){if(a[0]===sel.value){
-          $("ar"+i+"-po").value=a[1];$("ar"+i+"-at").value=a[2];$("ar"+i+"-f").value=a[3];$("ar"+i+"-pa").value=a[4];$("ar"+i+"-d").value=a[5];$("ar"+i+"-sp").value=a[6];
-        }});
-      });
-    })(i);
-  }
   for(var j=0;j<30;j++){
     (function(idx){
       var s=document.createElement("span");s.className="pv";
@@ -437,11 +504,14 @@ function init(){
     var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;
     if(!b||!$("view-edit").contains(b)||!cur){return;}
     var a;
-    if((a=b.getAttribute("data-meq"))!==null){equiperModule(a);}
+    if((a=b.getAttribute("data-meq"))!==null){equiperItem(a);}
     else if((a=b.getAttribute("data-mrq"))!==null){var pm=a.split(":");rangerModule(pm[0],parseInt(pm[1],10));}
+    else if((a=b.getAttribute("data-wrq"))!==null){rangerArme(parseInt(a,10));}
     else if((a=b.getAttribute("data-mjet"))!==null){retirerItem(a);}
     else if((a=b.getAttribute("data-mut"))!==null){toggleUtilise(a);}
     else if(b.getAttribute("data-madd")){ajouterModule();}
+    else if(b.getAttribute("data-wadd")){ajouterArme();}
+    else if(b.getAttribute("data-wlib")){ajouterArmeLibre();}
     else if(b.getAttribute("data-mlib")){ajouterLibre();}
   });
   /* — déconnexion (sous-menu) — */
