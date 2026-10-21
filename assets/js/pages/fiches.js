@@ -1,6 +1,8 @@
 
+/* PE_BUILD 2026.10.21-f3 — fiches : fusion modules (mot12), cadre Châssis interactif, migration wargear → modules */
 (function(){
 "use strict";
+var EQ=window.PE_EQUIP;
 /* Accès réservé : sans session joueur (joueur), renvoi vers Mon espace */
 try{
   var _sess=JSON.parse(localStorage.getItem("pe_session")||"null");
@@ -60,8 +62,24 @@ function chByName(n){for(var i=0;i<CH.length;i++){if(CH[i].n===n)return CH[i];}r
 function norm(c){
   if(!c.arm)c.arm=[{},{},{}];
   while(c.arm.length<3)c.arm.push({});
-  if(!c.eq)c.eq=[{},{},{}];
-  while(c.eq.length<3)c.eq.push({});
+  /* — modules (fusion mot12) + migration des anciennes lignes « Équipement » — */
+  if(!c.modules)c.modules={capteurs:[],coeur:null,noyau:null,bouclier:null};
+  if(!c.modules.capteurs)c.modules.capteurs=[];
+  ["coeur","noyau","bouclier"].forEach(function(k){if(!c.modules[k])c.modules[k]=null;});
+  if(!c.inv)c.inv=[];
+  if(c.eq&&c.eq.length){
+    c.eq.forEach(function(r){
+      if(!r||!r.w){return;}
+      var m=EQ?EQ.moduleParNom(r.w):null;
+      if(m){c.inv.push({uid:uid(),kind:"module",id:m.id});}
+      else{
+        var eff=r.e||"";
+        if(!eff){for(var k=0;k<EQUIP.length;k++){if(EQUIP[k][0]===r.w){eff=EQUIP[k][1];}}}
+        c.inv.push({uid:uid(),kind:"libre",nom:r.w,effet:eff,utilise:!!r.used});
+      }
+    });
+    delete c.eq;
+  }
   if(!c.pv)c.pv=[];
   while(c.pv.length<30)c.pv.push(false);
   if(c.pv.length>30)c.pv=c.pv.slice(0,30);
@@ -79,7 +97,7 @@ function blankChar(chName){
   return {id:uid(),nom:"",ch:c.n,code:"",fonction:"",emotion:"",opinion:"",
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
-   arm:[{},{},{}],eq:[{},{},{}],
+   arm:[{},{},{}],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
    xp:"",notes:"",maj:new Date().toISOString()};
 }
@@ -110,7 +128,7 @@ function pushChar(ch){
     fetch(SUPA_URL+"/fiches?on_conflict=id",{
       method:"POST",
       headers:Object.assign({},SUPA_HEADERS,{"Prefer":"resolution=merge-duplicates","x-owner-token":OTOK}),
-      body:JSON.stringify({id:ch.id,code_partie:"zulthekh",nom:ch.nom||"Unité sans nom",data:ch,owner_token:OTOK,maj:ch.maj||new Date().toISOString()})
+      body:JSON.stringify({id:ch.id,code_partie:"zulthekh",nom:ch.nom||"Personnage sans nom",data:ch,owner_token:OTOK,maj:ch.maj||new Date().toISOString()})
     }).then(function(r){
       if(r.ok){syncStatus("☁ Synchronisée — visible par toute la table","var(--teal)");}
       else{syncStatus("⚠ Synchronisation refusée (fiche protégée par sa créatrice) — enregistrée localement","var(--danger)");}
@@ -155,12 +173,12 @@ function renderCards(){
   var box=$("cards");box.textContent="";
   if(!state.chars.length){
     var p=document.createElement("p");p.style.color="var(--muted)";
-    p.textContent="Aucune unité enregistrée pour l'instant. Créez votre première fiche avec le bouton ci-dessus.";
+    p.textContent="Aucun personnage enregistré pour l'instant. Créez votre première fiche avec le bouton ci-dessus.";
     box.appendChild(p);return;
   }
   state.chars.forEach(function(ch){
     var card=document.createElement("div");card.className="card";
-    var h=document.createElement("h3");h.textContent=ch.nom||"Unité sans nom";card.appendChild(h);
+    var h=document.createElement("h3");h.textContent=ch.nom||"Personnage sans nom";card.appendChild(h);
     var meta=document.createElement("p");meta.textContent=ch.ch+(ch.code?" · Code "+ch.code:"");card.appendChild(meta);
     var pv=document.createElement("p");pv.textContent="PV perdus : "+pvLost(ch)+" / "+(ch.st.pv||"?")+(ch.xp!==""&&ch.xp!==undefined?" · XP : "+ch.xp:"");card.appendChild(pv);
     var row=document.createElement("div");row.className="cardbtns";
@@ -174,7 +192,7 @@ function renderCards(){
 function setSelect(id,val){var s=$(id);var ok=false;for(var i=0;i<s.options.length;i++){if(s.options[i].value===val){ok=true;break;}}s.value=ok?val:"";}
 function fillForm(){
   var ch=norm(cur);
-  $("f-title").textContent="Fiche — "+(ch.nom||"unité sans nom");
+  $("f-title").textContent="Fiche — "+(ch.nom||"personnage sans nom");
   $("f-nom").value=ch.nom;$("f-ch").value=ch.ch;setSelect("f-code",ch.code||"");
   $("f-fonction").value=ch.fonction||"";$("f-emotion").value=ch.emotion||"";$("f-opinion").value=ch.opinion||"";
   var st=ch.st;
@@ -187,14 +205,12 @@ function fillForm(){
     setSelect("ar"+i+"-w",a.w||"");
     $("ar"+i+"-po").value=a.po||"";$("ar"+i+"-at").value=a.at||"";$("ar"+i+"-f").value=a.f||"";
     $("ar"+i+"-pa").value=a.pa||"";$("ar"+i+"-d").value=a.d||"";$("ar"+i+"-sp").value=a.sp||"";
-    var q=ch.eq[i]||{};
-    setSelect("eq"+i+"-w",q.w||"");
-    $("eq"+i+"-e").value=q.e||"";$("eq"+i+"-u").checked=!!q.used;
   }
   $("f-apt").value=ch.apt||"";$("f-aptA").value=ch.aptA||"";
   $("f-p1").value=ch.p1.t||"";$("f-p1u").checked=!!ch.p1.used;
   $("f-p2").value=ch.p2.t||"";$("f-p2u").checked=!!ch.p2.used;
   $("f-xp").value=ch.xp||"";$("f-notes").value=ch.notes||"";
+  renderModules();
 }
 function collect(){
   if(!cur)return;
@@ -206,16 +222,165 @@ function collect(){
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
   for(var i=0;i<3;i++){
     ch.arm[i]={w:$("ar"+i+"-w").value,po:$("ar"+i+"-po").value,at:$("ar"+i+"-at").value,f:$("ar"+i+"-f").value,pa:$("ar"+i+"-pa").value,d:$("ar"+i+"-d").value,sp:$("ar"+i+"-sp").value};
-    ch.eq[i]={w:$("eq"+i+"-w").value,e:$("eq"+i+"-e").value,used:$("eq"+i+"-u").checked};
   }
   ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;
   ch.p1={t:$("f-p1").value,used:$("f-p1u").checked};
   ch.p2={t:$("f-p2").value,used:$("f-p2u").checked};
   ch.xp=$("f-xp").value;ch.notes=$("f-notes").value;
   ch.maj=new Date().toISOString();
-  $("f-title").textContent="Fiche — "+(ch.nom||"unité sans nom");
+  $("f-title").textContent="Fiche — "+(ch.nom||"personnage sans nom");
   save();
   queueSync(ch);
+}
+/* ===== Modules : cadre Châssis + inventaire (fusion mot12) ===== */
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function chFiche(c){return EQ&&EQ.chassiParNom?EQ.chassiParNom(c.ch||""):null;}
+function dAdapte(c){var ch=chFiche(c);return {chassis:ch?ch.id:null,armes:[],modules:c.modules,inventaire:c.inv};}
+function modMsg(t,cls){var m=$("mod-status");if(m){m.textContent=t||"";m.className="gmsg "+(cls||"");}}
+function badgeT(t){
+  var coul=t>=4?"#e2604f":(t===3?"#f0b24a":(t===2?"#2ee6c9":"#7a9187"));
+  return '<span class="badge" style="color:'+coul+';border-color:'+coul+'55">'+EQ.T(t)+'</span>';
+}
+function petitBtn(txt,attrs){
+  return '<button type="button" class="btn ghost" style="font-size:.68rem;padding:3px 10px;letter-spacing:.02em" '+attrs+'>'+esc(txt)+'</button>';
+}
+function cadreChassis(titre,contenu){
+  return '<div style="border:1px solid rgba(240,178,74,.3);background:rgba(240,178,74,.05);border-radius:10px;padding:10px 12px;margin:10px 0">'
+  +'<div style="font-size:.66rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#f0b24a">'+esc(titre)+'</div>'+contenu+'</div>';
+}
+function sousCadre(titre,contenu){
+  return '<div style="border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:7px 9px;margin-top:7px">'
+  +'<div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+esc(titre)+'</div>'+contenu+'</div>';
+}
+function ligneModule(nom,taille,desc,btn){
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:5px">'
+  +'<div><span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nom)+'</span> '+(taille?badgeT(taille):'')
+  +(desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div>':'')+'</div>'+(btn||'')+'</div>';
+}
+function videMsg(txt){return '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">'+txt+'</div>';}
+function renderModules(){
+  var mc=$("mod-chassis"),mi=$("mod-inv");
+  if(!mc||!mi){return;}
+  if(!cur){mc.textContent="";mi.textContent="";return;}
+  norm(cur);
+  var ch=chFiche(cur);
+  if(!ch){
+    mc.innerHTML=cadreChassis("Châssis — emplacements indisponibles",videMsg("Châssis « "+esc(cur.ch||"?")+" » hors liste — choisissez-en un dans Identité pour activer les emplacements de modules."));
+    mi.textContent="";
+    return;
+  }
+  var m;
+  var nCap=(cur.modules.capteurs||[]).length;
+  var cCap=(cur.modules.capteurs||[]).map(function(mid,k){
+    m=EQ.moduleDe(mid);if(!m){return '';}
+    return ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="capteur:'+k+'"'));
+  }).join('')||videMsg("Aucun capteur équipé.");
+  m=EQ.moduleDe(cur.modules.coeur);
+  var cCo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="coeur:0"')):videMsg("Aucun cœur équipé.");
+  m=EQ.moduleDe(cur.modules.noyau);
+  var cNo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="noyau:0"')):videMsg("Aucun noyau équipé.");
+  m=EQ.moduleDe(cur.modules.bouclier);
+  var cBo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="bouclier:0"')):videMsg("Aucun bouclier équipé.");
+  mc.innerHTML=cadreChassis("Châssis — emplacements : armes "+EQ.T(ch.armes.t)+" max ×"+ch.armes.n,
+     sousCadre("Capteurs ("+nCap+"/"+ch.capteurs.n+" — "+EQ.T(ch.capteurs.t)+" max)",cCap)
+    +sousCadre("Cœur énergétique ("+EQ.T(ch.coeur.t)+" max)",cCo)
+    +sousCadre("Noyau énergétique ("+EQ.T(ch.noyau.t)+" max)",cNo)
+    +sousCadre(ch.bouclier.n?("Bouclier ("+EQ.T(ch.bouclier.t)+" max)"):"Bouclier (aucun emplacement)",cBo));
+  var inv=cur.inv||[],items="";
+  inv.forEach(function(it){
+    var nom,desc="",taille=null;
+    if(it.kind==="module"){m=EQ.moduleDe(it.id);nom=m?m.nom:it.id;desc=m?m.desc:"";taille=m?m.taille:null;}
+    else if(it.kind==="arme"){var a=EQ.armeDe(it.id);nom=a?a.nom:it.id;taille=a?a.taille:null;}
+    else{nom=it.nom||"Objet";desc=it.effet||"";}
+    var btns="";
+    if(it.kind==="module"){
+      var v=EQ.peutEquiper(dAdapte(cur),it);
+      btns+=v.ok?petitBtn("Équiper",'data-meq="'+it.uid+'"'):('<span style="font-size:.68rem;color:var(--muted)" title="'+esc(v.raison)+'">'+esc(v.raison)+'</span>');
+    }
+    if(it.kind==="libre"){btns+=petitBtn(it.utilise?"✓ utilisé":"Marquer utilisé",'data-mut="'+it.uid+'"');}
+    btns+=petitBtn("Retirer",'data-mjet="'+it.uid+'"');
+    items+='<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
+     +'<span><span style="color:#c8e9df;font-weight:700">'+esc(nom)+'</span> '+(taille?badgeT(taille):'')
+     +(desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div>':'')+'</span>'
+     +'<span style="display:inline-flex;gap:6px;align-items:center">'+btns+'</span></li>';
+  });
+  var opts='<option value="">— choisir un module —</option>';
+  var cats={capteur:"Capteurs",coeur:"Cœurs énergétiques",noyau:"Noyaux de charge",bouclier:"Boucliers"};
+  Object.keys(cats).forEach(function(cat){
+    opts+='<optgroup label="'+cats[cat]+'">';
+    EQ.MODULES_DB.forEach(function(mo){if(mo.cat===cat){opts+='<option value="'+mo.id+'">'+esc(mo.nom)+" ("+EQ.T(mo.taille)+")</option>";}});
+    opts+="</optgroup>";
+  });
+  mi.innerHTML=(inv.length?'<ul style="padding:0;margin:6px 0 0">'+items+"</ul>":videMsg("Aucun module rangé. Ajoute-en un ci-dessous, puis équipe-le dans son emplacement."))
+   +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">'
+   +'<select id="mod-add" style="flex:1;min-width:200px">'+opts+"</select>"
+   +petitBtn("＋ Ajouter le module",'data-madd="1"')
+   +"</div>"
+   +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">'
+   +'<input id="mod-lib-nom" type="text" placeholder="Objet libre — nom (relique, wargear…)" style="flex:1;min-width:160px">'
+   +'<input id="mod-lib-eff" type="text" placeholder="Effet" style="flex:1;min-width:140px">'
+   +petitBtn("＋ Ajouter l'objet",'data-mlib="1"')
+   +"</div>";
+}
+function apresMod(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderModules();if(msg){modMsg(msg,"ok");}}
+function equiperModule(u){
+  var it=null,j;
+  for(j=0;j<cur.inv.length;j++){if(cur.inv[j].uid===u){it=cur.inv[j];break;}}
+  if(!it){return;}
+  var v=EQ.peutEquiper(dAdapte(cur),it);
+  if(!v.ok){modMsg("Impossible d'équiper « "+EQ.nomItem(it)+" » : "+v.raison+".","err");return;}
+  cur.inv.splice(j,1);
+  var mo=EQ.moduleDe(it.id);
+  if(mo.cat==="capteur"){cur.modules.capteurs.push(mo.id);}else{cur.modules[mo.cat]=mo.id;}
+  apresMod("« "+EQ.nomItem(it)+" » équipé.");
+}
+function rangerModule(cat,idx){
+  var mid=null;
+  if(cat==="capteur"){mid=cur.modules.capteurs[idx];if(!mid){return;}cur.modules.capteurs.splice(idx,1);}
+  else{mid=cur.modules[cat];if(!mid){return;}cur.modules[cat]=null;}
+  cur.inv.push({uid:uid(),kind:"module",id:mid});
+  var m=EQ.moduleDe(mid);
+  apresMod("« "+(m?m.nom:mid)+" » rangé.");
+}
+function retirerItem(u){
+  for(var j=0;j<cur.inv.length;j++){
+    if(cur.inv[j].uid===u){var nom=EQ.nomItem(cur.inv[j]);cur.inv.splice(j,1);apresMod("« "+nom+" » retiré.");return;}
+  }
+}
+function toggleUtilise(u){
+  for(var j=0;j<cur.inv.length;j++){if(cur.inv[j].uid===u){cur.inv[j].utilise=!cur.inv[j].utilise;apresMod("");return;}}
+}
+function ajouterModule(){
+  var s=$("mod-add");
+  if(!s||!s.value){modMsg("Choisis d'abord un module dans la liste.","err");return;}
+  var mo=EQ.moduleDe(s.value);if(!mo){return;}
+  cur.inv.push({uid:uid(),kind:"module",id:mo.id});
+  apresMod("« "+mo.nom+" » ajouté — équipe-le dans son emplacement.");
+}
+function ajouterLibre(){
+  var n=$("mod-lib-nom"),e=$("mod-lib-eff");
+  var nom=(n?n.value:"").trim();
+  if(!nom){modMsg("Donne un nom à l'objet libre.","err");return;}
+  cur.inv.push({uid:uid(),kind:"libre",nom:nom,effet:(e?e.value:"").trim(),utilise:false});
+  apresMod("« "+nom+" » ajouté.");
+}
+function rangeModulesSurChangement(nomCh){
+  var ch=EQ.chassiParNom(nomCh);if(!ch){return [];}
+  var ranges=[],caps=[];
+  (cur.modules.capteurs||[]).forEach(function(mid){
+    var m=EQ.moduleDe(mid);
+    if(m&&m.taille<=ch.capteurs.t&&caps.length<ch.capteurs.n){caps.push(mid);}
+    else{ranges.push(m?m.nom:mid);cur.inv.push({uid:uid(),kind:"module",id:mid});}
+  });
+  cur.modules.capteurs=caps;
+  ["coeur","noyau","bouclier"].forEach(function(cat){
+    var mid=cur.modules[cat];if(!mid){return;}
+    var m=EQ.moduleDe(mid),conf=ch[cat];
+    if(!m||m.taille>conf.t||(cat==="bouclier"&&conf.n===0)){
+      ranges.push(m?m.nom:mid);cur.inv.push({uid:uid(),kind:"module",id:mid});cur.modules[cat]=null;
+    }
+  });
+  return ranges;
 }
 function showList(){cur=null;$("view-edit").style.display="none";$("view-list").style.display="block";renderCards();}
 function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";fillForm();window.scrollTo(0,0);}
@@ -237,13 +402,6 @@ function init(){
         ARMES.forEach(function(a){if(a[0]===sel.value){
           $("ar"+i+"-po").value=a[1];$("ar"+i+"-at").value=a[2];$("ar"+i+"-f").value=a[3];$("ar"+i+"-pa").value=a[4];$("ar"+i+"-d").value=a[5];$("ar"+i+"-sp").value=a[6];
         }});
-      });
-      var eq=$("eq"+i+"-w");
-      var e0=document.createElement("option");e0.value="";e0.textContent="— objet personnalisé / vide —";eq.appendChild(e0);
-      EQUIP.forEach(function(x){var o=document.createElement("option");o.value=x[0];o.textContent=x[0];eq.appendChild(o);});
-      eq.addEventListener("change",function(){
-        if(eq.value===""){return;}
-        EQUIP.forEach(function(x){if(x[0]===eq.value){$("eq"+i+"-e").value=x[1];}});
       });
     })(i);
   }
@@ -270,8 +428,29 @@ function init(){
     var c=chByName($("f-ch").value);
     cur.st={m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:cur.st.inv||"",rfx:c.rfx};
     cur.apt=c.apt;cur.comps=c.cp.slice(0);
-    fillForm();save();
+    var ranges=rangeModulesSurChangement($("f-ch").value);
+    fillForm();save();queueSync(cur);
+    if(ranges.length){modMsg("Changement de châssis — rangé automatiquement : "+ranges.join(", "),"ok");}
   });
+  /* — actions modules (délégation sur la vue d'édition) — */
+  $("view-edit").addEventListener("click",function(ev){
+    var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;
+    if(!b||!$("view-edit").contains(b)||!cur){return;}
+    var a;
+    if((a=b.getAttribute("data-meq"))!==null){equiperModule(a);}
+    else if((a=b.getAttribute("data-mrq"))!==null){var pm=a.split(":");rangerModule(pm[0],parseInt(pm[1],10));}
+    else if((a=b.getAttribute("data-mjet"))!==null){retirerItem(a);}
+    else if((a=b.getAttribute("data-mut"))!==null){toggleUtilise(a);}
+    else if(b.getAttribute("data-madd")){ajouterModule();}
+    else if(b.getAttribute("data-mlib")){ajouterLibre();}
+  });
+  /* — déconnexion (sous-menu) — */
+  $("app-logout").addEventListener("click",function(ev){
+    ev.preventDefault();
+    try{localStorage.removeItem("pe_session");}catch(e){}
+    location.replace("https://chokmah-hash.github.io/joueur.html");
+  });
+  try{var _sess=JSON.parse(localStorage.getItem("pe_session")||"null");if(_sess&&_sess.nom){$("logout-who").textContent=" ("+_sess.nom+")";}}catch(e){}
   $("f-form").addEventListener("input",collect);
   $("f-form").addEventListener("change",collect);
   $("btn-new").addEventListener("click",function(){var c=blankChar("Fantassin programmé");state.chars.push(c);save();showEdit(c.id);});
@@ -300,7 +479,7 @@ function init(){
       if(!obj||!obj.st){throw new Error("bad");}
       norm(obj);obj.id=uid();obj.maj=new Date().toISOString();
       state.chars.push(obj);save();renderCards();queueSync(obj);
-      msg.textContent="Fiche importée : "+(obj.nom||"unité sans nom");
+      msg.textContent="Fiche importée : "+(obj.nom||"personnage sans nom");
       $("imp-code").value="";
     }catch(e){msg.textContent="Code invalide — vérifiez le copier-coller.";}
   });

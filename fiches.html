@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-    <meta name="robots" content="noindex, nofollow"><title>Fiches d'unité — Les Protocoles Éternels</title>
+    <meta name="robots" content="noindex, nofollow"><title>Fiches personnages — Les Protocoles Éternels</title>
     <!-- Optimizer - Canonical -->
     <!-- Optimizer - Custom Meta -->
     <!-- Optimizer - Open Graph -->
@@ -77,9 +77,9 @@ textarea{resize:vertical}
       <div class="subnav-in">
         <a href="/joueur.html#av"><span class="pe-star"></span> Aventure</a>
         <a href="/fiches.html" class="active"><span class="pe-star"></span> Personnages</a>
-        <a href="/joueur.html#pj"><span class="pe-star"></span> Équipement</a>
         <a href="/joueur.html#notes"><span class="pe-star"></span> Notes</a>
         <a href="/joueur.html#des"><span class="pe-star"></span> Dés</a>
+        <a href="#logout" id="app-logout" style="margin-left:auto"><span class="pe-star"></span> Se déconnecter<span id="logout-who"></span></a>
       </div>
     </nav>
     <script src="assets/js/core.js"></script>
@@ -88,9 +88,9 @@ textarea{resize:vertical}
 
     <main class="wrap">
       <section id="view-list" class="sect rev">
-        <h2>Vos fiches d'unité</h2>
+        <h2>Vos fiches personnages</h2>
         <div class="cta-row" style="justify-content:flex-start;margin:14px 0">
-          <button class="btn primary" id="btn-new">＋ Nouvelle unité</button>
+          <button class="btn primary" id="btn-new">＋ Nouveau personnage</button>
           <button class="btn ghost" id="btn-refresh">↻ Rafraîchir</button>
         </div>
         <div id="cards" class="grid3"></div>
@@ -108,7 +108,7 @@ textarea{resize:vertical}
           <button class="btn ghost" id="btn-code">⇄ Code d'export</button>
           <button class="btn danger" id="btn-del">Supprimer</button>
         </div>
-        <h2 id="f-title">Fiche d'unité</h2>
+        <h2 id="f-title">Fiche personnage</h2>
         <div id="exp-box" class="note-box">
           <strong>Code d'export de cette fiche</strong> — copiez-le et conservez-le (message privé, note…). Sur un autre appareil : Fiches → Importer un code.
           <textarea id="exp-code" rows="4" readonly style="width:100%;margin-top:8px"></textarea>
@@ -154,10 +154,10 @@ textarea{resize:vertical}
           <div class="arow"><select id="ar1-w"></select><input id="ar1-po" type="text"><input id="ar1-at" type="text"><input id="ar1-f" type="text"><input id="ar1-pa" type="text"><input id="ar1-d" type="text"><input id="ar1-sp" type="text"></div>
           <div class="arow"><select id="ar2-w"></select><input id="ar2-po" type="text"><input id="ar2-at" type="text"><input id="ar2-f" type="text"><input id="ar2-pa" type="text"><input id="ar2-d" type="text"><input id="ar2-sp" type="text"></div>
           <div class="note-box">Sélectionnez une arme de l'arsenal du manuel pour pré-remplir la ligne, ou saisissez librement (armes-reliques…).</div>
-          <h3 class="sub">Équipement</h3>
-          <div class="erow"><select id="eq0-w"></select><input id="eq0-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq0-u"> utilisée</label></div>
-          <div class="erow"><select id="eq1-w"></select><input id="eq1-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq1-u"> utilisée</label></div>
-          <div class="erow"><select id="eq2-w"></select><input id="eq2-e" type="text" placeholder="Effet"><label class="cb"><input type="checkbox" id="eq2-u"> utilisée</label></div>
+          <div id="mod-chassis"></div>
+          <h3 class="sub">Modules</h3>
+          <div id="mod-inv"></div>
+          <p class="gmsg" id="mod-status"></p>
           <h3 class="sub">Aptitudes &amp; pouvoirs</h3>
           <div class="ig">
             <div><label for="f-apt">Aptitude de châssis</label><input id="f-apt" type="text"></div>
@@ -182,6 +182,7 @@ textarea{resize:vertical}
       <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
     </footer>
 
+    <script src="assets/js/pe-equipement.js"></script>
     <script src="assets/js/pages/fiches.js"></script>
     <!-- Optimizer - Footer Javascripts -->
   </body>

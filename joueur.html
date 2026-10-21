@@ -93,7 +93,6 @@ textarea.fld{resize:vertical;min-height:64px}
       <div class="subnav-in">
         <button type="button" class="active" data-t="av"><span class="pe-star"></span> Aventure</button>
         <a href="/fiches.html"><span class="pe-star"></span> Personnages</a>
-        <button type="button" data-t="pj"><span class="pe-star"></span> Équipement</button>
         <button type="button" data-t="notes"><span class="pe-star"></span> Notes</button>
         <button type="button" data-t="des"><span class="pe-star"></span> Dés</button>
       
@@ -105,7 +104,7 @@ textarea.fld{resize:vertical;min-height:64px}
         <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
         <h1>Mon <b>Espace</b></h1>
         <div class="tagline">Aventure · Personnages · Notes</div>
-        <p class="pitch">Ton espace personnel : l'aventure en cours, tes personnages avec leur inventaire, et tes notes de campagne. Tout est sauvegardé dans la base partagée du groupe — accessible depuis n'importe quel appareil, suffit de te reconnecter.</p>
+        <p class="pitch">Ton espace personnel : l'aventure en cours, tes fiches de personnages avec leur équipement, et tes notes de campagne. Tout est sauvegardé dans la base partagée du groupe — accessible depuis n'importe quel appareil, suffit de te reconnecter.</p>
       </section>
 
       <!-- ============ VUE CONNEXION ============ -->
@@ -176,60 +175,6 @@ textarea.fld{resize:vertical;min-height:64px}
           </div>
         </section>
 
-        <!-- Onglet Personnages -->
-        <section class="tabpane" id="tab-pj">
-          <div class="sect rev d1">
-            <h2>Équipement de mes personnages</h2>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px">
-              <button type="button" class="btn amber" id="pj-new">Nouveau personnage</button>
-            </div>
-            <p id="pj-status" class="gmsg">Chargement…</p>
-            <div id="pj-list"></div>
-          </div>
-          <div class="sect amber rev d2" id="pj-form-sect">
-            <h2 id="pj-form-title">✚ Nouveau personnage</h2>
-            <div class="card amber">
-              <form id="pj-form">
-                <input type="hidden" id="p-id" value="">
-                <div class="ggrid" style="grid-template-columns:1fr 1fr">
-                  <div><label class="glab" for="p-nom">Nom du personnage</label><input class="fld" id="p-nom" type="text" required placeholder="Ex. Signa-3"></div>
-                  <div><label class="glab" for="p-chassis">Châssis</label><select class="fld" id="p-chassis"></select></div>
-                </div>
-                <label class="glab" for="p-code">Code de fabrique</label>
-                <select class="fld" id="p-code"></select>
-                <p class="aptdesc" id="p-apt"></p>
-                <p class="complist" id="p-comp"></p>
-                <label class="glab">Caractéristiques <span style="color:var(--muted);text-transform:none;letter-spacing:0">(préremplies selon le châssis)</span></label>
-                <div class="statgrid">
-                  <div><span class="glab teal" style="margin-top:0">M</span><input class="fld" id="st-m" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">CC</span><input class="fld" id="st-cc" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">CT</span><input class="fld" id="st-ct" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">F</span><input class="fld" id="st-f" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">E</span><input class="fld" id="st-e" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">PV</span><input class="fld" id="st-pv" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">A</span><input class="fld" id="st-a" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">Cd</span><input class="fld" id="st-cd" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">Sv</span><input class="fld" id="st-sv" type="text"></div>
-                  <div><span class="glab teal" style="margin-top:0">Rfx</span><input class="fld" id="st-rfx" type="text"></div>
-                </div>
-                <div class="ggrid" style="grid-template-columns:1fr 1fr">
-                  <div><label class="glab teal" for="p-pv">PV actuels</label><input class="fld tealfld" id="p-pv" type="number" inputmode="numeric"></div>
-                  <div><label class="glab teal" for="p-xp">XP</label><input class="fld tealfld" id="p-xp" type="number" inputmode="numeric" value="0"></div>
-                </div>
-                <p class="gmsg" style="margin-bottom:10px">Les armes, modules et l'inventaire se gèrent directement sur ta fiche, une fois le personnage créé. Le Maître de la Tombe peut aussi t'y remettre de l'équipement depuis son moteur.</p>
-                <label class="glab" for="p-notes">Notes de personnage (facultatif)</label>
-                <textarea class="fld" id="p-notes" placeholder="Historique, blessures, objectifs secrets…"></textarea>
-                <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
-                  <button type="submit" class="btn amber">Enregistrer</button>
-                  <button type="button" class="btn danger" id="p-del" style="display:none">Supprimer</button>
-                  <button type="button" class="btn ghost" id="p-clear">↺ Vider</button>
-                </div>
-                <p class="gmsg" id="pj-msg"></p>
-              </form>
-            </div>
-          </div>
-        </section>
-
         <!-- Onglet Notes -->
         <section class="tabpane" id="tab-notes">
           <div class="sect rev d1">
@@ -256,7 +201,6 @@ textarea.fld{resize:vertical;min-height:64px}
     </footer>
     <script src="assets/js/core.js"></script>
     <script src="assets/js/theme.js"></script>
-    <script src="assets/js/pe-equipement.js"></script>
     <script src="assets/js/pages/joueur.js"></script>
     <script src="assets/js/vendor/supabase.js"></script>
     <script src="assets/js/pages/des.js"></script>
