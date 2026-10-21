@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.21-f5 — fiches : cadre Châssis en lignes d'emplacements (une ligne par slot), même style que l'Inventaire (mot14) */
+/* PE_BUILD 2026.10.21-f6 — fiches : correctif « m is not defined » (var m, mode strict) + cadre Châssis en lignes d'emplacements, style Inventaire (mot14) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -314,7 +314,7 @@ function renderModules(){
   var inv=cur.inv||[],items="";
   inv.forEach(function(it){
     var nom,desc="",taille=null;
-    if(it.kind==="module"){m=EQ.moduleDe(it.id);nom=m?m.nom:it.id;desc=m?m.desc:"";taille=m?m.taille:null;}
+    if(it.kind==="module"){var m=EQ.moduleDe(it.id);nom=m?m.nom:it.id;desc=m?m.desc:"";taille=m?m.taille:null;}
     else if(it.kind==="arme"){var a=EQ.armeDe(it.id);nom=a?a.nom:it.id;desc=a?((a.regle&&a.regle!=="—"?a.regle+" — ":"")+a.portee+" · Att "+a.att+" · F "+a.f+" · PA "+a.pa+" · D "+a.d):"";taille=a?a.taille:null;}
     else if(it.kind==="armelibre"){nom=it.nom||"Arme";desc=statsArmeLibre(it);taille=parseInt(it.taille,10)||1;}
     else{nom=it.nom||"Objet";desc=it.effet||"";}
