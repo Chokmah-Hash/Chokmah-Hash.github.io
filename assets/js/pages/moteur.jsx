@@ -1,13 +1,15 @@
 /* Moteur d'aventure — Espace MJ — Les Protocoles Éternels
-   PE_BUILD 2026.10.20-mot4 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
+   PE_BUILD 2026.10.21-mot9 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
    Source de vérité : canvas « simulation-espace-mj » — resync live = recopier le corps React ici
-   Sauvegarde : localStorage « pe_sim_mj » (export/import JSON intégré pour migrer entre origines) */
-var PE_BUILD = "2026.10.20-mot4";
+   Sauvegarde : serveur (RPC moteur_sauvegarder / moteur_charger, compte Maître de la Tombe) + copie locale « pe_sim_mj » */
+var PE_BUILD = "2026.10.21-mot9";
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SBRPC='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_publier_aventure';
+var SBSAVE='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_sauvegarder';
+var SBCHARGE='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_charger';
 var SBORACLE='https://dnbnkdakmobufqcrqzpq.supabase.co/functions/v1/oracle';
 window.PE_BUILD = PE_BUILD;
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const DE = "\u{1F3B2}";
 const CLE = "pe_sim_mj";
@@ -229,7 +231,7 @@ const BTN_DANGER = "rounded-lg border border-red-500/40 bg-[#2a1210] px-3 py-1.5
 const CHAMP = "rounded-lg border border-[#2ee6c9]/20 bg-[#08120e] px-2 py-1.5 text-sm text-[#c8e9df] outline-none focus:border-[#2ee6c9]/60";
 const ETIQ = "text-xs uppercase tracking-wider text-[#7a9187] mb-1";
 
-function Entete({ onglet, setOnglet, ouvrirExp }) {
+function Entete({ onglet, setOnglet, ouvrirExp, nuageTxt, nuageOk }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const reset = () => {
     try { localStorage.removeItem(CLE); } catch (e) {}
@@ -243,7 +245,7 @@ function Entete({ onglet, setOnglet, ouvrirExp }) {
           <div className="text-xs text-[#7a9187]">Simulation locale · moteur d'aventure · joueurs : Signa-3, Nyx-9, Garde-78, Athan-4</div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="text-[10px] text-[#7a9187]">sauvegarde : localStorage <code>pe_sim_mj</code></span>
+          <span className={"text-[10px] " + (nuageOk === true ? "text-[#2ee6c9]" : nuageOk === false ? "text-[#f0b24a]" : "text-[#7a9187]")}>☁ {nuageTxt || "sauvegarde : locale uniquement"}</span>
           <span className="flex flex-wrap justify-end gap-2">
             <button className={BTN + " text-xs"} onClick={ouvrirExp}>⇅ Export / Import JSON</button>
             {!confirmReset ? (
@@ -290,7 +292,7 @@ function PanneauExport({ etat, importer, fermer }) {
           <h3 className="text-lg font-bold text-[#2ee6c9]">⇅ Export / Import de la sauvegarde</h3>
           <button className={BTN + " text-xs"} onClick={fermer}>Fermer</button>
         </div>
-        <p className="mb-4 text-xs text-[#7a9187]">La sauvegarde vit dans le localStorage de cette page (origine distincte de la version live du site). Pour la transférer : copiez le JSON exporté, puis collez-le dans le champ d'import de l'autre version.</p>
+        <p className="mb-4 text-xs text-[#7a9187]">La sauvegarde vit sur le serveur (compte Maître de la Tombe), avec une copie locale de secours (localStorage <code>pe_sim_mj</code>). L'export/import JSON ci-dessous sert à migrer manuellement vers un autre navigateur ou une autre origine.</p>
         <div className="mb-2 flex items-center justify-between">
           <span className={ETIQ + " mb-0"}>Exporter — copiez ce JSON</span>
           <button className={BTN + " text-xs"} onClick={copier}>⧉ Copier</button>
@@ -312,6 +314,7 @@ function PanneauExport({ etat, importer, fermer }) {
 }
 
 function Bibliotheque({ etat, ouvrir, editer, creer, supprEnCours, setSupprEnCours, confirmerSuppr }) {
+  const [titreSaisi, setTitreSaisi] = useState("");
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <div className="mb-4 flex items-center justify-between">
@@ -335,14 +338,15 @@ function Bibliotheque({ etat, ouvrir, editer, creer, supprEnCours, setSupprEnCou
                 {av.test && <span className="rounded-full bg-[#7a9187]/15 px-2 py-0.5 text-[10px] text-[#7a9187]">TEST</span>}
                 <button className={BTN + " text-xs"} onClick={() => ouvrir(av.id)}>Ouvrir</button>
                 <button className={BTN_MJ + " text-xs"} onClick={() => editer(av.id)}>✎ Modifier</button>
-                {!av.test && (supprEnCours !== av.id ? (
-                  <button className={BTN_DANGER + " text-xs"} onClick={() => setSupprEnCours(av.id)}>✕ Supprimer</button>
+                {supprEnCours !== av.id ? (
+                  <button className={BTN_DANGER + " text-xs"} onClick={() => { setTitreSaisi(""); setSupprEnCours(av.id); }}>✕ Supprimer</button>
                 ) : (
-                  <span className="flex gap-2">
-                    <button className={BTN_DANGER + " text-xs"} onClick={() => confirmerSuppr(av.id)}>✅ Supprimer définitivement</button>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <input className="rounded border border-[#f0b24a]/40 bg-[#0a120f] px-2 py-1 text-xs text-[#c8e9df]" style={{ maxWidth: "150px" }} placeholder="Taper le titre" value={titreSaisi} onChange={ev => setTitreSaisi(ev.target.value)} />
+                    <button className={BTN_DANGER + " text-xs " + (titreSaisi.trim() !== (av.titre || "") ? "opacity-40 pointer-events-none" : "")} onClick={() => confirmerSuppr(av.id)}>✕ Confirmer</button>
                     <button className={BTN + " text-xs"} onClick={() => setSupprEnCours(null)}>Annuler</button>
                   </span>
-                ))}
+                )}
               </span>
             </div>
           );
@@ -350,6 +354,20 @@ function Bibliotheque({ etat, ouvrir, editer, creer, supprEnCours, setSupprEnCou
       </div>
     </div>
   );
+}
+
+function blocsPour(e, avId) {
+  const av = (e.aventures || []).find(a => a.id === avId);
+  const partie = (e.parties || {})[avId] || { sceneId: null, journal: [], degats: {}, combat: null };
+  const scene = av ? (av.scenes || []).find(s => s.id === partie.sceneId) : null;
+  const st = (e.statuts || {})[avId] || "en_cours";
+  const blocs = [
+    { titre: "Scène en cours", texte: scene ? (scene.titre || "—") : "—" },
+    { titre: "Statut", texte: st === "finie" ? "Aventure terminée" : "Aventure en cours" },
+    { titre: "Derniers événements", texte: (partie.journal || []).slice(-8).map(l => String((l && l.txt) || l)).join("\n") || "—" }
+  ];
+  if (partie.resume) blocs.push({ titre: "Résumé de séance", texte: partie.resume });
+  return blocs;
 }
 
 function VueAventure({ etat, maj, avId, retour, basculerEdit }) {
@@ -1141,16 +1159,79 @@ function Monde({ etat }) {
   );
 }
 
+var MAJ0 = (function(){ try { var b = localStorage.getItem(CLE); return b ? ((JSON.parse(b) || {})._maj || "") : ""; } catch (e) { return ""; } })();
+
 function App() {
   const [etat, setEtat] = useState(charger);
   const [onglet, setOnglet] = useState("aventures");
   const [sel, setSel] = useState(null);
   const [supprEnCours, setSupprEnCours] = useState(null);
   const [panneauExp, setPanneauExp] = useState(false);
+  const [nuage, setNuage] = useState({ txt: "sauvegarde : locale uniquement", ok: null });
+  const etatRef = useRef(etat);
+  const selRef = useRef(sel);
+  const saleRef = useRef(false);
+  const chargeRef = useRef(false);
 
   useEffect(() => {
-    try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {}
+    try { localStorage.setItem(CLE, JSON.stringify(Object.assign({}, etat, { _maj: new Date().toISOString() }))); } catch (e) {}
+    etatRef.current = etat;
+    saleRef.current = true;
   }, [etat]);
+
+  useEffect(() => { selRef.current = sel; }, [sel]);
+
+  const pousserNuage = () => {
+    const tok = window.MJBEARER;
+    const e = etatRef.current;
+    if (!tok || !e || !e.aventures) return;
+    const corps = Object.assign({}, e, { _maj: new Date().toISOString() });
+    fetch(SBSAVE, {
+      method: "POST",
+      headers: { "apikey": SBK, "Authorization": "Bearer " + tok, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_etat: corps })
+    }).then(r => {
+      if (!r.ok) throw new Error("http");
+      setNuage({ txt: "sauvegardé sur le serveur", ok: true });
+      const s = selRef.current;
+      if (s && s.mode === "jeu") {
+        const av = (e.aventures || []).find(a => a.id === s.avId);
+        const st = (e.statuts || {})[s.avId] || "en_cours";
+        return fetch(SBRPC, {
+          method: "POST",
+          headers: { "apikey": SBK, "Authorization": "Bearer " + tok, "Content-Type": "application/json" },
+          body: JSON.stringify({ p_titre: (av && (av.titre || "")) || "Aventure", p_statut: st === "finie" ? "terminee" : "active", p_blocs: blocsPour(e, s.avId) })
+        }).then(r2 => { if (!r2.ok) throw new Error("pub"); });
+      }
+      return null;
+    }).catch(() => {
+      saleRef.current = true;
+      setNuage({ txt: "serveur injoignable — copie locale OK", ok: false });
+    });
+  };
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      const tok = window.MJBEARER;
+      if (!tok) return;
+      if (!chargeRef.current) {
+        chargeRef.current = true;
+        fetch(SBCHARGE, {
+          method: "POST",
+          headers: { "apikey": SBK, "Authorization": "Bearer " + tok, "Content-Type": "application/json" },
+          body: "{}"
+        }).then(r => r.ok ? r.json() : null).then(srv => {
+          if (srv && typeof srv === "object" && srv.aventures && (srv._maj || "") > MAJ0) {
+            setEtat(normaliser(srv));
+            setNuage({ txt: "chargé depuis le serveur", ok: true });
+          }
+        }).catch(() => { chargeRef.current = false; });
+        return;
+      }
+      if (saleRef.current) { saleRef.current = false; pousserNuage(); }
+    }, 2500);
+    return () => clearInterval(t);
+  }, []);
 
   const maj = (fn) => setEtat(prev => {
     const n = JSON.parse(JSON.stringify(prev));
@@ -1181,7 +1262,7 @@ function App() {
 
   return (
     <div style={FOND} className="min-h-screen bg-[#0a120f] pb-10 text-[#c8d6cf]">
-      <Entete onglet={onglet} setOnglet={setOnglet} ouvrirExp={() => setPanneauExp(true)} />
+      <Entete onglet={onglet} setOnglet={setOnglet} ouvrirExp={() => setPanneauExp(true)} nuageTxt={nuage.txt} nuageOk={nuage.ok} />
       {onglet === "aventures" && (!sel ? (
         <Bibliotheque
           etat={etat} ouvrir={ouvrir} editer={editer} creer={creer}
