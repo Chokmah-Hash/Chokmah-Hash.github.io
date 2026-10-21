@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.21-f4 — fiches : fusion complète armes+modules dans le châssis, Inventaire du personnage (mot13) */
+/* PE_BUILD 2026.10.21-f5 — fiches : cadre Châssis en lignes d'emplacements (une ligne par slot), même style que l'Inventaire (mot14) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -252,34 +252,30 @@ function badgeT(t){
 function petitBtn(txt,attrs){
   return '<button type="button" class="btn ghost" style="font-size:.68rem;padding:3px 10px;letter-spacing:.02em" '+attrs+'>'+esc(txt)+'</button>';
 }
-function cadreChassis(titre,contenu){
-  return '<div style="border:1px solid rgba(240,178,74,.3);background:rgba(240,178,74,.05);border-radius:10px;padding:10px 12px;margin:10px 0">'
-  +'<div style="font-size:.66rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#f0b24a">'+esc(titre)+'</div>'+contenu+'</div>';
-}
-function sousCadre(titre,contenu){
-  return '<div style="border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:7px 9px;margin-top:7px">'
-  +'<div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+esc(titre)+'</div>'+contenu+'</div>';
-}
-function ligneModule(nom,taille,desc,btn){
-  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:5px">'
-  +'<div><span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nom)+'</span> '+(taille?badgeT(taille):'')
-  +(desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div>':'')+'</div>'+(btn||'')+'</div>';
-}
 function videMsg(txt){return '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">'+txt+'</div>';}
-function ligneArme(w,idx){
+function ligneSlot(label,hint,contenu,btn,off){
+  return '<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
+  +'<div><span style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+esc(label)+'</span>'
+  +(hint?'<span style="font-size:.66rem;color:var(--muted);margin-left:6px">'+esc(hint)+'</span>':'')
+  +(contenu?'<div style="margin-top:2px">'+contenu+'</div>':'')+'</div>'
+  +(btn||'')+'</li>';
+}
+function contenuArme(w){
   if(typeof w==="string"){
     var a=EQ.armeDe(w);
     var badges=a?('<span class="badge">'+esc(a.portee)+'</span><span class="badge">Att '+esc(a.att)+'</span><span class="badge">F '+esc(a.f)+'</span><span class="badge">PA '+esc(a.pa)+'</span><span class="badge">D '+esc(a.d)+'</span>'):'';
-    return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:5px">'
-     +'<div><span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nomArme(w))+'</span> '+(a?badgeT(a.taille):'')
-     +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">'+badges+(a&&a.regle&&a.regle!=="—"?'<span style="font-size:.72rem;color:var(--muted);align-self:center">'+esc(a.regle)+'</span>':'')+'</div></div>'
-     +petitBtn("Ranger",'data-wrq="'+idx+'"')+'</div>';
+    return '<span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nomArme(w))+'</span> '+(a?badgeT(a.taille):'')
+     +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">'+badges+(a&&a.regle&&a.regle!=="—"?'<span style="font-size:.72rem;color:var(--muted);align-self:center">'+esc(a.regle)+'</span>':'')+'</div>';
   }
-  return '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:5px">'
-   +'<div><span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nomArme(w))+'</span> '+badgeT(w.taille||1)
-   +(statsArmeLibre(w)?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(statsArmeLibre(w))+'</div>':'')+'</div>'
-   +petitBtn("Ranger",'data-wrq="'+idx+'"')+'</div>';
+  return '<span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(nomArme(w))+'</span> '+badgeT(w.taille||1)
+   +(statsArmeLibre(w)?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(statsArmeLibre(w))+'</div>':'');
 }
+function contenuModule(mid){
+  var m=EQ.moduleDe(mid);if(!m){return '<span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(mid)+'</span>';}
+  return '<span style="color:#c8e9df;font-weight:700;font-size:.85rem">'+esc(m.nom)+'</span> '+badgeT(m.taille)
+   +(m.desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(m.desc)+'</div>':'');
+}
+var VIDE_SLOT='<span style="font-size:.75rem;color:var(--muted)">— vide — équipe depuis l\u2019inventaire ci-dessous.</span>';
 function renderModules(){
   var mc=$("mod-chassis"),mi=$("mod-inv");
   if(!mc||!mi){return;}
@@ -287,29 +283,34 @@ function renderModules(){
   norm(cur);
   var ch=chFiche(cur);
   if(!ch){
-    mc.innerHTML=cadreChassis("Châssis — emplacements indisponibles",videMsg("Châssis « "+esc(cur.ch||"?")+" » hors liste — choisissez-en un dans Identité pour activer les emplacements de modules."));
+    mc.innerHTML='<h3 class="sub">Châssis — emplacements</h3><ul style="padding:0;margin:6px 0 0">'
+     +ligneSlot("Châssis","", '<span style="font-size:.75rem;color:var(--muted)">Châssis « '+esc(cur.ch||"?")+' » hors liste — choisissez-en un dans Identité pour activer les emplacements.</span>','',true)+'</ul>';
     mi.textContent="";
     return;
   }
-  var m;
-  var cArmes=(cur.armes||[]).map(function(w,k){return ligneArme(w,k);}).join('')||videMsg("Aucune arme équipée — équipe depuis ton inventaire.");
-  var nCap=(cur.modules.capteurs||[]).length;
-  var cCap=(cur.modules.capteurs||[]).map(function(mid,k){
-    m=EQ.moduleDe(mid);if(!m){return '';}
-    return ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="capteur:'+k+'"'));
-  }).join('')||videMsg("Aucun capteur équipé.");
-  m=EQ.moduleDe(cur.modules.coeur);
-  var cCo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="coeur:0"')):videMsg("Aucun cœur équipé.");
-  m=EQ.moduleDe(cur.modules.noyau);
-  var cNo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="noyau:0"')):videMsg("Aucun noyau équipé.");
-  m=EQ.moduleDe(cur.modules.bouclier);
-  var cBo=m?ligneModule(m.nom,m.taille,m.desc,petitBtn("Ranger",'data-mrq="bouclier:0"')):videMsg("Aucun bouclier équipé.");
-  mc.innerHTML=cadreChassis("Châssis — emplacements : armes "+EQ.T(ch.armes.t)+" max ×"+ch.armes.n,
-     sousCadre("Armes équipées ("+(cur.armes||[]).length+"/"+ch.armes.n+" — "+EQ.T(ch.armes.t)+" max)",cArmes)
-    +sousCadre("Capteurs ("+nCap+"/"+ch.capteurs.n+" — "+EQ.T(ch.capteurs.t)+" max)",cCap)
-    +sousCadre("Cœur énergétique ("+EQ.T(ch.coeur.t)+" max)",cCo)
-    +sousCadre("Noyau énergétique ("+EQ.T(ch.noyau.t)+" max)",cNo)
-    +sousCadre(ch.bouclier.n?("Bouclier ("+EQ.T(ch.bouclier.t)+" max)"):"Bouclier (aucun emplacement)",cBo));
+  var k,lignes="";
+  for(k=0;k<ch.armes.n;k++){
+    var w=(cur.armes||[])[k];
+    lignes+=w?ligneSlot("Arme "+(k+1),EQ.T(ch.armes.t)+" max",contenuArme(w),petitBtn("Ranger",'data-wrq="'+k+'"'))
+             :ligneSlot("Arme "+(k+1),EQ.T(ch.armes.t)+" max",VIDE_SLOT,'',true);
+  }
+  for(k=0;k<ch.capteurs.n;k++){
+    var mid=(cur.modules.capteurs||[])[k];
+    lignes+=mid?ligneSlot("Capteur "+(k+1),EQ.T(ch.capteurs.t)+" max",contenuModule(mid),petitBtn("Ranger",'data-mrq="capteur:'+k+'"'))
+               :ligneSlot("Capteur "+(k+1),EQ.T(ch.capteurs.t)+" max",VIDE_SLOT,'',true);
+  }
+  lignes+=(cur.modules.coeur?ligneSlot("Cœur énergétique",EQ.T(ch.coeur.t)+" max",contenuModule(cur.modules.coeur),petitBtn("Ranger",'data-mrq="coeur:0"'))
+                            :ligneSlot("Cœur énergétique",EQ.T(ch.coeur.t)+" max",VIDE_SLOT,'',true));
+  lignes+=(cur.modules.noyau?ligneSlot("Noyau énergétique",EQ.T(ch.noyau.t)+" max",contenuModule(cur.modules.noyau),petitBtn("Ranger",'data-mrq="noyau:0"'))
+                            :ligneSlot("Noyau énergétique",EQ.T(ch.noyau.t)+" max",VIDE_SLOT,'',true));
+  if(ch.bouclier.n){
+    lignes+=(cur.modules.bouclier?ligneSlot("Bouclier",EQ.T(ch.bouclier.t)+" max",contenuModule(cur.modules.bouclier),petitBtn("Ranger",'data-mrq="bouclier:0"'))
+                                 :ligneSlot("Bouclier",EQ.T(ch.bouclier.t)+" max",VIDE_SLOT,'',true));
+  }else{
+    lignes+=ligneSlot("Bouclier","","<span style=\"font-size:.75rem;color:var(--muted)\">— aucun emplacement sur ce châssis —</span>",'',true);
+  }
+  mc.innerHTML='<h3 class="sub">Châssis — emplacements : armes '+EQ.T(ch.armes.t)+' max ×'+ch.armes.n+'</h3>'
+   +'<ul style="padding:0;margin:6px 0 0">'+lignes+'</ul>';
   var inv=cur.inv||[],items="";
   inv.forEach(function(it){
     var nom,desc="",taille=null;
