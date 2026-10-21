@@ -1,12 +1,15 @@
 /* Moteur d'aventure — Espace MJ — Les Protocoles Éternels
-   PE_BUILD 2026.10.21-mot9 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
+   PE_BUILD 2026.10.21-mot10 — JSX compilé côté navigateur par Babel standalone (React/ReactDOM UMD)
    Source de vérité : canvas « simulation-espace-mj » — resync live = recopier le corps React ici
-   Sauvegarde : serveur (RPC moteur_sauvegarder / moteur_charger, compte Maître de la Tombe) + copie locale « pe_sim_mj » */
-var PE_BUILD = "2026.10.21-mot9";
+   Sauvegarde : serveur (RPC moteur_sauvegarder / moteur_charger, compte Maître de la Tombe) + copie locale « pe_sim_mj »
+   Onglet Équipement : vrais personnages des joueurs (RPC mj_lister_personnages / mj_donner_equipement) */
+var PE_BUILD = "2026.10.21-mot10";
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
 var SBRPC='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_publier_aventure';
 var SBSAVE='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_sauvegarder';
 var SBCHARGE='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/moteur_charger';
+var SBLISTEP='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/mj_lister_personnages';
+var SBDONNER='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/rpc/mj_donner_equipement';
 var SBORACLE='https://dnbnkdakmobufqcrqzpq.supabase.co/functions/v1/oracle';
 window.PE_BUILD = PE_BUILD;
 const { useState, useEffect, useRef } = React;
@@ -1104,35 +1107,193 @@ function Editeur({ etat, maj, avId, retour, jouer }) {
   );
 }
 
-function Inventaires({ etat }) {
-  const inst = (u) => (etat.monde || []).find(m => m.uuid === u);
+function Inventaires() {
+  const [persos, setPersos] = useState(null);
+  const [errListe, setErrListe] = useState("");
+  const [cible, setCible] = useState("");
+  const [cat, setCat] = useState("arme");
+  const [ref, setRef] = useState({});
+  const [libre, setLibre] = useState("");
+  const [msg, setMsg] = useState(null);
+  const EQ = window.PE_EQUIP;
+
+  const chargerListe = () => {
+    const tok = window.MJBEARER;
+    if (!tok) { setPersos([]); setErrListe("Connecte-toi en haut de page (Maître de la Tombe)."); return; }
+    setErrListe("");
+    fetch(SBLISTEP, {
+      method: "POST",
+      headers: { "apikey": SBK, "Authorization": "Bearer " + tok, "Content-Type": "application/json" },
+      body: "{}"
+    }).then(r => {
+      if (!r.ok) throw new Error("http");
+      return r.json();
+    }).then(list => {
+      const l = Array.isArray(list) ? list : [];
+      setPersos(l);
+      setCible(c => (l.some(p => p.id === c) ? c : (l[0] ? l[0].id : "")));
+    }).catch(() => setErrListe("Liste indisponible — vérifie ta connexion MJ."));
+  };
+  useEffect(() => { chargerListe(); }, []);
+
+  const catalogue = !EQ ? [] :
+    cat === "arme" ? EQ.ARMES_DB.map(a => ({ v: "a:" + a.id, nom: a.nom, taille: a.taille }))
+    : cat === "libre" ? []
+    : EQ.MODULES_DB.filter(m => m.cat === cat).map(m => ({ v: "m:" + m.id, nom: m.nom, taille: m.taille }));
+
+  const donner = () => {
+    const tok = window.MJBEARER;
+    if (!tok) { setMsg({ ok: false, txt: "Connecte-toi en haut de page (Maître de la Tombe)." }); return; }
+    if (!cible) { setMsg({ ok: false, txt: "Choisis un personnage." }); return; }
+    let item = null, label = "";
+    if (cat === "libre") {
+      const t = libre.trim();
+      if (!t) { setMsg({ ok: false, txt: "Saisis le nom de l'objet." }); return; }
+      item = { uid: EQ.uid(), kind: "objet", nom: t }; label = t;
+    } else {
+      const v = ref[cat] || (catalogue[0] && catalogue[0].v);
+      if (!v) { setMsg({ ok: false, txt: "Choisis un objet." }); return; }
+      if (v.slice(0, 2) === "a:") { const a = EQ.armeDe(v.slice(2)); item = { uid: EQ.uid(), kind: "arme", id: a.id }; label = a.nom; }
+      else { const m = EQ.moduleDe(v.slice(2)); item = { uid: EQ.uid(), kind: "module", id: m.id }; label = m.nom; }
+    }
+    setMsg({ ok: null, txt: "Don en cours…" });
+    fetch(SBDONNER, {
+      method: "POST",
+      headers: { "apikey": SBK, "Authorization": "Bearer " + tok, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_perso_id: cible, p_item: item })
+    }).then(r => {
+      if (!r.ok) return r.json().then(e => { throw new Error((e && e.message) || "http"); });
+      return r.json();
+    }).then(rep => {
+      setMsg({ ok: true, txt: "« " + label + " » remis à " + ((rep && rep.perso) || "son personnage") + " — visible dans son inventaire." });
+      setLibre("");
+      chargerListe();
+    }).catch(e => setMsg({ ok: false, txt: "Échec du don : " + (e.message === "http" ? "réessaie." : e.message) }));
+  };
+
+  if (!EQ) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-6">
+        <h2 className="mb-4 text-xl font-bold text-[#2ee6c9]">Équipement des joueurs</h2>
+        <div className="text-sm text-[#7a9187]">Base d'équipement indisponible — recharge la page.</div>
+      </div>
+    );
+  }
+
+  const nomArmeW = (w) => {
+    if (typeof w === "string") { const a = EQ.armeParNom(w) || EQ.armeDe(w); return a ? a.nom : w; }
+    const a = EQ.armeDe(w && w.id); return a ? a.nom : "?";
+  };
+  const nomModuleId = (mid) => { const m = EQ.moduleDe(mid); return m ? m.nom : String(mid); };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <h2 className="mb-4 text-xl font-bold text-[#2ee6c9]">Inventaires des joueurs</h2>
-      <div className="grid gap-3 md:grid-cols-2">
-        {JOUEURS.map(j => {
-          const items = (etat.inventaires[j.id] || []).map(inst).filter(Boolean);
-          const a = armeDe(j.armeId);
-          return (
-            <div key={j.id} className={CADRE}>
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-bold text-[#c8e9df]">{j.nom}</div>
-                <span className="text-xs text-[#7a9187]">{j.role} · Ini {j.ini} · Cd {j.cd}+ · {a.nom} ({a.min}-{a.max})</span>
-              </div>
-              <div className="mt-3">
-                {items.length === 0 ? (
-                  <div className="text-xs text-[#7a9187]">Sac vide.</div>
-                ) : items.map(it => (
-                  <div key={it.uuid} className="flex items-center justify-between gap-2 rounded-lg border border-[#2ee6c9]/15 bg-[#08120e] px-3 py-1.5 text-sm">
-                    <span className="text-[#c8e9df]">{it.nom}</span>
-                    <span className="text-xs text-[#7a9187]">{it.origine} · <b className={coulInteg(it.integrite)}>{it.integrite} %</b></span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-bold text-[#2ee6c9]">Équipement des joueurs</h2>
+        <button className={BTN} onClick={chargerListe}>Recharger</button>
       </div>
+      <div className="mb-4 text-xs text-[#7a9187]">
+        Remets une arme, un module ou un objet à un personnage : il apparaît dans son inventaire (Zone joueur, onglet Personnages) et le joueur l'équipe lui-même.
+        Chaque châssis impose ses emplacements et sa taille max (T1 à T4).
+      </div>
+
+      {errListe && <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{errListe}</div>}
+
+      {/* — Panneau de don — */}
+      <div className={CADRE + " mb-4"}>
+        <div className="mb-2 text-xs font-bold uppercase tracking-wide text-[#f0b24a]">Remettre un équipement</div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div>
+            <div className={ETIQ}>Personnage</div>
+            <select className={CHAMP + " w-full"} value={cible} onChange={e => setCible(e.target.value)}>
+              <option value="">— Choisir —</option>
+              {(persos || []).map(p => <option key={p.id} value={p.id}>{p.nom} ({p.joueur})</option>)}
+            </select>
+          </div>
+          <div>
+            <div className={ETIQ}>Catégorie</div>
+            <select className={CHAMP + " w-full"} value={cat} onChange={e => { setCat(e.target.value); setLibre(""); }}>
+              <option value="arme">Arme</option>
+              <option value="capteur">Capteur</option>
+              <option value="coeur">Cœur énergétique</option>
+              <option value="noyau">Noyau énergétique</option>
+              <option value="bouclier">Bouclier</option>
+              <option value="libre">Objet libre</option>
+            </select>
+          </div>
+          <div>
+            <div className={ETIQ}>Objet</div>
+            {cat === "libre" ? (
+              <input className={CHAMP + " w-full"} value={libre} onChange={e => setLibre(e.target.value)} placeholder="Nom de l'objet…" />
+            ) : (
+              <select className={CHAMP + " w-full"} value={ref[cat] || (catalogue[0] && catalogue[0].v) || ""} onChange={e => setRef(Object.assign({}, ref, { [cat]: e.target.value }))}>
+                {catalogue.map(c => <option key={c.v} value={c.v}>{c.nom} ({EQ.T(c.taille)})</option>)}
+              </select>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button className={BTN_MJ} onClick={donner}>Donner</button>
+          {msg && (
+            <span className={"text-xs font-bold " + (msg.ok === true ? "text-[#2ee6c9]" : msg.ok === false ? "text-red-300" : "text-[#7a9187]")}>{msg.txt}</span>
+          )}
+        </div>
+      </div>
+
+      {/* — Fiches réelles — */}
+      {persos === null && <div className="text-sm text-[#7a9187]">Chargement des personnages…</div>}
+      {persos !== null && persos.length === 0 && (
+        <div className="text-sm text-[#7a9187]">Aucun personnage enregistré pour le moment. Les joueurs créent leurs personnages dans la Zone joueur (onglet Personnages).</div>
+      )}
+      {persos !== null && persos.length > 0 && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {persos.map(p => {
+            const d = (p.resume && p.resume.data) || {};
+            const ch = EQ.chassiDe(d.chassis) || EQ.chassiParNom(d.chassis) || EQ.CHASSIS_DB[0];
+            const st = d.st || ch.st;
+            const armes = Array.isArray(d.armes) ? d.armes : [];
+            const mod = (d.modules && typeof d.modules === "object") ? d.modules : null;
+            const dons = (p.resume && p.resume.dons) || [];
+            return (
+              <div key={p.id} className={CADRE + (p.id === cible ? " border-[#f0b24a]/50" : "")}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-lg font-bold text-[#c8e9df]">{p.nom}</div>
+                  <span className="text-xs text-[#7a9187]">{p.joueur}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span className="rounded-full bg-[#f0b24a]/15 px-2 py-0.5 text-[11px] font-bold text-[#f0b24a]">{ch.nom}</span>
+                  <span className="text-[11px] text-[#7a9187]">PV {(typeof d.pv_actuels === "number" ? d.pv_actuels : st.pv)} / {st.pv} · Cd {st.cd} · Sv {st.sv}</span>
+                </div>
+                <div className="mt-2 text-sm">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#7a9187]">Armes ({armes.length}/{ch.armes.n} — {EQ.T(ch.armes.t)} max)</div>
+                  {armes.length ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {armes.map((w, i) => <span key={i} className="rounded-full bg-[#123326] px-2 py-0.5 text-[11px] font-bold text-[#2ee6c9]">{nomArmeW(w)}</span>)}
+                    </div>
+                  ) : <div className="text-xs text-[#7a9187]">Aucune arme équipée.</div>}
+                </div>
+                <div className="mt-2 text-sm">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#7a9187]">Modules</div>
+                  {mod ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(mod.capteurs || []).map((m, i) => <span key={"c" + i} className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#7a9187]">{nomModuleId(m)}</span>)}
+                      {mod.coeur ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.coeur)}</span> : null}
+                      {mod.noyau ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.noyau)}</span> : null}
+                      {mod.bouclier ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.bouclier)}</span> : null}
+                      {!(mod.capteurs || []).length && !mod.coeur && !mod.noyau && !mod.bouclier ? <span className="text-xs text-[#7a9187]">Aucun module équipé.</span> : null}
+                    </div>
+                  ) : <div className="text-xs text-[#7a9187]">Aucun module équipé.</div>}
+                </div>
+                {dons.length > 0 && (
+                  <div className="mt-2 rounded-lg border border-[#f0b24a]/40 bg-[#f0b24a]/5 px-3 py-2 text-xs text-[#f0b24a]">
+                    {dons.length} don(s) en attente : le joueur doit les récupérer dans son inventaire.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1281,11 +1442,11 @@ function App() {
           basculerEdit={() => setSel({ avId: sel.avId, mode: "edit" })}
         />
       ))}
-      {onglet === "inventaires" && <Inventaires etat={etat} />}
+      {onglet === "inventaires" && <Inventaires />}
       {onglet === "monde" && <Monde etat={etat} />}
       <div className="mx-auto max-w-5xl px-4 pt-2 pb-8">
         <div className="flex flex-wrap justify-center gap-2">
-          {[["aventures", "Aventures"], ["inventaires", "Inventaires"], ["monde", "Monde"]].map(o => (
+          {[["aventures", "Aventures"], ["inventaires", "Équipement"], ["monde", "Monde"]].map(o => (
             <button key={o[0]} onClick={() => setOnglet(o[0])}
               className={(onglet === o[0] ? "border-[#2ee6c9] bg-[#123326] text-[#2ee6c9]" : "border-[#2ee6c9]/25 text-[#7a9187] hover:text-[#c8e9df]") + " rounded-full border px-3 py-1 text-xs font-bold tracking-wide"}>
               {o[1]}

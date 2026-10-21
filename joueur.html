@@ -14,6 +14,9 @@
     <title>Zone joueurs — Les Protocoles Éternels</title>
     <style>
 .btn.small{min-height:36px;padding:5px 12px;font-size:.78rem}
+/* Barre de PV des fiches de personnage (mot10) */
+.pjbar{height:9px;border-radius:6px;background:rgba(122,145,135,.18);border:1px solid rgba(46,230,201,.25);overflow:hidden;margin:8px 0 2px}
+.pjbar span{display:block;height:100%;border-radius:6px;transition:width .3s}
 .badge.enemy{border-color:rgba(226,96,79,.55);color:var(--danger);background:rgba(226,96,79,.08)}
 .badge.ally{border-color:var(--tealline);color:var(--teal);background:var(--tealsoft)}
 .badge.neutral{border-color:rgba(147,172,161,.4);color:var(--muted);background:rgba(147,172,161,.08)}
@@ -176,7 +179,10 @@ textarea.fld{resize:vertical;min-height:64px}
         <section class="tabpane" id="tab-pj">
           <div class="sect rev d1">
             <h2>Mes personnages</h2>
-            <p style="margin:0 0 14px"><a class="btn ghost" href="/fiches.html"><span class="pe-star"></span> Ouvrir mes fiches d'unité</a></p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px">
+              <a class="btn ghost" href="/fiches.html"><span class="pe-star"></span> Ouvrir mes fiches d'unité</a>
+              <button type="button" class="btn amber" id="pj-new">Nouveau personnage</button>
+            </div>
             <p id="pj-status" class="gmsg">Chargement…</p>
             <div id="pj-list"></div>
           </div>
@@ -210,10 +216,7 @@ textarea.fld{resize:vertical;min-height:64px}
                   <div><label class="glab teal" for="p-pv">PV actuels</label><input class="fld tealfld" id="p-pv" type="number" inputmode="numeric"></div>
                   <div><label class="glab teal" for="p-xp">XP</label><input class="fld tealfld" id="p-xp" type="number" inputmode="numeric" value="0"></div>
                 </div>
-                <label class="glab" for="p-armes">Armes (une par ligne)</label>
-                <textarea class="fld" id="p-armes" placeholder="Ex. Fusil magnétique"></textarea>
-                <label class="glab" for="p-inv">Inventaire &amp; équipement (une ligne par objet)</label>
-                <textarea class="fld" id="p-inv"></textarea>
+                <p class="gmsg" style="margin-bottom:10px">Les armes, modules et l'inventaire se gèrent directement sur ta fiche, une fois le personnage créé. Le Maître de la Tombe peut aussi t'y remettre de l'équipement depuis son moteur.</p>
                 <label class="glab" for="p-notes">Notes de personnage (facultatif)</label>
                 <textarea class="fld" id="p-notes" placeholder="Historique, blessures, objectifs secrets…"></textarea>
                 <div class="cta-row" style="justify-content:flex-start;margin-top:18px">
@@ -253,6 +256,7 @@ textarea.fld{resize:vertical;min-height:64px}
     </footer>
     <script src="assets/js/core.js"></script>
     <script src="assets/js/theme.js"></script>
+    <script src="assets/js/pe-equipement.js"></script>
     <script src="assets/js/pages/joueur.js"></script>
     <script src="assets/js/vendor/supabase.js"></script>
     <script src="assets/js/pages/des.js"></script>
