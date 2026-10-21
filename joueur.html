@@ -92,7 +92,8 @@ textarea.fld{resize:vertical;min-height:64px}
       <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Menu</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
       <div class="subnav-in">
         <button type="button" class="active" data-t="av"><span class="pe-star"></span> Aventure</button>
-        <button type="button" data-t="pj"><span class="pe-star"></span> Personnages</button>
+        <a href="/fiches.html"><span class="pe-star"></span> Personnages</a>
+        <button type="button" data-t="pj"><span class="pe-star"></span> Équipement</button>
         <button type="button" data-t="notes"><span class="pe-star"></span> Notes</button>
         <button type="button" data-t="des"><span class="pe-star"></span> Dés</button>
       
@@ -178,9 +179,8 @@ textarea.fld{resize:vertical;min-height:64px}
         <!-- Onglet Personnages -->
         <section class="tabpane" id="tab-pj">
           <div class="sect rev d1">
-            <h2>Mes personnages</h2>
+            <h2>Équipement de mes personnages</h2>
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px">
-              <a class="btn ghost" href="/fiches.html"><span class="pe-star"></span> Ouvrir mes fiches d'unité</a>
               <button type="button" class="btn amber" id="pj-new">Nouveau personnage</button>
             </div>
             <p id="pj-status" class="gmsg">Chargement…</p>

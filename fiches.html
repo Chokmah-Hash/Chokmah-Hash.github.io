@@ -72,6 +72,16 @@ textarea{resize:vertical}
         </nav>
       </div>
     </header>
+    <nav class="subnav" id="app-subnav" aria-label="Navigation de la zone joueurs">
+      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Menu</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
+      <div class="subnav-in">
+        <a href="/joueur.html#av"><span class="pe-star"></span> Aventure</a>
+        <a href="/fiches.html" class="active"><span class="pe-star"></span> Personnages</a>
+        <a href="/joueur.html#pj"><span class="pe-star"></span> Équipement</a>
+        <a href="/joueur.html#notes"><span class="pe-star"></span> Notes</a>
+        <a href="/joueur.html#des"><span class="pe-star"></span> Dés</a>
+      </div>
+    </nav>
     <script src="assets/js/core.js"></script>
     <script src="assets/js/theme.js"></script>
     <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
@@ -79,12 +89,10 @@ textarea{resize:vertical}
     <main class="wrap">
       <section id="view-list" class="sect rev">
         <h2>Vos fiches d'unité</h2>
-        <div class="note-box">Chaque fiche est sauvegardée <strong>sur cet appareil</strong> et <strong>synchronisée dans le nuage de la table</strong> : toutes les joueuses voient les mêmes fiches, à jour en permanence. Hors ligne, tout continue de fonctionner — la synchro reprend à la reconnexion. Le <strong>code d'export</strong> reste disponible pour les copies.</div>
         <div class="cta-row" style="justify-content:flex-start;margin:14px 0">
           <button class="btn primary" id="btn-new">＋ Nouvelle unité</button>
           <button class="btn ghost" id="btn-refresh">↻ Rafraîchir</button>
         </div>
-        <p id="sync-line" style="color:var(--muted);font-size:.85rem;margin:-4px 0 12px"></p>
         <div id="cards" class="grid3"></div>
         <h3 class="sub" style="margin-top:30px">Importer un code d'export</h3>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
