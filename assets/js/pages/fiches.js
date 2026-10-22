@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f7 — fiches : ménage fiche joueur : PV dynamiques (perdus en rouge + compteur), carte infos châssis, retrait émotion/opinion, curseur neutre (mot14e) */
+/* PE_BUILD 2026.10.22-f8 — fiches : titres de cadres orange + retrait du champ Fonction (mot14f) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -93,7 +93,7 @@ function norm(c){
 function blankChar(chName){
   var c=chByName(chName);
   var p=[];for(var i=0;i<30;i++)p.push(false);
-  return {id:uid(),nom:"",ch:c.n,code:"",fonction:"",
+  return {id:uid(),nom:"",ch:c.n,code:"",
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
@@ -196,7 +196,7 @@ function fillForm(){
   var ch=norm(cur);
   $("f-title").textContent="Fiche — "+(ch.nom||"personnage sans nom");
   $("f-nom").value=ch.nom;$("f-ch").value=ch.ch;setSelect("f-code",ch.code||"");
-  $("f-fonction").value=ch.fonction||"";
+
   var st=ch.st;
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){$("st-"+k).value=st[k]||"";});
   buildPvBoxes(pvTotalDe(ch));
@@ -214,7 +214,7 @@ function collect(){
   if(!cur)return;
   var ch=norm(cur);
   ch.nom=$("f-nom").value;ch.ch=$("f-ch").value;ch.code=$("f-code").value;
-  ch.fonction=$("f-fonction").value;
+
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
   ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
