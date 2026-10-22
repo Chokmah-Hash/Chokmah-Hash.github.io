@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f12 — fiches : emplacements châssis en mini-cadres legend incrustee (mot14n) */
+/* PE_BUILD 2026.10.22-f13 — fiches : legends en 75rem couleur ambre, espacement haut 10px (mot14p) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -260,8 +260,8 @@ function petitBtn(txt,attrs){
 }
 function videMsg(txt){return '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">'+txt+'</div>';}
 function ligneSlot(label,hint,contenu,btn,off){
-  return '<fieldset style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:9px;background:var(--panel2);padding:8px 10px 6px;margin:8px 0 0;list-style:none">'
-  +'<legend style="color:var(--muted);font-family:Rajdhani,sans-serif;font-weight:600;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1">'+esc(label)+(hint?' · '+esc(hint):'')+'</legend>'
+  return '<fieldset style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:9px;background:var(--panel2);padding:8px 10px 6px;margin:18px 0 0;list-style:none">'
+  +'<legend style="color:var(--amber);font-family:Rajdhani,sans-serif;font-weight:600;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1">'+esc(label)+(hint?' · '+esc(hint):'')+'</legend>'
   +(contenu?'<div style="flex:1 1 auto">'+contenu+'</div>':'')
   +(btn||'')+'</fieldset>';
 }
