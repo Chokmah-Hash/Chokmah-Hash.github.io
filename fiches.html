@@ -23,9 +23,6 @@ input:focus,select:focus,textarea:focus{outline:1.5px solid var(--teal)}
 .ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:12px 0}
 .ig label,.stats label,.arow-h span+div label,form label{display:block;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:3px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
-.stats>div{position:relative}
-.stats label[data-tip]{border-bottom:1px dotted var(--amberline);cursor:help}
-.stats label[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 4px);width:max-content;max-width:215px;white-space:normal;background:var(--panel2);border:1px solid var(--amberline);color:var(--text);padding:7px 9px;border-radius:8px;font-size:.74rem;line-height:1.4;letter-spacing:normal;text-transform:none;font-weight:500;z-index:60;box-shadow:0 6px 16px rgba(0,0,0,.45);pointer-events:none}
 .pvbar{display:flex;gap:3px;width:100%;height:44px;box-sizing:border-box;border:1px solid var(--tealline);border-radius:10px;background:var(--panel2);padding:5px;margin:10px 0}
 .pvseg{flex:1 1 0;min-width:5px;border-radius:6px;background:rgba(46,230,201,.22)}
 .pvseg.on{background:var(--danger);box-shadow:0 0 8px rgba(226,96,79,.5)}
@@ -39,7 +36,13 @@ label.cb input{width:auto;min-height:0}
 .arow-h{display:grid;grid-template-columns:1.7fr .6fr .45fr .45fr .45fr .45fr 1.5fr;gap:8px;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-family:'Rajdhani',sans-serif;font-weight:600}
 .erow{display:grid;grid-template-columns:1.1fr 2fr 135px;gap:8px;margin:8px 0;align-items:center}
 @media(max-width:640px){.arow,.arow-h{grid-template-columns:1fr 1fr}.erow{grid-template-columns:1fr}}
-h3.sub{color:var(--amber);text-transform:uppercase;letter-spacing:.1em;font-size:.95rem;border-bottom:1px solid var(--amberline);padding-bottom:4px;margin-top:26px}
+h3.sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;font-size:.95rem;border-bottom:1px solid var(--amberline);padding-bottom:4px;margin-top:26px}
+.ibtn{margin-left:auto;flex:0 0 auto;width:26px;height:26px;border:1px solid var(--amberline);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;user-select:none}
+.ibtn:hover{background:var(--panel2);border-color:var(--amber)}
+h3.sub:has(+ .itgl:checked) .ibtn{background:var(--amber);color:#201405;border-color:var(--amber)}
+.itgl{display:none}
+.ibox{display:none;background:var(--panel2);border:1px solid var(--amberline);border-radius:8px;padding:10px 12px;font-size:.78rem;line-height:1.55;margin:8px 0 6px;color:var(--text)}
+.itgl:checked ~ .ibox{display:block}
 h3.sub small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.78rem}
 .fh{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px}
 .cardbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -128,19 +131,24 @@ textarea{resize:vertical}
             
             
           </div>
-          <h3 class="sub">Caractéristiques <small>— verrouillées : valeurs calculées (châssis + modules) · survolez un label pour l'aide</small></h3>
+          <h3 class="sub">Caractéristiques <small>— verrouillées : valeurs calculées (châssis + modules)</small><label class="ibtn" for="info-stats" aria-label="Aide">i</label></h3>
+<input type="checkbox" id="info-stats" class="itgl">
+<div class="ibox"><strong>Valeurs brutes</strong> — M : déplacement (mètres par action) · F : force · E : endurance · PV : points de vie · A : dés d'attaque en mêlée par action.<br>
+<strong>Seuils de dé</strong> — CC (mêlée), CT (tir), Sv (annule une blessure) : réussissez sur 1D6 ≥ le chiffre (3+ = 3 ou mieux). Cd : tests de volonté (1D6 ≥ Cd).<br>
+<strong>Rfx</strong> — modificateur d'initiative : on agit du plus haut Rfx au plus bas. <strong>Inv.</strong> — sauvegarde invulnérable (ex. 4++) : ignore la PA — vide = aucune.<br>
+Valeurs verrouillées, calculées automatiquement depuis le châssis et les modules.</div>
           <div class="stats">
-            <div><label for="st-m" data-tip="Déplacement : mètres parcourus par action de mouvement (charge : ×2).">M</label><input id="st-m" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-cc" data-tip="Capacité de Combat : touchez en mêlée sur 1D6 ≥ CC.">CC</label><input id="st-cc" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-ct" data-tip="Capacité de Tir : touchez à distance sur 1D6 ≥ CT.">CT</label><input id="st-ct" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-f" data-tip="Force : puissance de vos attaques, comparée à l'Endurance (E) de la cible.">F</label><input id="st-f" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-e" data-tip="Endurance : résistance aux blessures.">E</label><input id="st-e" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-pv" data-tip="Points de Vie : dégâts encaissables avant mise hors combat.">PV</label><input id="st-pv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-a" data-tip="Attaques : nombre de dés d'attaque en mêlée par action.">A</label><input id="st-a" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-cd" data-tip="Commandement : tests de volonté sur 1D6 ≥ Cd (modificateurs applicables).">Cd</label><input id="st-cd" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-sv" data-tip="Sauvegarde : annulez une blessure sur 1D6 ≥ Sv.">Sv</label><input id="st-sv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-inv" data-tip="Sauvegarde invulnérable (ex. 4++) : ignore la PA — vide = aucune.">Inv.</label><input id="st-inv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
-            <div><label for="st-rfx" data-tip="Réflexes : bonus d'initiative — on agit du plus haut Rfx au plus bas.">Rfx</label><input id="st-rfx" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-m">M</label><input id="st-m" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-cc">CC</label><input id="st-cc" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-ct">CT</label><input id="st-ct" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-f">F</label><input id="st-f" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-e">E</label><input id="st-e" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-pv">PV</label><input id="st-pv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-a">A</label><input id="st-a" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-cd">Cd</label><input id="st-cd" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-sv">Sv</label><input id="st-sv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-inv">Inv.</label><input id="st-inv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
           </div>
           
           <h3 class="sub">Points de vie <small>— PV perdus en rouge</small></h3>
