@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f11 — fiches : synchro corrigee, ids UUID natifs (crypto.randomUUID) + migration des fiches existantes (mot14j) */
+/* PE_BUILD 2026.10.22-f12 — fiches : emplacements châssis en mini-cadres legend incrustee (mot14n) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -260,11 +260,10 @@ function petitBtn(txt,attrs){
 }
 function videMsg(txt){return '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">'+txt+'</div>';}
 function ligneSlot(label,hint,contenu,btn,off){
-  return '<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
-  +'<div><span style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">'+esc(label)+'</span>'
-  +(hint?'<span style="font-size:.66rem;color:var(--muted);margin-left:6px">'+esc(hint)+'</span>':'')
-  +(contenu?'<div style="margin-top:2px">'+contenu+'</div>':'')+'</div>'
-  +(btn||'')+'</li>';
+  return '<fieldset style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:9px;background:var(--panel2);padding:8px 10px 6px;margin:8px 0 0;list-style:none">'
+  +'<legend style="color:var(--muted);font-family:Rajdhani,sans-serif;font-weight:600;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1">'+esc(label)+(hint?' · '+esc(hint):'')+'</legend>'
+  +(contenu?'<div style="flex:1 1 auto">'+contenu+'</div>':'')
+  +(btn||'')+'</fieldset>';
 }
 function contenuArme(w){
   if(typeof w==="string"){
@@ -289,8 +288,8 @@ function renderModules(){
   norm(cur);
   var ch=chFiche(cur);
   if(!ch){
-    mc.innerHTML='<h3 class="sub">Châssis — emplacements</h3><ul style="padding:0;margin:6px 0 0">'
-     +ligneSlot("Châssis","", '<span style="font-size:.75rem;color:var(--muted)">Châssis « '+esc(cur.ch||"?")+' » hors liste — choisissez-en un dans Identité pour activer les emplacements.</span>','',true)+'</ul>';
+    mc.innerHTML='<h3 class="sub">Châssis — emplacements</h3><div style="padding:0;margin:6px 0 0">'
+     +ligneSlot("Châssis","", '<span style="font-size:.75rem;color:var(--muted)">Châssis « '+esc(cur.ch||"?")+' » hors liste — choisissez-en un dans Identité pour activer les emplacements.</span>','',true)+'</div>';
     mi.textContent="";
     return;
   }
@@ -320,7 +319,7 @@ function renderModules(){
    +'<div style="font-size:.75rem;color:var(--muted);margin-top:3px">Emplacements — Armes ×'+ch.armes.n+' ('+EQ.T(ch.armes.t)+' max) · Capteurs ×'+ch.capteurs.n+' ('+EQ.T(ch.capteurs.t)+' max) · Cœur ('+EQ.T(ch.coeur.t)+' max) · Noyau ('+EQ.T(ch.noyau.t)+' max)'
    +(ch.bouclier.n?(' · Bouclier ×'+ch.bouclier.n+' ('+EQ.T(ch.bouclier.t)+' max)'):' · aucun bouclier')+'</div></div>';
   mc.innerHTML='<h3 class="sub">Châssis — emplacements : armes '+EQ.T(ch.armes.t)+' max ×'+ch.armes.n+'</h3>'
-   +cardCh+'<ul style="padding:0;margin:6px 0 0">'+lignes+'</ul>';
+   +cardCh+'<div style="padding:0;margin:6px 0 0">'+lignes+'</div>';
   var inv=cur.inv||[],items="";
   inv.forEach(function(it){
     var nom,desc="",taille=null;

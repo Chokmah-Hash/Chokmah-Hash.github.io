@@ -86,6 +86,9 @@ textarea.gf{min-height:64px;resize:vertical}
 /* ————— Console du bestiaire (MJ) ————— */
 .bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
 .bgrid .glab{margin-top:0;color:var(--teal)}
+.bgrid fieldset{border:1px solid var(--tealline);border-radius:9px;background:var(--panel2);margin:0;padding:4px;min-width:0}
+.bgrid legend{color:var(--muted);font-family:Rajdhani,sans-serif;font-weight:600;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1}
+.bgrid fieldset .gf{border:none;background:transparent;min-height:0;padding:5px 9px}
 body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!important}
 .subnav-in a.active{color:var(--amber);font-weight:700}
 </style>
@@ -262,16 +265,16 @@ body.preauth .subnav,body.preauth main>section:not(#auth-console){display:none!i
             <input class="gf" id="b-faction" type="text" placeholder="Ex. Nécrons, Imperium, Aeldari…">
             <label class="glab">Caractéristiques</label>
             <div class="bgrid">
-              <div><span class="glab">M</span><input class="gf" id="b-m" type="text" inputmode="numeric" placeholder='Ex. 5"'></div>
-              <div><span class="glab">CC</span><input class="gf" id="b-cc" type="text" inputmode="numeric" placeholder="3+"></div>
-              <div><span class="glab">CT</span><input class="gf" id="b-ct" type="text" inputmode="numeric" placeholder="3+"></div>
-              <div><span class="glab">F</span><input class="gf" id="b-f" type="text" inputmode="numeric" placeholder="5"></div>
-              <div><span class="glab">E</span><input class="gf" id="b-e" type="text" inputmode="numeric" placeholder="4"></div>
-              <div><span class="glab">PV</span><input class="gf" id="b-pv" type="text" inputmode="numeric" placeholder="9"></div>
-              <div><span class="glab">A</span><input class="gf" id="b-a" type="text" inputmode="numeric" placeholder="2"></div>
-              <div><span class="glab">Cd</span><input class="gf" id="b-cd" type="text" inputmode="numeric" placeholder="10"></div>
-              <div><span class="glab">Svg</span><input class="gf" id="b-sv" type="text" placeholder="3+"></div>
-              <div><span class="glab">Rfx</span><input class="gf" id="b-rfx" type="text" inputmode="numeric" placeholder="0"></div>
+              <fieldset><legend>M</legend><input class="gf" id="b-m" type="text" inputmode="numeric" placeholder='Ex. 5"'></fieldset>
+              <fieldset><legend>CC</legend><input class="gf" id="b-cc" type="text" inputmode="numeric" placeholder="3+"></fieldset>
+              <fieldset><legend>CT</legend><input class="gf" id="b-ct" type="text" inputmode="numeric" placeholder="3+"></fieldset>
+              <fieldset><legend>F</legend><input class="gf" id="b-f" type="text" inputmode="numeric" placeholder="5"></fieldset>
+              <fieldset><legend>E</legend><input class="gf" id="b-e" type="text" inputmode="numeric" placeholder="4"></fieldset>
+              <fieldset><legend>PV</legend><input class="gf" id="b-pv" type="text" inputmode="numeric" placeholder="9"></fieldset>
+              <fieldset><legend>A</legend><input class="gf" id="b-a" type="text" inputmode="numeric" placeholder="2"></fieldset>
+              <fieldset><legend>Cd</legend><input class="gf" id="b-cd" type="text" inputmode="numeric" placeholder="10"></fieldset>
+              <fieldset><legend>Svg</legend><input class="gf" id="b-sv" type="text" placeholder="3+"></fieldset>
+              <fieldset><legend>Rfx</legend><input class="gf" id="b-rfx" type="text" inputmode="numeric" placeholder="0"></fieldset>
             </div>
             <label class="glab" for="b-armes">Armes &amp; équipements (une ligne par arme)</label>
             <textarea class="gf" id="b-armes" rows="3" placeholder="Ex. Fusil à particules | 24&quot; | 4 | -1 | 1"></textarea>
