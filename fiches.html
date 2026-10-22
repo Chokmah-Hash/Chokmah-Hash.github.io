@@ -19,6 +19,7 @@
     <style>
 input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--tealline);border-radius:9px;color:var(--text);padding:9px 11px;font-family:inherit;font-size:1rem;min-height:44px}
 input:focus,select:focus,textarea:focus{outline:1.5px solid var(--teal)}
+.stats input[readonly]{cursor:not-allowed;opacity:.85;color:var(--teal)}
 .ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:12px 0}
 .ig label,.stats label,.arow-h span+div label,form label{display:block;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:3px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
@@ -125,21 +126,21 @@ textarea{resize:vertical}
             <div><label for="f-emotion">Émotion résiduelle</label><input id="f-emotion" type="text" placeholder="ex. orgueil blessé"></div>
             <div><label for="f-opinion">Opinion sur les vivants</label><input id="f-opinion" type="text" placeholder="ex. sujets d'étude"></div>
           </div>
-          <h3 class="sub">Caractéristiques</h3>
+          <h3 class="sub">Caractéristiques <small>— verrouillées : valeurs calculées (châssis + modules)</small></h3>
           <div class="stats">
-            <div><label for="st-m">M</label><input id="st-m" type="text"></div>
-            <div><label for="st-cc">CC</label><input id="st-cc" type="text"></div>
-            <div><label for="st-ct">CT</label><input id="st-ct" type="text"></div>
-            <div><label for="st-f">F</label><input id="st-f" type="text"></div>
-            <div><label for="st-e">E</label><input id="st-e" type="text"></div>
-            <div><label for="st-pv">PV</label><input id="st-pv" type="text"></div>
-            <div><label for="st-a">A</label><input id="st-a" type="text"></div>
-            <div><label for="st-cd">Cd</label><input id="st-cd" type="text"></div>
-            <div><label for="st-sv">Sv</label><input id="st-sv" type="text"></div>
-            <div><label for="st-inv">Inv.</label><input id="st-inv" type="text"></div>
-            <div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text"></div>
+            <div><label for="st-m">M</label><input id="st-m" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-cc">CC</label><input id="st-cc" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-ct">CT</label><input id="st-ct" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-f">F</label><input id="st-f" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-e">E</label><input id="st-e" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-pv">PV</label><input id="st-pv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-a">A</label><input id="st-a" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-cd">Cd</label><input id="st-cd" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-sv">Sv</label><input id="st-sv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-inv">Inv.</label><input id="st-inv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
+            <div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
           </div>
-          <div class="note-box">Le choix du châssis pré-remplit les caractéristiques, l'aptitude et les compétences maîtrisées. Tout reste modifiable ensuite (progression, wargear).</div>
+          <div class="note-box">Le choix du châssis détermine les caractéristiques, l'aptitude et les compétences maîtrisées. Les caractéristiques sont verrouillées : elles découlent des règles (châssis + modules). Progression et wargear restent modifiables.</div>
           <h3 class="sub">Points de vie <small>— cochez les PV perdus</small></h3>
           <div class="pvrow" id="pv-box"></div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
