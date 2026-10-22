@@ -19,13 +19,13 @@
     <style>
 input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--tealline);border-radius:9px;color:var(--text);padding:9px 11px;font-family:inherit;font-size:1rem;min-height:44px}
 input:focus,select:focus,textarea:focus{outline:1.5px solid var(--teal)}
-.stats input[readonly]{cursor:not-allowed;opacity:.85;color:var(--teal)}
+.stats input[readonly]{opacity:.85;color:var(--teal)}
 .ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:12px 0}
 .ig label,.stats label,.arow-h span+div label,form label{display:block;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:3px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
 .pvrow{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
-.pv{width:22px;height:22px;border:1.5px solid var(--tealline);border-radius:4px;cursor:pointer;display:inline-block}
-.pv.on{background:var(--teal);box-shadow:0 0 8px rgba(46,230,201,.5)}
+.pv{width:22px;height:22px;border:1.5px solid var(--tealline);border-radius:4px;cursor:pointer;display:inline-block;background:rgba(46,230,201,.10)}
+.pv.on{background:var(--danger);border-color:var(--danger);box-shadow:0 0 8px rgba(226,96,79,.5)}
 .ech{width:28px;height:28px;border:2px solid var(--amberline);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--amber);font-weight:700;font-size:1.1rem}
 .ech.on{background:var(--amber);color:#201405}
 .comps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
@@ -50,7 +50,7 @@ textarea{resize:vertical}
  main{max-width:100%;padding:0}
  h2,h3.sub{color:#0b6e66!important}
  input,select,textarea{background:#fff!important;color:#111!important;border:1px solid #888!important;min-height:0}
- .pv{border-color:#666}.pv.on{background:#0e9e92!important;box-shadow:none}
+ .pv{border-color:#666;background:none!important}.pv.on{background:#d9534f!important;box-shadow:none}
  .ech{border-color:#a06a1e!important}.ech.on{background:#c98a2e!important;color:#111!important}
  label.cb{border:1px solid #888}
  label.cb.on{background:#e2f4f1!important}
@@ -123,8 +123,7 @@ textarea{resize:vertical}
             <div><label for="f-ch">Châssis</label><select id="f-ch"></select></div>
             <div><label for="f-code">Code de fabrique</label><select id="f-code"></select></div>
             <div><label for="f-fonction">Fonction</label><input id="f-fonction" type="text" placeholder="ex. reconnaissance rapprochée"></div>
-            <div><label for="f-emotion">Émotion résiduelle</label><input id="f-emotion" type="text" placeholder="ex. orgueil blessé"></div>
-            <div><label for="f-opinion">Opinion sur les vivants</label><input id="f-opinion" type="text" placeholder="ex. sujets d'étude"></div>
+            
           </div>
           <h3 class="sub">Caractéristiques <small>— verrouillées : valeurs calculées (châssis + modules)</small></h3>
           <div class="stats">
@@ -140,9 +139,10 @@ textarea{resize:vertical}
             <div><label for="st-inv">Inv.</label><input id="st-inv" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
             <div><label for="st-rfx">Rfx</label><input id="st-rfx" type="text" readonly title="Valeur calculée (châssis + modules) — saisie verrouillée"></div>
           </div>
-          <div class="note-box">Le choix du châssis détermine les caractéristiques, l'aptitude et les compétences maîtrisées. Les caractéristiques sont verrouillées : elles découlent des règles (châssis + modules). Progression et wargear restent modifiables.</div>
+          
           <h3 class="sub">Points de vie <small>— cochez les PV perdus</small></h3>
           <div class="pvrow" id="pv-box"></div>
+          <div id="pv-count" style="font-size:.75rem;color:var(--muted);margin:0 0 4px"></div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
             <strong style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)">Protocole de Secours · échecs</strong>
             <span class="ech" id="ech-0"></span><span class="ech" id="ech-1"></span>

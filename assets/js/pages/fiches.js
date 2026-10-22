@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.21-f6 — fiches : correctif « m is not defined » (var m, mode strict) + cadre Châssis en lignes d'emplacements, style Inventaire (mot14) */
+/* PE_BUILD 2026.10.22-f7 — fiches : ménage fiche joueur : PV dynamiques (perdus en rouge + compteur), carte infos châssis, retrait émotion/opinion, curseur neutre (mot14e) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -93,7 +93,7 @@ function norm(c){
 function blankChar(chName){
   var c=chByName(chName);
   var p=[];for(var i=0;i<30;i++)p.push(false);
-  return {id:uid(),nom:"",ch:c.n,code:"",fonction:"",emotion:"",opinion:"",
+  return {id:uid(),nom:"",ch:c.n,code:"",fonction:"",
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
@@ -101,6 +101,9 @@ function blankChar(chName){
    xp:"",notes:"",maj:new Date().toISOString()};
 }
 function pvLost(ch){var n=0;for(var i=0;i<ch.pv.length;i++){if(ch.pv[i])n++;}return n;}
+function pvTotalDe(c){var n=parseInt(c&&c.st&&c.st.pv,10);return (isNaN(n)||n<0)?0:n;}
+function majPvCount(){var el=$("pv-count");if(!el){return;}if(!cur){el.textContent="";return;}var t=pvTotalDe(cur);el.textContent=t>0?((t-pvLost(cur))+" / "+t+" PV disponibles — cliquez une case pour marquer un PV perdu"):"";}
+function buildPvBoxes(n){var box=$("pv-box");if(!box){return;}box.innerHTML="";pvNodes=[];for(var j=0;j<n;j++){(function(idx){var s=document.createElement("span");s.className="pv";s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);cur.maj=new Date().toISOString();save();queueSync(cur);majPvCount();});box.appendChild(s);pvNodes.push(s);})(j);}}
 /* ===== Synchronisation nuage (Supabase) ===== */
 function ownerToken(){
   try{
@@ -193,10 +196,12 @@ function fillForm(){
   var ch=norm(cur);
   $("f-title").textContent="Fiche — "+(ch.nom||"personnage sans nom");
   $("f-nom").value=ch.nom;$("f-ch").value=ch.ch;setSelect("f-code",ch.code||"");
-  $("f-fonction").value=ch.fonction||"";$("f-emotion").value=ch.emotion||"";$("f-opinion").value=ch.opinion||"";
+  $("f-fonction").value=ch.fonction||"";
   var st=ch.st;
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){$("st-"+k).value=st[k]||"";});
+  buildPvBoxes(pvTotalDe(ch));
   pvNodes.forEach(function(el,i){el.classList.toggle("on",!!ch.pv[i]);});
+  majPvCount();
   $("ech-0").classList.toggle("on",!!ch.ech[0]);$("ech-1").classList.toggle("on",!!ch.ech[1]);
   compsNodes.forEach(function(o){var on=ch.comps.indexOf(o.name)>=0;o.box.checked=on;o.lab.classList.toggle("on",on);});
   $("f-apt").value=ch.apt||"";$("f-aptA").value=ch.aptA||"";
@@ -209,7 +214,7 @@ function collect(){
   if(!cur)return;
   var ch=norm(cur);
   ch.nom=$("f-nom").value;ch.ch=$("f-ch").value;ch.code=$("f-code").value;
-  ch.fonction=$("f-fonction").value;ch.emotion=$("f-emotion").value;ch.opinion=$("f-opinion").value;
+  ch.fonction=$("f-fonction").value;
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
   ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
@@ -309,8 +314,12 @@ function renderModules(){
   }else{
     lignes+=ligneSlot("Bouclier","","<span style=\"font-size:.75rem;color:var(--muted)\">— aucun emplacement sur ce châssis —</span>",'',true);
   }
+  var cardCh='<div style="border:1px solid var(--tealline);border-radius:9px;background:var(--panel2);padding:8px 12px;margin:8px 0 10px">'
+   +'<div style="color:#c8e9df;font-weight:700;font-size:.88rem">Châssis « '+esc(ch.nom)+' » — intégrité '+esc(ch.st.pv)+' PV</div>'
+   +'<div style="font-size:.75rem;color:var(--muted);margin-top:3px">Emplacements — Armes ×'+ch.armes.n+' ('+EQ.T(ch.armes.t)+' max) · Capteurs ×'+ch.capteurs.n+' ('+EQ.T(ch.capteurs.t)+' max) · Cœur ('+EQ.T(ch.coeur.t)+' max) · Noyau ('+EQ.T(ch.noyau.t)+' max)'
+   +(ch.bouclier.n?(' · Bouclier ×'+ch.bouclier.n+' ('+EQ.T(ch.bouclier.t)+' max)'):' · aucun bouclier')+'</div></div>';
   mc.innerHTML='<h3 class="sub">Châssis — emplacements : armes '+EQ.T(ch.armes.t)+' max ×'+ch.armes.n+'</h3>'
-   +'<ul style="padding:0;margin:6px 0 0">'+lignes+'</ul>';
+   +cardCh+'<ul style="padding:0;margin:6px 0 0">'+lignes+'</ul>';
   var inv=cur.inv||[],items="";
   inv.forEach(function(it){
     var nom,desc="",taille=null;
@@ -473,13 +482,6 @@ function init(){
   var codeSel=$("f-code");
   var oEmpty=document.createElement("option");oEmpty.value="";oEmpty.textContent="— aucune —";codeSel.appendChild(oEmpty);
   CODES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;codeSel.appendChild(o);});
-  for(var j=0;j<30;j++){
-    (function(idx){
-      var s=document.createElement("span");s.className="pv";
-      s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);cur.maj=new Date().toISOString();save();queueSync(cur);});
-      $("pv-box").appendChild(s);pvNodes.push(s);
-    })(j);
-  }
   [0,1].forEach(function(k){
     $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);cur.maj=new Date().toISOString();save();queueSync(cur);});
   });
