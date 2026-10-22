@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f14 — fiches : legend emplacements retour couleur muted (mot14q) */
+/* PE_BUILD 2026.10.22-f15 — fiches : titre emplacements epure, cadre chassis sans bordure (mot14r) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -314,11 +314,11 @@ function renderModules(){
   }else{
     lignes+=ligneSlot("Bouclier","","<span style=\"font-size:.75rem;color:var(--muted)\">— aucun emplacement sur ce châssis —</span>",'',true);
   }
-  var cardCh='<div style="border:1px solid var(--tealline);border-radius:9px;background:var(--panel2);padding:8px 12px;margin:8px 0 10px">'
+  var cardCh='<div style="background:var(--panel2);padding:8px 12px;margin:8px 0 10px">'
    +'<div style="color:#c8e9df;font-weight:700;font-size:.88rem">Châssis « '+esc(ch.nom)+' » — intégrité '+esc(ch.st.pv)+' PV</div>'
    +'<div style="font-size:.75rem;color:var(--muted);margin-top:3px">Emplacements — Armes ×'+ch.armes.n+' ('+EQ.T(ch.armes.t)+' max) · Capteurs ×'+ch.capteurs.n+' ('+EQ.T(ch.capteurs.t)+' max) · Cœur ('+EQ.T(ch.coeur.t)+' max) · Noyau ('+EQ.T(ch.noyau.t)+' max)'
    +(ch.bouclier.n?(' · Bouclier ×'+ch.bouclier.n+' ('+EQ.T(ch.bouclier.t)+' max)'):' · aucun bouclier')+'</div></div>';
-  mc.innerHTML='<h3 class="sub">Châssis — emplacements : armes '+EQ.T(ch.armes.t)+' max ×'+ch.armes.n+'</h3>'
+  mc.innerHTML='<h3 class="sub">Châssis — emplacements</h3>'
    +cardCh+'<div style="padding:0;margin:6px 0 0">'+lignes+'</div>';
   var inv=cur.inv||[],items="";
   inv.forEach(function(it){
