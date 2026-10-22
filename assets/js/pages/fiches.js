@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f8 — fiches : titres de cadres orange + retrait du champ Fonction (mot14f) */
+/* PE_BUILD 2026.10.22-f9 — fiches : barre PV segmentee style cadre + Protocole de Secours en couleur texte (mot14g) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -102,8 +102,8 @@ function blankChar(chName){
 }
 function pvLost(ch){var n=0;for(var i=0;i<ch.pv.length;i++){if(ch.pv[i])n++;}return n;}
 function pvTotalDe(c){var n=parseInt(c&&c.st&&c.st.pv,10);return (isNaN(n)||n<0)?0:n;}
-function majPvCount(){var el=$("pv-count");if(!el){return;}if(!cur){el.textContent="";return;}var t=pvTotalDe(cur);el.textContent=t>0?((t-pvLost(cur))+" / "+t+" PV disponibles — cliquez une case pour marquer un PV perdu"):"";}
-function buildPvBoxes(n){var box=$("pv-box");if(!box){return;}box.innerHTML="";pvNodes=[];for(var j=0;j<n;j++){(function(idx){var s=document.createElement("span");s.className="pv";s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);cur.maj=new Date().toISOString();save();queueSync(cur);majPvCount();});box.appendChild(s);pvNodes.push(s);})(j);}}
+function majPvCount(){var el=$("pv-count");if(!el){return;}if(!cur){el.textContent="";return;}var t=pvTotalDe(cur);el.textContent=t>0?((t-pvLost(cur))+" / "+t+" PV disponibles — cliquez un segment pour marquer un PV perdu"):"";}
+function buildPvBoxes(n){var box=$("pv-box");if(!box){return;}box.innerHTML="";pvNodes=[];for(var j=0;j<n;j++){(function(idx){var s=document.createElement("span");s.className="pvseg";s.addEventListener("click",function(){if(!cur)return;cur.pv[idx]=!cur.pv[idx];s.classList.toggle("on",cur.pv[idx]);cur.maj=new Date().toISOString();save();queueSync(cur);majPvCount();});box.appendChild(s);pvNodes.push(s);})(j);}}
 /* ===== Synchronisation nuage (Supabase) ===== */
 function ownerToken(){
   try{
