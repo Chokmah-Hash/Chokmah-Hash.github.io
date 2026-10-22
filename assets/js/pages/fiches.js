@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f10 — fiches : cadre PV a hauteur dun champ (44px), segments non cliquables (PV geres par le moteur), textes neutres (mot14i) */
+/* PE_BUILD 2026.10.22-f11 — fiches : synchro corrigee, ids UUID natifs (crypto.randomUUID) + migration des fiches existantes (mot14j) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -39,9 +39,10 @@ var EQUIP=[
 var state={v:1,chars:[]};
 var cur=null;
 function $(id){return document.getElementById(id);}
-function load(){try{var d=JSON.parse(localStorage.getItem(LSKEY)||"null");if(d&&d.chars){state=d;}}catch(e){}}
+var UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function load(){try{var d=JSON.parse(localStorage.getItem(LSKEY)||"null");if(d&&d.chars){var mig=false;for(var i=0;i<d.chars.length;i++){if(!UUID_RE.test(d.chars[i].id||"")){d.chars[i].id=uid();mig=true;}}state=d;if(mig){save();}}}catch(e){}}
 function save(){try{localStorage.setItem(LSKEY,JSON.stringify(state));}catch(e){}}
-function uid(){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function uid(){if(window.crypto&&crypto.randomUUID){return crypto.randomUUID();}return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function byId(id){for(var i=0;i<state.chars.length;i++){if(state.chars[i].id===id)return state.chars[i];}return null;}
 function chByName(n){for(var i=0;i<CH.length;i++){if(CH[i].n===n)return CH[i];}return CH[0];}
 function norm(c){
