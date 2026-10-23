@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f23 — fiches : ménage du cadre Navigation — segments retirés (bouton contextuel Translocation/Retour unique), libellé « Position » retiré, bouton « Translocation » seul + largeur fixe — mot15a. Base mot14z : cadre Navigation (legend) + champ Position (étoile/planète/POI, défaut Héra), zéro émoji. Base mot14y : position persistée terrain/hub. Base mot14x : hub vaisseau-tombe (crypte, coffre de cour, engrammes, slots, maintenance). */
+/* PE_BUILD 2026.10.23-f24 — fiches : style du cadre Navigation — cadre Position sans bordure et aligné à gauche, bouton Translocation/Retour en style ghost uniforme (plus de bouton primary flashy) — mot15b. Base mot15a : ménage Navigation (bouton contextuel unique, largeur fixe). Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -645,7 +645,7 @@ function renderNav(){
   }
   if(act){
     if(v==="hub"){act.textContent="↩︎ Retour au terrain";act.className="btn ghost";act.setAttribute("data-nav","terrain");act.title="Revenir à la fiche du châssis, sur le terrain";}
-    else{act.textContent="Translocation";act.className="btn primary";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
+    else{act.textContent="Translocation";act.className="btn ghost";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
   }
 }
 function translocVers(v){
