@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f19 — fiches : modules système boosters (emplacement Système logique, +1 Mém/+1 Cal dynamiques) + protocoles de campagne dans la liste (mot14w) */
+/* PE_BUILD 2026.10.23-f20 — fiches : hub vaisseau-tombe « L'Éternité-Patiente » (vue à onglets + bouton Translocation, crypte personnelle plafonnée par rang, coffre de cour partagé, engrammes compilés sur slots selon châssis, maintenance) — mot14x. Base mot14w : modules système boosters + protocoles de campagne. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -27,6 +27,11 @@ var CH=[
 ];
 var CODES=["Éternel","Pragmatique","Sanguinaire","Solaire","Tutélaire","Fondateur"];
 var COMPS=["Perception","Furtivité","Technologie","Érudition","Commandement","Intimidation","Athlétisme","Pilotage"];
+
+/* — Hub vaisseau-tombe (mot14x) : slots d'aptitudes compilées selon le châssis, rangs, plafonds de crypte — */
+var HUB_SLOTS={"Fantassin programmé":1,"Vétéran":1,"Sentinelle":1,"Traqueur":2,"Ombre":2,"Officier de garde":2,"Artificier":2,"Énergicien":2,"Commandant":3,"Seigneur de guerre":3};
+var HUB_RANGS=[{min:0,nom:"Nouvellement réveillé"},{min:10,nom:"Endurci"},{min:25,nom:"Vétéran éternel"},{min:50,nom:"Légende de la dynastie"}];
+var HUB_PLAFONDS=[4,8,12,20];
 
 var EQUIP=[
  ["Noyau de réparation","1×/bataille : un allié à 6 m relance son Protocole de Secours avec +2"],
@@ -102,6 +107,18 @@ function norm(c){
   if(!c.p1)c.p1={t:"",used:false};
   if(!c.p2)c.p2={t:"",used:false};
   if(!c.maj)c.maj="";
+  /* — hub vaisseau-tombe (mot14x) — */
+  if(!c.hub)c.hub={dnc:0,crypte:[],eng:[],slots:[]};
+  if(!c.hub.crypte)c.hub.crypte=[];
+  if(!c.hub.eng)c.hub.eng=[];
+  if(!c.hub.slots)c.hub.slots=[];
+  c.hub.eng=c.hub.eng.map(function(e){if(e&&typeof e==="object"){if(!e.uid){e.uid=uid();}return e;}return {uid:uid(),nom:String(e||"Engramme"),desc:""};});
+  c.hub.crypte=c.hub.crypte.map(function(it){return (it&&typeof it==="object"&&it.uid)?it:Object.assign({uid:uid()},(it&&typeof it==="object")?it:{});});
+  c.hub.slots=c.hub.slots.map(function(e){return (e&&typeof e==="object")?e:null;});
+  if(typeof c.hub.dnc!=="number"){c.hub.dnc=parseInt(c.hub.dnc,10)||0;}
+  var hnb=HUB_SLOTS[c.ch]||1;
+  while(c.hub.slots.length<hnb)c.hub.slots.push(null);
+  while(c.hub.slots.length>hnb){var dep=c.hub.slots.pop();if(dep)c.hub.eng.push(dep);}
   return c;
 }
 function blankChar(chName){
@@ -113,6 +130,7 @@ function blankChar(chName){
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null,systeme:null},inv:[],
    protocoles:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
+   hub:{dnc:0,crypte:[],eng:[],slots:[]},
    xp:"",notes:"",maj:new Date().toISOString()};
 }
 function pvLost(ch){var n=0;for(var i=0;i<ch.pv.length;i++){if(ch.pv[i])n++;}return n;}
@@ -235,6 +253,7 @@ function fillForm(){
   $("f-xp").value=ch.xp||"";$("f-notes").value=ch.notes||"";
   renderModules();
   renderProtocoles();
+  renderHub();
 }
 function collect(){
   if(!cur)return;
@@ -584,8 +603,225 @@ function rangeModulesSurChangement(nomCh){
   });
   return ranges;
 }
+/* ===== Hub vaisseau-tombe « L'Éternité-Patiente » (mot14x) ===== */
+var coffreRows=null;
+function hubMsg(t,cls){var m=$("hub-status");if(m){m.textContent=t||"";m.className="gmsg "+(cls||"");}}
+function hubRangIdx(c){var d=(c&&c.hub)?(parseInt(c.hub.dnc,10)||0):0,r=0;for(var i=0;i<HUB_RANGS.length;i++){if(d>=HUB_RANGS[i].min){r=i;}}return r;}
+function hubPlafond(c){return HUB_PLAFONDS[hubRangIdx(c)];}
+function hubSlotsN(c){return HUB_SLOTS[(c&&c.ch)||""]||1;}
+function nomJoueur(){try{var s=JSON.parse(localStorage.getItem("pe_session")||"null");return (s&&s.nom)||"";}catch(e){return "";}}
+function showVue(v){
+  var vf=$("vue-fiche"),vh=$("view-hub"),vt=$("vtabs");
+  if(vf)vf.style.display=(v==="fiche")?"block":"none";
+  if(vh)vh.style.display=(v==="hub")?"block":"none";
+  if(vt){var bs=vt.querySelectorAll("button");for(var i=0;i<bs.length;i++){bs[i].classList.toggle("on",bs[i].getAttribute("data-vue")===v);}}
+  if(v==="hub"){renderHub();if(coffreRows===null){coffrePull();}}
+}
+function transloc(v){
+  var ov=$("transloc-ov");if(!ov){showVue(v);return;}
+  ov.classList.add("on");
+  setTimeout(function(){showVue(v);},900);
+  setTimeout(function(){ov.classList.remove("on");},1400);
+}
+function renderHubHead(){
+  var el=$("hub-head");if(!el||!cur){return;}
+  var ri=hubRangIdx(cur),rg=HUB_RANGS[ri],pl=hubPlafond(cur),nx=HUB_RANGS[ri+1];
+  el.innerHTML='<div class="hub-head">'
+   +'<fieldset><legend>Rang de données</legend><div class="hv">'+esc(rg.nom)+'</div></fieldset>'
+   +'<fieldset><legend>Données cumulées</legend><input id="hub-dnc" type="number" min="0" value="'+(parseInt(cur.hub.dnc,10)||0)+'"></fieldset>'
+   +'<fieldset><legend>Plafond de crypte</legend><div class="hv">'+(cur.hub.crypte.length)+' / '+pl+'</div></fieldset>'
+   +'<fieldset><legend>Prochain rang</legend><div class="hv" style="color:var(--muted)">'+(nx?nx.min+" cumulées":"— sommet atteint")+'</div></fieldset>'
+   +'</div>'
+   +'<p class="hub-note">Données disponibles = champ « XP disponibles » de la fiche. Les données cumulées sont saisies par le Maître de la Tombe (le registre complet arrive avec le système Données).</p>';
+  var inp=$("hub-dnc");
+  if(inp){inp.addEventListener("change",function(){if(!cur)return;cur.hub.dnc=parseInt(inp.value,10)||0;cur.maj=new Date().toISOString();save();queueSync(cur);renderHubHead();var n=$("hub-crypte-n");if(n){n.textContent="— "+cur.hub.crypte.length+" / "+hubPlafond(cur)+" emplacements (rang : "+HUB_RANGS[hubRangIdx(cur)].nom+")";}});}
+}
+function ligneHub(nom,desc,btns,off){
+  return '<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
+   +'<span style="min-width:0;flex:1 1 160px"><span style="color:#c8e9df;font-weight:700">'+esc(nom)+'</span>'
+   +(desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div>':'')+'</span>'
+   +'<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">'+btns+'</span></li>';
+}
+function renderHub(){
+  if(!cur){return;}
+  norm(cur);
+  renderHubHead();
+  var pl=hubPlafond(cur),i;
+  /* — crypte personnelle — */
+  var hc=$("hub-crypte"),cn=$("hub-crypte-n");
+  if(cn){cn.textContent="— "+cur.hub.crypte.length+" / "+pl+" emplacements (rang : "+HUB_RANGS[hubRangIdx(cur)].nom+")";}
+  if(hc){
+    var s="";
+    cur.hub.crypte.forEach(function(it){
+      var nom=(EQ&&EQ.nomItem)?EQ.nomItem(it):(it.nom||"Objet");
+      s+=ligneHub(nom,"",petitBtn("Sortir sur le châssis",'data-hsort="'+esc(it.uid)+'"')+petitBtn("Déposer au coffre",'data-hcof="'+esc(it.uid)+'"'));
+    });
+    hc.innerHTML=(cur.hub.crypte.length?'<ul style="padding:0;margin:6px 0 0">'+s+'</ul>':videMsg("Crypte vide — archivez ici le butin rapporté par votre châssis."));
+  }
+  /* — sur le châssis : inventaire à archiver — */
+  var hi=$("hub-inv");
+  if(hi){
+    var s2="";
+    (cur.inv||[]).forEach(function(it){
+      var nom=(EQ&&EQ.nomItem)?EQ.nomItem(it):(it.nom||"Objet");
+      s2+=ligneHub(nom,"",petitBtn("Archiver en crypte",'data-harch="'+esc(it.uid)+'"'));
+    });
+    hi.innerHTML=((cur.inv||[]).length?'<ul style="padding:0;margin:6px 0 0">'+s2+'</ul>':videMsg("Rien de libre dans le châssis — tout est équipé ou déjà archivé."));
+  }
+  /* — engrammes archivés — */
+  var he=$("hub-eng");
+  if(he){
+    var s3="";
+    cur.hub.eng.forEach(function(e){
+      s3+=ligneHub(e.nom||"Engramme",e.desc||"",petitBtn("Compiler",'data-hcomp="'+esc(e.uid)+'"')+petitBtn("Supprimer",'data-hsupp="'+esc(e.uid)+'"'));
+    });
+    s3+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">'
+     +'<input id="hub-eng-nom" type="text" placeholder="Engramme — nom (MJ)" style="flex:1;min-width:150px">'
+     +'<input id="hub-eng-desc" type="text" placeholder="Effet (MJ)" style="flex:2;min-width:180px">'
+     +petitBtn("＋ Graver l'engramme",'data-hgrav="1"')+'</div>';
+    he.innerHTML='<ul style="padding:0;margin:6px 0 0">'+s3+'</ul>'
+     +'<p class="hub-note">Gravé par le Cryptek (Réécriture d\'engramme, 12 données — le registre complet des Données arrive dans une prochaine version). Un engramme compilé occupe un slot du châssis, à bord uniquement.</p>';
+  }
+  /* — aptitudes compilées : slots selon le châssis — */
+  var hs=$("hub-slots"),sn=$("hub-slots-n");
+  var nS=hubSlotsN(cur);
+  if(sn){sn.textContent="— "+cur.hub.slots.filter(Boolean).length+" / "+nS+" slots ("+cur.ch+")";}
+  if(hs){
+    var s4="";
+    for(i=0;i<nS;i++){
+      var e2=cur.hub.slots[i];
+      s4+=e2?ligneSlot("Slot "+(i+1),"compilé",'<span style="color:#f0b24a;font-weight:700;font-size:.85rem">'+esc(e2.nom||"Engramme")+'</span>'+(e2.desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(e2.desc)+'</div>':''),petitBtn("Décompiler",'data-hdec="'+i+'"'))
+            :ligneSlot("Slot "+(i+1),"vide","<span style=\"font-size:.75rem;color:var(--muted)\">— vide — compilable à bord —</span>","",true);
+    }
+    hs.innerHTML='<div style="padding:0;margin:6px 0 0">'+s4+'</div>';
+  }
+  /* — coffre de cour — */
+  coffreRender();
+  /* — maintenance — */
+  var hm=$("hub-maint");
+  if(hm){
+    hm.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">'
+     +'<button type="button" class="btn ghost" data-hrep="1">🔨 Atelier canoptek — réparer le châssis (PV au maximum)</button>'
+     +'<button type="button" class="btn ghost" data-hinit="1">♻️ Réinitialiser — recharger les pouvoirs et purger les échecs de Secours</button>'
+     +'</div>'
+     +'<p class="hub-note">Gratuit, mais uniquement à bord du vaisseau-tombe.</p>';
+  }
+}
+function coffreRender(){
+  var el=$("hub-coffre");if(!el){return;}
+  if(coffreRows===null){
+    el.innerHTML=videMsg("Coffre de cour non chargé — utilisez « ↻ Rafraîchir le coffre ».");
+    return;
+  }
+  var s="";
+  coffreRows.forEach(function(r){
+    var it=(r&&r.item)||{};
+    var nom=(EQ&&EQ.nomItem)?EQ.nomItem(it):(it.nom||"Objet");
+    var de=(r&&r.de)?"déposé par "+esc(r.de):"";
+    s+=ligneHub(nom,de,petitBtn("Prendre",'data-hprend="'+esc(r.id)+'"'));
+  });
+  el.innerHTML=(coffreRows.length?'<ul style="padding:0;margin:6px 0 0">'+s+'</ul>':videMsg("Coffre vide."));
+}
+function coffrePull(){
+  coffreRows=null;
+  fetch(SUPA_URL+"/coffres?select=id,de,item,maj&order=maj.desc",{headers:SUPA_HEADERS})
+   .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
+   .then(function(rows){coffreRows=rows||[];coffreRender();})
+   .catch(function(){coffreRows=null;coffreRender();hubMsg("⚠ Lecture du coffre de cour impossible (hors ligne ou table absente).","err");});
+}
+function apresHub(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderHub();if(msg){hubMsg(msg,"ok");}}
+function hubArchiver(u){
+  if(!cur){return;}
+  var pl=hubPlafond(cur);
+  if(cur.hub.crypte.length>=pl){hubMsg("Crypte personnelle saturée ("+pl+"/"+pl+" — rang : "+HUB_RANGS[hubRangIdx(cur)].nom+").","err");return;}
+  for(var j=0;j<cur.inv.length;j++){
+    if(cur.inv[j].uid===u){var nom=(EQ&&EQ.nomItem)?EQ.nomItem(cur.inv[j]):"objet";cur.hub.crypte.push(cur.inv.splice(j,1)[0]);apresHub("« "+nom+" » archivé en crypte personnelle.");return;}
+  }
+}
+function hubSortir(u){
+  if(!cur){return;}
+  for(var j=0;j<cur.hub.crypte.length;j++){
+    if(cur.hub.crypte[j].uid===u){var nom=(EQ&&EQ.nomItem)?EQ.nomItem(cur.hub.crypte[j]):"objet";cur.inv.push(cur.hub.crypte.splice(j,1)[0]);apresHub("« "+nom+" » ressorti du stockage — équipez-le depuis la fiche (Inventaire du personnage).");return;}
+  }
+}
+function coffreDeposer(u){
+  if(!cur){return;}
+  var it=null;
+  for(var j=0;j<cur.hub.crypte.length;j++){if(cur.hub.crypte[j].uid===u){it=cur.hub.crypte[j];break;}}
+  if(!it){return;}
+  var nom=(EQ&&EQ.nomItem)?EQ.nomItem(it):"objet";
+  fetch(SUPA_URL+"/coffres",{method:"POST",headers:SUPA_HEADERS,body:JSON.stringify({de:nomJoueur(),item:it})})
+   .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
+   .then(function(){cur.hub.crypte.splice(j,1);apresHub("« "+nom+" » déposé dans le coffre de cour.");coffrePull();})
+   .catch(function(){hubMsg("⚠ Dépôt impossible (hors ligne ou table absente).","err");});
+}
+function coffrePrendre(rid){
+  if(!cur){return;}
+  var pl=hubPlafond(cur);
+  if(cur.hub.crypte.length>=pl){hubMsg("Crypte personnelle saturée ("+pl+"/"+pl+").","err");return;}
+  var r=null;
+  for(var j=0;j<(coffreRows||[]).length;j++){if(String(coffreRows[j].id)===String(rid)){r=coffreRows[j];break;}}
+  if(!r){return;}
+  fetch(SUPA_URL+"/coffres?id=eq."+encodeURIComponent(rid),{method:"DELETE",headers:SUPA_HEADERS})
+   .then(function(resp){return resp.ok?Promise.resolve():Promise.reject(new Error("http "+resp.status));})
+   .then(function(){
+     var it=JSON.parse(JSON.stringify(r.item||{}));it.uid=uid();
+     cur.hub.crypte.push(it);
+     coffreRows=(coffreRows||[]).filter(function(x){return String(x.id)!==String(rid);});
+     apresHub("Objet retiré du coffre de cour vers votre crypte.");
+   })
+   .catch(function(){hubMsg("⚠ Prise impossible (hors ligne ou table absente).","err");});
+}
+function hubGraver(){
+  if(!cur){return;}
+  var n=$("hub-eng-nom"),d=$("hub-eng-desc");
+  var nom=(n?n.value:"").trim();
+  if(!nom){hubMsg("Donnez un nom à l'engramme.","err");return;}
+  cur.hub.eng.push({uid:uid(),nom:nom,desc:(d?d.value:"").trim()});
+  apresHub("Engramme « "+nom+" » gravé en crypte (MJ).");
+}
+function hubSupprimer(u){
+  if(!cur){return;}
+  cur.hub.eng=cur.hub.eng.filter(function(e){return e.uid!==u;});
+  apresHub("Engramme supprimé de la crypte.");
+}
+function hubCompiler(u){
+  if(!cur){return;}
+  var libre=-1;
+  for(var i=0;i<cur.hub.slots.length;i++){if(!cur.hub.slots[i]){libre=i;break;}}
+  if(libre<0){hubMsg("Slots d'aptitudes compilées pleins ("+hubSlotsN(cur)+" selon le châssis) — décompilez d'abord.","err");return;}
+  var e=null;
+  cur.hub.eng=cur.hub.eng.filter(function(x){if(x.uid===u){e=x;return false;}return true;});
+  if(!e){return;}
+  cur.hub.slots[libre]=e;
+  apresHub("« "+(e.nom||"Engramme")+" » compilé sur le châssis (slot "+(libre+1)+"/"+hubSlotsN(cur)+").");
+}
+function hubDecompiler(idx){
+  if(!cur){return;}
+  var e=cur.hub.slots[idx];
+  if(!e){return;}
+  cur.hub.slots[idx]=null;
+  cur.hub.eng.push(e);
+  apresHub("« "+(e.nom||"Engramme")+" » décompilé — retour en crypte.");
+}
+function hubReparer(){
+  if(!cur){return;}
+  for(var i=0;i<cur.pv.length;i++){cur.pv[i]=false;}
+  apresHub("Atelier canoptek : châssis intégralement réparé — "+pvTotalDe(cur)+" / "+pvTotalDe(cur)+" PV.");
+  buildPvBoxes(pvTotalDe(cur));
+  pvNodes.forEach(function(el){el.classList.remove("on");});
+  majPvCount();
+}
+function hubReinit(){
+  if(!cur){return;}
+  cur.p1.used=false;cur.p2.used=false;cur.speU=false;
+  cur.ech=[false,false];
+  $("f-p1u").checked=false;$("f-p2u").checked=false;$("f-spePu").checked=false;
+  $("ech-0").classList.remove("on");$("ech-1").classList.remove("on");
+  apresHub("Réinitialisation à bord : pouvoirs rechargés, échecs de Protocole de Secours purgés.");
+}
 function showList(){cur=null;$("view-edit").style.display="none";$("view-list").style.display="block";renderCards();}
-function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";fillForm();window.scrollTo(0,0);}
+function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";showVue("fiche");fillForm();window.scrollTo(0,0);}
 var pvNodes=[],compsNodes=[];
 function init(){
   OTOK=ownerToken();
@@ -638,6 +874,31 @@ function init(){
     else if(b.getAttribute("data-padd")){installerProtocole();}
     else if((a=b.getAttribute("data-pact"))!==null){activerProtocole(a);}
   });
+  /* — hub vaisseau-tombe : vues, translocation, actions (mot14x) — */
+  var vt=$("vtabs");
+  if(vt){vt.addEventListener("click",function(ev){var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;if(!b){return;}var v=b.getAttribute("data-vue");if(v){showVue(v);}});}
+  var bt=$("btn-transloc");
+  if(bt){bt.addEventListener("click",function(){if(!cur){return;}transloc("hub");});}
+  var br=$("btn-retour");
+  if(br){br.addEventListener("click",function(){if(!cur){return;}transloc("fiche");});}
+  var bcr=$("btn-coffre-refresh");
+  if(bcr){bcr.addEventListener("click",function(){coffrePull();});}
+  var hv=$("view-hub");
+  if(hv){hv.addEventListener("click",function(ev){
+    var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;
+    if(!b||!hv.contains(b)||!cur){return;}
+    var a;
+    if((a=b.getAttribute("data-hsort"))!==null){hubSortir(a);}
+    else if((a=b.getAttribute("data-harch"))!==null){hubArchiver(a);}
+    else if((a=b.getAttribute("data-hcof"))!==null){coffreDeposer(a);}
+    else if((a=b.getAttribute("data-hprend"))!==null){coffrePrendre(a);}
+    else if((a=b.getAttribute("data-hcomp"))!==null){hubCompiler(a);}
+    else if((a=b.getAttribute("data-hdec"))!==null){hubDecompiler(parseInt(a,10));}
+    else if((a=b.getAttribute("data-hsupp"))!==null){hubSupprimer(a);}
+    else if(b.getAttribute("data-hgrav")){hubGraver();}
+    else if(b.getAttribute("data-hrep")){hubReparer();}
+    else if(b.getAttribute("data-hinit")){hubReinit();}
+  });}
   /* — déconnexion (sous-menu) — */
   $("app-logout").addEventListener("click",function(ev){
     ev.preventDefault();

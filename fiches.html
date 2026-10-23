@@ -52,10 +52,23 @@ h3.sub small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu
 #exp-box{display:none}
 #imp-msg{margin-top:6px;color:var(--muted);font-size:.85rem}
 textarea{resize:vertical}
+/* — Hub vaisseau-tombe / Translocation (mot14x) — */
+.vtabs{display:flex;gap:8px;margin:16px 0 4px;flex-wrap:wrap}
+.vtabs button{flex:1 1 180px;padding:10px 12px;border:1px solid var(--tealline);border-radius:10px;background:var(--panel2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.vtabs button.on{border-color:var(--teal);color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
+#transloc-ov{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(46,230,201,.28),rgba(6,13,11,.94));opacity:0;pointer-events:none;transition:opacity .35s}
+#transloc-ov.on{opacity:1;pointer-events:all}
+#transloc-ov div{color:var(--teal);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:0 20px}
+.hub-note{font-size:.75rem;color:var(--muted);margin:4px 0 0}
+.hub-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
+.hub-head fieldset{border:1px solid var(--tealline);border-radius:9px;background:var(--panel2);margin:0;padding:6px;min-width:0}
+.hub-head legend{color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1}
+.hub-head .hv{color:var(--teal);font-weight:700;font-size:1rem;padding:2px 6px}
 @media print{
  body{background:#fff!important;color:#111}
- .nav,.foot,#view-list,.fh,.btn{display:none!important}
+ .nav,.foot,#view-list,.fh,.btn,#vtabs,#view-hub,#transloc-ov{display:none!important}
  #view-edit{display:block!important}
+ #vue-fiche{display:block!important}
  main{max-width:100%;padding:0}
  h2{color:#0b6e66!important}h3.sub{color:#a06a1e!important}
  input,select,textarea{background:#fff!important;color:#111!important;border:1px solid #888!important;min-height:0}
@@ -120,13 +133,18 @@ textarea{resize:vertical}
           <button class="btn danger" id="btn-del">Supprimer</button>
         </div>
         <h2 id="f-title">Fiche personnage</h2>
+        <div class="vtabs" id="vtabs">
+          <button type="button" class="on" data-vue="fiche"><span aria-hidden="true">⚔️</span> Fiche perso</button>
+          <button type="button" data-vue="hub"><span aria-hidden="true">🛸</span> Hub — L'Éternité-Patiente</button>
+        </div>
+        <div id="vue-fiche">
         <div id="exp-box" class="note-box">
           <strong>Code d'export de cette fiche</strong> — copiez-le et conservez-le (message privé, note…). Sur un autre appareil : Fiches → Importer un code.
           <textarea id="exp-code" rows="4" readonly style="width:100%;margin-top:8px"></textarea>
           <div style="margin-top:8px"><button class="btn ghost" id="btn-copy">Copier le code</button></div>
         </div>
         <form id="f-form" onsubmit="return false">
-          <h3 class="sub">Identité</h3>
+          <h3 class="sub">Identité <small>— le châssis : ce qui est sur le terrain</small><button type="button" class="btn primary" id="btn-transloc" style="margin-left:auto" title="Hors combat uniquement — rejoindre le vaisseau-tombe (le Maître de la Tombe peut poser un verrou narratif)">🛸 Translocation</button></h3>
           <div class="ig">
             <div><label for="f-nom">Désignation</label><input id="f-nom" type="text" placeholder="ex. AKH-77 « Verdict »"></div>
             <div><label for="f-spe">Spécialisation</label><select id="f-spe"></select></div>
@@ -197,6 +215,37 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
           <label for="f-notes">Notes / dégâts / hontes</label>
           <textarea id="f-notes" rows="4" placeholder="Ce que le métal n'oublie pas…"></textarea>
         </form>
+        </div>
+
+        <section id="view-hub" style="display:none">
+          <div class="fh">
+            <button type="button" class="btn ghost" id="btn-retour">↩︎ Retour au terrain</button>
+            <button type="button" class="btn ghost" id="btn-coffre-refresh">↻ Rafraîchir le coffre</button>
+          </div>
+          <h2>L'Éternité-Patiente <small style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">— vaisseau-tombe de la cour</small></h2>
+          <p class="gmsg" id="hub-status"></p>
+          <div id="hub-head"></div>
+          <p class="hub-note">À bord uniquement : stockage, compilation d'engrammes, réparations et réinitialisations. En mission, vous n'avez que ce qui est compilé sur votre châssis. La translocation est impossible en phase de combat ou en zone verrouillée par le Maître de la Tombe.</p>
+
+          <h3 class="sub">Crypte personnelle <small id="hub-crypte-n">—</small></h3>
+          <div id="hub-crypte"></div>
+
+          <h3 class="sub">Sur le châssis <small>— à archiver en crypte</small></h3>
+          <div id="hub-inv"></div>
+
+          <h3 class="sub">Engrammes-aptitudes archivés <small>— achetés, gravés par le Cryptek</small></h3>
+          <div id="hub-eng"></div>
+
+          <h3 class="sub">Aptitudes compilées <small id="hub-slots-n">— nombre de slots selon le châssis</small></h3>
+          <div id="hub-slots"></div>
+
+          <h3 class="sub">Coffre de cour <small>— partagé entre tous les joueurs</small></h3>
+          <div id="hub-coffre"></div>
+
+          <h3 class="sub">Maintenance <small>— ateliers canoptek</small></h3>
+          <div id="hub-maint"></div>
+        </section>
+        <div id="transloc-ov" aria-hidden="true"><div>🌌 Matrice de translocation activée…</div></div>
       </section>
     </main>
     <footer class="foot">
