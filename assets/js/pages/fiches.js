@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f17 — fiches : section Protocoles (install limite par place memoire, execution limitee par calcul, liste predefinie + Secours inne) (mot14t) */
+/* PE_BUILD 2026.10.23-f18 — fiches : section Protocoles (champ Specialisation dans Identite, aptitude et/ou pouvoir de specialisation auto-affiches) (mot14v) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -52,6 +52,8 @@ function norm(c){
   if(!c.modules.capteurs)c.modules.capteurs=[];
   ["coeur","noyau","bouclier"].forEach(function(k){if(!c.modules[k])c.modules[k]=null;});
   if(!c.inv)c.inv=[];
+  if(c.spe===undefined)c.spe="";
+  if(c.speU===undefined)c.speU=false;
   if(!c.protocoles)c.protocoles=[];
   if(c.st&&!c.st.mem){var ccx=chByName(c.ch);c.st.mem=ccx.mem||"1";c.st.cal=ccx.cal||"1";}
   if(c.st&&!c.st.cal){var ccy=chByName(c.ch);c.st.cal=ccy.cal||"1";}
@@ -105,7 +107,7 @@ function norm(c){
 function blankChar(chName){
   var c=chByName(chName);
   var p=[];for(var i=0;i<30;i++)p.push(false);
-  return {id:uid(),nom:"",ch:c.n,code:"",
+  return {id:uid(),nom:"",ch:c.n,code:"",spe:"",speU:false,
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx,mem:c.mem,cal:c.cal},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
@@ -205,10 +207,19 @@ function renderCards(){
   });
 }
 function setSelect(id,val){var s=$(id);var ok=false;for(var i=0;i<s.options.length;i++){if(s.options[i].value===val){ok=true;break;}}s.value=ok?val:"";}
+function majSpe(){
+  var s=(cur&&cur.spe&&EQ&&EQ.speDe)?EQ.speDe(cur.spe):null;
+  var a=$("f-speA"),pw=$("f-speP"),pu=$("f-spePu");
+  if(a){a.value=(s&&s.apt)?s.apt:"";}
+  if(pw){pw.value=(s&&s.pouvoir)?s.pouvoir:"";}
+  if(pu){pu.checked=!!(cur&&cur.speU);}
+}
 function fillForm(){
   var ch=norm(cur);
   $("f-title").textContent="Fiche — "+(ch.nom||"personnage sans nom");
   $("f-nom").value=ch.nom;$("f-ch").value=ch.ch;setSelect("f-code",ch.code||"");
+  setSelect("f-spe",ch.spe||"");
+  majSpe();
 
   var st=ch.st;
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){$("st-"+k).value=st[k]||"";});
@@ -232,7 +243,7 @@ function collect(){
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
   ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
-  ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;
+  ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;ch.spe=$("f-spe").value;ch.speU=$("f-spePu").checked;
   ch.p1={t:$("f-p1").value,used:$("f-p1u").checked};
   ch.p2={t:$("f-p2").value,used:$("f-p2u").checked};
   ch.xp=$("f-xp").value;ch.notes=$("f-notes").value;
@@ -572,6 +583,12 @@ function init(){
   var codeSel=$("f-code");
   var oEmpty=document.createElement("option");oEmpty.value="";oEmpty.textContent="— aucune —";codeSel.appendChild(oEmpty);
   CODES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;codeSel.appendChild(o);});
+  var speSel=$("f-spe");
+  if(speSel){
+    var so=document.createElement("option");so.value="";so.textContent="— aucune —";speSel.appendChild(so);
+    (EQ&&EQ.SPECIALISATIONS_DB?EQ.SPECIALISATIONS_DB:[]).forEach(function(sp){var o=document.createElement("option");o.value=sp.id;o.textContent=sp.nom;speSel.appendChild(o);});
+    speSel.addEventListener("change",function(){if(!cur)return;cur.spe=speSel.value;cur.speU=false;cur.maj=new Date().toISOString();save();queueSync(cur);majSpe();});
+  }
   [0,1].forEach(function(k){
     $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();});
   });

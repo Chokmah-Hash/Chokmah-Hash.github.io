@@ -1,5 +1,5 @@
 /* Les Protocoles Éternels — base équipement commune (fiches joueur + moteur MJ)
-   PE_BUILD 2026.10.22-mot14t — source unique : armes, modules et châssis avec tailles T1-T4.
+   PE_BUILD 2026.10.23-mot14v — source unique : armes, modules et châssis avec tailles T1-T4.
    Les stats des modules sont PROVISOIRES (validation en cours dans les règles maison). */
 window.PE_EQUIP = (function () {
   "use strict";
@@ -106,6 +106,39 @@ window.PE_EQUIP = (function () {
 
   function protocoleDe(id) {
     for (var i = 0; i < PROTOCOLES_DB.length; i++) { if (PROTOCOLES_DB[i].id === id) return PROTOCOLES_DB[i]; }
+    return null;
+  }
+
+  /* ===== Base spécialisations (vocation du personnage) — aptitude et/ou pouvoir spécifiques, s'additionnent au châssis ===== */
+  var SPECIALISATIONS_DB = [
+    { id: "s-archeoviste",  nom: "Archéoviste",
+      apt: "Archives infinies : 1×/scène, relancez un test d'Érudition ou de Technologie.",
+      pouvoir: "Acquisition : 1×/bataille, dupliquez l'arme d'un ennemi vaincu — elle rejoint votre inventaire." },
+    { id: "s-chronomancien", nom: "Chronomancien",
+      apt: "",
+      pouvoir: "Précognition : 1×/scène, forcez un ennemi à relancer une attaque qui venait de réussir." },
+    { id: "s-technomancien", nom: "Technomancien",
+      apt: "Entretien perpétuel : 1×/scène, soignez D3 PV à un allié à 6 m (ou à vous-même).",
+      pouvoir: "" },
+    { id: "s-stratege",      nom: "Grand stratège",
+      apt: "Regard tactique : les alliés à 6 m gagnent +1 Cd sur leurs tests de volonté.",
+      pouvoir: "" },
+    { id: "s-artisan",       nom: "Artisan d'élite",
+      apt: "Main savante : vous ignorez les malus des armes lourdes ; 1×/scène, réparez D3 PV.",
+      pouvoir: "" },
+    { id: "s-chasseur",      nom: "Chasseur éternel",
+      apt: "Œil de traque : relancez 1 test de Perception raté par scène.",
+      pouvoir: "Marque de proie : 1×/bataille, vos attaques contre la cible marquée ignorent sa sauvegarde." },
+    { id: "s-orateur",       nom: "Orateur dynastique",
+      apt: "Voix de la dynastie : vos tests de Commandement sont à 3+.",
+      pouvoir: "" },
+    { id: "s-gardien",       nom: "Gardien du seuil",
+      apt: "",
+      pouvoir: "Verrouillé : 1×/scène, un allié à 2 m relance sa sauvegarde ratée." }
+  ];
+
+  function speDe(id) {
+    for (var i = 0; i < SPECIALISATIONS_DB.length; i++) { if (SPECIALISATIONS_DB[i].id === id) return SPECIALISATIONS_DB[i]; }
     return null;
   }
 
@@ -221,6 +254,7 @@ window.PE_EQUIP = (function () {
   return {
     ARMES_DB: ARMES_DB,
     PROTOCOLES_DB: PROTOCOLES_DB,
+    SPECIALISATIONS_DB: SPECIALISATIONS_DB,
     MODULES_DB: MODULES_DB,
     CHASSIS_DB: CHASSIS_DB,
     CATS: CATS,
@@ -230,6 +264,7 @@ window.PE_EQUIP = (function () {
     moduleDe: moduleDe,
     moduleParNom: moduleParNom,
     protocoleDe: protocoleDe,
+    speDe: speDe,
     chassiDe: chassiDe,
     chassiParNom: chassiParNom,
     peutEquiper: peutEquiper,

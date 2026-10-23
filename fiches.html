@@ -129,8 +129,9 @@ textarea{resize:vertical}
           <h3 class="sub">Identité</h3>
           <div class="ig">
             <div><label for="f-nom">Désignation</label><input id="f-nom" type="text" placeholder="ex. AKH-77 « Verdict »"></div>
+            <div><label for="f-spe">Spécialisation</label><select id="f-spe"></select></div>
             <div><label for="f-ch">Châssis</label><select id="f-ch"></select></div>
-            <div><label for="f-code">Spécialisation</label><select id="f-code"></select></div>
+            <div><label for="f-code">Code de fabrique</label><select id="f-code"></select></div>
             
             
           </div>
@@ -179,8 +180,14 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
             <div><label for="f-aptA">Aptitude acquise (XP)</label><input id="f-aptA" type="text"></div>
           </div>
           <div class="ig">
+            <div><label for="f-speA">Aptitude de spécialisation</label><input id="f-speA" type="text" readonly title="Vient de la Spécialisation choisie dans Identité" placeholder="— choisir une Spécialisation dans Identité —"></div>
+          </div>
+          <div class="ig">
             <div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p1">Pouvoir 1 (1×/scène)</label><input id="f-p1" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p1u"> utilisé</label></div>
             <div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-p2">Pouvoir 2 (1×/scène)</label><input id="f-p2" type="text"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-p2u"> utilisé</label></div>
+          </div>
+          <div class="ig">
+            <div style="display:flex;gap:8px;align-items:flex-end"><div style="flex:1"><label for="f-speP">Pouvoir de spécialisation</label><input id="f-speP" type="text" readonly title="Vient de la Spécialisation choisie dans Identité" placeholder="— choisir une Spécialisation dans Identité —"></div><label class="cb" style="min-width:105px"><input type="checkbox" id="f-spePu"> utilisé</label></div>
           </div>
           <h3 class="sub">Expérience &amp; notes</h3>
           <div class="ig">
