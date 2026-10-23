@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f24 — fiches : style du cadre Navigation — cadre Position sans bordure et aligné à gauche, bouton Translocation/Retour en style ghost uniforme (plus de bouton primary flashy) — mot15b. Base mot15a : ménage Navigation (bouton contextuel unique, largeur fixe). Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
+/* PE_BUILD 2026.10.23-f25 — fiches : position en blanc (uniforme terrain/hub) + interrupteur HUB_VISIBLE (bouton Translocation/Retour caché si false — aventure 1 : les joueurs ne doivent pas se douter qu ils sont Nécrons ; actuellement true pour les tests) — mot15c. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -32,6 +32,8 @@ var COMPS=["Perception","Furtivité","Technologie","Érudition","Commandement","
 var HUB_SLOTS={"Fantassin programmé":1,"Vétéran":1,"Sentinelle":1,"Traqueur":2,"Ombre":2,"Officier de garde":2,"Artificier":2,"Énergicien":2,"Commandant":3,"Seigneur de guerre":3};
 var HUB_RANGS=[{min:0,nom:"Nouvellement réveillé"},{min:10,nom:"Endurci"},{min:25,nom:"Vétéran éternel"},{min:50,nom:"Légende de la dynastie"}];
 var HUB_PLAFONDS=[4,8,12,20];
+/* Interrupteur hub (mot15c) : true = bouton Translocation/Retour visible. Passer à false pour CACHER le hub aux joueurs pendant l'aventure 1 (ils ne doivent pas se douter qu'ils sont Nécrons — pas de hub pendant la première aventure) ; remettre true à la fin de l'aventure 1. Actuellement true : Michael en a besoin pour ses tests. */
+var HUB_VISIBLE=true;
 
 var EQUIP=[
  ["Noyau de réparation","1×/bataille : un allié à 6 m relance son Protocole de Secours avec +2"],
@@ -109,6 +111,7 @@ function norm(c){
   if(!c.maj)c.maj="";
   /* — hub vaisseau-tombe (mot14x) + position du joueur (mot14y) + position réelle sur la carte galaxie (mot14z) — */
   if(c.loc!=="hub")c.loc="terrain";
+  if(!HUB_VISIBLE){c.loc="terrain";}
   if(!c.pos||typeof c.pos!=="object")c.pos={};
   if(!c.pos.et)c.pos.et="Héra";
   if(!c.pos.pl)c.pos.pl="Basalte";
@@ -637,19 +640,20 @@ function posTexte(){
   return p.length?p.join(" — "):"—";
 }
 function renderNav(){
-  var act=$("nav-action"),pv=$("nav-pos-v"),pc=$("nav-pos");
+  var act=$("nav-action"),pv=$("nav-pos-v");
   var v=vueDe();
-  if(pc&&pv){
-    if(v==="hub"){pv.textContent="À bord — L'Éternité-Patiente";pc.classList.add("hub");}
-    else{pv.textContent=posTexte();pc.classList.remove("hub");}
+  if(act){act.style.display=HUB_VISIBLE?"":"none";}
+  if(pv){
+    if(v==="hub"){pv.textContent="À bord — L'Éternité-Patiente";}
+    else{pv.textContent=posTexte();}
   }
-  if(act){
+  if(act&&HUB_VISIBLE){
     if(v==="hub"){act.textContent="↩︎ Retour au terrain";act.className="btn ghost";act.setAttribute("data-nav","terrain");act.title="Revenir à la fiche du châssis, sur le terrain";}
     else{act.textContent="Translocation";act.className="btn ghost";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
   }
 }
 function translocVers(v){
-  if(!cur||v===vueDe()){return;}
+  if(!cur||!HUB_VISIBLE||v===vueDe()){return;}
   var ov=$("transloc-ov");
   if(!ov){cur.loc=(v==="hub")?"hub":"terrain";showVueSansAnim();return;}
   ov.classList.add("on");
