@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f20 — fiches : hub vaisseau-tombe « L'Éternité-Patiente » (vue à onglets + bouton Translocation, crypte personnelle plafonnée par rang, coffre de cour partagé, engrammes compilés sur slots selon châssis, maintenance) — mot14x. Base mot14w : modules système boosters + protocoles de campagne. */
+/* PE_BUILD 2026.10.23-f21 — fiches : navigation fiche↔hub « L'Éternité-Patiente » (carte Navigation : position persistée terrain/hub, segments, bouton de translocation contextuel avec animation) — mot14y. Base mot14x : hub vaisseau-tombe (crypte personnelle plafonnée par rang, coffre de cour partagé, engrammes compilés sur slots selon châssis, maintenance). Base mot14w : modules système boosters + protocoles de campagne. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -107,7 +107,8 @@ function norm(c){
   if(!c.p1)c.p1={t:"",used:false};
   if(!c.p2)c.p2={t:"",used:false};
   if(!c.maj)c.maj="";
-  /* — hub vaisseau-tombe (mot14x) — */
+  /* — hub vaisseau-tombe (mot14x) + position du joueur (mot14y) — */
+  if(c.loc!=="hub")c.loc="terrain";
   if(!c.hub)c.hub={dnc:0,crypte:[],eng:[],slots:[]};
   if(!c.hub.crypte)c.hub.crypte=[];
   if(!c.hub.eng)c.hub.eng=[];
@@ -130,6 +131,7 @@ function blankChar(chName){
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null,systeme:null},inv:[],
    protocoles:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
+   loc:"terrain",
    hub:{dnc:0,crypte:[],eng:[],slots:[]},
    xp:"",notes:"",maj:new Date().toISOString()};
 }
@@ -610,17 +612,42 @@ function hubRangIdx(c){var d=(c&&c.hub)?(parseInt(c.hub.dnc,10)||0):0,r=0;for(va
 function hubPlafond(c){return HUB_PLAFONDS[hubRangIdx(c)];}
 function hubSlotsN(c){return HUB_SLOTS[(c&&c.ch)||""]||1;}
 function nomJoueur(){try{var s=JSON.parse(localStorage.getItem("pe_session")||"null");return (s&&s.nom)||"";}catch(e){return "";}}
-function showVue(v){
-  var vf=$("vue-fiche"),vh=$("view-hub"),vt=$("vtabs");
+/* ===== Navigation fiche↔hub : position persistée + translocation (mot14y) ===== */
+function vueDe(){
+  return (cur&&cur.loc==="hub")?"hub":"fiche";
+}
+function showVueSansAnim(){
+  var v=vueDe(),vf=$("vue-fiche"),vh=$("view-hub");
   if(vf)vf.style.display=(v==="fiche")?"block":"none";
   if(vh)vh.style.display=(v==="hub")?"block":"none";
-  if(vt){var bs=vt.querySelectorAll("button");for(var i=0;i<bs.length;i++){bs[i].classList.toggle("on",bs[i].getAttribute("data-vue")===v);}}
+  renderNav();
   if(v==="hub"){renderHub();if(coffreRows===null){coffrePull();}}
 }
-function transloc(v){
-  var ov=$("transloc-ov");if(!ov){showVue(v);return;}
+function renderNav(){
+  var loc=$("nav-loc"),seg=$("nav-seg"),act=$("nav-action");
+  var v=vueDe();
+  if(loc){
+    if(v==="hub"){loc.textContent="🛸 À bord — L'Éternité-Patiente";loc.className="navloc hub";}
+    else{loc.textContent="⚔️ Sur le terrain";loc.className="navloc terrain";}
+  }
+  if(seg){var bs=seg.querySelectorAll("button");for(var i=0;i<bs.length;i++){bs[i].classList.toggle("on",bs[i].getAttribute("data-nav")===v);}}
+  if(act){
+    if(v==="hub"){act.textContent="↩︎ Retour au terrain";act.className="btn ghost";act.setAttribute("data-nav","terrain");act.title="Revenir à la fiche du châssis, sur le terrain";}
+    else{act.textContent="🛸 Translocation — rejoindre l'Éternité-Patiente";act.className="btn primary";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
+  }
+}
+function translocVers(v){
+  if(!cur||v===vueDe()){return;}
+  var ov=$("transloc-ov");
+  if(!ov){cur.loc=(v==="hub")?"hub":"terrain";showVueSansAnim();return;}
   ov.classList.add("on");
-  setTimeout(function(){showVue(v);},900);
+  setTimeout(function(){
+    cur.loc=(v==="hub")?"hub":"terrain";
+    cur.maj=new Date().toISOString();
+    save();queueSync(cur);
+    showVueSansAnim();
+    if(v==="hub"){hubMsg("🌌 Translocation réussie — bienvenue à bord.");}
+  },900);
   setTimeout(function(){ov.classList.remove("on");},1400);
 }
 function renderHubHead(){
@@ -821,7 +848,7 @@ function hubReinit(){
   apresHub("Réinitialisation à bord : pouvoirs rechargés, échecs de Protocole de Secours purgés.");
 }
 function showList(){cur=null;$("view-edit").style.display="none";$("view-list").style.display="block";renderCards();}
-function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";showVue("fiche");fillForm();window.scrollTo(0,0);}
+function showEdit(id){cur=byId(id);if(!cur)return;norm(cur);$("view-list").style.display="none";$("view-edit").style.display="block";$("exp-box").style.display="none";showVueSansAnim();fillForm();window.scrollTo(0,0);}
 var pvNodes=[],compsNodes=[];
 function init(){
   OTOK=ownerToken();
@@ -874,13 +901,9 @@ function init(){
     else if(b.getAttribute("data-padd")){installerProtocole();}
     else if((a=b.getAttribute("data-pact"))!==null){activerProtocole(a);}
   });
-  /* — hub vaisseau-tombe : vues, translocation, actions (mot14x) — */
-  var vt=$("vtabs");
-  if(vt){vt.addEventListener("click",function(ev){var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;if(!b){return;}var v=b.getAttribute("data-vue");if(v){showVue(v);}});}
-  var bt=$("btn-transloc");
-  if(bt){bt.addEventListener("click",function(){if(!cur){return;}transloc("hub");});}
-  var br=$("btn-retour");
-  if(br){br.addEventListener("click",function(){if(!cur){return;}transloc("fiche");});}
+  /* — hub vaisseau-tombe : navigation fiche↔hub (mot14y), actions (mot14x) — */
+  var nh=$("nav-hub");
+  if(nh){nh.addEventListener("click",function(ev){var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;if(!b||!nh.contains(b)||!cur){return;}var v=b.getAttribute("data-nav");if(v){translocVers(v);}});}
   var bcr=$("btn-coffre-refresh");
   if(bcr){bcr.addEventListener("click",function(){coffrePull();});}
   var hv=$("view-hub");

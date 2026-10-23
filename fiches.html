@@ -52,10 +52,14 @@ h3.sub small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu
 #exp-box{display:none}
 #imp-msg{margin-top:6px;color:var(--muted);font-size:.85rem}
 textarea{resize:vertical}
-/* — Hub vaisseau-tombe / Translocation (mot14x) — */
-.vtabs{display:flex;gap:8px;margin:16px 0 4px;flex-wrap:wrap}
-.vtabs button{flex:1 1 180px;padding:10px 12px;border:1px solid var(--tealline);border-radius:10px;background:var(--panel2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.vtabs button.on{border-color:var(--teal);color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
+/* — Hub vaisseau-tombe / Translocation / Navigation fiche↔hub (mot14y) — */
+.navcard{margin:16px 0 4px;padding:12px 14px;border:1px solid var(--tealline);border-radius:12px;background:var(--panel2);display:flex;flex-direction:column;gap:10px}
+.navloc{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;border:1px solid}
+.navloc.terrain{color:var(--teal);border-color:var(--teal);background:var(--tealsoft)}
+.navloc.hub{color:var(--amber);border-color:var(--amber);background:var(--amberline)}
+.navseg{display:flex;gap:8px;flex-wrap:wrap}
+.navseg button{flex:1 1 180px;padding:10px 12px;border:1px solid var(--tealline);border-radius:10px;background:transparent;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.navseg button.on{border-color:var(--teal);color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal);cursor:default}
 #transloc-ov{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(46,230,201,.28),rgba(6,13,11,.94));opacity:0;pointer-events:none;transition:opacity .35s}
 #transloc-ov.on{opacity:1;pointer-events:all}
 #transloc-ov div{color:var(--teal);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:0 20px}
@@ -66,7 +70,7 @@ textarea{resize:vertical}
 .hub-head .hv{color:var(--teal);font-weight:700;font-size:1rem;padding:2px 6px}
 @media print{
  body{background:#fff!important;color:#111}
- .nav,.foot,#view-list,.fh,.btn,#vtabs,#view-hub,#transloc-ov{display:none!important}
+ .nav,.foot,#view-list,.fh,.btn,#nav-hub,#view-hub,#transloc-ov{display:none!important}
  #view-edit{display:block!important}
  #vue-fiche{display:block!important}
  main{max-width:100%;padding:0}
@@ -133,9 +137,13 @@ textarea{resize:vertical}
           <button class="btn danger" id="btn-del">Supprimer</button>
         </div>
         <h2 id="f-title">Fiche personnage</h2>
-        <div class="vtabs" id="vtabs">
-          <button type="button" class="on" data-vue="fiche"><span aria-hidden="true">⚔️</span> Fiche perso</button>
-          <button type="button" data-vue="hub"><span aria-hidden="true">🛸</span> Hub — L'Éternité-Patiente</button>
+        <div id="nav-hub" class="navcard">
+          <div id="nav-loc" class="navloc terrain" title="Position actuelle du personnage">⚔️ Sur le terrain</div>
+          <div class="navseg" id="nav-seg">
+            <button type="button" class="on" data-nav="terrain"><span aria-hidden="true">⚔️</span> Fiche perso</button>
+            <button type="button" data-nav="hub"><span aria-hidden="true">🛸</span> Hub — L'Éternité-Patiente</button>
+          </div>
+          <button type="button" id="nav-action" class="btn primary" data-nav="hub" style="width:100%" title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif">🛸 Translocation — rejoindre l'Éternité-Patiente</button>
         </div>
         <div id="vue-fiche">
         <div id="exp-box" class="note-box">
@@ -144,7 +152,7 @@ textarea{resize:vertical}
           <div style="margin-top:8px"><button class="btn ghost" id="btn-copy">Copier le code</button></div>
         </div>
         <form id="f-form" onsubmit="return false">
-          <h3 class="sub">Identité <small>— le châssis : ce qui est sur le terrain</small><button type="button" class="btn primary" id="btn-transloc" style="margin-left:auto" title="Hors combat uniquement — rejoindre le vaisseau-tombe (le Maître de la Tombe peut poser un verrou narratif)">🛸 Translocation</button></h3>
+          <h3 class="sub">Identité <small>— le châssis : ce qui est sur le terrain</small></h3>
           <div class="ig">
             <div><label for="f-nom">Désignation</label><input id="f-nom" type="text" placeholder="ex. AKH-77 « Verdict »"></div>
             <div><label for="f-spe">Spécialisation</label><select id="f-spe"></select></div>
@@ -218,10 +226,6 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
         </div>
 
         <section id="view-hub" style="display:none">
-          <div class="fh">
-            <button type="button" class="btn ghost" id="btn-retour">↩︎ Retour au terrain</button>
-            <button type="button" class="btn ghost" id="btn-coffre-refresh">↻ Rafraîchir le coffre</button>
-          </div>
           <h2>L'Éternité-Patiente <small style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">— vaisseau-tombe de la cour</small></h2>
           <p class="gmsg" id="hub-status"></p>
           <div id="hub-head"></div>
@@ -239,7 +243,7 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
           <h3 class="sub">Aptitudes compilées <small id="hub-slots-n">— nombre de slots selon le châssis</small></h3>
           <div id="hub-slots"></div>
 
-          <h3 class="sub">Coffre de cour <small>— partagé entre tous les joueurs</small></h3>
+          <h3 class="sub">Coffre de cour <small>— partagé entre tous les joueurs</small><button type="button" class="btn ghost" id="btn-coffre-refresh" style="margin-left:auto;padding:4px 10px;font-size:.72rem">↻ Rafraîchir</button></h3>
           <div id="hub-coffre"></div>
 
           <h3 class="sub">Maintenance <small>— ateliers canoptek</small></h3>
