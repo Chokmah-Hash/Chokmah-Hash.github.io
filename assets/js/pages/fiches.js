@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f22 — fiches : cadre « Navigation » (legend) + champ « Position » (étoile — planète — point d'intérêt, défaut Système Héra) qui affiche la position réelle ou « À bord » ; suppression des émojis (règle du 2026-10-23) — mot14z. Base mot14y : position persistée terrain/hub + translocation contextuelle. Base mot14x : hub vaisseau-tombe (crypte, coffre de cour, engrammes, slots, maintenance). */
+/* PE_BUILD 2026.10.23-f23 — fiches : ménage du cadre Navigation — segments retirés (bouton contextuel Translocation/Retour unique), libellé « Position » retiré, bouton « Translocation » seul + largeur fixe — mot15a. Base mot14z : cadre Navigation (legend) + champ Position (étoile/planète/POI, défaut Héra), zéro émoji. Base mot14y : position persistée terrain/hub. Base mot14x : hub vaisseau-tombe (crypte, coffre de cour, engrammes, slots, maintenance). */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -637,16 +637,15 @@ function posTexte(){
   return p.length?p.join(" — "):"—";
 }
 function renderNav(){
-  var seg=$("nav-seg"),act=$("nav-action"),pv=$("nav-pos-v"),pc=$("nav-pos");
+  var act=$("nav-action"),pv=$("nav-pos-v"),pc=$("nav-pos");
   var v=vueDe();
-  if(seg){var bs=seg.querySelectorAll("button");for(var i=0;i<bs.length;i++){bs[i].classList.toggle("on",bs[i].getAttribute("data-nav")===v);}}
   if(pc&&pv){
     if(v==="hub"){pv.textContent="À bord — L'Éternité-Patiente";pc.classList.add("hub");}
     else{pv.textContent=posTexte();pc.classList.remove("hub");}
   }
   if(act){
     if(v==="hub"){act.textContent="↩︎ Retour au terrain";act.className="btn ghost";act.setAttribute("data-nav","terrain");act.title="Revenir à la fiche du châssis, sur le terrain";}
-    else{act.textContent="Translocation — rejoindre l'Éternité-Patiente";act.className="btn primary";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
+    else{act.textContent="Translocation";act.className="btn primary";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
   }
 }
 function translocVers(v){
