@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f16 — fiches : section Protocoles (savoir du personnage, liste dynamique + Secours inné) (mot14s) */
+/* PE_BUILD 2026.10.22-f17 — fiches : section Protocoles (install limite par place memoire, execution limitee par calcul, liste predefinie + Secours inne) (mot14t) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -14,16 +14,16 @@ var SUPA_KEY="sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
 var SUPA_HEADERS={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
 var OTOK="";
 var CH=[
- {n:"Fantassin programmé",m:"10",cc:"4+",ct:"4+",f:"4",e:"4",pv:"3",a:"1",cd:"7+",sv:"4+",rfx:"+0",apt:"Discipline sans faille : relancez 1 test de Commandement raté par scène.",cp:["Athlétisme","Technologie"]},
- {n:"Vétéran",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+1",apt:"Élite : vos touches critiques infligent +1 dégât.",cp:["Athlétisme","Perception"]},
- {n:"Traqueur",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+2",apt:"Embuscade : 1×/scène, apparaissez dans un rayon de 6 m (après 1 round de délai).",cp:["Furtivité","Perception","Pilotage"]},
- {n:"Ombre",m:"10",cc:"3+",ct:"6+",f:"5",e:"4",pv:"3",a:"3",cd:"8+",sv:"4+",rfx:"+2",apt:"Peau d'ombre : Furtivité 3+ ; ennemis qui vous voient -1 Cd.",cp:["Furtivité","Intimidation"]},
- {n:"Sentinelle",m:"10",cc:"3+",ct:"4+",f:"6",e:"5",pv:"6",a:"2",cd:"8+",sv:"3+",rfx:"+1",apt:"Écran : 1×/round, prenez une frappe destinée à un allié à 2 m.",cp:["Athlétisme","Intimidation"]},
- {n:"Officier de garde",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"12",a:"3",cd:"8+",sv:"3+",rfx:"+1",apt:"Ordre de secours : 1×/scène, forcez un allié à relancer son Protocole de Secours.",cp:["Commandement","Technologie"]},
- {n:"Artificier",m:"10",cc:"3+",ct:"3+",f:"4",e:"5",pv:"12",a:"2",cd:"8+",sv:"4+",rfx:"+1",apt:"Essaim réparateur : 1×/scène, soignez D3 PV d'une unité à 6 m.",cp:["Technologie","Érudition","Perception"]},
- {n:"Énergicien",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"12",a:"3",cd:"8+",sv:"3+",rfx:"+1",apt:"Décharge : 1×/scène, attaque F7 PA -2 D 2 à tous les ennemis à 3 m.",cp:["Technologie","Érudition"]},
- {n:"Commandant",m:"10",cc:"3+",ct:"3+",f:"6",e:"6",pv:"15",a:"4",cd:"9+",sv:"3+",rfx:"+1",apt:"Aura de commandement : les alliés à 6 m relancent les 1 au toucher.",cp:["Commandement","Intimidation","Érudition"]},
- {n:"Seigneur de guerre",m:"10",cc:"2+",ct:"2+",f:"6",e:"6",pv:"18",a:"5",cd:"10+",sv:"3+",rfx:"+1",apt:"Volonté inflexible : relancez 1 échec par round.",cp:["Commandement","Érudition","Intimidation","Technologie"]}
+ {n:"Fantassin programmé",m:"10",cc:"4+",ct:"4+",f:"4",e:"4",pv:"3",a:"1",cd:"7+",sv:"4+",rfx:"+0",mem:"1",cal:"1",apt:"Discipline sans faille : relancez 1 test de Commandement raté par scène.",cp:["Athlétisme","Technologie"]},
+ {n:"Vétéran",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+1",mem:"1",cal:"1",apt:"Élite : vos touches critiques infligent +1 dégât.",cp:["Athlétisme","Perception"]},
+ {n:"Traqueur",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"3",a:"1",cd:"8+",sv:"3+",rfx:"+2",mem:"2",cal:"1",apt:"Embuscade : 1×/scène, apparaissez dans un rayon de 6 m (après 1 round de délai).",cp:["Furtivité","Perception","Pilotage"]},
+ {n:"Ombre",m:"10",cc:"3+",ct:"6+",f:"5",e:"4",pv:"3",a:"3",cd:"8+",sv:"4+",rfx:"+2",mem:"2",cal:"1",apt:"Peau d'ombre : Furtivité 3+ ; ennemis qui vous voient -1 Cd.",cp:["Furtivité","Intimidation"]},
+ {n:"Sentinelle",m:"10",cc:"3+",ct:"4+",f:"6",e:"5",pv:"6",a:"2",cd:"8+",sv:"3+",rfx:"+1",mem:"1",cal:"1",apt:"Écran : 1×/round, prenez une frappe destinée à un allié à 2 m.",cp:["Athlétisme","Intimidation"]},
+ {n:"Officier de garde",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"12",a:"3",cd:"8+",sv:"3+",rfx:"+1",mem:"2",cal:"2",apt:"Ordre de secours : 1×/scène, forcez un allié à relancer son Protocole de Secours.",cp:["Commandement","Technologie"]},
+ {n:"Artificier",m:"10",cc:"3+",ct:"3+",f:"4",e:"5",pv:"12",a:"2",cd:"8+",sv:"4+",rfx:"+1",mem:"3",cal:"2",apt:"Essaim réparateur : 1×/scène, soignez D3 PV d'une unité à 6 m.",cp:["Technologie","Érudition","Perception"]},
+ {n:"Énergicien",m:"10",cc:"3+",ct:"3+",f:"5",e:"5",pv:"12",a:"3",cd:"8+",sv:"3+",rfx:"+1",mem:"3",cal:"2",apt:"Décharge : 1×/scène, attaque F7 PA -2 D 2 à tous les ennemis à 3 m.",cp:["Technologie","Érudition"]},
+ {n:"Commandant",m:"10",cc:"3+",ct:"3+",f:"6",e:"6",pv:"15",a:"4",cd:"9+",sv:"3+",rfx:"+1",mem:"4",cal:"2",apt:"Aura de commandement : les alliés à 6 m relancent les 1 au toucher.",cp:["Commandement","Intimidation","Érudition"]},
+ {n:"Seigneur de guerre",m:"10",cc:"2+",ct:"2+",f:"6",e:"6",pv:"18",a:"5",cd:"10+",sv:"3+",rfx:"+1",mem:"5",cal:"3",apt:"Volonté inflexible : relancez 1 échec par round.",cp:["Commandement","Érudition","Intimidation","Technologie"]}
 ];
 var CODES=["Éternel","Pragmatique","Sanguinaire","Solaire","Tutélaire","Fondateur"];
 var COMPS=["Perception","Furtivité","Technologie","Érudition","Commandement","Intimidation","Athlétisme","Pilotage"];
@@ -53,6 +53,16 @@ function norm(c){
   ["coeur","noyau","bouclier"].forEach(function(k){if(!c.modules[k])c.modules[k]=null;});
   if(!c.inv)c.inv=[];
   if(!c.protocoles)c.protocoles=[];
+  if(c.st&&!c.st.mem){var ccx=chByName(c.ch);c.st.mem=ccx.mem||"1";c.st.cal=ccx.cal||"1";}
+  if(c.st&&!c.st.cal){var ccy=chByName(c.ch);c.st.cal=ccy.cal||"1";}
+  c.protocoles=(c.protocoles||[]).map(function(p){
+    if(p&&p.id){return {id:p.id,actif:!!p.actif};}
+    if(p&&p.nom&&EQ&&EQ.PROTOCOLES_DB){
+      for(var i=0;i<EQ.PROTOCOLES_DB.length;i++){var q=EQ.PROTOCOLES_DB[i];
+        if(q.nom===String(p.nom).trim()){return {id:q.id,actif:false};}}
+    }
+    return null;
+  }).filter(Boolean);
   if(c.eq&&c.eq.length){
     c.eq.forEach(function(r){
       if(!r||!r.w){return;}
@@ -96,7 +106,7 @@ function blankChar(chName){
   var c=chByName(chName);
   var p=[];for(var i=0;i<30;i++)p.push(false);
   return {id:uid(),nom:"",ch:c.n,code:"",
-   st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
+   st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx,mem:c.mem,cal:c.cal},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
    protocoles:[],
@@ -201,7 +211,7 @@ function fillForm(){
   $("f-nom").value=ch.nom;$("f-ch").value=ch.ch;setSelect("f-code",ch.code||"");
 
   var st=ch.st;
-  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){$("st-"+k).value=st[k]||"";});
+  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){$("st-"+k).value=st[k]||"";});
   buildPvBoxes(pvTotalDe(ch));
   pvNodes.forEach(function(el,i){el.classList.toggle("on",!!ch.pv[i]);});
   majPvCount();
@@ -219,7 +229,7 @@ function collect(){
   var ch=norm(cur);
   ch.nom=$("f-nom").value;ch.ch=$("f-ch").value;ch.code=$("f-code").value;
 
-  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
+  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
   ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
   ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;
@@ -373,50 +383,82 @@ function renderModules(){
    +petitBtn("＋ Ajouter l'objet",'data-mlib="1"')
    +"</div>";
 }
-/* ===== Protocoles (le savoir du personnage) ===== */
+/* ===== Protocoles (le savoir du personnage) — install limité par Mém, exécution limitée par Cal ===== */
 function etatSecours(ch){
   var e=(ch.ech[0]?1:0)+(ch.ech[1]?1:0);
   return e===0?'<span style="color:#2ee6c9;font-weight:700">réanimation opérationnelle</span>'
    :(e===1?'<span style="color:#f0b24a;font-weight:700">1 échec consécutif</span>'
    :'<span style="color:#e2604f;font-weight:700">2 échecs — extraction d\u2019urgence déclenchée</span>');
 }
+function memCal(ch){return {mem:(parseInt(ch&&ch.st&&ch.st.mem,10)||0),cal:(parseInt(ch&&ch.st&&ch.st.cal,10)||0)};}
+function protCompte(ch){var act=0;(ch.protocoles||[]).forEach(function(p){if(p.actif)act++;});return {ins:(ch.protocoles||[]).length,act:act};}
+function protDB(){return (EQ&&EQ.PROTOCOLES_DB)||[];}
+function protDesc(id){var DB=protDB();for(var i=0;i<DB.length;i++){if(DB[i].id===id){return DB[i];}}return null;}
 function renderProtocoles(){
   var pb=$("prot-box");if(!pb||!cur){return;}
-  var prs=cur.protocoles||[],rows="";
-  prs.forEach(function(pr){
+  norm(cur);
+  var mc=memCal(cur),ct=protCompte(cur),DB=protDB(),rows="";
+  var surplus=ct.ins>mc.mem;
+  (cur.protocoles||[]).forEach(function(p){
+    var d=protDesc(p.id);
+    var nom=d?d.nom:(p.id||"Protocole inconnu");
+    var desc=d?d.desc:"Protocole absent de la base — désinstallez-le.";
+    var tog=p.actif?'<button type="button" class="btn ghost" style="font-size:.68rem;padding:3px 10px;color:#2ee6c9;border-color:rgba(46,230,201,.45)" data-pact="'+esc(p.id)+'" title="Actif — cliquer pour arrêter">● actif</button>'
+     :'<button type="button" class="btn ghost" style="font-size:.68rem;padding:3px 10px;color:var(--muted)" data-pact="'+esc(p.id)+'" title="Activer (calcul '+ct.act+'/'+mc.cal+')">○ inactif</button>';
     rows+='<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
-     +'<span><span style="color:#c8e9df;font-weight:700">'+esc(pr.nom||"Protocole")+'</span>'
-     +(pr.desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(pr.desc)+'</div>':'')+'</span>'
-     +'<span style="display:inline-flex;gap:6px;align-items:center">'+petitBtn("Retirer",'data-pdel="'+pr.uid+'"')+'</span></li>';
+     +'<span><span style="color:#c8e9df;font-weight:700">'+esc(nom)+'</span>'
+     +'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div></span>'
+     +'<span style="display:inline-flex;gap:6px;align-items:center">'+tog+petitBtn("Désinstaller",'data-pdel="'+esc(p.id)+'"')+'</span></li>';
   });
   var secours='<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
    +'<span><span style="color:#c8e9df;font-weight:700">Protocole de Secours</span> <span class="badge">inné</span>'
    +'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">À 0 PV : réanimation 5+ au début de chaque round · 2 échecs consécutifs = extraction d\u2019urgence hors scène</div>'
-   +'<div style="font-size:.72rem;margin-top:2px">État : '+etatSecours(cur)+'</div></span></li>';
+   +'<div style="font-size:.72rem;margin-top:2px">État : '+etatSecours(cur)+' — ne consomme ni place mémoire, ni calcul.</div></span></li>';
+  var addrow="";
+  if(!surplus){
+    var opts='<option value="">— choisir un protocole —</option>';
+    DB.forEach(function(pr){
+      var deja=(cur.protocoles||[]).some(function(x){return x.id===pr.id;});
+      if(!deja){opts+='<option value="'+esc(pr.id)+'">'+esc(pr.nom)+'</option>';}
+    });
+    addrow='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">'
+     +'<select id="prot-add" style="flex:1;min-width:220px">'+opts+"</select>"
+     +petitBtn("＋ Installer le protocole",'data-padd="1"')
+     +"</div>";
+  }
   pb.innerHTML='<ul style="padding:0;margin:6px 0 0">'+secours+rows+'</ul>'
-   +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">'
-   +'<input id="prot-nom" type="text" placeholder="Nom — ex. Protocole de Conscience…" style="flex:1;min-width:160px">'
-   +'<input id="prot-desc" type="text" placeholder="Effet / savoir" style="flex:1;min-width:140px">'
-   +petitBtn("＋ Ajouter le protocole",'data-padd="1"')
-   +"</div>"
+   +'<div style="font-size:.75rem;color:var(--muted);margin-top:8px">Places mémoire : <strong>'+ct.ins+'/'+mc.mem+'</strong> installés · Calcul : <strong>'+ct.act+'/'+mc.cal+'</strong> actifs'
+   +(surplus?' — <span style="color:var(--danger)">surcharge mémoire : désinstallez '+(ct.ins-mc.mem)+' protocole(s)</span>':'')+'</div>'
+   +addrow
    +'<div id="prot-status" style="font-size:.75rem;color:var(--muted);margin-top:4px"></div>';
 }
 function protMsg(t,cls){var m=$("prot-status");if(m){m.textContent=t||"";m.style.color=(cls==="err")?"var(--danger)":"var(--muted)";}}
-function ajouterProtocole(){
+function installerProtocole(){
   if(!cur){return;}
-  var n=$("prot-nom"),d=$("prot-desc");if(!n||!d){return;}
-  var nom=(n.value||"").trim();
-  if(!nom){protMsg("Donne au moins un nom au protocole.","err");return;}
-  cur.protocoles=(cur.protocoles||[]);
-  cur.protocoles.push({uid:uid(),nom:nom,desc:(d.value||"").trim()});
+  var sl=$("prot-add");if(!sl){return;}
+  var id=sl.value;
+  if(!id){protMsg("Choisissez un protocole dans la liste.","err");return;}
+  var mc=memCal(cur),ct=protCompte(cur);
+  if(ct.ins>=mc.mem){protMsg("Plus de place mémoire ("+ct.ins+"/"+mc.mem+") — désinstallez un protocole.","err");return;}
+  cur.protocoles.push({id:id,actif:false});
   cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
-  protMsg("Protocole « "+nom+" » gravé dans la mémoire.");
+  protMsg("Protocole installé en mémoire.");
 }
-function retirerProtocole(u){
+function desinstallerProtocole(id){
   if(!cur){return;}
-  cur.protocoles=(cur.protocoles||[]).filter(function(p){return p.uid!==u;});
+  cur.protocoles=(cur.protocoles||[]).filter(function(x){return x.id!==id;});
   cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
-  protMsg("Protocole retiré de la fiche.");
+  protMsg("Protocole désinstallé de la mémoire.");
+}
+function activerProtocole(id){
+  if(!cur){return;}
+  var mc=memCal(cur),ct=protCompte(cur),p=null;
+  (cur.protocoles||[]).forEach(function(x){if(x.id===id){p=x;}});
+  if(!p){return;}
+  if(!p.actif&&ct.act>=mc.cal){protMsg("Capacité de calcul atteinte ("+ct.act+"/"+mc.cal+") — arrêtez d'abord un protocole actif.","err");return;}
+  p.actif=!p.actif;
+  cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
+  protMsg(p.actif?"Protocole en cours d'exécution.":"Protocole arrêté.");
 }
 function apresMod(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderModules();if(msg){modMsg(msg,"ok");}}
 function equiperItem(u){
@@ -544,7 +586,7 @@ function init(){
   $("f-ch").addEventListener("change",function(){
     if(!cur)return;
     var c=chByName($("f-ch").value);
-    cur.st={m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:cur.st.inv||"",rfx:c.rfx};
+    cur.st={m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:cur.st.inv||"",rfx:c.rfx,mem:c.mem,cal:c.cal};
     cur.apt=c.apt;cur.comps=c.cp.slice(0);
     var ranges=rangeModulesSurChangement($("f-ch").value);
     fillForm();save();queueSync(cur);
@@ -564,8 +606,9 @@ function init(){
     else if(b.getAttribute("data-wadd")){ajouterArme();}
     else if(b.getAttribute("data-wlib")){ajouterArmeLibre();}
     else if(b.getAttribute("data-mlib")){ajouterLibre();}
-    else if((a=b.getAttribute("data-pdel"))!==null){retirerProtocole(a);}
-    else if(b.getAttribute("data-padd")){ajouterProtocole();}
+    else if((a=b.getAttribute("data-pdel"))!==null){desinstallerProtocole(a);}
+    else if(b.getAttribute("data-padd")){installerProtocole();}
+    else if((a=b.getAttribute("data-pact"))!==null){activerProtocole(a);}
   });
   /* — déconnexion (sous-menu) — */
   $("app-logout").addEventListener("click",function(ev){
