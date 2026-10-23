@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.22-f15 — fiches : titre emplacements epure, cadre chassis sans bordure (mot14r) */
+/* PE_BUILD 2026.10.22-f16 — fiches : section Protocoles (savoir du personnage, liste dynamique + Secours inné) (mot14s) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -52,6 +52,7 @@ function norm(c){
   if(!c.modules.capteurs)c.modules.capteurs=[];
   ["coeur","noyau","bouclier"].forEach(function(k){if(!c.modules[k])c.modules[k]=null;});
   if(!c.inv)c.inv=[];
+  if(!c.protocoles)c.protocoles=[];
   if(c.eq&&c.eq.length){
     c.eq.forEach(function(r){
       if(!r||!r.w){return;}
@@ -98,6 +99,7 @@ function blankChar(chName){
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
    armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
+   protocoles:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
    xp:"",notes:"",maj:new Date().toISOString()};
 }
@@ -210,6 +212,7 @@ function fillForm(){
   $("f-p2").value=ch.p2.t||"";$("f-p2u").checked=!!ch.p2.used;
   $("f-xp").value=ch.xp||"";$("f-notes").value=ch.notes||"";
   renderModules();
+  renderProtocoles();
 }
 function collect(){
   if(!cur)return;
@@ -370,6 +373,51 @@ function renderModules(){
    +petitBtn("＋ Ajouter l'objet",'data-mlib="1"')
    +"</div>";
 }
+/* ===== Protocoles (le savoir du personnage) ===== */
+function etatSecours(ch){
+  var e=(ch.ech[0]?1:0)+(ch.ech[1]?1:0);
+  return e===0?'<span style="color:#2ee6c9;font-weight:700">réanimation opérationnelle</span>'
+   :(e===1?'<span style="color:#f0b24a;font-weight:700">1 échec consécutif</span>'
+   :'<span style="color:#e2604f;font-weight:700">2 échecs — extraction d\u2019urgence déclenchée</span>');
+}
+function renderProtocoles(){
+  var pb=$("prot-box");if(!pb||!cur){return;}
+  var prs=cur.protocoles||[],rows="";
+  prs.forEach(function(pr){
+    rows+='<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
+     +'<span><span style="color:#c8e9df;font-weight:700">'+esc(pr.nom||"Protocole")+'</span>'
+     +(pr.desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(pr.desc)+'</div>':'')+'</span>'
+     +'<span style="display:inline-flex;gap:6px;align-items:center">'+petitBtn("Retirer",'data-pdel="'+pr.uid+'"')+'</span></li>';
+  });
+  var secours='<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
+   +'<span><span style="color:#c8e9df;font-weight:700">Protocole de Secours</span> <span class="badge">inné</span>'
+   +'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">À 0 PV : réanimation 5+ au début de chaque round · 2 échecs consécutifs = extraction d\u2019urgence hors scène</div>'
+   +'<div style="font-size:.72rem;margin-top:2px">État : '+etatSecours(cur)+'</div></span></li>';
+  pb.innerHTML='<ul style="padding:0;margin:6px 0 0">'+secours+rows+'</ul>'
+   +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">'
+   +'<input id="prot-nom" type="text" placeholder="Nom — ex. Protocole de Conscience…" style="flex:1;min-width:160px">'
+   +'<input id="prot-desc" type="text" placeholder="Effet / savoir" style="flex:1;min-width:140px">'
+   +petitBtn("＋ Ajouter le protocole",'data-padd="1"')
+   +"</div>"
+   +'<div id="prot-status" style="font-size:.75rem;color:var(--muted);margin-top:4px"></div>';
+}
+function protMsg(t,cls){var m=$("prot-status");if(m){m.textContent=t||"";m.style.color=(cls==="err")?"var(--danger)":"var(--muted)";}}
+function ajouterProtocole(){
+  if(!cur){return;}
+  var n=$("prot-nom"),d=$("prot-desc");if(!n||!d){return;}
+  var nom=(n.value||"").trim();
+  if(!nom){protMsg("Donne au moins un nom au protocole.","err");return;}
+  cur.protocoles=(cur.protocoles||[]);
+  cur.protocoles.push({uid:uid(),nom:nom,desc:(d.value||"").trim()});
+  cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
+  protMsg("Protocole « "+nom+" » gravé dans la mémoire.");
+}
+function retirerProtocole(u){
+  if(!cur){return;}
+  cur.protocoles=(cur.protocoles||[]).filter(function(p){return p.uid!==u;});
+  cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
+  protMsg("Protocole retiré de la fiche.");
+}
 function apresMod(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderModules();if(msg){modMsg(msg,"ok");}}
 function equiperItem(u){
   var it=null,j;
@@ -483,7 +531,7 @@ function init(){
   var oEmpty=document.createElement("option");oEmpty.value="";oEmpty.textContent="— aucune —";codeSel.appendChild(oEmpty);
   CODES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;codeSel.appendChild(o);});
   [0,1].forEach(function(k){
-    $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);cur.maj=new Date().toISOString();save();queueSync(cur);});
+    $("ech-"+k).addEventListener("click",function(){if(!cur)return;cur.ech[k]=!cur.ech[k];this.classList.toggle("on",cur.ech[k]);cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();});
   });
   COMPS.forEach(function(name){
     var l=document.createElement("label");l.className="cb";
@@ -516,6 +564,8 @@ function init(){
     else if(b.getAttribute("data-wadd")){ajouterArme();}
     else if(b.getAttribute("data-wlib")){ajouterArmeLibre();}
     else if(b.getAttribute("data-mlib")){ajouterLibre();}
+    else if((a=b.getAttribute("data-pdel"))!==null){retirerProtocole(a);}
+    else if(b.getAttribute("data-padd")){ajouterProtocole();}
   });
   /* — déconnexion (sous-menu) — */
   $("app-logout").addEventListener("click",function(ev){
