@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f18 — fiches : section Protocoles (champ Specialisation dans Identite, aptitude et/ou pouvoir de specialisation auto-affiches) (mot14v) */
+/* PE_BUILD 2026.10.23-f19 — fiches : modules système boosters (emplacement Système logique, +1 Mém/+1 Cal dynamiques) + protocoles de campagne dans la liste (mot14w) */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -48,9 +48,9 @@ function chByName(n){for(var i=0;i<CH.length;i++){if(CH[i].n===n)return CH[i];}r
 function norm(c){
   if(!c.armes)c.armes=[];
   /* — modules (fusion mot12) + migration des anciennes lignes « Équipement » — */
-  if(!c.modules)c.modules={capteurs:[],coeur:null,noyau:null,bouclier:null};
+  if(!c.modules)c.modules={capteurs:[],coeur:null,noyau:null,bouclier:null,systeme:null};
   if(!c.modules.capteurs)c.modules.capteurs=[];
-  ["coeur","noyau","bouclier"].forEach(function(k){if(!c.modules[k])c.modules[k]=null;});
+  ["coeur","noyau","bouclier","systeme"].forEach(function(k){if(!c.modules[k])c.modules[k]=null;});
   if(!c.inv)c.inv=[];
   if(c.spe===undefined)c.spe="";
   if(c.speU===undefined)c.speU=false;
@@ -110,7 +110,7 @@ function blankChar(chName){
   return {id:uid(),nom:"",ch:c.n,code:"",spe:"",speU:false,
    st:{m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:"",rfx:c.rfx,mem:c.mem,cal:c.cal},
    pv:p,ech:[false,false],comps:c.cp.slice(0),
-   armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null},inv:[],
+   armes:[],modules:{capteurs:[],coeur:null,noyau:null,bouclier:null,systeme:null},inv:[],
    protocoles:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
    xp:"",notes:"",maj:new Date().toISOString()};
@@ -223,6 +223,7 @@ function fillForm(){
 
   var st=ch.st;
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){$("st-"+k).value=st[k]||"";});
+  majMemCalFields();
   buildPvBoxes(pvTotalDe(ch));
   pvNodes.forEach(function(el,i){el.classList.toggle("on",!!ch.pv[i]);});
   majPvCount();
@@ -240,7 +241,7 @@ function collect(){
   var ch=norm(cur);
   ch.nom=$("f-nom").value;ch.ch=$("f-ch").value;ch.code=$("f-code").value;
 
-  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
+  ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx"].forEach(function(k){ch.st[k]=$("st-"+k).value;});
   ch.ech=[$("ech-0").classList.contains("on"),$("ech-1").classList.contains("on")];
   ch.comps=[];compsNodes.forEach(function(o){if(o.box.checked)ch.comps.push(o.name);});
   ch.apt=$("f-apt").value;ch.aptA=$("f-aptA").value;ch.spe=$("f-spe").value;ch.speU=$("f-spePu").checked;
@@ -332,6 +333,8 @@ function renderModules(){
                             :ligneSlot("Cœur énergétique",EQ.T(ch.coeur.t)+" max",VIDE_SLOT,'',true));
   lignes+=(cur.modules.noyau?ligneSlot("Noyau énergétique",EQ.T(ch.noyau.t)+" max",contenuModule(cur.modules.noyau),petitBtn("Ranger",'data-mrq="noyau:0"'))
                             :ligneSlot("Noyau énergétique",EQ.T(ch.noyau.t)+" max",VIDE_SLOT,'',true));
+  lignes+=(cur.modules.systeme?ligneSlot("Système logique",(ch.systeme?EQ.T(ch.systeme.t):"")+" max",contenuModule(cur.modules.systeme),petitBtn("Ranger",'data-mrq="systeme:0"'))
+                            :ligneSlot("Système logique",(ch.systeme?EQ.T(ch.systeme.t):"")+" max",VIDE_SLOT,'',true));
   if(ch.bouclier.n){
     lignes+=(cur.modules.bouclier?ligneSlot("Bouclier",EQ.T(ch.bouclier.t)+" max",contenuModule(cur.modules.bouclier),petitBtn("Ranger",'data-mrq="bouclier:0"'))
                                  :ligneSlot("Bouclier",EQ.T(ch.bouclier.t)+" max",VIDE_SLOT,'',true));
@@ -341,7 +344,7 @@ function renderModules(){
   var cardCh='<div style="background:var(--panel2);padding:8px 12px;margin:8px 0 10px">'
    +'<div style="color:#c8e9df;font-weight:700;font-size:.88rem">Châssis « '+esc(ch.nom)+' » — intégrité '+esc(ch.st.pv)+' PV</div>'
    +'<div style="font-size:.75rem;color:var(--muted);margin-top:3px">Emplacements — Armes ×'+ch.armes.n+' ('+EQ.T(ch.armes.t)+' max) · Capteurs ×'+ch.capteurs.n+' ('+EQ.T(ch.capteurs.t)+' max) · Cœur ('+EQ.T(ch.coeur.t)+' max) · Noyau ('+EQ.T(ch.noyau.t)+' max)'
-   +(ch.bouclier.n?(' · Bouclier ×'+ch.bouclier.n+' ('+EQ.T(ch.bouclier.t)+' max)'):' · aucun bouclier')+'</div></div>';
+   +(ch.bouclier.n?(' · Bouclier ×'+ch.bouclier.n+' ('+EQ.T(ch.bouclier.t)+' max)'):' · aucun bouclier')+(ch.systeme?(' · Système logique ('+EQ.T(ch.systeme.t)+' max)'):'')+'</div></div>';
   mc.innerHTML='<h3 class="sub">Châssis — emplacements</h3>'
    +cardCh+'<div style="padding:0;margin:6px 0 0">'+lignes+'</div>';
   var inv=cur.inv||[],items="";
@@ -364,7 +367,7 @@ function renderModules(){
      +'<span style="display:inline-flex;gap:6px;align-items:center">'+btns+'</span></li>';
   });
   var opts='<option value="">— choisir un module —</option>';
-  var cats={capteur:"Capteurs",coeur:"Cœurs énergétiques",noyau:"Noyaux de charge",bouclier:"Boucliers"};
+  var cats={capteur:"Capteurs",coeur:"Cœurs énergétiques",noyau:"Noyaux de charge",bouclier:"Boucliers",systeme:"Systèmes logiques"};
   Object.keys(cats).forEach(function(cat){
     opts+='<optgroup label="'+cats[cat]+'">';
     EQ.MODULES_DB.forEach(function(mo){if(mo.cat===cat){opts+='<option value="'+mo.id+'">'+esc(mo.nom)+" ("+EQ.T(mo.taille)+")</option>";}});
@@ -401,7 +404,14 @@ function etatSecours(ch){
    :(e===1?'<span style="color:#f0b24a;font-weight:700">1 échec consécutif</span>'
    :'<span style="color:#e2604f;font-weight:700">2 échecs — extraction d\u2019urgence déclenchée</span>');
 }
-function memCal(ch){return {mem:(parseInt(ch&&ch.st&&ch.st.mem,10)||0),cal:(parseInt(ch&&ch.st&&ch.st.cal,10)||0)};}
+function memCal(ch){
+  var mem=(parseInt(ch&&ch.st&&ch.st.mem,10)||0),cal=(parseInt(ch&&ch.st&&ch.st.cal,10)||0),mo=ch&&ch.modules?ch.modules:{},bmem=0,bcal=0;
+  ((mo.capteurs||[]).concat([mo.coeur,mo.noyau,mo.bouclier,mo.systeme])).forEach(function(mid){
+    if(mid==="memext"){bmem+=1;}else if(mid==="coproc"){bcal+=1;}
+  });
+  return {mem:mem+bmem,cal:cal+bcal,bmem:bmem,bcal:bcal};
+}
+function majMemCalFields(){var e1=$("st-mem"),e2=$("st-cal");if(!cur||!e1||!e2){return;}var mc=memCal(cur);e1.value=mc.mem;e2.value=mc.cal;}
 function protCompte(ch){var act=0;(ch.protocoles||[]).forEach(function(p){if(p.actif)act++;});return {ins:(ch.protocoles||[]).length,act:act};}
 function protDB(){return (EQ&&EQ.PROTOCOLES_DB)||[];}
 function protDesc(id){var DB=protDB();for(var i=0;i<DB.length;i++){if(DB[i].id===id){return DB[i];}}return null;}
@@ -439,6 +449,7 @@ function renderProtocoles(){
   }
   pb.innerHTML='<ul style="padding:0;margin:6px 0 0">'+secours+rows+'</ul>'
    +'<div style="font-size:.75rem;color:var(--muted);margin-top:8px">Places mémoire : <strong>'+ct.ins+'/'+mc.mem+'</strong> installés · Calcul : <strong>'+ct.act+'/'+mc.cal+'</strong> actifs'
+   +((mc.bmem||mc.bcal)?' · module système : +'+mc.bmem+' place mémoire, +'+mc.bcal+' calcul':'')
    +(surplus?' — <span style="color:var(--danger)">surcharge mémoire : désinstallez '+(ct.ins-mc.mem)+' protocole(s)</span>':'')+'</div>'
    +addrow
    +'<div id="prot-status" style="font-size:.75rem;color:var(--muted);margin-top:4px"></div>';
@@ -471,7 +482,7 @@ function activerProtocole(id){
   cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
   protMsg(p.actif?"Protocole en cours d'exécution.":"Protocole arrêté.");
 }
-function apresMod(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderModules();if(msg){modMsg(msg,"ok");}}
+function apresMod(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderModules();majMemCalFields();renderProtocoles();if(msg){modMsg(msg,"ok");}}
 function equiperItem(u){
   var it=null,j;
   for(j=0;j<cur.inv.length;j++){if(cur.inv[j].uid===u){it=cur.inv[j];break;}}
@@ -564,7 +575,7 @@ function rangeModulesSurChangement(nomCh){
     else{ranges.push(m?m.nom:mid);cur.inv.push({uid:uid(),kind:"module",id:mid});}
   });
   cur.modules.capteurs=caps;
-  ["coeur","noyau","bouclier"].forEach(function(cat){
+  ["coeur","noyau","bouclier","systeme"].forEach(function(cat){
     var mid=cur.modules[cat];if(!mid){return;}
     var m=EQ.moduleDe(mid),conf=ch[cat];
     if(!m||m.taille>conf.t||(cat==="bouclier"&&conf.n===0)){

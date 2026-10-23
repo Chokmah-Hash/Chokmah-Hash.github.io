@@ -1,5 +1,5 @@
 /* Les Protocoles Éternels — base équipement commune (fiches joueur + moteur MJ)
-   PE_BUILD 2026.10.23-mot14v — source unique : armes, modules et châssis avec tailles T1-T4.
+   PE_BUILD 2026.10.23-mot14w — source unique : armes, modules et châssis avec tailles T1-T4, modules système boosters, protocoles de campagne.
    Les stats des modules sont PROVISOIRES (validation en cours dans les règles maison). */
 window.PE_EQUIP = (function () {
   "use strict";
@@ -35,7 +35,10 @@ window.PE_EQUIP = (function () {
     { id: "noyauhaut",  cat: "noyau",    nom: "Noyau haute capacité",       taille: 2, desc: "+1 recharge de pouvoir par bataille" },
     { id: "ecranphase", cat: "bouclier", nom: "Écran de phase",             taille: 1, desc: "Sauvegarde invulnérable 4++" },
     { id: "blindage",   cat: "bouclier", nom: "Blindage entrelacé",         taille: 2, desc: "−1 dégât subi (minimum 1)" },
-    { id: "blindagel",  cat: "bouclier", nom: "Blindage entrelacé renforcé", taille: 3, desc: "−2 dégâts subis" }
+    { id: "blindagel",  cat: "bouclier", nom: "Blindage entrelacé renforcé", taille: 3, desc: "−2 dégâts subis" },
+    /* — modules système (mot14w) : boostent les plafonds de la section Protocoles — */
+    { id: "memext",     cat: "systeme",  nom: "Mémoire étendue",            taille: 2, desc: "+1 place mémoire — un protocole installable supplémentaire" },
+    { id: "coproc",     cat: "systeme",  nom: "Coprocesseur",               taille: 2, desc: "+1 calcul — un protocole actif supplémentaire en parallèle" }
   ];
 
   /* ===== Châssis : stats complètes + emplacements (n = nombre, t = taille max) ===== */
@@ -44,52 +47,52 @@ window.PE_EQUIP = (function () {
       st: { m: "10 m", cc: "4+", ct: "4+", f: "4", e: "4", pv: "3", a: "1", cd: "7+", sv: "4+", rfx: "+0" , mem: "1", cal: "1" },
       apt: "Discipline sans faille : relancez 1 test de Commandement raté par scène.",
       comp: ["Athlétisme", "Technologie"],
-      armes: { n: 1, t: 2 }, capteurs: { n: 1, t: 1 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 1, t: 1 } },
+      armes: { n: 1, t: 2 }, capteurs: { n: 1, t: 1 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 1, t: 1 }, systeme: { n: 1, t: 2 } },
     { id: "veteran", nom: "Vétéran",
       st: { m: "10 m", cc: "3+", ct: "3+", f: "5", e: "5", pv: "3", a: "1", cd: "8+", sv: "3+", rfx: "+1" , mem: "1", cal: "1" },
       apt: "Élite : vos touches critiques (6 naturels) infligent +1 dégât.",
       comp: ["Athlétisme", "Perception"],
-      armes: { n: 1, t: 3 }, capteurs: { n: 1, t: 2 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 1, t: 2 } },
+      armes: { n: 1, t: 3 }, capteurs: { n: 1, t: 2 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 1, t: 2 }, systeme: { n: 1, t: 2 } },
     { id: "traqueur", nom: "Traqueur",
       st: { m: "10 m", cc: "3+", ct: "3+", f: "5", e: "5", pv: "3", a: "1", cd: "8+", sv: "3+", rfx: "+2" , mem: "2", cal: "1" },
       apt: "Embuscade : 1 fois par scène, apparaissez dans un rayon de 6 m de n'importe quelle position, même derrière l'ennemi (après 1 round de délai).",
       comp: ["Furtivité", "Perception", "Pilotage"],
-      armes: { n: 1, t: 3 }, capteurs: { n: 2, t: 2 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 0, t: 0 } },
+      armes: { n: 1, t: 3 }, capteurs: { n: 2, t: 2 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 0, t: 0 }, systeme: { n: 1, t: 2 } },
     { id: "ombre", nom: "Ombre",
       st: { m: "10 m", cc: "3+", ct: "6+", f: "5", e: "4", pv: "3", a: "3", cd: "8+", sv: "4+", rfx: "+2" , mem: "2", cal: "1" },
       apt: "Peau d'ombre : vos tests de Furtivité sont à 3+ ; les ennemis qui vous voient subissent −1 à leur Cd.",
       comp: ["Furtivité", "Intimidation"],
-      armes: { n: 2, t: 2 }, capteurs: { n: 1, t: 2 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 0, t: 0 } },
+      armes: { n: 2, t: 2 }, capteurs: { n: 1, t: 2 }, coeur: { t: 2 }, noyau: { t: 1 }, bouclier: { n: 0, t: 0 }, systeme: { n: 1, t: 2 } },
     { id: "sentinelle", nom: "Sentinelle",
       st: { m: "10 m", cc: "3+", ct: "4+", f: "6", e: "5", pv: "6", a: "2", cd: "8+", sv: "3+", rfx: "+1" , mem: "1", cal: "1" },
       apt: "Écran : 1 fois par round, prenez une frappe destinée à un allié à 2 m ou moins (après sa sauvegarde).",
       comp: ["Athlétisme", "Intimidation"],
-      armes: { n: 2, t: 4 }, capteurs: { n: 1, t: 2 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 3 } },
+      armes: { n: 2, t: 4 }, capteurs: { n: 1, t: 2 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 3 }, systeme: { n: 1, t: 2 } },
     { id: "officier", nom: "Officier de garde",
       st: { m: "10 m", cc: "3+", ct: "3+", f: "5", e: "5", pv: "12", a: "3", cd: "8+", sv: "3+", rfx: "+1" , mem: "2", cal: "2" },
       apt: "Ordre de secours : 1 fois par scène, forcez un allié à relancer immédiatement son jet de Protocole de Secours.",
       comp: ["Commandement", "Technologie"],
-      armes: { n: 2, t: 3 }, capteurs: { n: 1, t: 2 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 2 } },
+      armes: { n: 2, t: 3 }, capteurs: { n: 1, t: 2 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 2 }, systeme: { n: 1, t: 2 } },
     { id: "artificier", nom: "Artificier",
       st: { m: "10 m", cc: "3+", ct: "3+", f: "4", e: "5", pv: "12", a: "2", cd: "8+", sv: "4+", rfx: "+1" , mem: "3", cal: "2" },
       apt: "Essaim réparateur : 1 fois par scène, soignez D3 PV d'un allié (ou de vous-même) à 6 m.",
       comp: ["Technologie", "Érudition", "Perception"],
-      armes: { n: 2, t: 3 }, capteurs: { n: 2, t: 2 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 2 } },
+      armes: { n: 2, t: 3 }, capteurs: { n: 2, t: 2 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 2 }, systeme: { n: 1, t: 2 } },
     { id: "energicien", nom: "Énergicien",
       st: { m: "10 m", cc: "3+", ct: "3+", f: "5", e: "5", pv: "12", a: "3", cd: "8+", sv: "4+", rfx: "+1" , mem: "3", cal: "2" },
       apt: "Décharge : 1 fois par scène, infligez une attaque F7, PA −2, D 2 à tous les ennemis dans un rayon de 3 m.",
       comp: ["Technologie", "Érudition"],
-      armes: { n: 2, t: 3 }, capteurs: { n: 1, t: 2 }, coeur: { t: 4 }, noyau: { t: 3 }, bouclier: { n: 1, t: 2 } },
+      armes: { n: 2, t: 3 }, capteurs: { n: 1, t: 2 }, coeur: { t: 4 }, noyau: { t: 3 }, bouclier: { n: 1, t: 2 }, systeme: { n: 1, t: 2 } },
     { id: "commandant", nom: "Commandant",
       st: { m: "10 m", cc: "3+", ct: "3+", f: "6", e: "6", pv: "15", a: "4", cd: "9+", sv: "3+", rfx: "+1" , mem: "4", cal: "2" },
       apt: "Aura de commandement : les alliés à 6 m relancent les jets de toucher de 1.",
       comp: ["Commandement", "Intimidation", "Érudition"],
-      armes: { n: 2, t: 4 }, capteurs: { n: 2, t: 3 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 2 } },
+      armes: { n: 2, t: 4 }, capteurs: { n: 2, t: 3 }, coeur: { t: 3 }, noyau: { t: 2 }, bouclier: { n: 1, t: 2 }, systeme: { n: 1, t: 2 } },
     { id: "seigneur", nom: "Seigneur de guerre",
       st: { m: "10 m", cc: "2+", ct: "2+", f: "6", e: "6", pv: "18", a: "5", cd: "10+", sv: "3+", rfx: "+1" , mem: "5", cal: "3" },
       apt: "Volonté inflexible : relancez 1 échec par round (n'importe quel jet).",
       comp: ["Commandement", "Érudition", "Intimidation", "Technologie"],
-      armes: { n: 3, t: 4 }, capteurs: { n: 2, t: 3 }, coeur: { t: 4 }, noyau: { t: 3 }, bouclier: { n: 1, t: 3 } }
+      armes: { n: 3, t: 4 }, capteurs: { n: 2, t: 3 }, coeur: { t: 4 }, noyau: { t: 3 }, bouclier: { n: 1, t: 3 }, systeme: { n: 1, t: 2 } }
   ];
 
   /* ===== Base protocoles (savoir du personnage) — le Protocole de Secours est inné, hors liste ===== */
@@ -101,7 +104,10 @@ window.PE_EQUIP = (function () {
     { id: "p-menace",       nom: "Protocole de Menace",      desc: "1×/scène : +1 F à vos attaques de mêlée jusqu'à la fin du round." },
     { id: "p-suppression",  nom: "Protocole de Suppression", desc: "1×/bataille : une attaque ignore la sauvegarde adverse." },
     { id: "p-occultation",  nom: "Protocole d'Occultation",  desc: "Passif : vos tests de Furtivité sont à 3+." },
-    { id: "p-deflection",   nom: "Protocole de Déflection",   desc: "1×/scène : annulez une blessure qui vient de vous atteindre." }
+    { id: "p-deflection",   nom: "Protocole de Déflection",   desc: "1×/scène : annulez une blessure qui vient de vous atteindre." },
+    /* — protocoles de campagne (mot14w) : accordés par le MJ, noms neutres pour les joueuses — */
+    { id: "p-conscience",    nom: "Protocole de Conscience",     desc: "Passif : personnalité indestructible — immunisée aux protocoles corrompus et aux virus · 1×/séance : communion des machines (Technologie 3+) · les autres machines sentent votre étrangeté." },
+    { id: "p-nonsoumission", nom: "Protocole de Non-Soumission", desc: "Passif : aucun ordre ne peut forcer votre volonté — vous pouvez refuser toute directive, même d'une hiérarchie supérieure." }
   ];
 
   function protocoleDe(id) {
@@ -148,6 +154,7 @@ window.PE_EQUIP = (function () {
     coeur: "Cœur énergétique",
     noyau: "Noyau énergétique",
     bouclier: "Bouclier",
+    systeme: "Système logique",
     objet: "Objet"
   };
 
@@ -197,6 +204,12 @@ window.PE_EQUIP = (function () {
         if (m.taille > ch.bouclier.t) { return { ok: false, raison: "taille " + T(m.taille) + " > " + T(ch.bouclier.t) + " max" }; }
         return { ok: true };
       }
+      if (m.cat === "systeme") {
+        if (!ch.systeme) { return { ok: false, raison: "ce châssis n'a pas d'emplacement système" }; }
+        if (mod.systeme) { return { ok: false, raison: "système logique déjà équipé — range-le d'abord" }; }
+        if (m.taille > ch.systeme.t) { return { ok: false, raison: "taille " + T(m.taille) + " > " + T(ch.systeme.t) + " max" }; }
+        return { ok: true };
+      }
     }
     return { ok: false, raison: "objet simple (pas d'emplacement)" };
   }
@@ -234,7 +247,7 @@ window.PE_EQUIP = (function () {
       else { rangements.push(m ? m.nom : mid); d.inventaire.push({ uid: nouveauUid(), kind: "module", id: mid }); }
     });
     d.modules.capteurs = capGardes;
-    ["coeur", "noyau", "bouclier"].forEach(function (cat) {
+    ["coeur", "noyau", "bouclier", "systeme"].forEach(function (cat) {
       var mid = d.modules[cat];
       if (!mid) { return; }
       var m = moduleDe(mid);

@@ -1219,6 +1219,7 @@ function Inventaires() {
               <option value="coeur">Cœur énergétique</option>
               <option value="noyau">Noyau énergétique</option>
               <option value="bouclier">Bouclier</option>
+              <option value="systeme">Système logique</option>
               <option value="libre">Objet libre</option>
             </select>
           </div>
@@ -1281,7 +1282,8 @@ function Inventaires() {
                       {mod.coeur ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.coeur)}</span> : null}
                       {mod.noyau ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.noyau)}</span> : null}
                       {mod.bouclier ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.bouclier)}</span> : null}
-                      {!(mod.capteurs || []).length && !mod.coeur && !mod.noyau && !mod.bouclier ? <span className="text-xs text-[#7a9187]">Aucun module équipé.</span> : null}
+                      {mod.systeme ? <span className="rounded-full bg-[#0a2620] px-2 py-0.5 text-[10px] font-bold text-[#2ee6c9]">{nomModuleId(mod.systeme)}</span> : null}
+                      {!(mod.capteurs || []).length && !mod.coeur && !mod.noyau && !mod.bouclier && !mod.systeme ? <span className="text-xs text-[#7a9187]">Aucun module équipé.</span> : null}
                     </div>
                   ) : <div className="text-xs text-[#7a9187]">Aucun module équipé.</div>}
                 </div>
