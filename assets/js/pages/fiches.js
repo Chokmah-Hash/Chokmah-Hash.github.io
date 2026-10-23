@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f21 — fiches : navigation fiche↔hub « L'Éternité-Patiente » (carte Navigation : position persistée terrain/hub, segments, bouton de translocation contextuel avec animation) — mot14y. Base mot14x : hub vaisseau-tombe (crypte personnelle plafonnée par rang, coffre de cour partagé, engrammes compilés sur slots selon châssis, maintenance). Base mot14w : modules système boosters + protocoles de campagne. */
+/* PE_BUILD 2026.10.23-f22 — fiches : cadre « Navigation » (legend) + champ « Position » (étoile — planète — point d'intérêt, défaut Système Héra) qui affiche la position réelle ou « À bord » ; suppression des émojis (règle du 2026-10-23) — mot14z. Base mot14y : position persistée terrain/hub + translocation contextuelle. Base mot14x : hub vaisseau-tombe (crypte, coffre de cour, engrammes, slots, maintenance). */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -107,8 +107,12 @@ function norm(c){
   if(!c.p1)c.p1={t:"",used:false};
   if(!c.p2)c.p2={t:"",used:false};
   if(!c.maj)c.maj="";
-  /* — hub vaisseau-tombe (mot14x) + position du joueur (mot14y) — */
+  /* — hub vaisseau-tombe (mot14x) + position du joueur (mot14y) + position réelle sur la carte galaxie (mot14z) — */
   if(c.loc!=="hub")c.loc="terrain";
+  if(!c.pos||typeof c.pos!=="object")c.pos={};
+  if(!c.pos.et)c.pos.et="Héra";
+  if(!c.pos.pl)c.pos.pl="Basalte";
+  if(!c.pos.poi)c.pos.poi="Site minier 9-Héra";
   if(!c.hub)c.hub={dnc:0,crypte:[],eng:[],slots:[]};
   if(!c.hub.crypte)c.hub.crypte=[];
   if(!c.hub.eng)c.hub.eng=[];
@@ -132,6 +136,7 @@ function blankChar(chName){
    protocoles:[],
    apt:c.apt,aptA:"",p1:{t:"",used:false},p2:{t:"",used:false},
    loc:"terrain",
+   pos:{et:"Héra",pl:"Basalte",poi:"Site minier 9-Héra"},
    hub:{dnc:0,crypte:[],eng:[],slots:[]},
    xp:"",notes:"",maj:new Date().toISOString()};
 }
@@ -160,16 +165,16 @@ function queueSync(ch){
 }
 function pushChar(ch){
   try{
-    if(navigator.onLine===false){syncStatus("⚠ Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");return;}
-    syncStatus("☁ Synchronisation…");
+    if(navigator.onLine===false){syncStatus("Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");return;}
+    syncStatus("Synchronisation…");
     fetch(SUPA_URL+"/fiches?on_conflict=id",{
       method:"POST",
       headers:Object.assign({},SUPA_HEADERS,{"Prefer":"resolution=merge-duplicates","x-owner-token":OTOK}),
       body:JSON.stringify({id:ch.id,code_partie:"zulthekh",nom:ch.nom||"Personnage sans nom",data:ch,owner_token:OTOK,maj:ch.maj||new Date().toISOString()})
     }).then(function(r){
-      if(r.ok){syncStatus("☁ Synchronisée — visible par toute la table","var(--teal)");}
-      else{syncStatus("⚠ Synchronisation refusée (fiche protégée par son propriétaire) — enregistrée localement","var(--danger)");}
-    }).catch(function(){syncStatus("⚠ Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");});
+      if(r.ok){syncStatus("Synchronisée — visible par toute la table","var(--teal)");}
+      else{syncStatus("Synchronisation refusée (fiche protégée par son propriétaire) — enregistrée localement","var(--danger)");}
+    }).catch(function(){syncStatus("Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");});
   }catch(e){}
 }
 function deleteRemote(id){
@@ -179,8 +184,8 @@ function deleteRemote(id){
 }
 function pullChars(onDone){
   try{
-    if(navigator.onLine===false){syncStatus("⚠ Hors ligne — fiches locales uniquement","var(--danger)");if(onDone)onDone();return;}
-    syncStatus("☁ Lecture des fiches de la table…");
+    if(navigator.onLine===false){syncStatus("Hors ligne — fiches locales uniquement","var(--danger)");if(onDone)onDone();return;}
+    syncStatus("Lecture des fiches de la table…");
     fetch(SUPA_URL+"/fiches?select=id,maj,data&order=maj.desc",{headers:SUPA_HEADERS,cache:"no-store"})
     .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
     .then(function(rows){
@@ -199,10 +204,10 @@ function pullChars(onDone){
         }
       });
       if(changed){save();}
-      syncStatus("☁ Fiches de la table à jour","var(--teal)");
+      syncStatus("Fiches de la table à jour","var(--teal)");
       if(onDone)onDone();
     })
-    .catch(function(){syncStatus("⚠ Lecture du nuage impossible — affichage des fiches locales","var(--danger)");if(onDone)onDone();});
+    .catch(function(){syncStatus("Lecture du nuage impossible — affichage des fiches locales","var(--danger)");if(onDone)onDone();});
   }catch(e){if(onDone)onDone();}
 }
 /* ===== Interface ===== */
@@ -623,17 +628,25 @@ function showVueSansAnim(){
   renderNav();
   if(v==="hub"){renderHub();if(coffreRows===null){coffrePull();}}
 }
+function posTexte(){
+  if(!cur||!cur.pos){return "—";}
+  var p=[];
+  if(cur.pos.et)p.push(cur.pos.et);
+  if(cur.pos.pl)p.push(cur.pos.pl);
+  if(cur.pos.poi)p.push(cur.pos.poi);
+  return p.length?p.join(" — "):"—";
+}
 function renderNav(){
-  var loc=$("nav-loc"),seg=$("nav-seg"),act=$("nav-action");
+  var seg=$("nav-seg"),act=$("nav-action"),pv=$("nav-pos-v"),pc=$("nav-pos");
   var v=vueDe();
-  if(loc){
-    if(v==="hub"){loc.textContent="🛸 À bord — L'Éternité-Patiente";loc.className="navloc hub";}
-    else{loc.textContent="⚔️ Sur le terrain";loc.className="navloc terrain";}
-  }
   if(seg){var bs=seg.querySelectorAll("button");for(var i=0;i<bs.length;i++){bs[i].classList.toggle("on",bs[i].getAttribute("data-nav")===v);}}
+  if(pc&&pv){
+    if(v==="hub"){pv.textContent="À bord — L'Éternité-Patiente";pc.classList.add("hub");}
+    else{pv.textContent=posTexte();pc.classList.remove("hub");}
+  }
   if(act){
     if(v==="hub"){act.textContent="↩︎ Retour au terrain";act.className="btn ghost";act.setAttribute("data-nav","terrain");act.title="Revenir à la fiche du châssis, sur le terrain";}
-    else{act.textContent="🛸 Translocation — rejoindre l'Éternité-Patiente";act.className="btn primary";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
+    else{act.textContent="Translocation — rejoindre l'Éternité-Patiente";act.className="btn primary";act.setAttribute("data-nav","hub");act.title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif";}
   }
 }
 function translocVers(v){
@@ -646,7 +659,7 @@ function translocVers(v){
     cur.maj=new Date().toISOString();
     save();queueSync(cur);
     showVueSansAnim();
-    if(v==="hub"){hubMsg("🌌 Translocation réussie — bienvenue à bord.");}
+    if(v==="hub"){hubMsg("Translocation réussie — bienvenue à bord.");}
   },900);
   setTimeout(function(){ov.classList.remove("on");},1400);
 }
@@ -728,8 +741,8 @@ function renderHub(){
   var hm=$("hub-maint");
   if(hm){
     hm.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">'
-     +'<button type="button" class="btn ghost" data-hrep="1">🔨 Atelier canoptek — réparer le châssis (PV au maximum)</button>'
-     +'<button type="button" class="btn ghost" data-hinit="1">♻️ Réinitialiser — recharger les pouvoirs et purger les échecs de Secours</button>'
+     +'<button type="button" class="btn ghost" data-hrep="1">Atelier canoptek — réparer le châssis (PV au maximum)</button>'
+     +'<button type="button" class="btn ghost" data-hinit="1">Réinitialiser — recharger les pouvoirs et purger les échecs de Secours</button>'
      +'</div>'
      +'<p class="hub-note">Gratuit, mais uniquement à bord du vaisseau-tombe.</p>';
   }
@@ -754,7 +767,7 @@ function coffrePull(){
   fetch(SUPA_URL+"/coffres?select=id,de,item,maj&order=maj.desc",{headers:SUPA_HEADERS})
    .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
    .then(function(rows){coffreRows=rows||[];coffreRender();})
-   .catch(function(){coffreRows=null;coffreRender();hubMsg("⚠ Lecture du coffre de cour impossible (hors ligne ou table absente).","err");});
+   .catch(function(){coffreRows=null;coffreRender();hubMsg("Lecture du coffre de cour impossible (hors ligne ou table absente).","err");});
 }
 function apresHub(msg){cur.maj=new Date().toISOString();save();queueSync(cur);renderHub();if(msg){hubMsg(msg,"ok");}}
 function hubArchiver(u){
@@ -780,7 +793,7 @@ function coffreDeposer(u){
   fetch(SUPA_URL+"/coffres",{method:"POST",headers:SUPA_HEADERS,body:JSON.stringify({de:nomJoueur(),item:it})})
    .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
    .then(function(){cur.hub.crypte.splice(j,1);apresHub("« "+nom+" » déposé dans le coffre de cour.");coffrePull();})
-   .catch(function(){hubMsg("⚠ Dépôt impossible (hors ligne ou table absente).","err");});
+   .catch(function(){hubMsg("Dépôt impossible (hors ligne ou table absente).","err");});
 }
 function coffrePrendre(rid){
   if(!cur){return;}
@@ -797,7 +810,7 @@ function coffrePrendre(rid){
      coffreRows=(coffreRows||[]).filter(function(x){return String(x.id)!==String(rid);});
      apresHub("Objet retiré du coffre de cour vers votre crypte.");
    })
-   .catch(function(){hubMsg("⚠ Prise impossible (hors ligne ou table absente).","err");});
+   .catch(function(){hubMsg("Prise impossible (hors ligne ou table absente).","err");});
 }
 function hubGraver(){
   if(!cur){return;}

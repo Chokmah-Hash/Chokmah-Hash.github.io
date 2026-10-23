@@ -52,14 +52,18 @@ h3.sub small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--mu
 #exp-box{display:none}
 #imp-msg{margin-top:6px;color:var(--muted);font-size:.85rem}
 textarea{resize:vertical}
-/* — Hub vaisseau-tombe / Translocation / Navigation fiche↔hub (mot14y) — */
-.navcard{margin:16px 0 4px;padding:12px 14px;border:1px solid var(--tealline);border-radius:12px;background:var(--panel2);display:flex;flex-direction:column;gap:10px}
-.navloc{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;border:1px solid}
-.navloc.terrain{color:var(--teal);border-color:var(--teal);background:var(--tealsoft)}
-.navloc.hub{color:var(--amber);border-color:var(--amber);background:var(--amberline)}
+/* — Hub vaisseau-tombe / Translocation / Navigation fiche↔hub (mot14y/14z) — */
+.navcard{margin:16px 0 4px;padding:6px 14px 14px;border:1px solid var(--tealline);border-radius:12px;background:var(--panel2);display:flex;flex-direction:column;gap:10px;min-width:0}
+.navcard legend{color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1}
 .navseg{display:flex;gap:8px;flex-wrap:wrap}
 .navseg button{flex:1 1 180px;padding:10px 12px;border:1px solid var(--tealline);border-radius:10px;background:transparent;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 .navseg button.on{border-color:var(--teal);color:var(--teal);background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal);cursor:default}
+.navrow{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.navpos{flex:1 1 220px;border:1px solid var(--tealline);border-radius:10px;background:transparent;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+.navpos .npl{display:block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:600}
+.navpos .npv{color:var(--teal);font-weight:700}
+.navpos.hub .npv{color:var(--amber)}
+#nav-action{flex:0 1 auto}
 #transloc-ov{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(46,230,201,.28),rgba(6,13,11,.94));opacity:0;pointer-events:none;transition:opacity .35s}
 #transloc-ov.on{opacity:1;pointer-events:all}
 #transloc-ov div{color:var(--teal);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:0 20px}
@@ -137,14 +141,20 @@ textarea{resize:vertical}
           <button class="btn danger" id="btn-del">Supprimer</button>
         </div>
         <h2 id="f-title">Fiche personnage</h2>
-        <div id="nav-hub" class="navcard">
-          <div id="nav-loc" class="navloc terrain" title="Position actuelle du personnage">⚔️ Sur le terrain</div>
+        <fieldset id="nav-hub" class="navcard">
+          <legend>Navigation</legend>
           <div class="navseg" id="nav-seg">
-            <button type="button" class="on" data-nav="terrain"><span aria-hidden="true">⚔️</span> Fiche perso</button>
-            <button type="button" data-nav="hub"><span aria-hidden="true">🛸</span> Hub — L'Éternité-Patiente</button>
+            <button type="button" class="on" data-nav="terrain">Fiche perso</button>
+            <button type="button" data-nav="hub">Hub — L'Éternité-Patiente</button>
           </div>
-          <button type="button" id="nav-action" class="btn primary" data-nav="hub" style="width:100%" title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif">🛸 Translocation — rejoindre l'Éternité-Patiente</button>
-        </div>
+          <div class="navrow">
+            <div class="navpos" id="nav-pos">
+              <span class="npl">Position</span>
+              <span class="npv" id="nav-pos-v">—</span>
+            </div>
+            <button type="button" id="nav-action" class="btn primary" data-nav="hub" title="Hors combat uniquement — le Maître de la Tombe peut poser un verrou narratif">Translocation — rejoindre l'Éternité-Patiente</button>
+          </div>
+        </fieldset>
         <div id="vue-fiche">
         <div id="exp-box" class="note-box">
           <strong>Code d'export de cette fiche</strong> — copiez-le et conservez-le (message privé, note…). Sur un autre appareil : Fiches → Importer un code.
@@ -249,7 +259,7 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
           <h3 class="sub">Maintenance <small>— ateliers canoptek</small></h3>
           <div id="hub-maint"></div>
         </section>
-        <div id="transloc-ov" aria-hidden="true"><div>🌌 Matrice de translocation activée…</div></div>
+        <div id="transloc-ov" aria-hidden="true"><div>Matrice de translocation activée…</div></div>
       </section>
     </main>
     <footer class="foot">
