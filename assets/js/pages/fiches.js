@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.24-f26 — fiches : station Reformatage dans le hub (Désignation verrouillée sauf Protocole de Conscience actif ; Spécialisation, Châssis, Code de fabrique éditables à bord) — mot16a. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
+/* PE_BUILD 2026.10.24-f27 — fiches : bugfix station Reformatage (châssis jamais persisté : cur.ch oublié avant fillForm) + Protocole de Conscience inné (2e position sous Secours, verrouillé, toujours actif, hors mémoire/calcul, gravé par le MJ) + cadre Co dans Caractéristiques (— / 5) — mot16b. Base mot16a : station Reformatage. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -65,7 +65,7 @@ function norm(c){
   if(c.st&&!c.st.mem){var ccx=chByName(c.ch);c.st.mem=ccx.mem||"1";c.st.cal=ccx.cal||"1";}
   if(c.st&&!c.st.cal){var ccy=chByName(c.ch);c.st.cal=ccy.cal||"1";}
   c.protocoles=(c.protocoles||[]).map(function(p){
-    if(p&&p.id){return {id:p.id,actif:!!p.actif};}
+    if(p&&p.id){return {id:p.id,actif:p.id==="p-conscience"?true:!!p.actif};}
     if(p&&p.nom&&EQ&&EQ.PROTOCOLES_DB){
       for(var i=0;i<EQ.PROTOCOLES_DB.length;i++){var q=EQ.PROTOCOLES_DB[i];
         if(q.nom===String(p.nom).trim()){return {id:q.id,actif:false};}}
@@ -252,6 +252,7 @@ function fillForm(){
   var st=ch.st;
   ["m","cc","ct","f","e","pv","a","cd","sv","inv","rfx","mem","cal"].forEach(function(k){$("st-"+k).value=st[k]||"";});
   majMemCalFields();
+  majCoField();
   buildPvBoxes(pvTotalDe(ch));
   pvNodes.forEach(function(el,i){el.classList.toggle("on",!!ch.pv[i]);});
   majPvCount();
@@ -441,15 +442,20 @@ function memCal(ch){
   return {mem:mem+bmem,cal:cal+bcal,bmem:bmem,bcal:bcal};
 }
 function majMemCalFields(){var e1=$("st-mem"),e2=$("st-cal");if(!cur||!e1||!e2){return;}var mc=memCal(cur);e1.value=mc.mem;e2.value=mc.cal;}
-function protCompte(ch){var act=0;(ch.protocoles||[]).forEach(function(p){if(p.actif)act++;});return {ins:(ch.protocoles||[]).length,act:act};}
+function protCompte(ch){var act=0,ins=0;(ch.protocoles||[]).forEach(function(p){if(p.id==="p-conscience"){return;}ins++;if(p.actif)act++;});return {ins:ins,act:act};}
 function protDB(){return (EQ&&EQ.PROTOCOLES_DB)||[];}
 function protDesc(id){var DB=protDB();for(var i=0;i<DB.length;i++){if(DB[i].id===id){return DB[i];}}return null;}
+function majCoField(){var e=$("st-co");if(e&&cur){e.value=refConscienceActive(cur)?"5":"—";}}
 function renderProtocoles(){
   var pb=$("prot-box");if(!pb||!cur){return;}
   norm(cur);
+  majCoField();
   var mc=memCal(cur),ct=protCompte(cur),DB=protDB(),rows="";
   var surplus=ct.ins>mc.mem;
+  var aConsc=(cur.protocoles||[]).some(function(x){return x.id==="p-conscience";});
+  var dConsc=protDesc("p-conscience");
   (cur.protocoles||[]).forEach(function(p){
+    if(p.id==="p-conscience"){return;}
     var d=protDesc(p.id);
     var nom=d?d.nom:(p.id||"Protocole inconnu");
     var desc=d?d.desc:"Protocole absent de la base — désinstallez-le.";
@@ -464,6 +470,13 @@ function renderProtocoles(){
    +'<span><span style="color:#c8e9df;font-weight:700">Protocole de Secours</span> <span class="badge">inné</span>'
    +'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">À 0 PV : réanimation 5+ au début de chaque round · 2 échecs consécutifs = extraction d\u2019urgence hors scène</div>'
    +'<div style="font-size:.72rem;margin-top:2px">État : '+etatSecours(cur)+' — ne consomme ni place mémoire, ni calcul.</div></span></li>';
+  var consc="";
+  if(aConsc){
+    consc='<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid rgba(46,230,201,.13);border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
+     +'<span><span style="color:#c8e9df;font-weight:700">'+esc(dConsc?dConsc.nom:"Protocole de Conscience")+'</span> <span class="badge">inné</span>'
+     +'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(dConsc?dConsc.desc:"")+'</div>'
+     +'<div style="font-size:.75rem;margin-top:2px">Inné — gravé par le Maître de la Tombe · toujours actif · ne consomme ni place mémoire, ni calcul.</div></span></li>';
+  }
   var addrow="";
   if(!surplus){
     var opts='<option value="">— choisir un protocole —</option>';
@@ -476,7 +489,7 @@ function renderProtocoles(){
      +petitBtn("＋ Installer le protocole",'data-padd="1"')
      +"</div>";
   }
-  pb.innerHTML='<ul style="padding:0;margin:6px 0 0">'+secours+rows+'</ul>'
+  pb.innerHTML='<ul style="padding:0;margin:6px 0 0">'+secours+consc+rows+'</ul>'
    +'<div style="font-size:.75rem;color:var(--muted);margin-top:8px">Places mémoire : <strong>'+ct.ins+'/'+mc.mem+'</strong> installés · Calcul : <strong>'+ct.act+'/'+mc.cal+'</strong> actifs'
    +((mc.bmem||mc.bcal)?' · module système : +'+mc.bmem+' place mémoire, +'+mc.bcal+' calcul':'')
    +(surplus?' — <span style="color:var(--danger)">surcharge mémoire : désinstallez '+(ct.ins-mc.mem)+' protocole(s)</span>':'')+'</div>'
@@ -490,13 +503,15 @@ function installerProtocole(){
   var id=sl.value;
   if(!id){protMsg("Choisissez un protocole dans la liste.","err");return;}
   var mc=memCal(cur),ct=protCompte(cur);
-  if(ct.ins>=mc.mem){protMsg("Plus de place mémoire ("+ct.ins+"/"+mc.mem+") — désinstallez un protocole.","err");return;}
-  cur.protocoles.push({id:id,actif:false});
+  var innate=(id==="p-conscience");
+  if(!innate&&ct.ins>=mc.mem){protMsg("Plus de place mémoire ("+ct.ins+"/"+mc.mem+") — désinstallez un protocole.","err");return;}
+  cur.protocoles.push({id:id,actif:innate});
   cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
-  protMsg("Protocole installé en mémoire.");
+  protMsg(innate?"Protocole de Conscience gravé — inné, toujours actif.":"Protocole installé en mémoire.");
 }
 function desinstallerProtocole(id){
   if(!cur){return;}
+  if(id==="p-conscience"){protMsg("Le Protocole de Conscience est inné — il ne peut pas être désinstallé.","err");return;}
   cur.protocoles=(cur.protocoles||[]).filter(function(x){return x.id!==id;});
   cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
   protMsg("Protocole désinstallé de la mémoire.");
@@ -506,6 +521,7 @@ function activerProtocole(id){
   var mc=memCal(cur),ct=protCompte(cur),p=null;
   (cur.protocoles||[]).forEach(function(x){if(x.id===id){p=x;}});
   if(!p){return;}
+  if(id==="p-conscience"){protMsg("Le Protocole de Conscience est inné — toujours actif.","err");return;}
   if(!p.actif&&ct.act>=mc.cal){protMsg("Capacité de calcul atteinte ("+ct.act+"/"+mc.cal+") — arrêtez d'abord un protocole actif.","err");return;}
   p.actif=!p.actif;
   cur.maj=new Date().toISOString();save();queueSync(cur);renderProtocoles();
@@ -733,6 +749,7 @@ function renderReformatage(){
   if(inp){inp.addEventListener("change",function(){
     if(!cur){return;}
     var v=inp.value;var c=chByName(v);if(!c){renderReformatage();return;}
+    cur.ch=v;
     cur.st={m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:cur.st.inv||"",rfx:c.rfx,mem:c.mem,cal:c.cal};
     cur.apt=c.apt;cur.comps=c.cp.slice(0);
     var ranges=rangeModulesSurChangement(v);
