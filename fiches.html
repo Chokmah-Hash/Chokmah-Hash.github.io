@@ -68,6 +68,9 @@ textarea{resize:vertical}
 .hub-head legend{color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1}
 .hub-head .hv{color:var(--teal);font-weight:700;font-size:1rem;padding:2px 6px}
 .hub-head fieldset input,.hub-head fieldset select{width:100%}
+.hub-nav{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.hub-nav .btn{padding:8px 14px;font-size:.85rem}
+.hub-nav .btn.on{color:#2ee6c9;border-color:rgba(46,230,201,.45);background:rgba(46,230,201,.07)}
 @media print{
  body{background:#fff!important;color:#111}
  .nav,.foot,#view-list,.fh,.btn,#nav-hub,#view-hub,#transloc-ov{display:none!important}
@@ -227,31 +230,41 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
         </div>
 
         <section id="view-hub" style="display:none">
-          <h2>L'Éternité-Patiente <small style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">— vaisseau-tombe de la cour</small></h2>
           <p class="gmsg" id="hub-status"></p>
+          <div id="hub-nav" class="hub-nav">
+            <button type="button" class="btn ghost" data-poste="atelier">Atelier canoptek</button>
+            <button type="button" class="btn ghost" data-poste="crypte">Crypte personnelle</button>
+            <button type="button" class="btn ghost" data-poste="memoriel">Le Mémoriel</button>
+          </div>
           <div id="hub-head"></div>
           <p class="hub-note">À bord uniquement : stockage, compilation d'engrammes, réparations et réinitialisations. En mission, vous n'avez que ce qui est compilé sur votre châssis. La translocation est impossible en phase de combat ou en zone verrouillée par le Maître de la Tombe.</p>
 
-          <h3 class="sub">Station « Reformatage » <small>— réécrire la structure du personnage, à bord uniquement</small></h3>
-          <div id="hub-reformatage"></div>
+          <div id="poste-atelier">
+            <h3 class="sub">Station « Reformatage » <small>— réécrire la structure du personnage, à bord uniquement</small></h3>
+            <div id="hub-reformatage"></div>
 
-          <h3 class="sub">Crypte personnelle <small id="hub-crypte-n">—</small></h3>
-          <div id="hub-crypte"></div>
+            <h3 class="sub">Maintenance <small>— réparations et réinitialisations</small></h3>
+            <div id="hub-maint"></div>
+          </div>
 
-          <h3 class="sub">Sur le châssis <small>— à archiver en crypte</small></h3>
-          <div id="hub-inv"></div>
+          <div id="poste-crypte" style="display:none">
+            <h3 class="sub">Crypte personnelle <small id="hub-crypte-n">—</small></h3>
+            <div id="hub-crypte"></div>
 
-          <h3 class="sub">Engrammes-aptitudes archivés <small>— achetés, gravés par le Cryptek</small></h3>
-          <div id="hub-eng"></div>
+            <h3 class="sub">Sur le châssis <small>— à archiver en crypte</small></h3>
+            <div id="hub-inv"></div>
 
-          <h3 class="sub">Aptitudes compilées <small id="hub-slots-n">— nombre de slots selon le châssis</small></h3>
-          <div id="hub-slots"></div>
+            <h3 class="sub">Coffre de cour <small>— partagé entre tous les joueurs</small><button type="button" class="btn ghost" id="btn-coffre-refresh" style="margin-left:auto;padding:4px 10px;font-size:.72rem">↻ Rafraîchir</button></h3>
+            <div id="hub-coffre"></div>
+          </div>
 
-          <h3 class="sub">Coffre de cour <small>— partagé entre tous les joueurs</small><button type="button" class="btn ghost" id="btn-coffre-refresh" style="margin-left:auto;padding:4px 10px;font-size:.72rem">↻ Rafraîchir</button></h3>
-          <div id="hub-coffre"></div>
+          <div id="poste-memoriel" style="display:none">
+            <h3 class="sub">Engrammes-aptitudes archivés <small>— achetés, gravés par le Cryptek</small></h3>
+            <div id="hub-eng"></div>
 
-          <h3 class="sub">Maintenance <small>— ateliers canoptek</small></h3>
-          <div id="hub-maint"></div>
+            <h3 class="sub">Aptitudes compilées <small id="hub-slots-n">— nombre de slots selon le châssis</small></h3>
+            <div id="hub-slots"></div>
+          </div>
         </section>
         <div id="transloc-ov" aria-hidden="true"><div>Matrice de translocation activée…</div></div>
       </section>

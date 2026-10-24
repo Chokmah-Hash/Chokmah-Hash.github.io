@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.24-f27 — fiches : bugfix station Reformatage (châssis jamais persisté : cur.ch oublié avant fillForm) + Protocole de Conscience inné (2e position sous Secours, verrouillé, toujours actif, hors mémoire/calcul, gravé par le MJ) + cadre Co dans Caractéristiques (— / 5) — mot16b. Base mot16a : station Reformatage. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
+/* PE_BUILD 2026.10.24-f28 — fiches : sous-menu de postes dans le hub (Atelier canoptek : Reformatage + Maintenance · Crypte personnelle : crypte, châssis, coffre de cour · Le Mémoriel : engrammes + slots), juste sous le cadre Navigation ; titre h2 du hub retiré (le nom du lieu reste dans le champ Position) — mot16c. Base mot16b : bugfix Reformatage + Conscience inné + cadre Co. Base mot16a : station Reformatage. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -31,6 +31,8 @@ var COMPS=["Perception","Furtivité","Technologie","Érudition","Commandement","
 /* — Hub vaisseau-tombe (mot14x) : slots d'aptitudes compilées selon le châssis, rangs, plafonds de crypte — */
 var HUB_SLOTS={"Fantassin programmé":1,"Vétéran":1,"Sentinelle":1,"Traqueur":2,"Ombre":2,"Officier de garde":2,"Artificier":2,"Énergicien":2,"Commandant":3,"Seigneur de guerre":3};
 var HUB_RANGS=[{min:0,nom:"Nouvellement réveillé"},{min:10,nom:"Endurci"},{min:25,nom:"Vétéran éternel"},{min:50,nom:"Légende de la dynastie"}];
+var HUB_POSTES=["atelier","crypte","memoriel"];
+var posteCur="atelier";
 var HUB_PLAFONDS=[4,8,12,20];
 /* Interrupteur hub (mot15c) : true = bouton Translocation/Retour visible. Passer à false pour CACHER le hub aux joueurs pendant l'aventure 1 (ils ne doivent pas se douter qu'ils sont Nécrons — pas de hub pendant la première aventure) ; remettre true à la fin de l'aventure 1. Actuellement true : Michael en a besoin pour ses tests. */
 var HUB_VISIBLE=true;
@@ -771,6 +773,13 @@ function ligneHub(nom,desc,btns,off){
    +(desc?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+esc(desc)+'</div>':'')+'</span>'
    +'<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">'+btns+'</span></li>';
 }
+function showPoste(v){
+  if(HUB_POSTES.indexOf(v)<0){v="atelier";}
+  posteCur=v;
+  HUB_POSTES.forEach(function(k){var el=$("poste-"+k);if(el){el.style.display=(k===v)?"block":"none";}});
+  var nav=$("hub-nav");
+  if(nav){var bs=nav.querySelectorAll("button");for(var i=0;i<bs.length;i++){bs[i].classList.toggle("on",bs[i].getAttribute("data-poste")===v);}}
+}
 function renderHub(){
   if(!cur){return;}
   norm(cur);
@@ -836,6 +845,7 @@ function renderHub(){
      +'</div>'
      +'<p class="hub-note">Gratuit, mais uniquement à bord du vaisseau-tombe.</p>';
   }
+  showPoste(posteCur);
 }
 function coffreRender(){
   var el=$("hub-coffre");if(!el){return;}
@@ -1009,6 +1019,8 @@ function init(){
   if(nh){nh.addEventListener("click",function(ev){var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;if(!b||!nh.contains(b)||!cur){return;}var v=b.getAttribute("data-nav");if(v){translocVers(v);}});}
   var bcr=$("btn-coffre-refresh");
   if(bcr){bcr.addEventListener("click",function(){coffrePull();});}
+  var hnav=$("hub-nav");
+  if(hnav){hnav.addEventListener("click",function(ev){var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;if(!b||!hnav.contains(b)||!cur){return;}var v=b.getAttribute("data-poste");if(v){showPoste(v);}});}
   var hv=$("view-hub");
   if(hv){hv.addEventListener("click",function(ev){
     var b=ev.target&&ev.target.closest?ev.target.closest("button"):null;
