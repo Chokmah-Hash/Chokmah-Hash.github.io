@@ -67,6 +67,7 @@ textarea{resize:vertical}
 .hub-head fieldset{border:1px solid var(--tealline);border-radius:9px;background:var(--panel2);margin:0;padding:6px;min-width:0}
 .hub-head legend{color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:0 5px;line-height:1}
 .hub-head .hv{color:var(--teal);font-weight:700;font-size:1rem;padding:2px 6px}
+.hub-head fieldset input,.hub-head fieldset select{width:100%}
 @media print{
  body{background:#fff!important;color:#111}
  .nav,.foot,#view-list,.fh,.btn,#nav-hub,#view-hub,#transloc-ov{display:none!important}
@@ -228,6 +229,9 @@ Valeurs verrouillées, calculées automatiquement depuis le châssis et les modu
           <p class="gmsg" id="hub-status"></p>
           <div id="hub-head"></div>
           <p class="hub-note">À bord uniquement : stockage, compilation d'engrammes, réparations et réinitialisations. En mission, vous n'avez que ce qui est compilé sur votre châssis. La translocation est impossible en phase de combat ou en zone verrouillée par le Maître de la Tombe.</p>
+
+          <h3 class="sub">Station « Reformatage » <small>— réécrire la structure du personnage, à bord uniquement</small></h3>
+          <div id="hub-reformatage"></div>
 
           <h3 class="sub">Crypte personnelle <small id="hub-crypte-n">—</small></h3>
           <div id="hub-crypte"></div>

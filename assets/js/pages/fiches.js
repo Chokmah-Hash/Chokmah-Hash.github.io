@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.23-f25 — fiches : position en blanc (uniforme terrain/hub) + interrupteur HUB_VISIBLE (bouton Translocation/Retour caché si false — aventure 1 : les joueurs ne doivent pas se douter qu ils sont Nécrons ; actuellement true pour les tests) — mot15c. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
+/* PE_BUILD 2026.10.24-f26 — fiches : station Reformatage dans le hub (Désignation verrouillée sauf Protocole de Conscience actif ; Spécialisation, Châssis, Code de fabrique éditables à bord) — mot16a. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -679,6 +679,75 @@ function renderHubHead(){
   var inp=$("hub-dnc");
   if(inp){inp.addEventListener("change",function(){if(!cur)return;cur.hub.dnc=parseInt(inp.value,10)||0;cur.maj=new Date().toISOString();save();queueSync(cur);renderHubHead();var n=$("hub-crypte-n");if(n){n.textContent="— "+cur.hub.crypte.length+" / "+hubPlafond(cur)+" emplacements (rang : "+HUB_RANGS[hubRangIdx(cur)].nom+")";}});}
 }
+/* ===== Station Reformatage (mot16a) : identité réécrite à bord ===== */
+function refConscienceActive(c){return ((c&&c.protocoles)||[]).some(function(p){return p&&p.id==="p-conscience"&&!!p.actif;});}
+function refSyncFiche(){
+  if(!cur){return;}
+  if($("f-nom")){$("f-nom").value=cur.nom||"";}
+  $("f-title").textContent="Fiche — "+(cur.nom||"personnage sans nom");
+  setSelect("f-spe",cur.spe||"");
+  setSelect("f-code",cur.code||"");
+}
+function renderReformatage(){
+  var el=$("hub-reformatage");if(!el||!cur){return;}
+  norm(cur);
+  var consc=refConscienceActive(cur);
+  var champNom=consc
+   ?'<input id="rf-nom" type="text" value="'+esc(cur.nom||"")+'" placeholder="ex. AKH-77 « Verdict »">'
+   :'<input id="rf-nom" type="text" value="'+esc(cur.nom||"")+'" readonly title="La Désignation ne peut être réécrite que lorsque le Protocole de Conscience est actif." style="opacity:.55;cursor:not-allowed">';
+  var speOpts='<option value="">— aucune —</option>';
+  (EQ&&EQ.SPECIALISATIONS_DB?EQ.SPECIALISATIONS_DB:[]).forEach(function(sp){speOpts+='<option value="'+esc(sp.id)+'"'+(cur.spe===sp.id?" selected":"")+'>'+esc(sp.nom)+'</option>';});
+  var chOpts="";
+  CH.forEach(function(c){chOpts+='<option value="'+esc(c.n)+'"'+(cur.ch===c.n?" selected":"")+'>'+esc(c.n)+'</option>';});
+  var codeOpts='<option value="">— aucune —</option>';
+  CODES.forEach(function(c){codeOpts+='<option value="'+esc(c)+'"'+((cur.code||"")===c?" selected":"")+'>'+esc(c)+'</option>';});
+  el.innerHTML='<div class="hub-head">'
+   +'<fieldset><legend>Désignation</legend>'+champNom+'</fieldset>'
+   +'<fieldset><legend>Spécialisation</legend><select id="rf-spe">'+speOpts+'</select></fieldset>'
+   +'<fieldset><legend>Châssis</legend><select id="rf-ch">'+chOpts+'</select></fieldset>'
+   +'<fieldset><legend>Code de fabrique</legend><select id="rf-code">'+codeOpts+'</select></fieldset>'
+   +'</div>'
+   +'<p class="hub-note">'+(consc
+     ?'Protocole de Conscience actif : la Désignation peut être réécrite — le châssis développe une individualité.'
+     :'La Désignation ne peut être réécrite que lorsque le Protocole de Conscience est actif (installé à bord par le Maître de la Tombe).')
+   +' Changer de châssis recalcule les caractéristiques et range automatiquement armes et modules hors limites.</p>';
+  var inp;
+  inp=$("rf-nom");
+  if(inp){inp.addEventListener("change",function(){
+    if(!cur||!refConscienceActive(cur)){renderReformatage();return;}
+    var v=(inp.value||"").trim();
+    if(v===cur.nom){return;}
+    cur.nom=v;cur.maj=new Date().toISOString();save();queueSync(cur);
+    refSyncFiche();renderReformatage();
+    hubMsg("Reformatage : Désignation réécrite — « "+v+" ».","ok");
+  });}
+  inp=$("rf-spe");
+  if(inp){inp.addEventListener("change",function(){
+    if(!cur){return;}
+    var v=inp.value;var s=(v&&EQ&&EQ.speDe)?EQ.speDe(v):null;
+    cur.spe=v;cur.speU=false;cur.maj=new Date().toISOString();save();queueSync(cur);
+    refSyncFiche();majSpe();
+    hubMsg("Reformatage : Spécialisation réécrite — "+(s?s.nom:(v||"— aucune —"))+".","ok");
+  });}
+  inp=$("rf-ch");
+  if(inp){inp.addEventListener("change",function(){
+    if(!cur){return;}
+    var v=inp.value;var c=chByName(v);if(!c){renderReformatage();return;}
+    cur.st={m:c.m,cc:c.cc,ct:c.ct,f:c.f,e:c.e,pv:c.pv,a:c.a,cd:c.cd,sv:c.sv,inv:cur.st.inv||"",rfx:c.rfx,mem:c.mem,cal:c.cal};
+    cur.apt=c.apt;cur.comps=c.cp.slice(0);
+    var ranges=rangeModulesSurChangement(v);
+    fillForm();save();queueSync(cur);
+    hubMsg("Reformatage : Châssis réécrit — "+v+"."+(ranges.length?" Rangé automatiquement : "+ranges.join(", ")+".":""),"ok");
+  });}
+  inp=$("rf-code");
+  if(inp){inp.addEventListener("change",function(){
+    if(!cur){return;}
+    var v=inp.value;
+    cur.code=v;cur.maj=new Date().toISOString();save();queueSync(cur);
+    refSyncFiche();
+    hubMsg("Reformatage : Code de fabrique réécrit — "+(v||"— aucune —")+".","ok");
+  });}
+}
 function ligneHub(nom,desc,btns,off){
   return '<li style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;border:1px solid '+(off?'rgba(46,230,201,.06)':'rgba(46,230,201,.13)')+';border-radius:8px;padding:6px 8px;margin-top:6px;list-style:none">'
    +'<span style="min-width:0;flex:1 1 160px"><span style="color:#c8e9df;font-weight:700">'+esc(nom)+'</span>'
@@ -689,6 +758,7 @@ function renderHub(){
   if(!cur){return;}
   norm(cur);
   renderHubHead();
+  renderReformatage();
   var pl=hubPlafond(cur),i;
   /* — crypte personnelle — */
   var hc=$("hub-crypte"),cn=$("hub-crypte-n");
