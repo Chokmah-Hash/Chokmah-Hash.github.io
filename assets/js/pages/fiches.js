@@ -1,5 +1,5 @@
 
-/* PE_BUILD 2026.10.24-f28 — fiches : sous-menu de postes dans le hub (Atelier canoptek : Reformatage + Maintenance · Crypte personnelle : crypte, châssis, coffre de cour · Le Mémoriel : engrammes + slots), juste sous le cadre Navigation ; titre h2 du hub retiré (le nom du lieu reste dans le champ Position) — mot16c. Base mot16b : bugfix Reformatage + Conscience inné + cadre Co. Base mot16a : station Reformatage. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
+/* PE_BUILD 2026.10.24-f29 — fiches : cloisonnement par joueur — colonne owner (id du compte joueur) sur la table fiches : pull filtré owner=eq.session, push avec owner, purge des copies locales d'autrui, affichage strict owner=session, owner assigné à la création et à l'import — mot16d. Base mot16c : sous-menu de postes du hub. Base mot16b : bugfix Reformatage + Conscience inné + cadre Co. Base mot16a : station Reformatage. Base mot15c : position en blanc + interrupteur HUB_VISIBLE. Base mot15b : Position sans bordure, bouton ghost. Base mot15a : ménage Navigation. Base mot14z : cadre Navigation + champ Position, zéro émoji. Base mot14y : position persistée. Base mot14x : hub vaisseau-tombe. */
 (function(){
 "use strict";
 var EQ=window.PE_EQUIP;
@@ -8,6 +8,7 @@ try{
   var _sess=JSON.parse(localStorage.getItem("pe_session")||"null");
   if(!_sess||!_sess.id||!_sess.token){location.replace("https://chokmah-hash.github.io/joueur.html");return;}
 }catch(e){location.replace("https://chokmah-hash.github.io/joueur.html");return;}
+var S_ID=(_sess&&_sess.id)||"";
 var LSKEY="pe_fiches_v1";
 var SUPA_URL="https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1";
 var SUPA_KEY="sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
@@ -175,9 +176,9 @@ function pushChar(ch){
     fetch(SUPA_URL+"/fiches?on_conflict=id",{
       method:"POST",
       headers:Object.assign({},SUPA_HEADERS,{"Prefer":"resolution=merge-duplicates","x-owner-token":OTOK}),
-      body:JSON.stringify({id:ch.id,code_partie:"zulthekh",nom:ch.nom||"Personnage sans nom",data:ch,owner_token:OTOK,maj:ch.maj||new Date().toISOString()})
+      body:JSON.stringify({id:ch.id,code_partie:"zulthekh",nom:ch.nom||"Personnage sans nom",data:ch,owner_token:OTOK,owner:S_ID,maj:ch.maj||new Date().toISOString()})
     }).then(function(r){
-      if(r.ok){syncStatus("Synchronisée — visible par toute la table","var(--teal)");}
+      if(r.ok){syncStatus("Fiche synchronisée","var(--teal)");}
       else{syncStatus("Synchronisation refusée (fiche protégée par son propriétaire) — enregistrée localement","var(--danger)");}
     }).catch(function(){syncStatus("Hors ligne — fiche enregistrée sur cet appareil uniquement","var(--danger)");});
   }catch(e){}
@@ -190,26 +191,30 @@ function deleteRemote(id){
 function pullChars(onDone){
   try{
     if(navigator.onLine===false){syncStatus("Hors ligne — fiches locales uniquement","var(--danger)");if(onDone)onDone();return;}
-    syncStatus("Lecture des fiches de la table…");
-    fetch(SUPA_URL+"/fiches?select=id,maj,data&order=maj.desc",{headers:SUPA_HEADERS,cache:"no-store"})
+    syncStatus("Lecture de vos fiches…");
+    fetch(SUPA_URL+"/fiches?select=id,maj,data,owner&order=maj.desc&owner=eq."+encodeURIComponent(S_ID),{headers:SUPA_HEADERS,cache:"no-store"})
     .then(function(r){return r.ok?r.json():Promise.reject(new Error("http "+r.status));})
     .then(function(rows){
       var changed=false;
       (rows||[]).forEach(function(row){
         var d=row.data;
         if(!d||!d.st){return;}
-        norm(d);d.id=row.id;
+        norm(d);d.id=row.id;d.owner=row.owner||"";
         var rmaj=(row.maj?new Date(row.maj).getTime():0)||0;
         var found=null;
         for(var i=0;i<state.chars.length;i++){if(state.chars[i].id===row.id){found=i;break;}}
         if(found===null){state.chars.push(d);changed=true;}
         else{
+          if(state.chars[found].owner!==d.owner){state.chars[found].owner=d.owner;changed=true;}
           var lmaj=(state.chars[found].maj?new Date(state.chars[found].maj).getTime():0)||0;
           if(rmaj>lmaj){state.chars[found]=d;changed=true;}
         }
       });
+      var n0=state.chars.length;
+      state.chars=state.chars.filter(function(c){return !(c.owner&&c.owner!==S_ID);});
+      if(state.chars.length!==n0){changed=true;}
       if(changed){save();}
-      syncStatus("Fiches de la table à jour","var(--teal)");
+      syncStatus("Vos fiches sont à jour","var(--teal)");
       if(onDone)onDone();
     })
     .catch(function(){syncStatus("Lecture du nuage impossible — affichage des fiches locales","var(--danger)");if(onDone)onDone();});
@@ -218,12 +223,13 @@ function pullChars(onDone){
 /* ===== Interface ===== */
 function renderCards(){
   var box=$("cards");box.textContent="";
-  if(!state.chars.length){
+  var vis=state.chars.filter(function(c){return c.owner===S_ID;});
+  if(!vis.length){
     var p=document.createElement("p");p.style.color="var(--muted)";
     p.textContent="Aucun personnage enregistré pour l'instant. Créez votre première fiche avec le bouton ci-dessus.";
     box.appendChild(p);return;
   }
-  state.chars.forEach(function(ch){
+  vis.forEach(function(ch){
     var card=document.createElement("div");card.className="card";
     var h=document.createElement("h3");h.textContent=ch.nom||"Personnage sans nom";card.appendChild(h);
     var meta=document.createElement("p");meta.textContent=ch.ch+(ch.code?" · Code "+ch.code:"");card.appendChild(meta);
@@ -232,7 +238,7 @@ function renderCards(){
     var b1=document.createElement("button");b1.className="btn ghost";b1.textContent="Ouvrir";
     b1.onclick=function(){showEdit(ch.id);};row.appendChild(b1);
     var b2=document.createElement("button");b2.className="btn danger";b2.textContent="Supprimer";
-    b2.onclick=function(){if(confirm("Supprimer définitivement cette fiche (pour toute la table) ?")){deleteRemote(ch.id);state.chars=state.chars.filter(function(c){return c.id!==ch.id;});save();renderCards();}};row.appendChild(b2);
+    b2.onclick=function(){if(confirm("Supprimer définitivement cette fiche ?")){deleteRemote(ch.id);state.chars=state.chars.filter(function(c){return c.id!==ch.id;});save();renderCards();}};row.appendChild(b2);
     card.appendChild(row);box.appendChild(card);
   });
 }
@@ -1046,11 +1052,11 @@ function init(){
   try{var _sess=JSON.parse(localStorage.getItem("pe_session")||"null");if(_sess&&_sess.nom){$("logout-who").textContent=" ("+_sess.nom+")";}}catch(e){}
   $("f-form").addEventListener("input",collect);
   $("f-form").addEventListener("change",collect);
-  $("btn-new").addEventListener("click",function(){var c=blankChar("Fantassin programmé");state.chars.push(c);save();showEdit(c.id);});
+  $("btn-new").addEventListener("click",function(){var c=blankChar("Fantassin programmé");c.owner=S_ID;state.chars.push(c);save();showEdit(c.id);});
   $("btn-back").addEventListener("click",function(){collect();showList();});
   $("btn-del").addEventListener("click",function(){
     if(!cur)return;
-    if(confirm("Supprimer définitivement cette fiche (pour toute la table) ?")){deleteRemote(cur.id);state.chars=state.chars.filter(function(c){return c.id!==cur.id;});save();showList();}
+    if(confirm("Supprimer définitivement cette fiche ?")){deleteRemote(cur.id);state.chars=state.chars.filter(function(c){return c.id!==cur.id;});save();showList();}
   });
   $("btn-print").addEventListener("click",function(){collect();window.print();});
   $("btn-code").addEventListener("click",function(){
@@ -1070,7 +1076,7 @@ function init(){
     try{
       var obj=JSON.parse(decodeURIComponent(atob(raw)));
       if(!obj||!obj.st){throw new Error("bad");}
-      norm(obj);obj.id=uid();obj.maj=new Date().toISOString();
+      norm(obj);obj.id=uid();obj.owner=S_ID;obj.maj=new Date().toISOString();
       state.chars.push(obj);save();renderCards();queueSync(obj);
       msg.textContent="Fiche importée : "+(obj.nom||"personnage sans nom");
       $("imp-code").value="";
