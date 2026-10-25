@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="simulation/main.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <meta name="robots" content="noindex, nofollow"><title>Atelier de simulation — Les Protocoles Éternels</title>
+<style>
+.simbar{position:sticky;top:0;z-index:99;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;background:#1b1206;border-bottom:1px solid var(--amber);color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px}
+.simbar code{font-family:monospace;color:var(--teal);text-transform:none}
+.simbar button{background:none;border:1.5px solid var(--amber);color:var(--amber);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase}
+.simbar button:hover{background:var(--ambersoft)}
+body.sim-phone main.wrap{max-width:390px;border-left:1px dashed var(--tealline);border-right:1px dashed var(--tealline)}
+body.sim-phone .nav-in{max-width:390px}
+body.sim-phone .subnav-in{max-width:362px}
+</style>  </head>
+  <body>
+<div class="simbar"><span>ATELIER DE SIMULATION — CSS candidate: <code>simulation/main.css</code></span><button id="sim-w" type="button">Largeur mobile</button></div>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href="/"><span class="pe-star lg"></span> PROTOCOLES ÉTERNELS</a>
+        <nav class="nav-links">
+          <a href="/">Accueil</a>
+          <a href="/console.html">Console</a>
+          <a href="/regles.html">Règles</a>
+          <a href="/bestiaire.html">Bestiaire</a>
+          <a href="/galaxie.html">Cartes</a>
+          <a href="/joueur.html" class="pj"><span class="pe-star"></span> Zone joueurs</a>
+          <a href="/mj.html" class="mj"><span class="pe-star"></span> Zone MJ</a>
+        </nav>
+      </div>
+    </header>
+    <nav class="subnav" aria-label="Sections de l'atelier">
+      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="tg-label">Sections</span><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span></button>
+      <div class="subnav-in">
+        <a href="#a1">1 · Boutons</a>
+        <a href="#a2">2 · Cadres</a>
+        <a href="#a3">3 · Tableaux</a>
+        <a href="#a4">4 · Chips et badges</a>
+        <a href="#a5">5 · Messages</a>
+        <a href="#a6">6 · Navigation</a>
+      </div>
+    </nav>
+    <main class="wrap">
+      <section class="hero">
+        <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
+        <h1>Atelier de <b>simulation</b></h1>
+        <p class="tagline">Vitrine des objets du template</p>
+        <p class="pitch">Cette page affiche tous les objets de design du template avec la CSS candidate <code>simulation/main.css</code>. Le site officiel reste inchangé tant que le design n’est pas validé.</p>
+        <div class="cta-row"><a class="btn primary" href="#a1">Boutons</a><a class="btn ghost" href="#a2">Cadres</a></div>
+      </section>
+      <section id="a1" class="sect">
+        <h2>01 — Boutons</h2>
+        <p>Principal, ambre (MJ), fantôme, danger et petit format :</p>
+        <div class="cta-row" style="justify-content:flex-start">
+          <button class="btn primary">Principal</button>
+          <button class="btn amber">Ambre</button>
+          <button class="btn ghost">Fantome</button>
+          <button class="btn danger">Danger</button>
+          <button class="btn ghost sm">Petit</button>
+        </div>
+      </section>
+      <section id="a2" class="sect">
+        <h2>02 — Cadres</h2>
+        <div class="grid3">
+          <div class="card"><span class="ico">⬥</span><h3>Cadre standard</h3><p>Carte joueur, contenu neutre, accent teal en tête.</p><span class="badge">Badge joueur</span></div>
+          <div class="card"><span class="ico">⚙</span><h3>Avec bouton</h3><p>Variante action : le bouton secale en bas du cadre.</p><a class="btn ghost" href="#a2">Ouvrir</a></div>
+          <div class="card amber"><span class="ico">⬥</span><h3>Cadre ambre (MJ)</h3><p>Zone réservée au Maître de la Tombe.</p><span class="badge amber">Zone MJ</span></div>
+        </div>
+      </section>
+      <section id="a3" class="sect">
+        <h2>03 — Tableaux</h2>
+        <div class="tscroll"><table class="rt">
+          <tr><th>Caractéristique</th><th>Symbole</th><th>Description</th></tr>
+          <tr><td>Déplacement</td><td><strong>M</strong></td><td>Distance en mètres par action</td></tr>
+          <tr><td>Endurance</td><td><strong>E</strong></td><td>Résistance aux blessures</td></tr>
+          <tr><td>Sauvegarde</td><td><strong>Sv</strong></td><td>Cible pour annuler une blessure</td></tr>
+        </table></div>
+        <div class="tscroll"><table class="rt amber">
+          <tr><th>Console MJ</th><th>Statut</th></tr>
+          <tr><td>Aventure active</td><td>En ligne</td></tr>
+          <tr><td>Brouillon</td><td>Hors ligne</td></tr>
+        </table></div>
+      </section>
+      <section id="a4" class="sect">
+        <h2>04 — Chips et badges</h2>
+        <div class="chips"><a href="#a4">Règles</a><a href="#a4">Bestiaire</a><a href="#a4">Cartes</a><a href="#a4">Zone joueurs</a></div>
+        <p><span class="badge">Teal</span> <span class="badge amber">Ambre</span></p>
+      </section>
+      <section id="a5" class="sect">
+        <h2>05 — Messages</h2>
+        <div class="note-box">Message d’information : note de règle ou rappel neutre.</div>
+        <div class="note-box amber">Message ambre : consigne du Maître de la Tombe.</div>
+      </section>
+      <section id="a6" class="sect">
+        <h2>06 — Navigation</h2>
+        <p>Le bandeau du haut et la barre de sections ci-dessus sont les objets réels <code>barre-nav</code> et <code>sous-menu</code> du template. Utilisez le bouton <strong>Largeur mobile</strong> en haut de page pour simuler un téléphone (390 px) et vérifier le comportement des menus.</p>
+      </section>
+    </main>
+    <footer class="foot">
+      <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
+      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
+    </footer>
+    <script src="simulation/core.js"></script>
+<script>
+document.getElementById("sim-w").addEventListener("click",function(){var ph=document.body.classList.toggle("sim-phone");this.textContent=ph?"Largeur PC":"Largeur mobile";});
+</script>  </body>
+</html>
