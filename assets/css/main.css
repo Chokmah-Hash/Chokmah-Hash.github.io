@@ -10,7 +10,7 @@ h3{font-size:1.12rem;color:var(--text)}
 p{margin:.4em 0 .9em}
 a{color:var(--teal)}
 strong{color:var(--text)}
-.wrap{max-width:1000px;margin:0 auto;padding:0 16px 14px;flex:1 0 auto}
+.wrap{max-width:1000px;width:100%;margin:0 auto;padding:0 16px 14px;flex:1 0 auto}
 /* Étiquette bas de page : le contenu épouse le pied de page — les marges basses de fin de flux sont neutralisées pour un gap uniforme */
 .wrap .sect:last-child,.wrap .sect>:last-child{margin-bottom:0!important}
 .foot{margin-top:0;background:var(--navbg);backdrop-filter:blur(8px);border-top:1px solid var(--tealline);padding:0 16px;height:64px;flex:none;line-height:1.4;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:.9rem}
