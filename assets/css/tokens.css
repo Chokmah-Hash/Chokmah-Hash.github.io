@@ -31,16 +31,7 @@
   --danger:#e2604f;           /* alertes, bouton secteur carte */
   --navbg:rgba(24,16,7,.94);  /* fond barre de navigation */
 
-  /* --- Polices --- */
-  --police-titre:'Rajdhani',sans-serif;
-  --police-texte:'Exo 2',system-ui,sans-serif;
 
-  /* --- Geometrie (valeurs actuelles du site, pretes a servir) --- */
-  --rayon-cadre:14px;      /* coins des cadres (.card) */
-  --rayon-bouton:9px;      /* coins des boutons (.btn) */
-  --rayon-badge:99px;      /* pastilles/badges (pilule) */
-  --hauteur-bouton:46px;   /* hauteur mini des boutons */
-  --largeur-page:1000px;   /* largeur du contenu central */
 }
 
 body[data-pack="necrons"]{
