@@ -14,12 +14,12 @@
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/main.css">
   <style>
-/* Console : le cadre épouse le menu en haut (même gap que les cadres) et remplit la hauteur de la page */
-#console{margin:14px 0 0;display:flex;flex-direction:column;min-height:calc(100vh - 158px)}
-#console .card{flex:1;display:flex;flex-direction:column}
-/* Titre du cadre, même signature que « Caractéristiques » des fiches personnages */
-#console h3.sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;font-size:.95rem;border-bottom:1px solid var(--amberline);padding-bottom:4px;margin:0 0 10px}
-#console .ctn-chat{flex:1;height:auto;min-height:180px}
+/* Console : le cadre épouse la fenêtre — seul le cadre du résultat défile */
+#console{margin:14px 0 0;display:flex;flex-direction:column;height:calc(100vh - 158px)}
+#console .card{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+/* Étiquette du cadre, comme les cadres CC / CT / M des fiches personnages */
+#console .c-label{position:absolute;top:-.62em;left:14px;background:var(--panel);padding:0 8px;color:var(--amber);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;line-height:1.25}
+#console .ctn-chat{flex:1;height:auto;min-height:0}
   </style>
 </head>
 <body>
@@ -41,7 +41,7 @@
   <main class="wrap">
     <section class="sect rev d1" id="console">
       <div class="card">
-        <h3 class="sub">Console</h3>
+        <span class="c-label">Console</span>
         <p class="gmsgc" id="c-status">Chargement…</p>
         <div id="c-box" class="ctn-chat"></div>
         <div id="c-form-row">
