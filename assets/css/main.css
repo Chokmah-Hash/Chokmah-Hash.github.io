@@ -142,3 +142,7 @@ section[id]{scroll-margin-top:110px}
 
 .pe-star{margin-right:7px}
 .pe-star.lg{margin-right:8px}
+/* Bouton Deconnexion personnalise (fusion login) : cadre + glyphe necron (losange a fente, SVG) */
+.nav-links a.pe-deco,.nav.open .nav-links a.pe-deco{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--tealline);border-radius:8px;color:var(--muted);background:transparent;transition:color .15s ease,background .15s ease,border-color .15s ease}
+.nav-links a.pe-deco:hover,.nav.open .nav-links a.pe-deco:hover{color:var(--danger);background:rgba(226,96,79,.08);border-color:rgba(226,96,79,.55)}
+.nav-links a.pe-deco svg{flex:none}
