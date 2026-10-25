@@ -1,110 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="assets/css/tokens.css">
-  <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-
-    <meta name="robots" content="noindex, nofollow"><title>Bestiaire — Les Protocoles Éternels</title>
-    <style>
-.btn.solid-amber{background:var(--amber);color:#231503}
-.btn.solid-amber:hover{transform:translateY(-1px);box-shadow:0 0 22px rgba(240,178,74,.35)}
-.badge.enemy{border-color:rgba(226,96,79,.55);color:var(--danger);background:rgba(226,96,79,.08)}
-.badge.ally{border-color:var(--tealline);color:var(--teal);background:var(--tealsoft)}
-.badge.neutral{border-color:rgba(147,172,161,.4);color:var(--muted);background:rgba(147,172,161,.08)}
-.sect.amber>h2{color:var(--amber);border-bottom-color:var(--amberline)}
-.chips a.on{background:var(--tealsoft);box-shadow:inset 0 -2px 0 var(--teal)}
-/* ————— Spécifique bestiaire ————— */
-.btools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
-.searchbox{background:var(--panel);border:1px solid var(--tealline);border-radius:9px;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:.95rem;padding:10px 14px;flex:1;min-width:180px;max-width:340px}
-.searchbox:focus{outline:none;border-color:var(--teal);box-shadow:0 0 10px rgba(46,230,201,.2)}
-#b-status{color:var(--muted);font-size:.9rem;margin:10px 0}
-#b-status.err{color:var(--danger)}
-.beast-card h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:.1em 0 .2em}
-.beast-card .badge{margin-top:0}
-.beast-card .fac{color:var(--muted);font-size:.82rem;font-family:'Exo 2',sans-serif}
-table.mini{min-width:440px;font-size:.85rem}
-table.mini th{font-size:.68rem;padding:6px 8px;text-align:center}
-table.mini td{padding:6px 8px;text-align:center}
-.armeslist{margin:.4em 0 .5em;padding-left:18px;color:var(--muted);font-size:.9rem}
-.armeslist li{margin:2px 0}
-.beast-notes{color:var(--muted);font-size:.9rem;font-style:italic;margin:.3em 0}
-.empty-box{background:var(--panel2);border:1px dashed var(--tealline);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted);margin:18px 0}
-table.mini.beasts td{padding:7px 8px;white-space:nowrap}
-table.mini.beasts td.nomcell{text-align:left;min-width:170px;white-space:normal}
-table.mini.beasts tr.subrow td{padding:0 10px 9px;text-align:left}
-table.mini.beasts tr.brow td{padding-top:14px}
-table.mini.beasts tr.descrow td{padding:2px 10px 0;white-space:normal}
-.bname{cursor:pointer}
-.bname:hover>b,.bname.open>b{color:var(--teal)}
-.bname .chev{display:inline-block;color:var(--teal);font-size:.72em;margin-left:6px;transition:transform .18s ease}
-.bname.open .chev{transform:rotate(90deg)}
-.bdesc{background:var(--panel2);border:1px solid var(--tealline);border-left:3px solid var(--teal);border-radius:8px;padding:10px 14px;color:var(--text);font-size:.88rem;line-height:1.45;font-style:italic;text-align:left;margin:4px 0 6px}
-.bseen{font-style:normal;color:var(--teal);font-size:.8rem;margin-top:6px}
-.fdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;box-shadow:0 0 4px rgba(0,0,0,.35)}
-table.mini.beasts th{border:0}
-table.mini.beasts td{border:0}
-table.mini.beasts tr:nth-child(even) td{background:transparent}
-.bsub{display:block;color:var(--muted);font-size:.78rem;line-height:1.35}
-.bsub.it{font-style:italic}
-</style>
-  </head>
-  <body>
-    <header class="nav">
-      <div class="nav-in">
-        <a class="brand" href="/"><span class="pe-star lg"></span> PROTOCOLES ÉTERNELS</a>
-        <nav class="nav-links">
-          <a href="/">Accueil</a>
-          <a href="/console.html">Console</a>
-          <a href="/regles.html">Règles</a>
-          <a href="/bestiaire.html">Bestiaire</a>
-          <a href="/galaxie.html">Cartes</a>
-          <a href="/joueur.html" class="pj"><span class="pe-star"></span> Zone joueurs</a>
-          <a href="/mj.html" class="mj"><span class="pe-star"></span> Zone MJ</a>
-        </nav>
-      </div>
-    </header>
-    <nav class="subnav" aria-label="Filtrer le bestiaire">
-      <button class="subnav-toggle" type="button" aria-expanded="false"><span class="ic-bars" aria-hidden="true">☰</span><span class="ic-x" aria-hidden="true">✕</span> Factions</button>
-      <div class="subnav-in" id="f-subnav">
-        <button type="button" data-f="tous" class="active">Tous</button>
-        <a href="#recherche"><span class="pe-star"></span> Recherche</a>
-      </div>
-    </nav>
-    <script src="assets/js/core.js"></script>
-    <script src="assets/js/theme.js"></script>
-    <button class="to-top" id="pe-top" title="Haut de page" aria-label="Revenir en haut de la page">▲</button>
-
-    <main class="wrap">
-      <section class="sect rev d1">
-        <h2>Créatures recensées</h2>
-        <p id="b-status">Chargement du bestiaire…</p>
-        <div id="beasts"></div>
-        <div class="btools" id="recherche">
-          <input type="search" id="b-search" class="searchbox" placeholder="Rechercher un nom, une arme, une note…">
-          <button class="btn ghost" id="b-refresh" style="min-height:44px">↻ Rafraîchir</button>
-        </div>
-        <div class="note-box">
-          <strong>Base en nuage :</strong> les créatures sont enregistrées dans la base partagée du groupe. La page nécessite une connexion internet — hors ligne, la liste reste vide mais rien n'est perdu.
-        </div>
-      </section>
-
-            
-    </main>
-    <footer class="foot">
-      <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
-      <p style="margin:10px 0 2px"><strong>Les Protocoles Éternels</strong> — JDR maison, usage strictement privé entre amis.</p>
-      <p style="margin:0;color:var(--muted);font-size:.85rem">Les pages publiques ne contiennent aucun secret de campagne. La zone MJ est réservée au Maître de la Tombe.</p>
-    </footer>
-    <script src="assets/js/vendor/supabase.js"></script>
-    <script src="assets/js/pages/bestiaire.js"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Bestiaire — Les Protocoles Éternels</title>
+<link rel="canonical" href="/data.html">
+<meta http-equiv="refresh" content="0;url=/data.html#bestiaire">
+<script>location.replace('/data.html#bestiaire');</script>
+</head>
+<body>
+</body>
 </html>
-

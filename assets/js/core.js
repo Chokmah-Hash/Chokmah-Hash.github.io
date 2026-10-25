@@ -84,9 +84,10 @@ return;
 var zone=role==='pj'?pj:mj;
 zone.innerHTML='<span class="pe-star"></span> '+(role==='pj'?'Zone joueur':'Zone MJ');
 var other=role==='pj'?mj:pj;
-var d=document.createElement('a');d.setAttribute('href','#');d.className='pe-deco';d.innerHTML='<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 1.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M9.2 3.2 14 8 8 14 2 8 6.8 3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'+nom+' - D\u00e9connexion';
+var d=document.createElement('a');d.setAttribute('href','#');d.className='pe-deco';d.title=nom+' - D\u00e9connexion';d.setAttribute('aria-label','D\u00e9connexion');d.innerHTML='<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 1.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M9.2 3.2 14 8 8 14 2 8 6.8 3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
 d.addEventListener('click',function(ev){ev.preventDefault();try{localStorage.removeItem('pe_session');localStorage.removeItem('pe-mj-auth');localStorage.removeItem('pe_mjkey');localStorage.removeItem('pe_mjpass');}catch(e){}location.replace('/connexion.html');});
-if(other.parentNode){other.parentNode.replaceChild(d,other);}
+if(other.parentNode){other.parentNode.removeChild(other);}
+if(zone.parentNode){zone.parentNode.appendChild(d);}
 window.dispatchEvent(new Event('resize'));
 })();
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}

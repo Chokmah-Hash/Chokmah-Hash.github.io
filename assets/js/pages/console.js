@@ -1,6 +1,6 @@
 (function(){
 /* PE_BUILD 2026.10.20-con4 — plus récent en haut (ordre chrono inversé) */
-var PE_BUILD='2026.10.20-con4';
+var PE_BUILD='2026.10.25-data1';
 window.PE_BUILD=PE_BUILD;
 var SB='https://dnbnkdakmobufqcrqzpq.supabase.co/rest/v1/';
 var SBK='sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov';
@@ -331,4 +331,20 @@ loadMessages();
 rtInit();
 $('c-send').addEventListener('click',sendMessage);
 $('c-input').addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();sendMessage();}});
+})();
+/* Messages de bienvenue (premiere visite) : la console est la page d'entree, l'ancien Accueil y resume l'essentiel */
+(function(){
+var box=document.getElementById('c-box');
+if(!box){return;}
+var seen=false;try{seen=!!localStorage.getItem('pe_intro_v1');}catch(e){}
+if(seen){return;}
+try{localStorage.setItem('pe_intro_v1','1');}catch(e){}
+var W='<span class="cm-time">--:--</span> <span class="cm-who">Protocole</span>';
+var WM='<span class="cm-time">--:--</span> <span class="cm-who">Ma\u00eetre de la Tombe</span>';
+var h=''
++'<div class="cm cm-de" data-pe-intro="1">'+W+' : Bienvenue. Vous \u00eates des machines \u2014 sans nom, sans origine, sans pass\u00e9. Une seule certitude grav\u00e9e dans vos circuits : <strong>la mission</strong>.</div>'
++'<div class="cm cm-de" data-pe-intro="1">'+W+' : Tout ce que vous avez le droit de savoir vit sous <strong>Data</strong> \u2014 R\u00e8gles (cr\u00e9ation d\u2019unit\u00e9, combat au D6, arsenal, progression), Bestiaire et Cartes de la galaxie.</div>'
++'<div class="cm cm-de" data-pe-intro="1">'+W+' : Mat\u00e9riel de d\u00e9part : 3 d\u00e9s \u00e0 6 faces, un crayon, une grille (1 case = 2 m\u00e8tres), une fiche d\u2019unit\u00e9.</div>'
++'<div class="cm cm-mj" data-pe-intro="1">'+WM+' : Site strictement priv\u00e9 \u2014 les pages publiques ne cachent aucun secret de campagne. La suite de votre mission vous sera transmise en temps voulu.</div>';
+box.insertAdjacentHTML('afterbegin',h);
 })();

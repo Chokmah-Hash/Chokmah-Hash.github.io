@@ -146,3 +146,12 @@ section[id]{scroll-margin-top:110px}
 .nav-links a.pe-deco,.nav.open .nav-links a.pe-deco{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--tealline);border-radius:8px;color:var(--muted);background:transparent;transition:color .15s ease,background .15s ease,border-color .15s ease}
 .nav-links a.pe-deco:hover,.nav.open .nav-links a.pe-deco:hover{color:var(--danger);background:rgba(226,96,79,.08);border-color:rgba(226,96,79,.55)}
 .nav-links a.pe-deco svg{flex:none}
+
+/* Bouton Deconnexion ICONE SEULE : symbole agrandi, texte retire, pousse a droite */
+.nav-links a.pe-deco,.nav.open .nav-links a.pe-deco{padding:7px 9px;gap:0}
+.nav-links a.pe-deco{margin-left:auto}
+.nav.open .nav-links a.pe-deco{margin-left:0}
+/* Marque plaque code-barres (remplace le titre PROTOCOLES ETERNELS) */
+.brand-code{display:inline-flex;align-items:center;text-decoration:none;color:var(--teal);white-space:nowrap}
+.brand-code svg{display:block}
+.brand-code:hover{filter:drop-shadow(0 0 6px var(--tealsoft))}
