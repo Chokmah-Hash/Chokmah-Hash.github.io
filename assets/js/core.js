@@ -36,10 +36,7 @@ if(navTg&&nl&&!h.classList.contains('open')){
 if(h.classList.contains('collapse')){h.classList.remove('collapse');}
 h.classList.toggle('collapse',nl.scrollWidth>nl.clientWidth+2);
 }
-if(sn&&sni&&!sn.classList.contains('open')){
-if(sn.classList.contains('collapse')){sn.classList.remove('collapse');}
-sn.classList.toggle('collapse',sni.scrollWidth>sni.clientWidth+2);
-}
+
 };
 fit();window.addEventListener('resize',fit);window.addEventListener('load',fit);
 if(document.fonts&&document.fonts.ready&&document.fonts.ready.then){document.fonts.ready.then(function(){fit();});}
