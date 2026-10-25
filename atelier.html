@@ -119,6 +119,6 @@ body.sim-phone .subnav-in{max-width:362px}
     </footer>
     <script src="simulation/core.js"></script>
 <script>
-document.getElementById("sim-w").addEventListener("click",function(){var ph=document.body.classList.toggle("sim-phone");this.textContent=ph?"Largeur PC":"Largeur mobile";});
+document.getElementById("sim-w").addEventListener("click",function(){var ph=document.body.classList.toggle("sim-phone");this.textContent=ph?"Largeur PC":"Largeur mobile";window.dispatchEvent(new Event("resize"));setTimeout(function(){window.dispatchEvent(new Event("resize"));},60);});
 </script>  </body>
 </html>
