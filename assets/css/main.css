@@ -10,8 +10,10 @@ h3{font-size:1.12rem;color:var(--text)}
 p{margin:.4em 0 .9em}
 a{color:var(--teal)}
 strong{color:var(--text)}
-.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
-.foot{margin-top:56px;border-top:1px solid var(--tealline);padding:24px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 14px}
+/* Étiquette bas de page : le contenu épouse le pied de page — les marges basses de fin de flux sont neutralisées pour un gap uniforme */
+.wrap .sect:last-child,.wrap .sect>:last-child{margin-bottom:0!important}
+.foot{margin-top:0;background:var(--navbg);backdrop-filter:blur(8px);border-top:1px solid var(--tealline);padding:0 16px;min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:.9rem}
 .nav{position:sticky;top:0;z-index:50;background:var(--navbg);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
 .nav-in{max-width:1000px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px}
 .brand{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.14em;color:var(--teal);text-decoration:none;font-size:.92rem;white-space:nowrap}
