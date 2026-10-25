@@ -60,6 +60,35 @@ targets.forEach(function(p){io.observe(p[1]);});
 }
 }
 })();
+/* Connexion unifiée : la nav reflète l’état (visiteur / joueur / MJ) */
+(function(){
+var nl=document.querySelector('header.nav .nav-links');
+if(!nl){return;}
+var pj=null,mj=null;
+Array.prototype.forEach.call(nl.querySelectorAll('a'),function(a){var href=(a.getAttribute('href')||'').split('#')[0];if(href==='/joueur.html'){pj=a;}else if(href==='/mj.html'){mj=a;}});
+if(!pj||!mj){return;}
+var sess=null;
+try{sess=JSON.parse(localStorage.getItem('pe_session')||'null');}catch(e){sess=null;}
+var mjAuth=false;
+try{var t=localStorage.getItem('pe-mj-auth');if(t&&t.indexOf('access_token')>=0){var o=JSON.parse(t);var cs=(o&&o.session&&o.session.access_token?o.session:null)||(o&&o.currentSession&&o.currentSession.access_token?o.currentSession:null)||((o&&o.access_token)?o:null);if(cs){var exp=cs.expires_at||0;if(!exp||exp*1000>Date.now()+30000){mjAuth=true;}}}}catch(e){mjAuth=false;}
+var role=null,nom='';
+if(sess&&sess.token){role='pj';nom=(sess.nom||sess.login||'');}
+else if(mjAuth){role='mj';nom='MJ';}
+if(!role){
+var c=document.createElement('a');c.setAttribute('href','/connexion.html');c.textContent='Connexion';
+if(mj.parentNode){mj.parentNode.replaceChild(c,mj);}
+if(pj.parentNode){pj.parentNode.removeChild(pj);}
+window.dispatchEvent(new Event('resize'));
+return;
+}
+var zone=role==='pj'?pj:mj;
+zone.innerHTML='<span class="pe-star"></span> '+(role==='pj'?'Zone joueur':'Zone MJ');
+var other=role==='pj'?mj:pj;
+var d=document.createElement('a');d.setAttribute('href','#');d.textContent=nom+' - D\u00e9connexion';
+d.addEventListener('click',function(ev){ev.preventDefault();try{localStorage.removeItem('pe_session');localStorage.removeItem('pe-mj-auth');localStorage.removeItem('pe_mjkey');localStorage.removeItem('pe_mjpass');}catch(e){}location.replace('/connexion.html');});
+if(other.parentNode){other.parentNode.replaceChild(d,other);}
+window.dispatchEvent(new Event('resize'));
+})();
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}

@@ -95,57 +95,18 @@ textarea.fld{resize:vertical;min-height:64px}
         <a href="/fiches.html"><span class="pe-star"></span> Personnages</a>
         <button type="button" data-t="notes"><span class="pe-star"></span> Notes</button>
         <button type="button" data-t="des"><span class="pe-star"></span> Dés</button>
-      
-        <a href="#logout" id="app-logout" style="margin-left:auto"><span class="pe-star"></span> Se déconnecter<span id="logout-who"></span></a></div>
+      </div>
     </nav>
 
     <main class="wrap">
-      <section class="hero rev" id="app-hero">
+      <section class="hero rev" id="app-hero" style="display:none">
         <div class="glyphrow"><span class="pe-star lg"></span> ⬥ <span class="pe-star lg"></span></div>
         <h1>Mon <b>Espace</b></h1>
         <div class="tagline">Aventure · Personnages · Notes</div>
         <p class="pitch">Ton espace personnel : l'aventure en cours, tes fiches de personnages avec leur équipement, et tes notes de campagne. Tout est sauvegardé dans la base partagée du groupe — accessible depuis n'importe quel appareil, suffit de te reconnecter.</p>
       </section>
 
-      <!-- ============ VUE CONNEXION ============ -->
-      <div id="auth-view">
-        <section class="rev d1">
-          <div class="card authcard">
-            <span class="ico"><span class="pe-star lg"></span></span>
-            <h3 style="margin-top:0">Connexion</h3>
-            <form id="f-login">
-              <label class="glab" for="l-user">Pseudo</label>
-              <input class="fld tealfld" id="l-user" type="text" autocomplete="username" required>
-              <label class="glab" for="l-pass">Mot de passe</label>
-              <input class="fld tealfld" id="l-pass" type="password" autocomplete="current-password" required>
-              <div style="margin-top:18px"><button type="submit" class="btn primary" style="width:100%">→ Entrer</button></div>
-            </form>
-            <div id="mdp-row" style="margin-top:10px;text-align:center"><button class="btn ghost small" id="mdp-oublie" type="button">Mot de passe oublié ?</button></div>
-            <div id="f-reset" style="display:none">
-              <form id="r-ask">
-                <label class="glab" for="r-user">Ton nom (pseudo de connexion)</label>
-                <input class="fld tealfld" id="r-user" type="text" autocomplete="username" required>
-                <div style="margin-top:14px"><button type="submit" class="btn primary" style="width:100%">Envoyer ma demande au Maître de la Tombe</button></div>
-              </form>
-              <p class="gmsg" id="r-status"></p>
-              <form id="r-form" style="display:none">
-                <label class="glab" for="r-pass">Nouveau mot de passe</label>
-                <input class="fld tealfld" id="r-pass" type="password" autocomplete="new-password" required minlength="4">
-                <label class="glab" for="r-pass2">Mot de passe (vérification)</label>
-                <input class="fld tealfld" id="r-pass2" type="password" autocomplete="new-password" required minlength="4">
-                <div style="margin-top:14px"><button type="submit" class="btn primary" style="width:100%">✓ Définir mon nouveau mot de passe</button></div>
-              </form>
-              <div style="margin-top:8px;text-align:center"><button class="btn ghost small" id="r-cancel" type="button">Annuler</button></div>
-            </div>
-            <p class="gmsg" id="auth-msg"></p>
-          </div>
-          <div class="note-box" style="max-width:460px;margin:14px auto">
-            Les comptes sont créés par le Maître de la Tombe — demande-lui le tien. Ton mot de passe n’est jamais écrit dans le site : seule son empreinte cryptée est envoyée à la base.
-          </div>
-        </section>
-      </div>
-
-            <!-- ============ VUE CONNECTÉE ============ -->
+      <!-- ============ VUE CONNECTÉE ============ -->
       <div id="app-view" style="display:none">
 
         <!-- Onglet Aventure -->
