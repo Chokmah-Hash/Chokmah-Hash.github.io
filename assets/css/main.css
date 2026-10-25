@@ -3,17 +3,18 @@
 :root{--bg:#0f0c07;--glow:#221b0e;--panel:#1c150c;--panel2:#151009;--teal:#f0b24a;--tealsoft:rgba(240,178,74,.10);--tealline:rgba(240,178,74,.28);--amber:#2ee6c9;--ambersoft:rgba(46,230,201,.10);--amberline:rgba(46,230,201,.25);--text:#f2ead9;--muted:#a89c85;--danger:#e2604f;--navbg:rgba(24,16,7,.94)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:16px;line-height:1.65;background:radial-gradient(1100px 520px at 50% -8%,var(--glow) 0%,var(--bg) 58%) fixed,var(--bg)}
+body{min-height:100vh;display:flex;flex-direction:column;margin:0;color:var(--text);font-family:'Exo 2',system-ui,sans-serif;font-size:16px;line-height:1.65;background:radial-gradient(1100px 520px at 50% -8%,var(--glow) 0%,var(--bg) 58%) fixed,var(--bg)}
 h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;letter-spacing:.06em;margin:.25em 0 .4em;line-height:1.2}
 h2{color:var(--teal);font-size:1.45rem;text-transform:uppercase;letter-spacing:.12em}
 h3{font-size:1.12rem;color:var(--text)}
 p{margin:.4em 0 .9em}
 a{color:var(--teal)}
 strong{color:var(--text)}
-.wrap{max-width:1000px;margin:0 auto;padding:0 16px 14px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 14px;flex:1 0 auto}
 /* Étiquette bas de page : le contenu épouse le pied de page — les marges basses de fin de flux sont neutralisées pour un gap uniforme */
 .wrap .sect:last-child,.wrap .sect>:last-child{margin-bottom:0!important}
-.foot{margin-top:0;background:var(--navbg);backdrop-filter:blur(8px);border-top:1px solid var(--tealline);padding:0 16px;min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:.9rem}
+.foot{margin-top:0;background:var(--navbg);backdrop-filter:blur(8px);border-top:1px solid var(--tealline);padding:0 16px;height:64px;flex:none;line-height:1.4;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:.9rem}
+.foot .foot-motor{display:block;margin-top:2px;font-size:.72rem;letter-spacing:.06em}
 .nav{position:sticky;top:0;z-index:50;background:var(--navbg);backdrop-filter:blur(8px);border-bottom:1px solid var(--tealline)}
 .nav-in{max-width:1000px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px}
 .brand{font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.14em;color:var(--teal);text-decoration:none;font-size:.92rem;white-space:nowrap}

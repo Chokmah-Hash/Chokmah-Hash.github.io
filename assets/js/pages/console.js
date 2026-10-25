@@ -181,6 +181,23 @@ function collectDebug(sec){
  return 'PEDBG2-'+dbgHex(json.length,4)+'-'+dbgHex(dbgSum(json),4)+'-'+dbgB64(json);
 }
 var DBG_SECTIONS={'':'complet',var:'variables',style:'styles',rt:'temps-reel',sess:'sessions'};
+function showCmds(){
+ BOX=BOX||$('c-box');
+ var div=document.createElement('div');
+ div.className='cm cm-mj cm-private';
+ div.innerHTML='<span class="cm-who"> Commandes</span>'+
+  '<div style="margin:6px 0 2px;padding:8px 12px;background:rgba(6,16,13,.9);border:1px dashed var(--tealline);border-radius:6px;font-size:.85rem;line-height:1.7">'+
+  '<b>/mj "texte"</b> — la voix du Maître de la Tombe<br>'+
+  '<b>/pseudo "texte"</b> — chuchotement à un joueur<br>'+
+  '<b>/pseudo1+pseudo2 "texte"</b> — chuchotement à plusieurs joueurs<br>'+
+  '<b>/oracle "question"</b> — l\'Oracle IA (voix de la Tombe)<br>'+
+  '<b>/oracle-net "question"</b> — l\'Oracle IA (voix neutre)'+
+  (MJSIDE?'<br><b>/debug</b> — diagnostic du Maître de la Tombe (taper /debug help)':'')+
+  '</div>';
+ BOX.insertBefore(div,BOX.firstChild);
+ BOX.scrollTop=0;
+ setStatus('Commandes affichées.','ok');
+}
 function showHelp(){
  BOX=BOX||$('c-box');
  var div=document.createElement('div');
@@ -253,6 +270,7 @@ function sendOracle(question,style){
 function sendMessage(){
  var inp=$('c-input'), txt=inp.value.trim();
  if(!txt){return;}
+ if(/^\/help\s*$/.test(txt)){inp.value='';showCmds();return;}
  var dbg=/^\/debug(\s+(\S+))?\s*$/.exec(txt);
  if(dbg){
   if(!MJSIDE){setStatus('Commande réservée au Maître de la Tombe.','err');return;}
@@ -304,7 +322,7 @@ function initSession(){
    client.auth.getSession().then(function(s){
     if(s&&s.data&&s.data.session){
      MJSIDE=true;
-     setStatus('Vue Maître de la Tombe — tu vois tous les messages. /debug help pour les commandes. (moteur '+PE_BUILD+')','');
+     setStatus('/help pour la liste de commandes.','');
      loadMessages();
     }else if(!SESS){
      setStatus('Vue anonyme — connecte-toi depuis la Zone joueurs pour écrire.','');
