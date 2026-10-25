@@ -171,3 +171,5 @@ section[id]{scroll-margin-top:110px}
 .brand-code{display:inline-flex;align-items:center;text-decoration:none;color:var(--teal);white-space:nowrap}
 .brand-code svg{display:block}
 .brand-code:hover{filter:drop-shadow(0 0 6px var(--tealsoft))}
+/* Test mobile : logo masqué sur petit écran pour évaluer la place du menu — se retire en une ligne */
+@media (max-width:640px){.brand-code{display:none}}
