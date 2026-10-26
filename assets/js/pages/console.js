@@ -13,6 +13,9 @@ try{
 window.addEventListener('error',function(e){ERRS.push('E:'+(e.message||'?')+' @'+(e.filename||'')+':'+(e.lineno||0));if(ERRS.length>12){ERRS.shift();}});
 window.addEventListener('unhandledrejection',function(e){ERRS.push('P:'+String(e.reason).slice(0,180));if(ERRS.length>12){ERRS.shift();}});
 }catch(e){}
+/* ————— /install : prompt PWA armé par le navigateur ————— */
+var DPEVT=null;
+try{window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();DPEVT=e;});}catch(e){}
 function hdr(){var h={'apikey':SBK,'Content-Type':'application/json'};if(SESS&&SESS.token){h['x-token']=SESS.token;}return h;}
 function authHdr(tk){return {'apikey':SBK,'Authorization':'Bearer '+tk,'Content-Type':'application/json'};}
 function api(url,opt){return fetch(url,opt);}
@@ -192,6 +195,7 @@ function showCmds(){
   '<b>/pseudo1+pseudo2 "texte"</b> — chuchotement à plusieurs joueurs<br>'+
   '<b>/oracle "question"</b> — l\'Oracle IA (voix de la Tombe)<br>'+
   '<b>/oracle-net "question"</b> — l\'Oracle IA (voix neutre)'+
+  '<br><b>/install</b> — sceller l\'application sur cet appareil'+
   (MJSIDE?'<br><b>/debug</b> — diagnostic du Maître de la Tombe (taper /debug help)':'')+
   '</div>';
  BOX.insertBefore(div,BOX.firstChild);
@@ -267,10 +271,29 @@ function sendOracle(question,style){
   setStatus('L\'Oracle est injoignable — vérifie ta connexion.','err');
  });
 }
+function installCmd(){
+ var standalone=false;
+ try{standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||(navigator.standalone===true);}catch(e){}
+ if(standalone){setStatus('L\'application est déjà scellée sur cet appareil.','ok');return;}
+ if(DPEVT){
+  var ev=DPEVT;DPEVT=null;
+  ev.prompt();
+  ev.userChoice.then(function(ch){
+   if(ch&&ch.outcome==='accepted'){setStatus('Application installée — elle s\'ouvre sur la console depuis son icône.','ok');}
+   else{setStatus('Le geste a été refusé — le site reste accessible depuis le navigateur.','');}
+  }).catch(function(){setStatus('Le navigateur a refermé la boîte d\'installation.','');});
+  return;
+ }
+ var ua=(navigator&&navigator.userAgent)||'';
+ var ios=/iPad|iPhone|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+ if(ios){setStatus('Protocole iOS : bouton Partager (le carré barré d\'une flèche), puis « Sur l\'écran d\'accueil », puis Ajouter.','');return;}
+ setStatus('Le navigateur n\'a pas encore armé le geste — un clic et trente secondes de présence sur le site, puis /install à nouveau (ou installe via install.html).','');
+}
 function sendMessage(){
  var inp=$('c-input'), txt=inp.value.trim();
  if(!txt){return;}
  if(/^\/help\s*$/.test(txt)){inp.value='';showCmds();return;}
+ if(/^\/install\s*$/.test(txt)){inp.value='';installCmd();return;}
  var dbg=/^\/debug(\s+(\S+))?\s*$/.exec(txt);
  if(dbg){
   if(!MJSIDE){setStatus('Commande réservée au Maître de la Tombe.','err');return;}

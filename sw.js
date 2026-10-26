@@ -1,10 +1,10 @@
 /* Les Protocoles Éternels — service worker : stratégie network-first avec repli hors ligne */
-var CACHE='pe-v2026-10-25-mot7';
+var CACHE='pe-v2026-10-26-mot8';
 var PRECACHE=[
- '/', '/index.html', '/regles.html', '/console.html', '/data.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/joueur.html', '/connexion.html', '/mj.html', '/espace-mj/moteur.html', '/404.html',
+ '/', '/index.html', '/regles.html', '/console.html', '/data.html', '/fiches.html', '/bestiaire.html', '/galaxie.html', '/joueur.html', '/connexion.html', '/install.html', '/mj.html', '/espace-mj/moteur.html', '/404.html',
  '/assets/css/tokens.css', '/assets/css/main.css', '/assets/js/core.js', '/assets/js/theme.js', '/assets/js/vendor/supabase.js',
- '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/joueur.js', '/assets/js/pages/connexion.js', '/assets/js/pages/console.js', '/assets/js/pages/data.js', '/assets/js/pages/mj.js', '/assets/js/pages/mj-carte.js', '/assets/js/pages/mj-bestiaire.js', '/assets/js/pages/des.js', '/assets/js/pages/auth.js', '/assets/js/pages/images.js', '/assets/js/pages/mj-comptes.js', '/assets/js/pages/moteur.jsx', '/assets/js/moteur-planetaire.js', '/assets/js/moteur-planetaire-rotation.js', '/assets/js/pe-equipement.js',
- '/favicon.svg', '/icons/icon-192.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
+ '/assets/js/pages/fiches.js', '/assets/js/pages/bestiaire.js', '/assets/js/pages/galaxie.js', '/assets/js/pages/joueur.js', '/assets/js/pages/connexion.js', '/assets/js/pages/console.js', '/assets/js/pages/install.js', '/assets/js/pages/data.js', '/assets/js/pages/mj.js', '/assets/js/pages/mj-carte.js', '/assets/js/pages/mj-bestiaire.js', '/assets/js/pages/des.js', '/assets/js/pages/auth.js', '/assets/js/pages/images.js', '/assets/js/pages/mj-comptes.js', '/assets/js/pages/moteur.jsx', '/assets/js/moteur-planetaire.js', '/assets/js/moteur-planetaire-rotation.js', '/assets/js/pe-equipement.js',
+ '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/manifest.webmanifest'
 ];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRECACHE);}).then(function(){return self.skipWaiting();}));});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return k===CACHE?null:caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
