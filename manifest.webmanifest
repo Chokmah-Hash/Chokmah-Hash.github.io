@@ -7,8 +7,8 @@
   "start_url": "/console.html",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#f0b24a",
-  "background_color": "#0a120f",
+  "theme_color": "#181007",
+  "background_color": "#0f0c07",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -20,7 +20,7 @@
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+         "purpose": "any maskable"
     },
     {
       "src": "/icons/apple-touch-icon.png",
