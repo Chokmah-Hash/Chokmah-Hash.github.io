@@ -83,7 +83,8 @@
             signups_disabled: "Les inscriptions sont fermées sur le serveur — l'administrateur doit les rouvrir.",
             weak_password: "Mot de passe trop faible — 4 caractères minimum.",
             over_email_rate_limit: "Trop d'emails envoyés par le serveur — patientez quelques minutes.",
-            email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez."
+            email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez.",
+            email_address_invalid: "Adresse email invalide — vérifiez son orthographe."
           };
           if (msgBrut.indexOf("inscriptions desactivees") >= 0) {
             code = "signups_disabled";
@@ -245,7 +246,7 @@ const CLOUD = (typeof window !== "undefined" && window.LARCHIVISTE_CLOUD) || nul
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.07";
+const BUILD = "0.08";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
