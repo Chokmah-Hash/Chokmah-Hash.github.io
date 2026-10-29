@@ -182,7 +182,7 @@ const { useState, useRef, useEffect } = React;
 const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.09";
+const BUILD = "0.10";
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -374,19 +374,6 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, sim
           </div>
         </header>
 
-        <div className="text-xs mb-4" style={{ color: "#71717a" }}>
-          Archiviste en salle : <span style={{ color: "#e8e4d8" }}>{session.pseudo}</span>
-          <span className="ml-2 px-1.5 py-0.5 rounded text-xs font-bold"
-            style={{ background: "#f0b24a18", color: "#f0b24a", border: "1px solid #f0b24a44" }}>admin</span>
-        </div>
-
-        {simulation && (
-          <div className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: "#2ee6c910", color: "#2ee6c9", border: "1px solid #2ee6c933" }}>
-            ⚙ Banc d'essai : données simulées. La salle en ligne vit à l'adresse de l'Archivisterium,
-            derrière la porte Supabase.
-          </div>
-        )}
-
         {/* Onglets Stat / Bibliothèque / Comptes — l'ergonomie du launcher, en or */}
         <div className="flex gap-1 mb-6" style={{ borderBottom: "1px solid #27272a" }}>
           {[["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"]].map(([id, lbl]) => (
@@ -460,9 +447,73 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, sim
         </div>
         </div>)}
 
-        {/* ── Le mode de validation des inscriptions ── */}
+        {/* ── Le registre d'abord, le mode de validation ensuite ── */}
         {onglet === "comptes" && (<>
+
+        {/* ── Le registre des comptes ── */}
         <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
+          LE REGISTRE DES COMPTES
+        </div>
+        <div className="rounded-xl mb-8 overflow-x-auto" style={{ border: "1px solid #27272a" }}>
+          <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#14161b", color: "#71717a" }}>
+                {["PSEUDO", "TAG", "EMAIL", "RÔLE", "STATUT", "CRÉÉ LE", "DERNIÈRE CONNEXION"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 text-xs font-bold tracking-wider"
+                    style={{ borderBottom: "1px solid #27272a" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {comptes.map((c) => (
+                <tr key={c.compte_id} style={{ background: "#0f1116" }}>
+                  <td className="px-3 py-2 font-bold" style={{ color: "#e8e4d8", borderBottom: "1px solid #27272a" }}>{c.pseudo}</td>
+                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{c.tag || "—"}</td>
+                  <td className="px-3 py-2" style={{ color: "#a1a1aa", borderBottom: "1px solid #27272a" }}>{c.email}</td>
+                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
+                    <span className="px-1.5 py-0.5 rounded text-xs font-bold"
+                      style={c.role === "admin"
+                        ? { background: "#f0b24a18", color: "#f0b24a", border: "1px solid #f0b24a44" }
+                        : { background: "#a8adb810", color: "#a8adb8", border: "1px solid #27272a" }}>
+                      {c.role || "joueur"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 rounded text-xs font-bold"
+                        style={c.statut === "en_attente"
+                          ? { background: "#fb718514", color: "#fb7185", border: "1px solid #fb718544" }
+                          : { background: "#2ee6c910", color: "#2ee6c9", border: "1px solid #2ee6c933" }}>
+                        {c.statut === "en_attente" ? "en attente" : "actif"}
+                      </span>
+                      {/* Le sceau ne s'appose que si l'admin a choisi le mode « Sceau de l'Admin » —
+                          en mode email, le lien de confirmation fait foi, pas de bouton ici. */}
+                      {modeValidation === "admin" && session.email !== c.email && (
+                        c.statut === "en_attente" ? (
+                          <button onClick={() => onStatut(c, "actif")}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-black" style={{ background: "#f0b24a" }}>
+                            ✓ Valider
+                          </button>
+                        ) : (
+                          <button onClick={() => onStatut(c, "en_attente")}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold"
+                            style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>
+                            Suspendre
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{dateCourte(c.cree_le)}</td>
+                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{heureCourte(c.derniere_connexion)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Le mode de validation des inscriptions, sous le registre ── */}
+        <div className="text-sm font-bold tracking-widest mb-2 mt-8" style={{ color: "#a1a1aa" }}>
           MODE DE VALIDATION DES INSCRIPTIONS
         </div>
         <div className="grid md:grid-cols-2 gap-3 mb-3">
@@ -497,66 +548,6 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, sim
           {modeValidation === "email"
             ? " Mode actuel : chaque inscription reçoit un lien de confirmation."
             : " Mode actuel : les comptes naissent « en attente » — le registre attend votre sceau."}
-        </div>
-
-        {/* ── Le registre des comptes ── */}
-        <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
-          LE REGISTRE DES COMPTES
-        </div>
-        <div className="rounded-xl mb-8 overflow-x-auto" style={{ border: "1px solid #27272a" }}>
-          <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#14161b", color: "#71717a" }}>
-                {["PSEUDO", "TAG", "EMAIL", "RÔLE", "STATUT", "CRÉÉ LE", "DERNIÈRE CONNEXION", "SCEAU"].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 text-xs font-bold tracking-wider"
-                    style={{ borderBottom: "1px solid #27272a" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {comptes.map((c) => (
-                <tr key={c.compte_id} style={{ background: "#0f1116" }}>
-                  <td className="px-3 py-2 font-bold" style={{ color: "#e8e4d8", borderBottom: "1px solid #27272a" }}>{c.pseudo}</td>
-                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{c.tag || "—"}</td>
-                  <td className="px-3 py-2" style={{ color: "#a1a1aa", borderBottom: "1px solid #27272a" }}>{c.email}</td>
-                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
-                    <span className="px-1.5 py-0.5 rounded text-xs font-bold"
-                      style={c.role === "admin"
-                        ? { background: "#f0b24a18", color: "#f0b24a", border: "1px solid #f0b24a44" }
-                        : { background: "#a8adb810", color: "#a8adb8", border: "1px solid #27272a" }}>
-                      {c.role || "joueur"}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
-                    <span className="px-1.5 py-0.5 rounded text-xs font-bold"
-                      style={c.statut === "en_attente"
-                        ? { background: "#fb718514", color: "#fb7185", border: "1px solid #fb718544" }
-                        : { background: "#2ee6c910", color: "#2ee6c9", border: "1px solid #2ee6c933" }}>
-                      {c.statut === "en_attente" ? "en attente" : "actif"}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{dateCourte(c.cree_le)}</td>
-                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{heureCourte(c.derniere_connexion)}</td>
-                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
-                    {session.email === c.email ? (
-                      <span className="text-xs" style={{ color: "#52525b" }}>— vous —</span>
-                    ) : c.statut === "en_attente" ? (
-                      <button onClick={() => onStatut(c, "actif")}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold text-black" style={{ background: "#f0b24a" }}>
-                        ✓ Valider
-                      </button>
-                    ) : (
-                      <button onClick={() => onStatut(c, "en_attente")}
-                        className="px-2.5 py-1 rounded-lg text-xs font-bold"
-                        style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>
-                        Suspendre
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
         </>)}
       </div>
