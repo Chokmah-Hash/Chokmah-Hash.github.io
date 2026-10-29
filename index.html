@@ -165,6 +165,8 @@ window.LARCHIVISTE_CLOUD = (function () {
     var tables = opts.tables || [];
     var surChangement = opts.surChangement || function () {};
     var surEtat = opts.surEtat || function () {};
+    var presenceCle = opts.presenceKey || null; /* s'annoncer sur le canal des présents */
+    var surPresence = opts.surPresence || null; /* écouter qui entre et qui sort */
     if (typeof WebSocket === "undefined") { surEtat("coupure"); return { fermer: function () {} }; }
     var m0 = lire();
     if (!m0 || !m0.access_token) { surEtat("coupure"); return { fermer: function () {} }; }
@@ -198,6 +200,21 @@ window.LARCHIVISTE_CLOUD = (function () {
             ref: t.table
           }));
         });
+        /* La PRÉSENCE : tant que cette socket vit, le joueur est « en ligne ».
+           Fermer la fenêtre ferme la socket — le serveur le remarque seul,
+           aucune écriture en base, aucun code à la fermeture (impossible
+           de rester vert par accident). */
+        if (presenceCle) {
+          ws.send(JSON.stringify({
+            topic: "tombe",
+            event: "phx_join",
+            payload: {
+              config: { broadcast: { self: false }, presence: { key: presenceCle }, postgres_changes: [] },
+              access_token: jeton
+            },
+            ref: "presence"
+          }));
+        }
         surEtat("branche");
       };
       ws.onmessage = function (ev) {
@@ -205,6 +222,10 @@ window.LARCHIVISTE_CLOUD = (function () {
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
         if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
           surChangement(msg.payload.data);
+        }
+        /* La ronde des présents : état initial puis entrées/sorties */
+        if (surPresence && (msg.event === "presence_state" || msg.event === "presence_diff")) {
+          surPresence(msg.payload || {});
         }
       };
       ws.onclose = retomber;
@@ -494,6 +515,8 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
       var tables = opts.tables || [];
       var surChangement = opts.surChangement || function () {};
       var surEtat = opts.surEtat || function () {};
+      var presenceCle = opts.presenceKey || null; /* s'annoncer sur le canal des présents */
+      var surPresence = opts.surPresence || null; /* écouter qui entre et qui sort */
       if (typeof WebSocket === "undefined") {
         surEtat("coupure");
         return {
@@ -558,6 +581,29 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
               ref: t.table
             }));
           });
+          /* La PRÉSENCE : tant que cette socket vit, le joueur est « en ligne ».
+             Fermer la fenêtre ferme la socket — le serveur le remarque seul,
+             aucune écriture en base, aucun code à la fermeture (impossible
+             de rester vert par accident). */
+          if (presenceCle) {
+            ws.send(JSON.stringify({
+              topic: "tombe",
+              event: "phx_join",
+              payload: {
+                config: {
+                  broadcast: {
+                    self: false
+                  },
+                  presence: {
+                    key: presenceCle
+                  },
+                  postgres_changes: []
+                },
+                access_token: jeton
+              },
+              ref: "presence"
+            }));
+          }
           surEtat("branche");
         };
         ws.onmessage = function (ev) {
@@ -569,6 +615,10 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           }
           if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
             surChangement(msg.payload.data);
+          }
+          /* La ronde des présents : état initial puis entrées/sorties */
+          if (surPresence && (msg.event === "presence_state" || msg.event === "presence_diff")) {
+            surPresence(msg.payload || {});
           }
         };
         ws.onclose = retomber;
@@ -747,7 +797,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.14";
+const BUILD = "0.15";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6534,6 +6584,8 @@ function App() {
       }, 400);
     };
     const canal = CLOUD.tempsReel({
+      presenceKey: session.compteId,
+      /* le pouls : présent tant que la socket vit */
       tables: [{
         table: "archiviste_comptes",
         filtre: "compte_id=eq." + session.compteId

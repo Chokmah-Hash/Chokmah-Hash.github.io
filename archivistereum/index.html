@@ -138,6 +138,8 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     var tables = opts.tables || [];
     var surChangement = opts.surChangement || function () {};
     var surEtat = opts.surEtat || function () {};
+    var presenceCle = opts.presenceKey || null; /* s'annoncer sur le canal des présents */
+    var surPresence = opts.surPresence || null; /* écouter qui entre et qui sort */
     if (typeof WebSocket === "undefined") { surEtat("coupure"); return { fermer: function () {} }; }
     var m0 = lire();
     if (!m0 || !m0.access_token) { surEtat("coupure"); return { fermer: function () {} }; }
@@ -171,6 +173,21 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
             ref: t.table
           }));
         });
+        /* La PRÉSENCE : tant que cette socket vit, l'Archivisterium écoute la
+           ronde des présents sur le canal « tombe ». Chaque launcher connecté
+           s'y annonce ; fermer la fenêtre ferme sa socket — le serveur le
+           remarque seul. Aucune écriture en base, aucun code à la fermeture. */
+        if (presenceCle) {
+          ws.send(JSON.stringify({
+            topic: "tombe",
+            event: "phx_join",
+            payload: {
+              config: { broadcast: { self: false }, presence: { key: presenceCle }, postgres_changes: [] },
+              access_token: jeton
+            },
+            ref: "presence"
+          }));
+        }
         surEtat("branche");
       };
       ws.onmessage = function (ev) {
@@ -178,6 +195,10 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
         if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
           surChangement(msg.payload.data);
+        }
+        /* La ronde des présents : état initial puis entrées/sorties */
+        if (surPresence && (msg.event === "presence_state" || msg.event === "presence_diff")) {
+          surPresence(msg.payload || {});
         }
       };
       ws.onclose = retomber;
@@ -325,7 +346,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.27";
+const BUILD = "0.28";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -449,6 +470,8 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       var tables = opts.tables || [];
       var surChangement = opts.surChangement || function () {};
       var surEtat = opts.surEtat || function () {};
+      var presenceCle = opts.presenceKey || null; /* s'annoncer sur le canal des présents */
+      var surPresence = opts.surPresence || null; /* écouter qui entre et qui sort */
       if (typeof WebSocket === "undefined") {
         surEtat("coupure");
         return {
@@ -513,6 +536,29 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
               ref: t.table
             }));
           });
+          /* La PRÉSENCE : tant que cette socket vit, l'Archivisterium écoute la
+             ronde des présents sur le canal « tombe ». Chaque launcher connecté
+             s'y annonce ; fermer la fenêtre ferme sa socket — le serveur le
+             remarque seul. Aucune écriture en base, aucun code à la fermeture. */
+          if (presenceCle) {
+            ws.send(JSON.stringify({
+              topic: "tombe",
+              event: "phx_join",
+              payload: {
+                config: {
+                  broadcast: {
+                    self: false
+                  },
+                  presence: {
+                    key: presenceCle
+                  },
+                  postgres_changes: []
+                },
+                access_token: jeton
+              },
+              ref: "presence"
+            }));
+          }
           surEtat("branche");
         };
         ws.onmessage = function (ev) {
@@ -524,6 +570,10 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           }
           if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
             surChangement(msg.payload.data);
+          }
+          /* La ronde des présents : état initial puis entrées/sorties */
+          if (surPresence && (msg.event === "presence_state" || msg.event === "presence_diff")) {
+            surPresence(msg.payload || {});
           }
         };
         ws.onclose = retomber;
@@ -975,7 +1025,8 @@ function Salle({
   onStatut,
   onMode,
   onCreer,
-  onSupprimer
+  onSupprimer,
+  presents
 }) {
   const {
     comptes,
@@ -1286,7 +1337,13 @@ function Salle({
       background: "#14161b",
       color: "#71717a"
     }
-  }, ["PSEUDO", "STATUT", ""].map((h, i) => /*#__PURE__*/React.createElement("th", {
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2",
+    style: {
+      width: 32,
+      borderBottom: "1px solid #27272a"
+    }
+  }), ["PSEUDO", "STATUT", ""].map((h, i) => /*#__PURE__*/React.createElement("th", {
     key: i,
     className: "text-left px-3 py-2 text-xs font-bold tracking-wider" + (i === 2 ? " text-right" : ""),
     style: {
@@ -1298,6 +1355,20 @@ function Salle({
       background: "#0f1116"
     }
   }, /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2",
+    style: {
+      borderBottom: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    title: presents.includes(c.compte_id) ? "En ligne dans L'Archiviste" : "Absent",
+    style: {
+      display: "inline-block",
+      width: 10,
+      height: 10,
+      borderRadius: "50%",
+      background: presents.includes(c.compte_id) ? "#2ee6c9" : "#fb7185"
+    }
+  })), /*#__PURE__*/React.createElement("td", {
     className: "px-3 py-2 font-bold",
     style: {
       color: "#e8e4d8",
@@ -1334,7 +1405,7 @@ function Salle({
       border: "1px solid #27272a"
     }
   }, "\u2699")))), !visibles.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
-    colSpan: 3,
+    colSpan: 4,
     className: "px-3 py-2 text-xs",
     style: {
       color: "#71717a",
@@ -1728,6 +1799,10 @@ function App() {
      pulsation de secours (30 s) reprend le relais ; à chaque rebranchement
      et au retour sur l'onglet, la vérité repart de la Tombe entière. */
   const [etatTempsReel, setEtatTempsReel] = useState("coupure");
+  /* Les présents : les compte_id actuellement EN LIGNE dans L'Archiviste,
+     tenus par la ronde du canal « tombe » (entrée et sortie instantanées,
+     fermeture de fenêtre comprise — la socket qui se ferme les retire seule). */
+  const [presents, setPresents] = useState([]);
   useEffect(() => {
     if (!CLOUD || phase !== "salle") return;
     let attente = null;
@@ -1739,6 +1814,8 @@ function App() {
       }, 350);
     };
     const canal = CLOUD.tempsReel({
+      presenceKey: "archivisterium",
+      /* l'institution écoute la ronde des présents */
       tables: [{
         table: "archiviste_comptes"
       }, {
@@ -1747,6 +1824,20 @@ function App() {
         table: "parametres"
       }],
       surChangement: () => relance(),
+      surPresence: ronde => {
+        /* état initial ({clé: …}) ou diff ({joins, leaves}) : on maintient la
+           liste des compte_id en ligne (seuls les UUID comptent — l'institution
+           s'écoute elle-même mais ne s'affiche pas, elle est voilée). */
+        setPresents(p => {
+          const s = new Set(p);
+          const entrants = ronde.joins || ronde;
+          Object.keys(entrants || {}).forEach(k => {
+            if (/^[0-9a-f-]{36}$/.test(k)) s.add(k);
+          });
+          Object.keys(ronde.leaves || {}).forEach(k => s.delete(k));
+          return [...s];
+        });
+      },
       surEtat: etat => {
         setEtatTempsReel(etat);
         if (etat === "branche") relance(); /* on a peut-être raté des poussées pendant la coupure */
@@ -1853,7 +1944,8 @@ function App() {
       onStatut: poserSceau,
       onMode: choisirMode,
       onCreer: creerJoueur,
-      onSupprimer: supprimerJoueur
+      onSupprimer: supprimerJoueur,
+      presents: presents
     });
   }
   if (phase === "refus") {
