@@ -117,7 +117,7 @@ window.LARCHIVISTE_CLOUD = (function () {
   }
 
   /* ── Charge la ligne compte (auto-répare si absente) + le sac du compte ── */
-  function chargerTout(token, user) {
+  function chargerTout(token, user, opts) {
     var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", { token: token }))
       .then(function (lignes) {
         if (lignes && lignes.length) return lignes[0];
@@ -136,10 +136,14 @@ window.LARCHIVISTE_CLOUD = (function () {
 
     return comptes.then(function (compte) {
       compteCourant = user.id;
-      /* Horodatage de dernière connexion (best effort) */
-      api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
-        method: "PATCH", token: token, body: { derniere_connexion: new Date().toISOString() }
-      }).catch(function () {});
+      /* Horodatage de dernière connexion (best effort) — SAUF en simple
+         vérification (horodater: false) : le temps réel ne doit jamais
+         déclencher la Tombe, sinon la Tombe s'annonce à elle-même. */
+      if (!opts || opts.horodater !== false) {
+        api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
+          method: "PATCH", token: token, body: { derniere_connexion: new Date().toISOString() }
+        }).catch(function () {});
+      }
       var profil = profilDepuis(user, compte);
       return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, { token: token })
         .then(function (mem) {
@@ -147,6 +151,81 @@ window.LARCHIVISTE_CLOUD = (function () {
           return profil;
         });
     });
+  }
+
+  /* ══ TEMPS RÉEL — la poussée de la Tombe (Supabase Realtime) ══
+     La base PRÉVIENT : plus de pulsation, la vérité arrive en poussée.
+     WebSocket zéro dépendance, protocole Phoenix : jointure d'un canal
+     postgres_changes (filtre serveur : chaque joueur n'écoute QUE sa
+     ligne) + battement de cœur toutes les 25 s. La RLS s'applique AUSSI
+     au canal. En coupure, on rebranche seul ; l'app relit alors la
+     Tombe pour rattraper ce qui a poussé pendant l'absence. */
+  function tempsReel(opts) {
+    opts = opts || {};
+    var tables = opts.tables || [];
+    var surChangement = opts.surChangement || function () {};
+    var surEtat = opts.surEtat || function () {};
+    if (typeof WebSocket === "undefined") { surEtat("coupure"); return { fermer: function () {} }; }
+    var m0 = lire();
+    if (!m0 || !m0.access_token) { surEtat("coupure"); return { fermer: function () {} }; }
+
+    var ws = null, coeur = null, ferme = false, essais = 0;
+
+    function brancher() {
+      if (ferme) return;
+      var jeton = ((lire() || m0) || {}).access_token || "";
+      try {
+        ws = new WebSocket("wss://dnbnkdakmobufqcrqzpq.supabase.co/realtime/v1/websocket?apikey=" + CLE_PUBLIQUE + "&vsn=1.0.0");
+      } catch (e) { retomber(); return; }
+      ws.onopen = function () {
+        essais = 0;
+        if (coeur) clearInterval(coeur);
+        coeur = setInterval(function () {
+          if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({ topic: "phoenix", event: "heartbeat", payload: {}, ref: "battement" }));
+          }
+        }, 25000);
+        tables.forEach(function (t) {
+          var suivi = { event: "*", schema: "public", table: t.table };
+          if (t.filtre) suivi.filter = t.filtre;
+          ws.send(JSON.stringify({
+            topic: "realtime:public:" + t.table,
+            event: "phx_join",
+            payload: {
+              config: { broadcast: { self: false }, presence: { key: "" }, postgres_changes: [suivi] },
+              access_token: jeton
+            },
+            ref: t.table
+          }));
+        });
+        surEtat("branche");
+      };
+      ws.onmessage = function (ev) {
+        var msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
+          surChangement(msg.payload.data);
+        }
+      };
+      ws.onclose = retomber;
+      ws.onerror = function () { try { ws.close(); } catch (e) {} };
+    }
+    function retomber() {
+      if (coeur) { clearInterval(coeur); coeur = null; }
+      if (ferme) return;
+      surEtat("coupure");
+      setTimeout(brancher, Math.min(5000 + essais * 5000, 30000));
+      essais++;
+    }
+    brancher();
+    return {
+      fermer: function () {
+        ferme = true;
+        if (coeur) clearInterval(coeur);
+        if (ws) { try { ws.close(); } catch (e) {} }
+        ws = null;
+      }
+    };
   }
 
   return {
@@ -179,11 +258,11 @@ window.LARCHIVISTE_CLOUD = (function () {
     },
 
     /* Restauration de session au démarrage (token gardé par le navigateur) */
-    sessionActuelle: function () {
+    sessionActuelle: function (opts) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
       return api("/auth/v1/user", { token: m.access_token })
-        .then(function (user) { return chargerTout(m.access_token, user); })
+        .then(function (user) { return chargerTout(m.access_token, user, opts); })
         .catch(function () {
           /* Token expiré → on tente le refresh avant d'abandonner */
           if (!m.refresh_token) { ecrire(null); return null; }
@@ -191,7 +270,7 @@ window.LARCHIVISTE_CLOUD = (function () {
             method: "POST", body: { refresh_token: m.refresh_token }
           }).then(function (d) {
             ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
-            return chargerTout(d.access_token, d.user);
+            return chargerTout(d.access_token, d.user, opts);
           }).catch(function () { ecrire(null); return null; });
         });
     },
@@ -242,7 +321,11 @@ window.LARCHIVISTE_CLOUD = (function () {
       return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteCourant, {
         method: "PATCH", token: m.access_token, body: body
       });
-    }
+    },
+
+    /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
+       la synchro devient de la poussée, pas du polling. */
+    tempsReel: tempsReel
   };
 })();
 
@@ -354,7 +437,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
     }
 
     /* ── Charge la ligne compte (auto-répare si absente) + le sac du compte ── */
-    function chargerTout(token, user) {
+    function chargerTout(token, user, opts) {
       var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", {
         token: token
       })).then(function (lignes) {
@@ -377,14 +460,18 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
       });
       return comptes.then(function (compte) {
         compteCourant = user.id;
-        /* Horodatage de dernière connexion (best effort) */
-        api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
-          method: "PATCH",
-          token: token,
-          body: {
-            derniere_connexion: new Date().toISOString()
-          }
-        }).catch(function () {});
+        /* Horodatage de dernière connexion (best effort) — SAUF en simple
+           vérification (horodater: false) : le temps réel ne doit jamais
+           déclencher la Tombe, sinon la Tombe s'annonce à elle-même. */
+        if (!opts || opts.horodater !== false) {
+          api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
+            method: "PATCH",
+            token: token,
+            body: {
+              derniere_connexion: new Date().toISOString()
+            }
+          }).catch(function () {});
+        }
         var profil = profilDepuis(user, compte);
         return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, {
           token: token
@@ -393,6 +480,127 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           return profil;
         });
       });
+    }
+
+    /* ══ TEMPS RÉEL — la poussée de la Tombe (Supabase Realtime) ══
+       La base PRÉVIENT : plus de pulsation, la vérité arrive en poussée.
+       WebSocket zéro dépendance, protocole Phoenix : jointure d'un canal
+       postgres_changes (filtre serveur : chaque joueur n'écoute QUE sa
+       ligne) + battement de cœur toutes les 25 s. La RLS s'applique AUSSI
+       au canal. En coupure, on rebranche seul ; l'app relit alors la
+       Tombe pour rattraper ce qui a poussé pendant l'absence. */
+    function tempsReel(opts) {
+      opts = opts || {};
+      var tables = opts.tables || [];
+      var surChangement = opts.surChangement || function () {};
+      var surEtat = opts.surEtat || function () {};
+      if (typeof WebSocket === "undefined") {
+        surEtat("coupure");
+        return {
+          fermer: function () {}
+        };
+      }
+      var m0 = lire();
+      if (!m0 || !m0.access_token) {
+        surEtat("coupure");
+        return {
+          fermer: function () {}
+        };
+      }
+      var ws = null,
+        coeur = null,
+        ferme = false,
+        essais = 0;
+      function brancher() {
+        if (ferme) return;
+        var jeton = (lire() || m0 || {}).access_token || "";
+        try {
+          ws = new WebSocket("wss://dnbnkdakmobufqcrqzpq.supabase.co/realtime/v1/websocket?apikey=" + CLE_PUBLIQUE + "&vsn=1.0.0");
+        } catch (e) {
+          retomber();
+          return;
+        }
+        ws.onopen = function () {
+          essais = 0;
+          if (coeur) clearInterval(coeur);
+          coeur = setInterval(function () {
+            if (ws && ws.readyState === 1) {
+              ws.send(JSON.stringify({
+                topic: "phoenix",
+                event: "heartbeat",
+                payload: {},
+                ref: "battement"
+              }));
+            }
+          }, 25000);
+          tables.forEach(function (t) {
+            var suivi = {
+              event: "*",
+              schema: "public",
+              table: t.table
+            };
+            if (t.filtre) suivi.filter = t.filtre;
+            ws.send(JSON.stringify({
+              topic: "realtime:public:" + t.table,
+              event: "phx_join",
+              payload: {
+                config: {
+                  broadcast: {
+                    self: false
+                  },
+                  presence: {
+                    key: ""
+                  },
+                  postgres_changes: [suivi]
+                },
+                access_token: jeton
+              },
+              ref: t.table
+            }));
+          });
+          surEtat("branche");
+        };
+        ws.onmessage = function (ev) {
+          var msg;
+          try {
+            msg = JSON.parse(ev.data);
+          } catch (e) {
+            return;
+          }
+          if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
+            surChangement(msg.payload.data);
+          }
+        };
+        ws.onclose = retomber;
+        ws.onerror = function () {
+          try {
+            ws.close();
+          } catch (e) {}
+        };
+      }
+      function retomber() {
+        if (coeur) {
+          clearInterval(coeur);
+          coeur = null;
+        }
+        if (ferme) return;
+        surEtat("coupure");
+        setTimeout(brancher, Math.min(5000 + essais * 5000, 30000));
+        essais++;
+      }
+      brancher();
+      return {
+        fermer: function () {
+          ferme = true;
+          if (coeur) clearInterval(coeur);
+          if (ws) {
+            try {
+              ws.close();
+            } catch (e) {}
+          }
+          ws = null;
+        }
+      };
     }
     return {
       /* Connexion email + mot de passe → profil + bibliothèque du compte */
@@ -439,13 +647,13 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
         });
       },
       /* Restauration de session au démarrage (token gardé par le navigateur) */
-      sessionActuelle: function () {
+      sessionActuelle: function (opts) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve(null);
         return api("/auth/v1/user", {
           token: m.access_token
         }).then(function (user) {
-          return chargerTout(m.access_token, user);
+          return chargerTout(m.access_token, user, opts);
         }).catch(function () {
           /* Token expiré → on tente le refresh avant d'abandonner */
           if (!m.refresh_token) {
@@ -462,7 +670,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
               access_token: d.access_token,
               refresh_token: d.refresh_token
             });
-            return chargerTout(d.access_token, d.user);
+            return chargerTout(d.access_token, d.user, opts);
           }).catch(function () {
             ecrire(null);
             return null;
@@ -528,7 +736,10 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           token: m.access_token,
           body: body
         });
-      }
+      },
+      /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
+         la synchro devient de la poussée, pas du polling. */
+      tempsReel: tempsReel
     };
   }();
 }
@@ -536,7 +747,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.13";
+const BUILD = "0.14";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6270,49 +6481,89 @@ function App() {
     return () => clearTimeout(t);
   }, [session, installes, favoris, rolesPacks]);
 
-  /* ════════ Le module de Synchronisation (Core) ════════
-     En pulsation toutes les 15 secondes, le launcher réinterroge la
-     Tombe — le nuage local ne fait jamais foi :
-     • compte suspendu par l'Archiviste depuis l'Archivisterium →
-       la double porte se referme (vue « attente ») ;
-     • compte scellé (supprimé, ou session expirée) → session coupée ;
-     • sceau apposé pendant l'attente → les archives s'ouvrent seules.
-     Le sac (installations, favoris, rôles) reste sous la plume du
-     joueur : c'est lui qui l'écrit dans le nuage, débouncé ci-dessus. */
+  /* ════════ Le module de Synchronisation (Core) — TEMPS RÉEL ════════
+     La Tombe POUSSÉ ses changements (Supabase Realtime, WebSocket) : un
+     sceau apposé depuis l'Archivisterium, une suspension, un avatar
+     changé d'un autre appareil — tout arrive à l'écran instantanément,
+     plus aucune pulsation. Les vérifications n'écrivent RIEN en base
+     (horodater: false) — la Tombe ne s'annonce pas à elle-même. En
+     coupure de canal, une pulsation de secours (30 s) reprend le
+     relais ; à chaque rebranchement et au retour sur l'onglet, la
+     vérité repart de la Tombe. */
+  const [etatTempsReel, setEtatTempsReel] = useState("coupure");
+  const verifierSession = async () => {
+    try {
+      const p = await CLOUD.sessionActuelle({
+        horodater: false
+      });
+      if (!p) {
+        seDeconnecter();
+        showToast("Session scellée par la Tombe — reconnexion requise.");
+        return;
+      }
+      if (p.statut === "en_attente") {
+        if (session.statut !== "en_attente") {
+          setSession(p);
+          setVue("attente");
+          showToast("Votre compte attend le sceau de l'Archiviste.");
+        }
+        return;
+      }
+      if (session.statut === "en_attente") {
+        /* Le sceau est apposé pendant l'attente : les archives s'ouvrent. */
+        seConnecter(p);
+        return;
+      }
+      setSession(s => s ? {
+        ...s,
+        pseudo: p.pseudo,
+        tag: p.tag,
+        email: p.email,
+        statut: p.statut
+      } : s);
+    } catch (e) {/* la Tombe sommeille — le canal rebranché relancera */}
+  };
   useEffect(() => {
     if (!CLOUD || !session) return;
-    const pulsation = setInterval(async () => {
-      try {
-        const p = await CLOUD.sessionActuelle();
-        if (!p) {
-          seDeconnecter();
-          showToast("Session scellée par la Tombe — reconnexion requise.");
-          return;
-        }
-        if (p.statut === "en_attente") {
-          if (session.statut !== "en_attente") {
-            setSession(p);
-            setVue("attente");
-            showToast("Votre compte attend le sceau de l'Archiviste.");
-          }
-          return;
-        }
-        if (session.statut === "en_attente") {
-          /* Le sceau est apposé pendant l'attente : les archives s'ouvrent. */
-          seConnecter(p);
-          return;
-        }
-        setSession(s => s ? {
-          ...s,
-          pseudo: p.pseudo,
-          tag: p.tag,
-          email: p.email,
-          statut: p.statut
-        } : s);
-      } catch (e) {/* la Tombe sommeille — on retentera dans 15 s */}
-    }, 15000);
-    return () => clearInterval(pulsation);
+    let attente = null;
+    const relance = () => {
+      if (attente) return;
+      attente = setTimeout(() => {
+        attente = null;
+        verifierSession();
+      }, 400);
+    };
+    const canal = CLOUD.tempsReel({
+      tables: [{
+        table: "archiviste_comptes",
+        filtre: "compte_id=eq." + session.compteId
+      }, {
+        table: "archiviste_memoire",
+        filtre: "compte_id=eq." + session.compteId
+      }],
+      surChangement: () => relance(),
+      surEtat: etat => {
+        setEtatTempsReel(etat);
+        if (etat === "branche") relance(); /* on a peut-être raté des poussées pendant la coupure */
+      }
+    });
+    const auRetour = () => {
+      if (document.visibilityState === "visible") verifierSession();
+    };
+    document.addEventListener("visibilitychange", auRetour);
+    return () => {
+      canal.fermer();
+      document.removeEventListener("visibilitychange", auRetour);
+      if (attente) clearTimeout(attente);
+    };
   }, [CLOUD, session]);
+
+  /* La pulsation de SECOURS : seulement quand le canal temps réel est coupé. */
+  useEffect(() => {
+    if (!CLOUD || !session || etatTempsReel === "branche") return;
+    const secours = setInterval(() => verifierSession(), 30000);
+    return () => clearInterval(secours);
+  }, [session, etatTempsReel]);
 
   /* Le glyphe du launcher : l'Icosaèdre D20 — CHOISI par Michael, point final.
      La Cible aux quatre coupes reste dans la bibliothèque de symboles de
@@ -6490,8 +6741,7 @@ function App() {
 }
 var _attente = document.getElementById("attente");
 if (_attente) _attente.remove();
-ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
-  </script>
+ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));</script>
 
   <script>
     /* Le service worker : l'Archiviste s'installe et sait se rouvrir hors ligne */

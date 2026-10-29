@@ -125,6 +125,82 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
       });
   }
 
+  /* ══ TEMPS RÉEL — la poussée de la Tombe (Supabase Realtime) ══
+     La base PRÉVIENT : plus de pulsation, la vérité arrive en poussée.
+     WebSocket zéro dépendance, protocole Phoenix : jointure d'un canal
+     postgres_changes + battement de cœur toutes les 25 s. La RLS
+     s'applique AUSSI au canal — chaque écran ne reçoit que les lignes
+     qu'il a le droit de voir. En coupure, on rebranche seul (délai
+     croissant) ; l'app relit alors toute la Tombe pour rattraper ce
+     qui a poussé pendant l'absence. */
+  function tempsReel(opts) {
+    opts = opts || {};
+    var tables = opts.tables || [];
+    var surChangement = opts.surChangement || function () {};
+    var surEtat = opts.surEtat || function () {};
+    if (typeof WebSocket === "undefined") { surEtat("coupure"); return { fermer: function () {} }; }
+    var m0 = lire();
+    if (!m0 || !m0.access_token) { surEtat("coupure"); return { fermer: function () {} }; }
+
+    var ws = null, coeur = null, ferme = false, essais = 0;
+
+    function brancher() {
+      if (ferme) return;
+      var jeton = ((lire() || m0) || {}).access_token || "";
+      try {
+        ws = new WebSocket("wss://dnbnkdakmobufqcrqzpq.supabase.co/realtime/v1/websocket?apikey=" + CLE_PUBLIQUE + "&vsn=1.0.0");
+      } catch (e) { retomber(); return; }
+      ws.onopen = function () {
+        essais = 0;
+        if (coeur) clearInterval(coeur);
+        coeur = setInterval(function () {
+          if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({ topic: "phoenix", event: "heartbeat", payload: {}, ref: "battement" }));
+          }
+        }, 25000);
+        tables.forEach(function (t) {
+          var suivi = { event: "*", schema: "public", table: t.table };
+          if (t.filtre) suivi.filter = t.filtre;
+          ws.send(JSON.stringify({
+            topic: "realtime:public:" + t.table,
+            event: "phx_join",
+            payload: {
+              config: { broadcast: { self: false }, presence: { key: "" }, postgres_changes: [suivi] },
+              access_token: jeton
+            },
+            ref: t.table
+          }));
+        });
+        surEtat("branche");
+      };
+      ws.onmessage = function (ev) {
+        var msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
+          surChangement(msg.payload.data);
+        }
+      };
+      ws.onclose = retomber;
+      ws.onerror = function () { try { ws.close(); } catch (e) {} };
+    }
+    function retomber() {
+      if (coeur) { clearInterval(coeur); coeur = null; }
+      if (ferme) return;
+      surEtat("coupure");
+      setTimeout(brancher, Math.min(5000 + essais * 5000, 30000));
+      essais++;
+    }
+    brancher();
+    return {
+      fermer: function () {
+        ferme = true;
+        if (coeur) clearInterval(coeur);
+        if (ws) { try { ws.close(); } catch (e) {} }
+        ws = null;
+      }
+    };
+  }
+
   return {
     connexion: function (email, mdp) {
       return api("/auth/v1/token?grant_type=password", {
@@ -220,7 +296,11 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
           method: "DELETE", token: m.access_token
         }).catch(function () {});
       });
-    }
+    },
+
+    /* Le canal temps réel : la Tombe pousse ses changements aux écrans
+       branchés — la synchro devient de la poussée, pas du polling. */
+    tempsReel: tempsReel
   };
 })();
 
@@ -245,7 +325,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.25";
+const BUILD = "0.26";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -354,6 +434,128 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           });
         });
       });
+    }
+
+    /* ══ TEMPS RÉEL — la poussée de la Tombe (Supabase Realtime) ══
+       La base PRÉVIENT : plus de pulsation, la vérité arrive en poussée.
+       WebSocket zéro dépendance, protocole Phoenix : jointure d'un canal
+       postgres_changes + battement de cœur toutes les 25 s. La RLS
+       s'applique AUSSI au canal — chaque écran ne reçoit que les lignes
+       qu'il a le droit de voir. En coupure, on rebranche seul (délai
+       croissant) ; l'app relit alors toute la Tombe pour rattraper ce
+       qui a poussé pendant l'absence. */
+    function tempsReel(opts) {
+      opts = opts || {};
+      var tables = opts.tables || [];
+      var surChangement = opts.surChangement || function () {};
+      var surEtat = opts.surEtat || function () {};
+      if (typeof WebSocket === "undefined") {
+        surEtat("coupure");
+        return {
+          fermer: function () {}
+        };
+      }
+      var m0 = lire();
+      if (!m0 || !m0.access_token) {
+        surEtat("coupure");
+        return {
+          fermer: function () {}
+        };
+      }
+      var ws = null,
+        coeur = null,
+        ferme = false,
+        essais = 0;
+      function brancher() {
+        if (ferme) return;
+        var jeton = (lire() || m0 || {}).access_token || "";
+        try {
+          ws = new WebSocket("wss://dnbnkdakmobufqcrqzpq.supabase.co/realtime/v1/websocket?apikey=" + CLE_PUBLIQUE + "&vsn=1.0.0");
+        } catch (e) {
+          retomber();
+          return;
+        }
+        ws.onopen = function () {
+          essais = 0;
+          if (coeur) clearInterval(coeur);
+          coeur = setInterval(function () {
+            if (ws && ws.readyState === 1) {
+              ws.send(JSON.stringify({
+                topic: "phoenix",
+                event: "heartbeat",
+                payload: {},
+                ref: "battement"
+              }));
+            }
+          }, 25000);
+          tables.forEach(function (t) {
+            var suivi = {
+              event: "*",
+              schema: "public",
+              table: t.table
+            };
+            if (t.filtre) suivi.filter = t.filtre;
+            ws.send(JSON.stringify({
+              topic: "realtime:public:" + t.table,
+              event: "phx_join",
+              payload: {
+                config: {
+                  broadcast: {
+                    self: false
+                  },
+                  presence: {
+                    key: ""
+                  },
+                  postgres_changes: [suivi]
+                },
+                access_token: jeton
+              },
+              ref: t.table
+            }));
+          });
+          surEtat("branche");
+        };
+        ws.onmessage = function (ev) {
+          var msg;
+          try {
+            msg = JSON.parse(ev.data);
+          } catch (e) {
+            return;
+          }
+          if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
+            surChangement(msg.payload.data);
+          }
+        };
+        ws.onclose = retomber;
+        ws.onerror = function () {
+          try {
+            ws.close();
+          } catch (e) {}
+        };
+      }
+      function retomber() {
+        if (coeur) {
+          clearInterval(coeur);
+          coeur = null;
+        }
+        if (ferme) return;
+        surEtat("coupure");
+        setTimeout(brancher, Math.min(5000 + essais * 5000, 30000));
+        essais++;
+      }
+      brancher();
+      return {
+        fermer: function () {
+          ferme = true;
+          if (coeur) clearInterval(coeur);
+          if (ws) {
+            try {
+              ws.close();
+            } catch (e) {}
+          }
+          ws = null;
+        }
+      };
     }
     return {
       connexion: function (email, mdp) {
@@ -490,7 +692,10 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
             token: m.access_token
           }).catch(function () {});
         });
-      }
+      },
+      /* Le canal temps réel : la Tombe pousse ses changements aux écrans
+         branchés — la synchro devient de la poussée, pas du polling. */
+      tempsReel: tempsReel
     };
   }();
 }
@@ -771,7 +976,8 @@ function Salle({
   onStatut,
   onMode,
   onCreer,
-  onSupprimer
+  onSupprimer,
+  tempsReel
 }) {
   const {
     comptes,
@@ -911,7 +1117,20 @@ function Salle({
     }
   }, "SALLE D'ADMINISTRATION"))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center px-3 py-2 rounded-lg text-xs font-bold tracking-widest",
+    title: tempsReel === "branche" ? "La Tombe pousse ses changements en direct — l'écran est à jour à l'instant." : "Canal temps réel coupé — pulsation de secours toutes les 30 secondes.",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a",
+      color: tempsReel === "branche" ? "#f0b24a" : "#fb7185"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9,
+      marginRight: 6
+    }
+  }, "\u25CF"), tempsReel === "branche" ? "TEMPS RÉEL" : "HORS CANAL"), /*#__PURE__*/React.createElement("button", {
     onClick: onRafraichir,
     title: "Rafra\xEEchir les donn\xE9es",
     className: "px-3 py-2 rounded-lg font-bold text-sm",
@@ -1514,9 +1733,9 @@ function App() {
   }, []);
 
   /* ════════ Le module de Synchronisation (Core) ════════
-     Le nuage local ne fait foi : après chaque geste, et en pulsation
-     toutes les 12 secondes, la salle réinterroge la Tombe — aucune
-     info fantôme ne survit à une synchronisation. */
+     Le nuage local ne fait jamais foi : après chaque geste et à chaque
+     poussée de la Tombe, la salle relit la vérité en base — aucune info
+     fantôme ne survit à une synchronisation. */
   const synchroniser = async () => {
     const res = await CLOUD.recharger();
     setDonnees({
@@ -1525,13 +1744,55 @@ function App() {
       parametres: res.parametres
     });
   };
+
+  /* ════════ Le module de Synchronisation (Core) — TEMPS RÉEL ════════
+     La Tombe POUSSÉ ses changements (Supabase Realtime, WebSocket) :
+     chaque gravure, sceau, sentence ou bascule de mode arrive à l'écran
+     instantanément — plus aucune pulsation. En coupure de canal, une
+     pulsation de secours (30 s) reprend le relais ; à chaque rebranchement
+     et au retour sur l'onglet, la vérité repart de la Tombe entière. */
+  const [etatTempsReel, setEtatTempsReel] = useState("coupure");
   useEffect(() => {
     if (!CLOUD || phase !== "salle") return;
-    const pulsation = setInterval(() => {
-      synchroniser().catch(() => {}); /* la Tombe sommeille : on retentera */
-    }, 12000);
-    return () => clearInterval(pulsation);
+    let attente = null;
+    const relance = () => {
+      if (attente) return;
+      attente = setTimeout(() => {
+        attente = null;
+        synchroniser().catch(() => {});
+      }, 350);
+    };
+    const canal = CLOUD.tempsReel({
+      tables: [{
+        table: "archiviste_comptes"
+      }, {
+        table: "archiviste_memoire"
+      }, {
+        table: "parametres"
+      }],
+      surChangement: () => relance(),
+      surEtat: etat => {
+        setEtatTempsReel(etat);
+        if (etat === "branche") relance(); /* on a peut-être raté des poussées pendant la coupure */
+      }
+    });
+    const auRetour = () => {
+      if (document.visibilityState === "visible") synchroniser().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", auRetour);
+    return () => {
+      canal.fermer();
+      document.removeEventListener("visibilitychange", auRetour);
+      if (attente) clearTimeout(attente);
+    };
   }, [phase]);
+
+  /* La pulsation de SECOURS : seulement quand le canal temps réel est coupé. */
+  useEffect(() => {
+    if (!CLOUD || phase !== "salle" || etatTempsReel === "branche") return;
+    const secours = setInterval(() => synchroniser().catch(() => {}), 30000);
+    return () => clearInterval(secours);
+  }, [phase, etatTempsReel]);
   const entrer = async () => {
     setErreur(null);
     if (!email.trim() || mdp.length < 4) {
@@ -1622,7 +1883,8 @@ function App() {
       onStatut: poserSceau,
       onMode: choisirMode,
       onCreer: creerJoueur,
-      onSupprimer: supprimerJoueur
+      onSupprimer: supprimerJoueur,
+      tempsReel: etatTempsReel
     });
   }
   if (phase === "refus") {
@@ -1645,8 +1907,7 @@ function App() {
 }
 var _attente = document.getElementById("attente");
 if (_attente) _attente.remove();
-ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
-  </script>
+ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));</script>
 
   <script>
     /* PWA : service worker propre à la salle (portée /archivistereum/) */
