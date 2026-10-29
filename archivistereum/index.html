@@ -8,7 +8,14 @@
   <!-- Salle discrète : hors des moteurs de recherche -->
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#0c0d10" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <!-- PWA : la salle s'installe comme app à part entière -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="Archivisterium" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -151,7 +158,7 @@ const { useState, useRef, useEffect } = React;
 const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.07";
+const BUILD = "0.08";
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -501,6 +508,15 @@ function App() {
 
 var _attente = document.getElementById("attente"); if (_attente) _attente.remove();
 ReactDOM.createRoot(document.getElementById("racine")).render(<App />);
+  </script>
+
+  <script>
+    /* PWA : service worker propre à la salle (portée /archivistereum/) */
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
   </script>
 </body>
 </html>
