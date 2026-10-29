@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>L'Archiviste — Alpha Zéro</title>
   <meta name="description" content="L'Archiviste — le launcher des JDR papier : un moteur, des packs." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+  <!-- PWA : l'Archiviste est une APP à installer -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0c0d10" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="L'Archiviste" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -3015,6 +3023,15 @@ function App() {
 
 var _attente = document.getElementById("attente"); if (_attente) _attente.remove();
 ReactDOM.createRoot(document.getElementById("racine")).render(<App />);
+  </script>
+
+  <script>
+    /* Le service worker : l'Archiviste s'installe et sait se rouvrir hors ligne */
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").catch(function () {});
+      });
+    }
   </script>
 </body>
 </html>

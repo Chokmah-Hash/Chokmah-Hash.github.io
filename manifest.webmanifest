@@ -1,0 +1,21 @@
+{
+  "name": "L'Archiviste — Launcher JDR",
+  "short_name": "L'Archiviste",
+  "id": "/",
+  "lang": "fr",
+  "description": "Le launcher des JDR papier : un moteur unique, des packs interchangeables. Alpha Zéro.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "categories": ["games", "entertainment"],
+  "theme_color": "#0c0d10",
+  "background_color": "#0c0d10",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,31 @@
+# Icônes PWA de L'Archiviste — régénérées par GitHub Actions
+# (les PNG sont binaires : ils naissent DANS le dépôt, jamais poussés à la main)
+name: Icônes de L'Archiviste
+on:
+  push:
+    paths: ['generer-icones.js', '.github/workflows/icones.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  icones:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node generer-icones.js
+      - name: Commit des icônes si elles ont changé
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add icons/
+          if git diff --cached --quiet; then
+            echo "Icônes inchangées — rien à committer."
+          else
+            git commit -m "Icônes PWA de L'Archiviste régénérées [skip ci]"
+            git push
+          fi
