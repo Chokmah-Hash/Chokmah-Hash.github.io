@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>L'Archivisterium</title>
+  <meta name="description" content="L'Archivisterium — la salle d'administration de L'Archiviste." />
+  <!-- Salle discrète : hors des moteurs de recherche -->
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0c0d10" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; background: #0c0d10; font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif; }
+    #racine { min-height: 100vh; }
+    #attente { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #71717a; font-size: 14px; letter-spacing: 2px; }
+  </style>
+</head>
+<body>
+  <div id="attente">⚙ L'ARCHIVISTERIUM ÉVALUE VOTRE CLÉ…</div>
+  <div id="racine"></div>
+  <noscript>L'Archivisterium a besoin de JavaScript pour évaluer votre clé.</noscript>
+
+  <script>
+    /* Clé publique Supabase — publique par design (RLS protège les données) */
+    var CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+  </script>
+
+  <script>
+/* ════════════════════════════════════════════════════════════════════
+   ARCHIVISTERIUM_CLOUD — le client nuage de la salle d'administration.
+   Zéro dépendance : fetch + l'API REST de Supabase.
+   La porte : seul un compte de rôle « admin » franchit le seuil.
+   La protection réelle vit dans les politiques RLS du serveur :
+   un non-admin ne reçoit QUE sa propre ligne, jamais les autres.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
+  var CLE = "larchivistereum_session_v1";
+
+  function lire() {
+    try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) { return null; }
+  }
+  function ecrire(m) {
+    try {
+      if (m) localStorage.setItem(CLE, JSON.stringify(m));
+      else localStorage.removeItem(CLE);
+    } catch (e) { /* mode privé : on vivra sans restauration */ }
+  }
+
+  function api(chemin, opts) {
+    opts = opts || {};
+    var headers = { apikey: CLE_PUBLIQUE, "Content-Type": "application/json" };
+    if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
+    return fetch(URL + chemin, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        if (!res.ok) {
+          var code = (data && (data.error_code || data.code)) || "";
+          var msgBrut = (data && (data.msg || data.message)) || "";
+          var msgs = {
+            invalid_credentials: "Email ou mot de passe incorrect.",
+            email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez.",
+            over_email_rate_limit: "Trop d'essais — patientez quelques minutes."
+          };
+          var err = new Error(msgs[code] || msgBrut || "Serveur injoignable — vérifiez votre connexion.");
+          err.code = code;
+          err.statut = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* ── Charger la salle : comptes + mémoires, selon ce que le RLS laisse voir ── */
+  function chargerSalle(token, userId) {
+    return api("/rest/v1/archiviste_comptes?select=*&order=cree_le.desc", { token: token })
+      .then(function (comptes) {
+        /* Un admin voit TOUTES les lignes ; un joueur seulement la sienne (RLS). */
+        var moi = null;
+        for (var i = 0; i < comptes.length; i++) {
+          if (comptes[i].compte_id === userId) { moi = comptes[i]; break; }
+        }
+        if (!moi || moi.role !== "admin") {
+          var err = new Error("Ces archives ne vous sont pas ouvertes.");
+          err.refus = true;
+          throw err;
+        }
+        return api("/rest/v1/archiviste_memoire?select=compte_id,contenu,maj_le", { token: token })
+          .then(function (memoires) {
+            return { profil: moi, comptes: comptes, memoires: memoires };
+          });
+      });
+  }
+
+  return {
+    connexion: function (email, mdp) {
+      return api("/auth/v1/token?grant_type=password", {
+        method: "POST", body: { email: email, password: mdp }
+      }).then(function (d) {
+        ecrire({ access_token: d.access_token, refresh_token: d.refresh_token, user_id: d.user.id });
+        return chargerSalle(d.access_token, d.user.id);
+      });
+    },
+
+    session: function () {
+      var m = lire();
+      if (!m || !m.access_token || !m.user_id) return Promise.resolve(null);
+      return chargerSalle(m.access_token, m.user_id).catch(function () { ecrire(null); return null; });
+    },
+
+    recharger: function () {
+      var m = lire();
+      if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
+      return chargerSalle(m.access_token, m.user_id);
+    },
+
+    deconnexion: function () {
+      var m = lire();
+      ecrire(null);
+      if (m && m.access_token) {
+        return api("/auth/v1/logout", { method: "POST", token: m.access_token }).catch(function () {});
+      }
+      return Promise.resolve();
+    }
+  };
+})();
+
+  </script>
+
+  <script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect } = React;
+
+/* ════════════════════════════════════════════════════════════════════
+   L'ARCHIVISTERIUM — la salle d'administration de L'Archiviste.
+   Une PAGE À PART : elle vit à sa propre adresse, séparée du launcher,
+   et sa porte ne s'ouvre qu'aux comptes portant le rôle « admin ».
+   En simulation (canvas) : banc d'essai. En ligne : ARCHIVISTERIUM_CLOUD.
+   ════════════════════════════════════════════════════════════════════ */
+const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
+
+/* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
+const BUILD = "0.07";
+
+/* ── Les packs du launcher (miroir de ses id pour les stats) ── */
+const PACKS = [
+  { id: "protocoles-eternels", nom: "Les Protocoles Éternels", accent: "#2ee6c9" },
+  { id: "stormbringer", nom: "Stormbringer", accent: "#9d86e8" },
+  { id: "bloodlust", nom: "Bloodlust", accent: "#e0524d" },
+];
+
+/* ── Banc d'essai : la salle en simulation, sans le nuage ── */
+const BANC = {
+  comptes: [
+    { compte_id: "sim-1", pseudo: "Test Archiviste", tag: "JR-0004", email: "archiviste.test@larchiviste.jdr", role: "admin", cree_le: "2026-10-29T08:09:15Z", derniere_connexion: "2026-10-29T08:15:28Z" },
+    { compte_id: "sim-2", pseudo: "Invité de la Tombe", tag: "JR-0005", email: "invite@larchiviste.jdr", role: "joueur", cree_le: "2026-10-29T10:00:00Z", derniere_connexion: null },
+  ],
+  memoires: [
+    { compte_id: "sim-1", contenu: { installes: ["protocoles-eternels", "stormbringer"], favoris: ["protocoles-eternels"], rolesPacks: {} } },
+    { compte_id: "sim-2", contenu: { installes: ["bloodlust"], favoris: ["bloodlust"], rolesPacks: {} } },
+  ],
+};
+
+/* ══════════ L'Icosaèdre — glyphe D20 de L'Archiviste ══════════ */
+function Icosaedre({ size = 40, color = "#e8e4d8", fond = "transparent" }) {
+  const V = [[50, 6], [88.5, 28.5], [88.5, 71.5], [50, 94], [11.5, 71.5], [11.5, 28.5]];
+  const C = [50, 50];
+  const P = (p) => p.join(",");
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
+      <rect width="100" height="100" fill={fond} rx="14" />
+      <g fill="none" stroke={color} strokeWidth="3.8" strokeLinejoin="round" strokeLinecap="round">
+        <polygon points={V.map(P).join(" ")} />
+        {V.map((v, i) => (<polyline key={i} points={P(v) + " " + P(C)} />))}
+      </g>
+    </svg>
+  );
+}
+
+/* ══════════ Petites mains ══════════ */
+function dateCourte(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d)) return "—";
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
+function heureCourte(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d)) return "—";
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) + " · " +
+    d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+const ACTIF_7J = 7 * 24 * 60 * 60 * 1000;
+
+/* ══════════ La porte : email + mot de passe ══════════ */
+function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement }) {
+  const champ = { background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" };
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <form onSubmit={(e) => { e.preventDefault(); onEntrer(); }}
+          className="rounded-2xl p-6 w-full max-w-sm"
+          style={{ background: "#14161b", border: "1px solid #f0b24a44" }}>
+          <div className="flex items-center justify-center mb-3">
+            <Icosaedre size={52} color="#f0b24a" />
+          </div>
+          <div className="text-center font-bold text-xl tracking-wide" style={{ color: "#f0b24a" }}>
+            ⚙ L'ARCHIVISTERIUM
+          </div>
+          <div className="text-center text-xs mb-5 tracking-widest" style={{ color: "#a1a1aa" }}>
+            SALLE D'ADMINISTRATION — ACCÈS RÉSERVÉ
+          </div>
+          <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Email :</div>
+          <input value={email} onChange={(e) => { setEmail(e.target.value); }}
+            placeholder="vous@exemple.fr" type="email" autoComplete="username"
+            className="w-full rounded-lg px-3 py-2 mb-3 text-sm" style={champ} />
+          <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Mot de passe :</div>
+          <input value={mdp} onChange={(e) => { setMdp(e.target.value); }}
+            placeholder="••••••••" type="password" autoComplete="current-password"
+            className="w-full rounded-lg px-3 py-2 mb-3 text-sm" style={champ} />
+          <div className="text-xs mb-4" style={{ color: erreur ? "#fb7185" : "#52525b" }}>
+            {erreur || "\u00a0"}
+          </div>
+          <button type="submit" disabled={enChargement}
+            className="w-full px-4 py-2 rounded-lg font-bold text-sm text-black"
+            style={{ background: "#f0b24a", opacity: enChargement ? 0.6 : 1 }}>
+            {enChargement ? "La porte évalue…" : "Franchir le seuil"}
+          </button>
+          <div className="text-center mt-4 text-xs">
+            <a href="https://chokmah-hash.github.io/" style={{ color: "#71717a" }}>⟁ Retour au launcher</a>
+          </div>
+        </form>
+      </div>
+      <footer className="text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
+        Powered by Vibe · N° {BUILD}
+      </footer>
+    </div>
+  );
+}
+
+/* ══════════ Le refus : ces archives ne sont pas pour tout le monde ══════════ */
+function Refus({ onRetour }) {
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <div className="flex justify-center mb-4"><Icosaedre size={64} color="#52525b" /></div>
+          <div className="font-bold text-xl mb-2" style={{ color: "#e8e4d8" }}>Ces archives ne vous sont pas ouvertes.</div>
+          <div className="text-sm mb-6" style={{ color: "#71717a" }}>
+            Le rôle de votre compte ne porte pas la clé de cette salle.
+            Seuls les Archivistes (rôle « admin ») franchissent ce seuil.
+          </div>
+          <button onClick={onRetour} className="px-4 py-2 rounded-lg font-bold text-sm text-black" style={{ background: "#a8adb8" }}>
+            Revenir à la porte
+          </button>
+        </div>
+      </div>
+      <footer className="text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
+        Powered by Vibe · N° {BUILD}
+      </footer>
+    </div>
+  );
+}
+
+/* ══════════ Une carte de statistique ══════════ */
+function Carte({ valeur, libelle, accent }) {
+  return (
+    <div className="rounded-xl p-4" style={{ background: "#14161b", border: "1px solid #27272a" }}>
+      <div className="text-3xl font-bold leading-none" style={{ color: accent }}>{valeur}</div>
+      <div className="text-xs mt-1 tracking-wider" style={{ color: "#71717a" }}>{libelle}</div>
+    </div>
+  );
+}
+
+/* ══════════ La salle : les stats de la Tombe ══════════ */
+function Salle({ session, donnees, onSortir, onRafraichir, simulation }) {
+  const { comptes, memoires } = donnees;
+  const admins = comptes.filter((c) => c.role === "admin").length;
+  const actifs = comptes.filter(
+    (c) => c.derniere_connexion && (Date.now() - new Date(c.derniere_connexion).getTime() < ACTIF_7J)
+  ).length;
+  const totalInstalles = memoires.reduce(
+    (n, m) => n + ((m.contenu && m.contenu.installes) || []).length, 0
+  );
+
+  const statsPack = PACKS.map((p) => {
+    const installs = memoires.filter(
+      (m) => (m.contenu && m.contenu.installes || []).includes(p.id)
+    ).length;
+    const favoris = memoires.filter(
+      (m) => (m.contenu && m.contenu.favoris || []).includes(p.id)
+    ).length;
+    const pct = comptes.length ? Math.round((installs / comptes.length) * 100) : 0;
+    return { ...p, installs, favoris, pct };
+  });
+  const pctMax = Math.max(...statsPack.map((s) => s.pct), 1);
+
+  return (
+    <div className="min-h-screen flex flex-col text-zinc-200" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="max-w-4xl w-full mx-auto px-5 pt-8 pb-0 flex-1 flex flex-col">
+        <header className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Icosaedre size={40} color="#f0b24a" />
+            <div>
+              <div className="text-2xl font-bold tracking-wide leading-tight" style={{ color: "#f0b24a" }}>
+                ⚙ L'ARCHIVISTERIUM
+              </div>
+              <div className="text-xs tracking-widest" style={{ color: "#a1a1aa" }}>SALLE D'ADMINISTRATION</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={onRafraichir} title="Rafraîchir les données"
+              className="px-3 py-2 rounded-lg font-bold text-sm"
+              style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>
+              ↻
+            </button>
+            <button onClick={onSortir}
+              className="px-4 py-2 rounded-lg font-bold text-sm text-black" style={{ background: "#a8adb8" }}>
+              Sortir
+            </button>
+          </div>
+        </header>
+
+        <div className="text-xs mb-4" style={{ color: "#71717a" }}>
+          Archiviste en salle : <span style={{ color: "#e8e4d8" }}>{session.pseudo}</span>
+          <span className="ml-2 px-1.5 py-0.5 rounded text-xs font-bold"
+            style={{ background: "#f0b24a18", color: "#f0b24a", border: "1px solid #f0b24a44" }}>admin</span>
+        </div>
+
+        {simulation && (
+          <div className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: "#2ee6c910", color: "#2ee6c9", border: "1px solid #2ee6c933" }}>
+            ⚙ Banc d'essai : données simulées. La salle en ligne vit à l'adresse de l'Archivisterium,
+            derrière la porte Supabase.
+          </div>
+        )}
+
+        {/* ── Les grandes lignes ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          <Carte valeur={comptes.length} libelle="COMPTES" accent="#e8e4d8" />
+          <Carte valeur={admins} libelle="ADMINISTRATEURS" accent="#f0b24a" />
+          <Carte valeur={actifs} libelle="ACTIFS (7 JOURS)" accent="#2ee6c9" />
+          <Carte valeur={totalInstalles} libelle="INSTALLATIONS" accent="#9d86e8" />
+        </div>
+
+        {/* ── Les packs du magasin ── */}
+        <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
+          LES PACKS DU MAGASIN
+        </div>
+        <div className="rounded-xl mb-8 overflow-hidden" style={{ border: "1px solid #27272a" }}>
+          {statsPack.map((p, i) => (
+            <div key={p.id} className="flex items-center gap-3 px-4 py-3"
+              style={{ background: "#14161b", borderBottom: i < statsPack.length - 1 ? "1px solid #27272a" : "none" }}>
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.accent }} />
+              <div className="font-bold text-sm w-56 truncate" style={{ color: "#e8e4d8" }}>{p.nom}</div>
+              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "#27272a" }}>
+                <div className="h-full rounded-full" style={{ width: (p.pct / pctMax) * 100 + "%", background: p.accent }} />
+              </div>
+              <div className="text-xs w-36 text-right" style={{ color: "#71717a" }}>
+                <span style={{ color: "#e8e4d8" }}>{p.installs}</span> installés · {p.favoris} ★
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Le registre des comptes ── */}
+        <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
+          LE REGISTRE DES COMPTES
+        </div>
+        <div className="rounded-xl mb-8 overflow-x-auto" style={{ border: "1px solid #27272a" }}>
+          <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#14161b", color: "#71717a" }}>
+                {["PSEUDO", "TAG", "EMAIL", "RÔLE", "CRÉÉ LE", "DERNIÈRE CONNEXION"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 text-xs font-bold tracking-wider"
+                    style={{ borderBottom: "1px solid #27272a" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {comptes.map((c) => (
+                <tr key={c.compte_id} style={{ background: "#0f1116" }}>
+                  <td className="px-3 py-2 font-bold" style={{ color: "#e8e4d8", borderBottom: "1px solid #27272a" }}>{c.pseudo}</td>
+                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{c.tag || "—"}</td>
+                  <td className="px-3 py-2" style={{ color: "#a1a1aa", borderBottom: "1px solid #27272a" }}>{c.email}</td>
+                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
+                    <span className="px-1.5 py-0.5 rounded text-xs font-bold"
+                      style={c.role === "admin"
+                        ? { background: "#f0b24a18", color: "#f0b24a", border: "1px solid #f0b24a44" }
+                        : { background: "#a8adb810", color: "#a8adb8", border: "1px solid #27272a" }}>
+                      {c.role || "joueur"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{dateCourte(c.cree_le)}</td>
+                  <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{heureCourte(c.derniere_connexion)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <footer className="mt-auto text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
+        Powered by Vibe · N° {BUILD}
+      </footer>
+    </div>
+  );
+}
+
+/* ══════════ L'App : la porte, le refus, la salle ══════════ */
+function App() {
+  const [phase, setPhase] = useState("porte"); // porte | salle | refus
+  const [email, setEmail] = useState("");
+  const [mdp, setMdp] = useState("");
+  const [erreur, setErreur] = useState(null);
+  const [enChargement, setEnChargement] = useState(false);
+  const [session, setSession] = useState(null);
+  const [donnees, setDonnees] = useState(null);
+
+  /* Restauration de session au chargement (mode en ligne) */
+  useEffect(() => {
+    if (!CLOUD) return;
+    let vivant = true;
+    CLOUD.session().then((res) => {
+      if (!vivant || !res) return;
+      setSession({ pseudo: res.profil.pseudo, email: res.profil.email });
+      setDonnees({ comptes: res.comptes, memoires: res.memoires });
+      setPhase("salle");
+    }).catch(() => {});
+    return () => { vivant = false; };
+  }, []);
+
+  const entrer = async () => {
+    setErreur(null);
+    /* Simulation (canvas) : la porte s'ouvre sur le banc d'essai */
+    if (!CLOUD) {
+      setSession({ pseudo: "Test Archiviste (banc d'essai)" });
+      setDonnees(BANC);
+      setPhase("salle");
+      return;
+    }
+    if (!email.trim() || mdp.length < 4) {
+      setErreur("Email et mot de passe requis (4 caractères min.).");
+      return;
+    }
+    setEnChargement(true);
+    try {
+      const res = await CLOUD.connexion(email.trim().toLowerCase(), mdp);
+      setSession({ pseudo: res.profil.pseudo, email: res.profil.email });
+      setDonnees({ comptes: res.comptes, memoires: res.memoires });
+      setPhase("salle");
+    } catch (e) {
+      if (e && e.refus) { setPhase("refus"); return; }
+      setErreur((e && e.message) || "Serveur injoignable — vérifiez votre connexion.");
+    } finally {
+      setEnChargement(false);
+    }
+  };
+
+  const rafraichir = async () => {
+    if (!CLOUD) { setDonnees(BANC); return; }
+    try {
+      const res = await CLOUD.recharger();
+      setDonnees({ comptes: res.comptes, memoires: res.memoires });
+    } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
+  };
+
+  const sortir = () => {
+    if (CLOUD) CLOUD.deconnexion();
+    setSession(null);
+    setDonnees(null);
+    setEmail("");
+    setMdp("");
+    setPhase("porte");
+  };
+
+  if (phase === "salle") {
+    return (
+      <Salle session={session} donnees={donnees} onSortir={sortir}
+        onRafraichir={rafraichir} simulation={!CLOUD} />
+    );
+  }
+  if (phase === "refus") {
+    return <Refus onRetour={() => { setMdp(""); setPhase("porte"); }} />;
+  }
+  return (
+    <Porte email={email} mdp={mdp} setEmail={setEmail} setMdp={setMdp}
+      onEntrer={entrer} erreur={erreur} enChargement={enChargement} />
+  );
+}
+
+var _attente = document.getElementById("attente"); if (_attente) _attente.remove();
+ReactDOM.createRoot(document.getElementById("racine")).render(<App />);
+  </script>
+</body>
+</html>
