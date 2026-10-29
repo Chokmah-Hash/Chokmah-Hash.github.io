@@ -38,14 +38,7 @@
   </script>
 
   <script>
-/* ════════════════════════════════════════════════════════════════════
-   LARCHIVISTE_CLOUD — le client nuage de L'Archiviste (Alpha Zéro)
-   Zéro dépendance : fetch + l'API REST de Supabase.
-   Principe cardinal : l'Archiviste ne garde JAMAIS les mots de passe —
-   chaque mot de passe part directement chez Supabase Auth, aucun hash
-   ne vit dans le code de l'app.
-   ════════════════════════════════════════════════════════════════════ */
-(function () {
+window.LARCHIVISTE_CLOUD = (function () {
   "use strict";
   var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
   var CLE = "larchiviste_session_v1";
@@ -69,6 +62,7 @@
     if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
     if (opts.prefer) headers["Prefer"] = opts.prefer;
     return fetch(URL + chemin, {
+      cache: "no-store",
       method: opts.method || "GET",
       headers: headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined
@@ -220,6 +214,16 @@
       });
     },
 
+    /* L'état de la base tel que la Tombe l'annonce : le pied de page du
+       launcher dit ce qu'il charge (parametre « version_launcher ») —
+       même vérité que l'Archivisterium, partout où il tourne. */
+    lireParametres: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/parametres?select=cle,valeur", { token: m.access_token })
+        .catch(function () { return null; });
+    },
+
     /* Mise à jour du compte (avatar, pseudo à venir…) */
     sauveCompte: function (patch) {
       var m = lire();
@@ -238,16 +242,228 @@
   <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect } = React;
 
-/* ── La couche CLOUD ──
-   Absente en simulation (canvas) : tout reste local, comme avant.
-   Présente dans l'HTML déployé (window.LARCHIVISTE_CLOUD) : comptes et sac du
-   compte vivent chez Supabase. L'Archiviste ne garde jamais les mots de
-   passe — ils partent directement chez Supabase Auth. */
+/* ── La couche CLOUD — EMBARQUÉE ──
+   Plus de mode local : le canvas ET la page en ligne parlent à la MÊME
+   Tombe Supabase — comptes et sac du compte vivent dans le nuage.
+   Sur la page construite, le script pipeline a déjà posé
+   window.LARCHIVISTE_CLOUD : l'embarqué s'efface alors devant lui.
+   L'Archiviste ne garde jamais les mots de passe — ils partent
+   directement chez Supabase Auth. */
+const CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
+/* ════════════════════════════════════════════════════════════════════
+   LARCHIVISTE_CLOUD — le client nuage de L'Archiviste (Alpha Zéro)
+   Zéro dépendance : fetch + l'API REST de Supabase.
+   Principe cardinal : l'Archiviste ne garde JAMAIS les mots de passe —
+   chaque mot de passe part directement chez Supabase Auth, aucun hash
+   ne vit dans le code de l'app.
+   Il s'assigne lui-même à window.LARCHIVISTE_CLOUD : la page en ligne
+   et le canvas parlent à la MÊME Tombe — zéro simulation.
+   ════════════════════════════════════════════════════════════════════ */
+window.LARCHIVISTE_CLOUD = (function () {
+  "use strict";
+  var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
+  var CLE = "larchiviste_session_v1";
+  var compteCourant = null; // compte_id de la session en cours
+
+  /* ── Le garde-mième : le navigateur garde le token, jamais un mot de passe ── */
+  function lire() {
+    try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) { return null; }
+  }
+  function ecrire(m) {
+    try {
+      if (m) localStorage.setItem(CLE, JSON.stringify(m));
+      else localStorage.removeItem(CLE);
+    } catch (e) { /* mode privé : on vivra sans restauration */ }
+  }
+
+  /* ── L'API, avec les messages d'erreur en français de la Tombe ── */
+  function api(chemin, opts) {
+    opts = opts || {};
+    var headers = { apikey: CLE_PUBLIQUE, "Content-Type": "application/json" };
+    if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
+    if (opts.prefer) headers["Prefer"] = opts.prefer;
+    return fetch(URL + chemin, {
+      cache: "no-store",
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        if (!res.ok) {
+          var code = (data && (data.error_code || data.code)) || "";
+          var msgBrut = (data && (data.msg || data.message)) || "";
+          var msgs = {
+            invalid_credentials: "Email ou mot de passe incorrect.",
+            user_already_exists: "Un compte existe déjà sur cet email — connectez-vous.",
+            signups_disabled: "Les inscriptions sont fermées sur le serveur — l'administrateur doit les rouvrir.",
+            weak_password: "Mot de passe trop faible — 4 caractères minimum.",
+            over_email_rate_limit: "Trop d'emails envoyés par le serveur — patientez quelques minutes.",
+            email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez.",
+            email_address_invalid: "Adresse email invalide — vérifiez son orthographe."
+          };
+          if (msgBrut.indexOf("inscriptions desactivees") >= 0) {
+            code = "signups_disabled";
+          }
+          var err = new Error(msgs[code] || msgBrut || "Serveur injoignable — vérifiez votre connexion.");
+          err.code = code;
+          err.statut = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* ── Profil de compte tel que le launcher l'attend ── */
+  function profilDepuis(user, compte) {
+    var meta = (user && user.user_metadata) || {};
+    return {
+      compteId: user.id,
+      pseudo: (compte && compte.pseudo) || meta.pseudo || "Joueur",
+      tag: (compte && compte.tag) || "JR-????",
+      email: user.email,
+      avatarId: (compte && compte.avatar_ref) || meta.avatar_ref || "crane",
+      statut: (compte && compte.statut) || "actif",
+      memoire: {}
+    };
+  }
+
+  /* ── Charge la ligne compte (auto-répare si absente) + le sac du compte ── */
+  function chargerTout(token, user) {
+    var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", { token: token }))
+      .then(function (lignes) {
+        if (lignes && lignes.length) return lignes[0];
+        /* Self-heal : la ligne compte manque (signup interrompu ?) → on la recrée */
+        var meta = user.user_metadata || {};
+        return api("/rest/v1/archiviste_comptes", {
+          method: "POST", token: token, prefer: "return=representation",
+          body: {
+            compte_id: user.id,
+            pseudo: meta.pseudo || "Joueur",
+            email: user.email,
+            avatar_ref: meta.avatar_ref || "crane"
+          }
+        }).then(function (cree) { return cree && cree[0]; });
+      });
+
+    return comptes.then(function (compte) {
+      compteCourant = user.id;
+      /* Horodatage de dernière connexion (best effort) */
+      api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
+        method: "PATCH", token: token, body: { derniere_connexion: new Date().toISOString() }
+      }).catch(function () {});
+      var profil = profilDepuis(user, compte);
+      return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, { token: token })
+        .then(function (mem) {
+          profil.memoire = (mem && mem[0] && mem[0].contenu) || {};
+          return profil;
+        });
+    });
+  }
+
+  return {
+    /* Connexion email + mot de passe → profil + bibliothèque du compte */
+    connexion: function (email, mdp) {
+      return api("/auth/v1/token?grant_type=password", {
+        method: "POST", body: { email: email, password: mdp }
+      }).then(function (d) {
+        ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
+        return chargerTout(d.access_token, d.user);
+      });
+    },
+
+    /* Inscription : pseudo part dans user_metadata, le mot de passe chez Auth */
+    inscription: function (pseudo, email, mdp, avatarId) {
+      return api("/auth/v1/signup", {
+        method: "POST",
+        body: { email: email, password: mdp, data: { pseudo: pseudo, avatar_ref: avatarId } }
+      }).then(function (d) {
+        var session = d.session || (d.access_token ? d : null);
+        if (session && session.access_token) {
+          ecrire({ access_token: session.access_token, refresh_token: session.refresh_token });
+          return chargerTout(session.access_token, d.user || session.user);
+        }
+        /* Compte créé mais email non confirmé → pas de session */
+        var err = new Error("Un email de confirmation vous attend — ouvrez-le, puis revenez vous connecter.");
+        err.confirmation = true;
+        throw err;
+      });
+    },
+
+    /* Restauration de session au démarrage (token gardé par le navigateur) */
+    sessionActuelle: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/auth/v1/user", { token: m.access_token })
+        .then(function (user) { return chargerTout(m.access_token, user); })
+        .catch(function () {
+          /* Token expiré → on tente le refresh avant d'abandonner */
+          if (!m.refresh_token) { ecrire(null); return null; }
+          return api("/auth/v1/token?grant_type=refresh_token", {
+            method: "POST", body: { refresh_token: m.refresh_token }
+          }).then(function (d) {
+            ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
+            return chargerTout(d.access_token, d.user);
+          }).catch(function () { ecrire(null); return null; });
+        });
+    },
+
+    /* Déconnexion serveur + nettoyage du garde-mième */
+    deconnexion: function () {
+      var m = lire();
+      ecrire(null);
+      compteCourant = null;
+      if (m && m.access_token) {
+        return api("/auth/v1/logout", { method: "POST", token: m.access_token }).catch(function () {});
+      }
+      return Promise.resolve();
+    },
+
+    /* Mot de passe perdu : le lien part chez Supabase Auth */
+    perdu: function (email) {
+      return api("/auth/v1/recover", { method: "POST", body: { email: email } });
+    },
+
+    /* Le sac du compte (installations, favoris, rôles) part dans le nuage */
+    sauveMemoire: function (compteId, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_memoire", {
+        method: "POST", token: m.access_token,
+        prefer: "resolution=merge-duplicates",
+        body: { compte_id: compteId, contenu: contenu }
+      });
+    },
+
+    /* L'état de la base tel que la Tombe l'annonce : le pied de page du
+       launcher dit ce qu'il charge (parametre « version_launcher ») —
+       même vérité que l'Archivisterium, partout où il tourne. */
+    lireParametres: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/parametres?select=cle,valeur", { token: m.access_token })
+        .catch(function () { return null; });
+    },
+
+    /* Mise à jour du compte (avatar, pseudo à venir…) */
+    sauveCompte: function (patch) {
+      var m = lire();
+      if (!m || !m.access_token || !compteCourant) return Promise.resolve();
+      var body = {};
+      if (patch && patch.avatarId !== undefined) body.avatar_ref = patch.avatarId;
+      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteCourant, {
+        method: "PATCH", token: m.access_token, body: body
+      });
+    }
+  };
+})();
+}
 const CLOUD = (typeof window !== "undefined" && window.LARCHIVISTE_CLOUD) || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.09";
+const BUILD = "0.11";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -1609,7 +1825,7 @@ function Vignette({ pack, favori, onFavori, onInstaller, onLancer, showToast, co
   );
 }
 
-function Hub({ packs, favoris, onFavori, onInstaller, onLancer, showToast, joueur, avatar, onAvatar, onLogout, onLogin, onCreer, profils, mobile, ecran, setEcran, installes, enInstallation, symbole }) {
+function Hub({ packs, favoris, onFavori, onInstaller, onLancer, showToast, joueur, avatar, onAvatar, onLogout, onLogin, onCreer, profils, mobile, ecran, setEcran, installes, enInstallation, symbole, versionBase }) {
   const [onglet, setOnglet] = useState("magasin");
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [rootOuvert, setRootOuvert] = useState(false);
@@ -1713,7 +1929,10 @@ function Hub({ packs, favoris, onFavori, onInstaller, onLancer, showToast, joueu
         )}
 
         <footer className="mt-auto text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
-          Powered by Vibe · N° {BUILD}
+          {/* N° : l'état de la BASE (Supabase, parametre « version_launcher ») —
+              tout écart entre le code qui tourne et la base s'affiche
+              entre parenthèses, comme dans l'Archivisterium. */}
+          Powered by <a href="https://chat.mistral.ai" target="_blank" rel="noopener noreferrer" style={{ color: "#a8adb8" }}>Vibe</a> · N° {versionBase || BUILD}{versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : ""}
         </footer>
       </div>
     </div>
@@ -3105,6 +3324,18 @@ function App() {
     CLOUD.sessionActuelle().then(p => { if (p) seConnecter(p); }).catch(() => {});
   }, []);
 
+  /* Le pied de page dit l'état de la base (parametre « version_launcher ») :
+     même vérité que l'Archivisterium — tout écart entre le code qui tourne
+     et l'état de la base s'affiche entre parenthèses. */
+  const [versionBase, setVersionBase] = useState(null);
+  useEffect(() => {
+    if (!CLOUD || !session) return;
+    CLOUD.lireParametres().then(ps => {
+      const v = (((ps || []).find(x => x.cle === "version_launcher") || {}).valeur) || null;
+      setVersionBase(v);
+    }).catch(() => {});
+  }, [session]);
+
   /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
      nuage dès qu'il change (débouncé) : l'état vit dans le compte, jamais
      dans l'appareil. */
@@ -3116,6 +3347,44 @@ function App() {
     );
     return () => clearTimeout(t);
   }, [session, installes, favoris, rolesPacks]);
+
+  /* ════════ Le module de Synchronisation (Core) ════════
+     En pulsation toutes les 15 secondes, le launcher réinterroge la
+     Tombe — le nuage local ne fait jamais foi :
+     • compte suspendu par l'Archiviste depuis l'Archivisterium →
+       la double porte se referme (vue « attente ») ;
+     • compte scellé (supprimé, ou session expirée) → session coupée ;
+     • sceau apposé pendant l'attente → les archives s'ouvrent seules.
+     Le sac (installations, favoris, rôles) reste sous la plume du
+     joueur : c'est lui qui l'écrit dans le nuage, débouncé ci-dessus. */
+  useEffect(() => {
+    if (!CLOUD || !session) return;
+    const pulsation = setInterval(async () => {
+      try {
+        const p = await CLOUD.sessionActuelle();
+        if (!p) {
+          seDeconnecter();
+          showToast("Session scellée par la Tombe — reconnexion requise.");
+          return;
+        }
+        if (p.statut === "en_attente") {
+          if (session.statut !== "en_attente") {
+            setSession(p);
+            setVue("attente");
+            showToast("Votre compte attend le sceau de l'Archiviste.");
+          }
+          return;
+        }
+        if (session.statut === "en_attente") {
+          /* Le sceau est apposé pendant l'attente : les archives s'ouvrent. */
+          seConnecter(p);
+          return;
+        }
+        setSession(s => (s ? { ...s, pseudo: p.pseudo, tag: p.tag, email: p.email, statut: p.statut } : s));
+      } catch (e) { /* la Tombe sommeille — on retentera dans 15 s */ }
+    }, 15000);
+    return () => clearInterval(pulsation);
+  }, [CLOUD, session]);
 
   /* Le glyphe du launcher : l'Icosaèdre D20 — CHOISI par Michael, point final.
      La Cible aux quatre coupes reste dans la bibliothèque de symboles de
@@ -3187,7 +3456,7 @@ function App() {
           onLogin={seConnecter} onCreer={creerProfil} profils={profils}
           mobile={mobile} ecran={ecran} setEcran={setEcran}
           installes={installes} enInstallation={enInstallation}
-          symbole={symbole} />
+          symbole={symbole} versionBase={versionBase} />
       )}
 
       {vue === "attente" && session && (

@@ -40,14 +40,7 @@
   </script>
 
   <script>
-/* ════════════════════════════════════════════════════════════════════
-   ARCHIVISTERIUM_CLOUD — le client nuage de la salle d'administration.
-   Zéro dépendance : fetch + l'API REST de Supabase.
-   La porte : seul un compte de rôle « admin » franchit le seuil.
-   La protection réelle vit dans les politiques RLS du serveur :
-   un non-admin ne reçoit QUE sa propre ligne, jamais les autres.
-   ════════════════════════════════════════════════════════════════════ */
-(function () {
+window.ARCHIVISTERIUM_CLOUD = (function () {
   "use strict";
   var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
   var CLE = "larchivistereum_session_v1";
@@ -231,12 +224,205 @@ const { useState, useRef, useEffect } = React;
    L'ARCHIVISTERIUM — la salle d'administration de L'Archiviste.
    Une PAGE À PART : elle vit à sa propre adresse, séparée du launcher,
    et sa porte ne s'ouvre qu'aux comptes portant le rôle « admin ».
-   En simulation (canvas) : banc d'essai. En ligne : ARCHIVISTERIUM_CLOUD.
+   Plus de salle factice : le canvas et la page en ligne parlent à la
+   MÊME Tombe Supabase (client nuage embarqué ci-dessous ; sur la page
+   construite, le script pipeline prime et l'embarqué s'efface).
    ════════════════════════════════════════════════════════════════════ */
-const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.19";
+const BUILD = "0.21";
+
+/* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
+   dans la même réalité que la page en ligne — même base, mêmes comptes,
+   aucun faux registre. Sur la page construite, le script pipeline a déjà posé
+   window.ARCHIVISTERIUM_CLOUD : l'embarqué s'efface alors devant lui. ── */
+const CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
+/* ════════════════════════════════════════════════════════════════════
+   ARCHIVISTERIUM_CLOUD — le client nuage de la salle d'administration.
+   Zéro dépendance : fetch + l'API REST de Supabase.
+   La porte : seul un compte de rôle « admin » franchit le seuil.
+   La protection réelle vit dans les politiques RLS du serveur :
+   un non-admin ne reçoit QUE sa propre ligne, jamais les autres.
+   Il s'assigne lui-même à window.ARCHIVISTERIUM_CLOUD : la page en
+   ligne et le canvas parlent à la MÊME Tombe — aucun faux registre.
+   ════════════════════════════════════════════════════════════════════ */
+window.ARCHIVISTERIUM_CLOUD = (function () {
+  "use strict";
+  var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
+  var CLE = "larchivistereum_session_v1";
+
+  function lire() {
+    try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) { return null; }
+  }
+  function ecrire(m) {
+    try {
+      if (m) localStorage.setItem(CLE, JSON.stringify(m));
+      else localStorage.removeItem(CLE);
+    } catch (e) { /* mode privé : on vivra sans restauration */ }
+  }
+
+  function api(chemin, opts) {
+    opts = opts || {};
+    var headers = { apikey: CLE_PUBLIQUE, "Content-Type": "application/json" };
+    if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
+    if (opts.prefer) headers["Prefer"] = opts.prefer;
+    /* no-store : le registre ne se lit jamais dans la poussière du cache —
+       chaque requête repart vers la Tombe chercher la vérité. */
+    return fetch(URL + chemin, {
+      cache: "no-store",
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        if (!res.ok) {
+          var code = (data && (data.error_code || data.code)) || "";
+          var msgBrut = (data && (data.msg || data.message)) || "";
+          var msgs = {
+            invalid_credentials: "Email ou mot de passe incorrect.",
+            email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez.",
+            over_email_rate_limit: "Trop d'essais — patientez quelques minutes.",
+            user_already_exists: "Un compte existe déjà sur cet email.",
+            weak_password: "Mot de passe trop faible — 4 caractères minimum.",
+            email_address_invalid: "Adresse email invalide — vérifiez son orthographe.",
+            signups_disabled: "Les inscriptions sont fermées sur le serveur.",
+            "23505": "Un compte existe déjà avec cet email — la Tombe n'accepte pas les doublons."
+          };
+          var err = new Error(msgs[code] || msgBrut || "Serveur injoignable — vérifiez votre connexion.");
+          err.code = code;
+          err.statut = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* ── Charger la salle : comptes + mémoires, selon ce que le RLS laisse voir ── */
+  function chargerSalle(token, userId) {
+    return api("/rest/v1/archiviste_comptes?select=*&order=cree_le.desc", { token: token })
+      .then(function (comptes) {
+        /* Un admin voit TOUTES les lignes ; un joueur seulement la sienne (RLS). */
+        var moi = null;
+        for (var i = 0; i < comptes.length; i++) {
+          if (comptes[i].compte_id === userId) { moi = comptes[i]; break; }
+        }
+        if (!moi || moi.role !== "admin") {
+          var err = new Error("Ces archives ne vous sont pas ouvertes.");
+          err.refus = true;
+          throw err;
+        }
+        return api("/rest/v1/archiviste_memoire?select=compte_id,contenu,maj_le", { token: token })
+          .then(function (memoires) {
+            return api("/rest/v1/parametres?select=cle,valeur", { token: token })
+              .then(function (parametres) {
+                return { profil: moi, comptes: comptes, memoires: memoires, parametres: parametres || [] };
+              });
+          });
+      });
+  }
+
+  return {
+    connexion: function (email, mdp) {
+      return api("/auth/v1/token?grant_type=password", {
+        method: "POST", body: { email: email, password: mdp }
+      }).then(function (d) {
+        ecrire({ access_token: d.access_token, refresh_token: d.refresh_token, user_id: d.user.id });
+        return chargerSalle(d.access_token, d.user.id);
+      });
+    },
+
+    session: function () {
+      var m = lire();
+      if (!m || !m.access_token || !m.user_id) return Promise.resolve(null);
+      return chargerSalle(m.access_token, m.user_id).catch(function () { ecrire(null); return null; });
+    },
+
+    recharger: function () {
+      var m = lire();
+      if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
+      return chargerSalle(m.access_token, m.user_id);
+    },
+
+    deconnexion: function () {
+      var m = lire();
+      ecrire(null);
+      if (m && m.access_token) {
+        return api("/auth/v1/logout", { method: "POST", token: m.access_token }).catch(function () {});
+      }
+      return Promise.resolve();
+    },
+
+    /* Le sceau de l'Archiviste : valider (actif) ou suspendre (en_attente)
+       un compte du registre — la politique RLS ne le permet qu'aux admins. */
+    majStatut: function (compteId, statut) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+        method: "PATCH", token: m.access_token, body: { statut: statut }
+      });
+    },
+
+    /* Le mode de validation des inscriptions : « admin » (sceau manuel)
+       ou « email » (le lien de confirmation fait foi). */
+    majMode: function (valeur) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/parametres", {
+        method: "POST", token: m.access_token, prefer: "resolution=merge-duplicates",
+        body: { cle: "mode_validation", valeur: valeur }
+      });
+    },
+
+    /* Graver un compte joueur de la main de l'Archiviste : l'inscription part
+       chez Supabase Auth, la ligne compte s'écrit avec la clé du nouveau venu
+       (le garde du serveur force rôle joueur + statut selon le mode), puis on
+       referme la porte derrière lui — la session de l'admin reste intacte. */
+    creerCompte: function (pseudo, email, mdp) {
+      return api("/auth/v1/signup", {
+        method: "POST", body: { email: email, password: mdp, data: { pseudo: pseudo, avatar_ref: "crane" } }
+      }).then(function (d) {
+        var session = d.session || (d.access_token ? d : null);
+        if (!session || !session.access_token || !d.user) {
+          var err = new Error("Le serveur n'a pas ouvert de session — vérifiez le mode de validation.");
+          err.code = "pas_de_session";
+          throw err;
+        }
+        var u = d.user;
+        return api("/rest/v1/archiviste_comptes", {
+          method: "POST", token: session.access_token, prefer: "return=representation",
+          body: { compte_id: u.id, pseudo: pseudo, email: u.email, avatar_ref: "crane" }
+        }).then(function (cree) {
+          /* On referme la porte derrière le nouveau venu — l'admin reste l'admin. */
+          return api("/auth/v1/logout", { method: "POST", token: session.access_token })
+            .catch(function () {})
+            .then(function () { return (cree && cree[0]) || { pseudo: pseudo, email: u.email }; });
+        });
+      });
+    },
+
+    /* La sentence : la ligne compte ET sa mémoire s'effacent du registre.
+       Le RLS ne le permet qu'à l'admin — et JAMAIS sur sa propre ligne ;
+       le tombeau du serveur empêche l'adresse de ressusciter. */
+    supprimerCompte: function (compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+        method: "DELETE", token: m.access_token, prefer: "return=representation"
+      }).then(function (supprimes) {
+        if (!supprimes || !supprimes.length) {
+          throw new Error("Le serveur a refusé la sentence.");
+        }
+        return api("/rest/v1/archiviste_memoire?compte_id=eq." + compteId, {
+          method: "DELETE", token: m.access_token
+        }).catch(function () {});
+      });
+    }
+  };
+})();
+}
+const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -244,48 +430,6 @@ const PACKS = [
   { id: "stormbringer", nom: "Stormbringer", accent: "#9d86e8" },
   { id: "bloodlust", nom: "Bloodlust", accent: "#e0524d" },
 ];
-
-/* ── Banc d'essai : la salle en simulation, sans le nuage ── */
-const BANC = {
-  parametres: [
-    { cle: "mode_validation", valeur: "admin" },
-  ],
-  comptes: [
-    { compte_id: "sim-1", pseudo: "Test Archiviste", tag: "JR-0004", email: "archiviste.test@larchiviste.jdr", role: "admin", statut: "actif", cree_le: "2026-10-29T08:09:15Z", derniere_connexion: "2026-10-29T08:15:28Z" },
-    { compte_id: "sim-2", pseudo: "Invité de la Tombe", tag: "JR-0005", email: "invite@larchiviste.jdr", role: "joueur", statut: "en_attente", cree_le: "2026-10-29T10:00:00Z", derniere_connexion: null },
-  ],
-  memoires: [
-    { compte_id: "sim-1", contenu: { installes: ["protocoles-eternels", "stormbringer"], favoris: ["protocoles-eternels"], rolesPacks: {} } },
-    { compte_id: "sim-2", contenu: { installes: ["bloodlust"], favoris: ["bloodlust"], rolesPacks: {} } },
-  ],
-};
-
-/* ── Banc d'essai : la pierre locale. Les gestes du banc survivent aux
-   Alt+F5 et aux rechargements — gravés dans localStorage, silencieusement
-   ignoré si le navigateur refuse (mode privé, bac à sable…). ── */
-const CLE_BANC = "archivistereum_banc_v1";
-const lireBanc = () => {
-  try {
-    const brut = localStorage.getItem(CLE_BANC);
-    if (!brut) return null;
-    const d = JSON.parse(brut);
-    if (!d || !Array.isArray(d.comptes)) return null;
-    return {
-      comptes: d.comptes,
-      memoires: d.memoires || [],
-      parametres: d.parametres || BANC.parametres,
-    };
-  } catch (e) { return null; }
-};
-const sauverBanc = (d) => {
-  try {
-    if (d) localStorage.setItem(CLE_BANC, JSON.stringify({
-      comptes: d.comptes,
-      memoires: d.memoires || [],
-      parametres: d.parametres || BANC.parametres,
-    }));
-  } catch (e) { /* la pierre refuse : le banc vivra en mémoire vive */ }
-};
 
 /* ══════════ L'Icosaèdre — glyphe D20 de L'Archiviste ══════════ */
 function Icosaedre({ size = 40, color = "#e8e4d8", fond = "transparent" }) {
@@ -320,7 +464,7 @@ function heureCourte(iso) {
 const ACTIF_7J = 7 * 24 * 60 * 60 * 1000;
 
 /* ══════════ La porte : email + mot de passe ══════════ */
-function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement, simulation }) {
+function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement }) {
   const champ = { background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" };
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
@@ -353,12 +497,6 @@ function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement, s
             style={{ background: "#f0b24a", opacity: enChargement ? 0.6 : 1 }}>
             {enChargement ? "La porte évalue…" : "Franchir le seuil"}
           </button>
-          {simulation && (
-            <div className="text-center text-xs mt-4 leading-relaxed" style={{ color: "#71717a" }}>
-              Banc d'essai — la porte n'ouvre qu'à l'admin simulé :<br />
-              <span style={{ color: "#f0b24a" }}>archiviste.test@larchiviste.jdr</span> · mot de passe libre (4+)
-            </div>
-          )}
           <div className="text-center mt-4 text-xs">
             <a href="https://chokmah-hash.github.io/" style={{ color: "#71717a" }}>⟁ Retour au launcher</a>
           </div>
@@ -406,7 +544,7 @@ function Carte({ valeur, libelle, accent }) {
 }
 
 /* ══════════ La salle : les stats de la Tombe ══════════ */
-function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onCreer, onSupprimer, simulation }) {
+function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onCreer, onSupprimer }) {
   const { comptes, memoires, parametres } = donnees;
   const [onglet, setOnglet] = useState("stat"); // stat | bibliotheque | comptes
   const [detail, setDetail] = useState(null); // la fiche ouverte, si ouverte
@@ -848,8 +986,9 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
       </div>
       <footer className="mt-auto text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
         {/* N° : l'état de la BASE (Supabase, parametre « version ») — le pied de
-            page dit ce qu'il charge ; en banc d'essai, la version locale. */}
-        Powered by <a href="https://chat.mistral.ai" target="_blank" rel="noopener noreferrer" style={{ color: "#a8adb8" }}>Vibe</a> · N° {versionBase || BUILD}
+            page dit ce qu'il charge, et signale entre parenthèses tout écart
+            entre le code qui tourne et l'état de la base. */}
+        Powered by <a href="https://chat.mistral.ai" target="_blank" rel="noopener noreferrer" style={{ color: "#a8adb8" }}>Vibe</a> · N° {versionBase || BUILD}{versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : ""}
       </footer>
     </div>
   );
@@ -878,17 +1017,10 @@ function App() {
     return () => { vivant = false; };
   }, []);
 
-  /* Banc d'essai : chaque geste se grave dans la pierre locale —
-     les modifications survivent aux Alt+F5 et aux rechargements. */
-  useEffect(() => {
-    if (!CLOUD && donnees) sauverBanc(donnees);
-  }, [donnees]);
-
   /* ════════ Le module de Synchronisation (Core) ════════
      Le nuage local ne fait foi : après chaque geste, et en pulsation
      toutes les 12 secondes, la salle réinterroge la Tombe — aucune
-     info fantôme ne survit à une synchronisation. (En ligne seulement :
-     le banc d'essai vit sa vie de simulation.) */
+     info fantôme ne survit à une synchronisation. */
   const synchroniser = async () => {
     const res = await CLOUD.recharger();
     setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
@@ -908,25 +1040,6 @@ function App() {
       setErreur("Email et mot de passe requis (4 caractères min.).");
       return;
     }
-    /* Simulation (canvas) : la porte se comporte comme en ligne — elle
-       n'ouvre qu'au compte admin du registre simulé (le banc d'essai, lui,
-       garde la mémoire à travers les déco-reco de la session). */
-    if (!CLOUD) {
-      const banc = donnees || lireBanc() || BANC;
-      const cible = banc.comptes.find((c) => c.email === email.trim().toLowerCase());
-      if (!cible) {
-        setErreur("Sceau brisé : identifiants non reconnus par la Tombe.");
-        return;
-      }
-      if (cible.role !== "admin") {
-        setPhase("refus");
-        return;
-      }
-      setSession({ pseudo: cible.pseudo + " (banc d'essai)", email: cible.email });
-      setDonnees((d) => d || banc);
-      setPhase("salle");
-      return;
-    }
     setEnChargement(true);
     try {
       const res = await CLOUD.connexion(email.trim().toLowerCase(), mdp);
@@ -942,9 +1055,6 @@ function App() {
   };
 
   const rafraichir = async () => {
-    /* Banc d'essai : la mémoire du banc survit au rafraîchissement,
-       pas de retour aux comptes d'origine ici non plus. */
-    if (!CLOUD) return;
     try {
       await synchroniser();
     } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
@@ -952,10 +1062,6 @@ function App() {
 
   /* Poser ou retirer le sceau : valider / suspendre un compte du registre */
   const poserSceau = async (compte, statut) => {
-    if (!CLOUD) {
-      setDonnees(d => ({ ...d, comptes: d.comptes.map(c => (c.compte_id === compte.compte_id ? { ...c, statut } : c)) }));
-      return;
-    }
     try {
       await CLOUD.majStatut(compte.compte_id, statut);
       await synchroniser();
@@ -966,10 +1072,6 @@ function App() {
   const choisirMode = async (mode) => {
     const courant = (((donnees || {}).parametres || []).find(p => p.cle === "mode_validation") || {}).valeur;
     if (mode === courant) return;
-    if (!CLOUD) {
-      setDonnees(d => ({ ...d, parametres: [{ cle: "mode_validation", valeur: mode }] }));
-      return;
-    }
     try {
       await CLOUD.majMode(mode);
       await synchroniser();
@@ -987,24 +1089,6 @@ function App() {
     if (existant) {
       throw new Error("Un compte existe déjà avec cet email — la Tombe n'accepte pas les doublons.");
     }
-    if (!CLOUD) {
-      /* Banc d'essai : la ligne apparaît dans le registre — avec un
-         identifiant TOUJOURS unique (max des sim-N + 1), même après des
-         effacements : plus jamais deux comptes au même sceau, effacés ensemble. */
-      setDonnees(d => {
-        const nums = d.comptes
-          .map((c) => /^sim-(\d+)$/.exec(c.compte_id || ""))
-          .filter(Boolean)
-          .map((m) => Number(m[1]));
-        const n = (nums.length ? Math.max(...nums) : 0) + 1;
-        return { ...d, comptes: [...d.comptes, {
-          compte_id: "sim-" + n, pseudo: pseudo, tag: "JR-" + String(n + 3).padStart(4, "0"),
-          email: email, role: "joueur", statut: "en_attente",
-          cree_le: new Date().toISOString(), derniere_connexion: null
-        }] };
-      });
-      return;
-    }
     await CLOUD.creerCompte(pseudo, email, mdp);
     await synchroniser();
   };
@@ -1012,21 +1096,15 @@ function App() {
   /* La sentence : effacer un compte et sa mémoire du registre — le
      serveur scelle l'adresse dans le tombeau, elle ne ressuscite pas. */
   const supprimerJoueur = async (compte) => {
-    if (!CLOUD) {
-      /* Banc d'essai : la ligne s'efface du registre simulé */
-      setDonnees(d => ({ ...d, comptes: d.comptes.filter(c => c.compte_id !== compte.compte_id) }));
-      return;
-    }
     await CLOUD.supprimerCompte(compte.compte_id);
     await synchroniser();
   };
 
   const sortir = () => {
-    if (CLOUD) CLOUD.deconnexion();
+    CLOUD.deconnexion().catch(() => {});
     setSession(null);
-    /* En banc d'essai, la mémoire du banc survit à la déconnexion ;
-       en ligne, la salle se vide — la prochaine entrée rechargera tout. */
-    if (CLOUD) setDonnees(null);
+    /* La salle se vide — la prochaine entrée rechargera tout depuis la Tombe. */
+    setDonnees(null);
     setEmail("");
     setMdp("");
     setPhase("porte");
@@ -1036,7 +1114,7 @@ function App() {
     return (
       <Salle session={session} donnees={donnees} onSortir={sortir}
         onRafraichir={rafraichir} onStatut={poserSceau} onMode={choisirMode} onCreer={creerJoueur}
-        onSupprimer={supprimerJoueur} simulation={!CLOUD} />
+        onSupprimer={supprimerJoueur} />
     );
   }
   if (phase === "refus") {
@@ -1044,7 +1122,7 @@ function App() {
   }
   return (
     <Porte email={email} mdp={mdp} setEmail={setEmail} setMdp={setMdp}
-      onEntrer={entrer} erreur={erreur} enChargement={enChargement} simulation={!CLOUD} />
+      onEntrer={entrer} erreur={erreur} enChargement={enChargement} />
   );
 }
 
