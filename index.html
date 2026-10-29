@@ -20,8 +20,8 @@
   <!-- React vit DANS le dépôt : plus aucun CDN critique, la page s'ouvre même si le réseau extérieur sommeille -->
   <script src="react.production.min.js"></script>
   <script src="react-dom.production.min.js"></script>
-  <!-- Tailwind (Play CDN) : habillage seulement, jamais bloquant -->
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <!-- Tailwind COMPILÉ à la forge et hébergé dans le dépôt : plus AUCUN CDN dans la page -->
+  <link rel="stylesheet" href="app.css" />
   <style>
     body { margin: 0; background: #0c0d10; font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif; }
     #racine { min-height: 100vh; }
@@ -536,7 +536,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.12";
+const BUILD = "0.13";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
