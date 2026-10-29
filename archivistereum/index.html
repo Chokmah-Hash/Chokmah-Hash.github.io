@@ -346,7 +346,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.29";
+const BUILD = "0.30";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -1803,6 +1803,12 @@ function App() {
      tenus par la ronde du canal « tombe » (entrée et sortie instantanées,
      fermeture de fenêtre comprise — la socket qui se ferme les retire seule). */
   const [presents, setPresents] = useState([]);
+  /* La GRÂCE : un leave ne devient rouge qu'après 10 s de silence. Un launcher
+     qui se reconnecte (onglet, réseau, ancienne version qui boucle) revient
+     dans la fenêtre → grâce annulée → le point tient vert. La Tombe
+     n'enterre personne sans certitude. */
+  const presentsRef = useRef(new Set());
+  const delaisRef = useRef({});
   useEffect(() => {
     if (!CLOUD || phase !== "salle") return;
     let attente = null;
@@ -1828,14 +1834,26 @@ function App() {
         /* état initial ({clé: …}) ou diff ({joins, leaves}) : on maintient la
            liste des compte_id en ligne (seuls les UUID comptent — l'institution
            s'écoute elle-même mais ne s'affiche pas, elle est voilée). */
-        setPresents(p => {
-          const s = new Set(p);
-          const entrants = ronde.joins || ronde;
-          Object.keys(entrants || {}).forEach(k => {
-            if (/^[0-9a-f-]{36}$/.test(k)) s.add(k);
-          });
-          Object.keys(ronde.leaves || {}).forEach(k => s.delete(k));
-          return [...s];
+        const entrants = ronde.joins || ronde;
+        Object.keys(entrants || {}).forEach(k => {
+          if (!/^[0-9a-f-]{36}$/.test(k)) return;
+          if (delaisRef.current[k]) {
+            clearTimeout(delaisRef.current[k]);
+            delete delaisRef.current[k];
+          }
+          if (!presentsRef.current.has(k)) {
+            presentsRef.current.add(k);
+            setPresents([...presentsRef.current]);
+          }
+        });
+        Object.keys(ronde.leaves || {}).forEach(k => {
+          if (!/^[0-9a-f-]{36}$/.test(k) || !presentsRef.current.has(k)) return;
+          if (delaisRef.current[k]) return; /* une grâce coule déjà */
+          delaisRef.current[k] = setTimeout(() => {
+            delete delaisRef.current[k];
+            presentsRef.current.delete(k);
+            setPresents([...presentsRef.current]);
+          }, 10000); /* dix secondes de grâce avant l'absence */
         });
       },
       surEtat: etat => {
