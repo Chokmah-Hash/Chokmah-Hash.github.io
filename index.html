@@ -1,0 +1,3020 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>L'Archiviste — Alpha Zéro</title>
+  <meta name="description" content="L'Archiviste — le launcher des JDR papier : un moteur, des packs." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; background: #0c0d10; font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif; }
+    #racine { min-height: 100vh; }
+    #attente { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #71717a; font-size: 14px; letter-spacing: 2px; }
+  </style>
+</head>
+<body>
+  <div id="attente">⟁ L'ARCHIVISTE OUVRE SES ARCHIVES…</div>
+  <div id="racine"></div>
+  <noscript>L'Archiviste a besoin de JavaScript pour ouvrir ses archives.</noscript>
+
+  <script>
+    /* Clé publique Supabase — publique par design (RLS protège les données) */
+    var CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+  </script>
+
+  <script>
+/* ════════════════════════════════════════════════════════════════════
+   LARCHIVISTE_CLOUD — le client nuage de L'Archiviste (Alpha Zéro)
+   Zéro dépendance : fetch + l'API REST de Supabase.
+   Principe cardinal : l'Archiviste ne garde JAMAIS les mots de passe —
+   chaque mot de passe part directement chez Supabase Auth, aucun hash
+   ne vit dans le code de l'app.
+   ════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
+  var CLE = "larchiviste_session_v1";
+  var compteCourant = null; // compte_id de la session en cours
+
+  /* ── Le garde-mième : le navigateur garde le token, jamais un mot de passe ── */
+  function lire() {
+    try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) { return null; }
+  }
+  function ecrire(m) {
+    try {
+      if (m) localStorage.setItem(CLE, JSON.stringify(m));
+      else localStorage.removeItem(CLE);
+    } catch (e) { /* mode privé : on vivra sans restauration */ }
+  }
+
+  /* ── L'API, avec les messages d'erreur en français de la Tombe ── */
+  function api(chemin, opts) {
+    opts = opts || {};
+    var headers = { apikey: CLE_PUBLIQUE, "Content-Type": "application/json" };
+    if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
+    if (opts.prefer) headers["Prefer"] = opts.prefer;
+    return fetch(URL + chemin, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        if (!res.ok) {
+          var code = (data && (data.error_code || data.code)) || "";
+          var msgBrut = (data && (data.msg || data.message)) || "";
+          var msgs = {
+            invalid_credentials: "Email ou mot de passe incorrect.",
+            user_already_exists: "Un compte existe déjà sur cet email — connectez-vous.",
+            signups_disabled: "Les inscriptions sont fermées sur le serveur — l'administrateur doit les rouvrir.",
+            weak_password: "Mot de passe trop faible — 4 caractères minimum.",
+            over_email_rate_limit: "Trop d'emails envoyés par le serveur — patientez quelques minutes.",
+            email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez."
+          };
+          if (msgBrut.indexOf("inscriptions desactivees") >= 0) {
+            code = "signups_disabled";
+          }
+          var err = new Error(msgs[code] || msgBrut || "Serveur injoignable — vérifiez votre connexion.");
+          err.code = code;
+          err.statut = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* ── Profil de compte tel que le launcher l'attend ── */
+  function profilDepuis(user, compte) {
+    var meta = (user && user.user_metadata) || {};
+    return {
+      compteId: user.id,
+      pseudo: (compte && compte.pseudo) || meta.pseudo || "Joueur",
+      tag: (compte && compte.tag) || "JR-????",
+      email: user.email,
+      avatarId: (compte && compte.avatar_ref) || meta.avatar_ref || "crane",
+      memoire: {}
+    };
+  }
+
+  /* ── Charge la ligne compte (auto-répare si absente) + le sac du compte ── */
+  function chargerTout(token, user) {
+    var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", { token: token }))
+      .then(function (lignes) {
+        if (lignes && lignes.length) return lignes[0];
+        /* Self-heal : la ligne compte manque (signup interrompu ?) → on la recrée */
+        var meta = user.user_metadata || {};
+        return api("/rest/v1/archiviste_comptes", {
+          method: "POST", token: token, prefer: "return=representation",
+          body: {
+            compte_id: user.id,
+            pseudo: meta.pseudo || "Joueur",
+            email: user.email,
+            avatar_ref: meta.avatar_ref || "crane"
+          }
+        }).then(function (cree) { return cree && cree[0]; });
+      });
+
+    return comptes.then(function (compte) {
+      compteCourant = user.id;
+      /* Horodatage de dernière connexion (best effort) */
+      api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
+        method: "PATCH", token: token, body: { derniere_connexion: new Date().toISOString() }
+      }).catch(function () {});
+      var profil = profilDepuis(user, compte);
+      return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, { token: token })
+        .then(function (mem) {
+          profil.memoire = (mem && mem[0] && mem[0].contenu) || {};
+          return profil;
+        });
+    });
+  }
+
+  return {
+    /* Connexion email + mot de passe → profil + bibliothèque du compte */
+    connexion: function (email, mdp) {
+      return api("/auth/v1/token?grant_type=password", {
+        method: "POST", body: { email: email, password: mdp }
+      }).then(function (d) {
+        ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
+        return chargerTout(d.access_token, d.user);
+      });
+    },
+
+    /* Inscription : pseudo part dans user_metadata, le mot de passe chez Auth */
+    inscription: function (pseudo, email, mdp, avatarId) {
+      return api("/auth/v1/signup", {
+        method: "POST",
+        body: { email: email, password: mdp, data: { pseudo: pseudo, avatar_ref: avatarId } }
+      }).then(function (d) {
+        var session = d.session || (d.access_token ? d : null);
+        if (session && session.access_token) {
+          ecrire({ access_token: session.access_token, refresh_token: session.refresh_token });
+          return chargerTout(session.access_token, d.user || session.user);
+        }
+        /* Compte créé mais email non confirmé → pas de session */
+        var err = new Error("Un email de confirmation vous attend — ouvrez-le, puis revenez vous connecter.");
+        err.confirmation = true;
+        throw err;
+      });
+    },
+
+    /* Restauration de session au démarrage (token gardé par le navigateur) */
+    sessionActuelle: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/auth/v1/user", { token: m.access_token })
+        .then(function (user) { return chargerTout(m.access_token, user); })
+        .catch(function () {
+          /* Token expiré → on tente le refresh avant d'abandonner */
+          if (!m.refresh_token) { ecrire(null); return null; }
+          return api("/auth/v1/token?grant_type=refresh_token", {
+            method: "POST", body: { refresh_token: m.refresh_token }
+          }).then(function (d) {
+            ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
+            return chargerTout(d.access_token, d.user);
+          }).catch(function () { ecrire(null); return null; });
+        });
+    },
+
+    /* Déconnexion serveur + nettoyage du garde-mième */
+    deconnexion: function () {
+      var m = lire();
+      ecrire(null);
+      compteCourant = null;
+      if (m && m.access_token) {
+        return api("/auth/v1/logout", { method: "POST", token: m.access_token }).catch(function () {});
+      }
+      return Promise.resolve();
+    },
+
+    /* Mot de passe perdu : le lien part chez Supabase Auth */
+    perdu: function (email) {
+      return api("/auth/v1/recover", { method: "POST", body: { email: email } });
+    },
+
+    /* Le sac du compte (installations, favoris, rôles) part dans le nuage */
+    sauveMemoire: function (compteId, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_memoire", {
+        method: "POST", token: m.access_token,
+        prefer: "resolution=merge-duplicates",
+        body: { compte_id: compteId, contenu: contenu }
+      });
+    },
+
+    /* Mise à jour du compte (avatar, pseudo à venir…) */
+    sauveCompte: function (patch) {
+      var m = lire();
+      if (!m || !m.access_token || !compteCourant) return Promise.resolve();
+      var body = {};
+      if (patch && patch.avatarId !== undefined) body.avatar_ref = patch.avatarId;
+      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteCourant, {
+        method: "PATCH", token: m.access_token, body: body
+      });
+    }
+  };
+})();
+
+  </script>
+
+  <script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect } = React;
+
+/* ── La couche CLOUD ──
+   Absente en simulation (canvas) : tout reste local, comme avant.
+   Présente dans l'HTML déployé (window.LARCHIVISTE_CLOUD) : comptes et sac du
+   compte vivent chez Supabase. L'Archiviste ne garde jamais les mots de
+   passe — ils partent directement chez Supabase Auth. */
+const CLOUD = (typeof window !== "undefined" && window.LARCHIVISTE_CLOUD) || null;
+
+/* ════════════════════════════════════════════════════════════════
+   ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
+   Architecture du manifeste v1.2 (canvas jdr-manifeste-pack-v1) :
+   manifeste.json → types de packs → socle mécanique → journal.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Le magasin : de la donnée ── */
+const PACKS = [
+  {
+    format: 1, id: "protocoles-eternels", version: "0.1.0-alpha",
+    type: "mod", nom: "Les Protocoles Éternels",
+    depend_de: [{ id: "noyau-40k", format_min: 1 }],
+    statut: "disponible", visibilite: "prive", taille: "18 Mo",
+    theme: { fond: "#0a120f", accent: "#2ee6c9", or: "#f0b24a" },
+    resume: "Gardiens royaux amnésiques dans la chair d'une tombe qui murmure. Version light light : fiche, dés, combat, journal.",
+    glyphs: "⟁"
+  },
+  {
+    format: 1, id: "stormbringer", version: "0.1.0-alpha",
+    type: "mod", nom: "Stormbringer",
+    depend_de: [{ id: "noyau-d100", format_min: 1 }],
+    statut: "disponible", visibilite: "prive", taille: "9 Mo",
+    theme: { fond: "#141021", accent: "#9d86e8", or: "#cbb26b" },
+    resume: "L'épée noire, Law et Chaos. Squelette alpha : fiche D100, jets sous carac ×multiplicateur, lutte de POU, Santé Mentale.",
+    glyphs: "⚔"
+  },
+  {
+    format: 1, id: "bloodlust", version: "0.1.0-alpha",
+    type: "mod", nom: "Bloodlust",
+    depend_de: [{ id: "noyau-d100", format_min: 1 }],
+    statut: "disponible", visibilite: "prive", taille: "12 Mo",
+    theme: { fond: "#190b0e", accent: "#e0524d", or: "#d4a24e" },
+    resume: "Les porteurs d'Armes vivantes de Tanæphis. Squelette alpha : désirs, forge de l'arme (budget 100 points), contrôle VO×5, paliers de difficulté.",
+    glyphs: "🗡"
+  }
+];
+
+/* ── Le noyau-40k (extraits embarqués pour l'alpha) ── */
+const NOYAU = {
+  id: "noyau-40k", version: "0.1.0",
+  tests: {
+    de: { nb: 1, faces: 6 }, lecture: "superieur_ou_egal",
+    exceptions: { reussite_auto: 6, echec_auto: 1 }, modificateur_marge: 1
+  },
+  conversions: { pouce_metres: 2, pv_par_blessure: 3 },
+  combat: { sequence: ["toucher", "blesser", "sauvegarde", "degats"] }
+};
+
+/* ── Les surcharges du mod PÉ (manifeste § 6 : portes béantes du noyau) ── */
+const SURCHARGES = [
+  "combat.initiative.bonus = rfx",
+  "combat.hors_combat = protocole_de_secours (5+)",
+  "fiche.eveil = 10 châssis × 6 codes de fabrique × arsenal neutre"
+];
+
+/* ── Les profils (dérivés selon les conventions du manifeste § 4) ── */
+const SIGNA = {
+  id: "signa-3", nom: "Signa-3", chassis: "Vétéran · code Solaire",
+  st: { cc: "3+", ct: "3+", f: 5, e: 5, sv: "3+", cd: "7+" },
+  rfx: 2, pvMax: 3, arme: "blaster-gauss",
+  apt: "Élite : vos touches critiques infligent +1 dégât.", comps: ["Athlétisme", "Perception"]
+};
+const ORK = {
+  id: "ork-boy", nom: "Ork Boy", chassis: "Kass Krane (bientôt :D)",
+  st: { cc: "3+", ct: "5+", f: 4, e: 5, sv: "5+", cd: "7+" },
+  ini: 2, pvMax: 3, arme: "choppa"
+};
+
+/* ── L'arsenal (l'arme porte TOUT : A, BS/WS, S, PA, D — manifeste § 3.5) ── */
+const ARMES = {
+  "blaster-gauss": { nom: "Blaster gauss", type: "tir", portee: "48 m", attaques: 2, bs_ws: "3+", f: 5, pa: -1, degats: 1, mot: "Lethal Hits (ignoré en light)" },
+  "choppa": { nom: "Choppa", type: "mêlée", attaques: 1, bs_ws: "3+", f: 4, pa: -1, degats: 1, mot: "1 attaque en light" }
+};
+
+/* ── PÉ : profils de châssis du MANUEL JOUEUR (extraits du site, fiches.js
+   PE_BUILD 2026.10.24 — noms NEUTRES, les joueurs ne sauront jamais qu'ils
+   sont Nécrons). PV déjà convertis (W×3), Rfx maison, Mémoire/Calcul pour
+   les protocoles, aptitude de châssis, compétences offertes. ── */
+const PE_CHASSIS = [
+  { n: "Fantassin programmé", m: "10", cc: "4+", ct: "4+", f: "4", e: "4", pv: "3", a: "1", cd: "7+", sv: "4+", rfx: "+0", mem: "1", cal: "1", apt: "Discipline sans faille : relancez 1 test de Commandement raté par scène.", cp: ["Athlétisme", "Technologie"] },
+  { n: "Vétéran", m: "10", cc: "3+", ct: "3+", f: "5", e: "5", pv: "3", a: "1", cd: "8+", sv: "3+", rfx: "+1", mem: "1", cal: "1", apt: "Élite : vos touches critiques infligent +1 dégât.", cp: ["Athlétisme", "Perception"] },
+  { n: "Traqueur", m: "10", cc: "3+", ct: "3+", f: "5", e: "5", pv: "3", a: "1", cd: "8+", sv: "3+", rfx: "+2", mem: "2", cal: "1", apt: "Embuscade : 1×/scène, apparaissez dans un rayon de 6 m (après 1 round de délai).", cp: ["Furtivité", "Perception", "Pilotage"] },
+  { n: "Ombre", m: "10", cc: "3+", ct: "6+", f: "5", e: "4", pv: "3", a: "3", cd: "8+", sv: "4+", rfx: "+2", mem: "2", cal: "1", apt: "Peau d'ombre : Furtivité 3+ ; ennemis qui vous voient −1 Cd.", cp: ["Furtivité", "Intimidation"] },
+  { n: "Sentinelle", m: "10", cc: "3+", ct: "4+", f: "6", e: "5", pv: "6", a: "2", cd: "8+", sv: "3+", rfx: "+1", mem: "1", cal: "1", apt: "Écran : 1×/round, prenez une frappe destinée à un allié à 2 m.", cp: ["Athlétisme", "Intimidation"] },
+  { n: "Officier de garde", m: "10", cc: "3+", ct: "3+", f: "5", e: "5", pv: "12", a: "3", cd: "8+", sv: "3+", rfx: "+1", mem: "2", cal: "2", apt: "Ordre de secours : 1×/scène, forcez un allié à relancer son Protocole de Secours.", cp: ["Commandement", "Technologie"] },
+  { n: "Artificier", m: "10", cc: "3+", ct: "3+", f: "4", e: "5", pv: "12", a: "2", cd: "8+", sv: "4+", rfx: "+1", mem: "3", cal: "2", apt: "Essaim réparateur : 1×/scène, soignez D3 PV d'une unité à 6 m.", cp: ["Technologie", "Érudition", "Perception"] },
+  { n: "Énergicien", m: "10", cc: "3+", ct: "3+", f: "5", e: "5", pv: "12", a: "3", cd: "8+", sv: "3+", rfx: "+1", mem: "3", cal: "2", apt: "Décharge : 1×/scène, attaque F7 PA −2 D 2 à tous les ennemis à 3 m.", cp: ["Technologie", "Érudition"] },
+  { n: "Commandant", m: "10", cc: "3+", ct: "3+", f: "6", e: "6", pv: "15", a: "4", cd: "9+", sv: "3+", rfx: "+1", mem: "4", cal: "2", apt: "Aura de commandement : les alliés à 6 m relancent les 1 au toucher.", cp: ["Commandement", "Intimidation", "Érudition"] },
+  { n: "Seigneur de guerre", m: "10", cc: "2+", ct: "2+", f: "6", e: "6", pv: "18", a: "5", cd: "10+", sv: "3+", rfx: "+1", mem: "5", cal: "3", apt: "Volonté inflexible : relancez 1 échec par round.", cp: ["Commandement", "Érudition", "Intimidation", "Technologie"] }
+];
+const PE_CODES = ["Éternel", "Pragmatique", "Sanguinaire", "Solaire", "Tutélaire", "Fondateur"];
+
+/* ── PÉ : l'arsenal NEUTRE du manuel (pe-equipement.js, PE_BUILD 2026.10.23) —
+   l'arme porte TOUT (manifeste § 3.5) : A, F, PA, D ; « A »/« F+1 » se
+   résolvent contre les stats de l'unité. Toutes les armes T1-T4. ── */
+const PE_ARMES = [
+  { id: "fusil", nom: "Fusil magnétique", taille: 2, portee: "48 m", att: "1", f: "5", pa: "−1", d: "1", regle: "Perforation", tir: true },
+  { id: "canonmag", nom: "Canon magnétique", taille: 3, portee: "48 m", att: "1", f: "6", pa: "−1", d: "1", regle: "Perforation", tir: true },
+  { id: "mitrailleur", nom: "Mitrailleur magnétique", taille: 3, portee: "36 m", att: "2", f: "6", pa: "−2", d: "1", regle: "Perforation", tir: true },
+  { id: "longuee", nom: "Canon longue-portée", taille: 4, portee: "72 m", att: "1", f: "7", pa: "−2", d: "2", regle: "Précis : ignore le couvert", tir: true },
+  { id: "carabine", nom: "Carabine à arcs", taille: 2, portee: "28 m", att: "2", f: "5", pa: "−1", d: "1", regle: "Arc : critique = 1 dégât irréversible en plus", tir: true },
+  { id: "batonnrj", nom: "Bâton d'énergie", taille: 1, portee: "24 m", att: "1", f: "5", pa: "−2", d: "2", regle: "Aussi utilisable en mêlée", tir: true },
+  { id: "sceptretac", nom: "Sceptre tactique", taille: 2, portee: "18 m", att: "1", f: "6", pa: "−1", d: "2", regle: "Relance 1 au toucher, 1×/bataille", tir: true },
+  { id: "pistolets", nom: "Pistolets jumelés ×6", taille: 1, portee: "12 m", att: "3", f: "5", pa: "−2", d: "1", regle: "Tir défensif sur un ennemi qui approche", tir: true },
+  { id: "batonmel", nom: "Bâton d'énergie (mêlée)", taille: 1, portee: "Mêlée", att: "A", f: "F+1", pa: "−2", d: "2", regle: "—", tir: false },
+  { id: "lame", nom: "Lame désagrégatrice", taille: 1, portee: "Mêlée", att: "A", f: "F+1", pa: "−3", d: "2", regle: "—", tir: false },
+  { id: "jumelles", nom: "Lames jumelles (paire)", taille: 1, portee: "Mêlée", att: "A+1", f: "F+1", pa: "−2", d: "2", regle: "+1 A si deux lames", tir: false },
+  { id: "faucheuse", nom: "Faucheuse lourde", taille: 3, portee: "Mêlée", att: "A", f: "F+2", pa: "−4", d: "D3", regle: "Lourde : −1 à l'initiative", tir: false },
+  { id: "grappins", nom: "Grappins déchiqueteurs", taille: 2, portee: "Mêlée", att: "A+1", f: "F+1", pa: "−2", d: "1", regle: "Terreur : Cd −1 en face", tir: false },
+  { id: "sceptreduel", nom: "Sceptre de duel", taille: 2, portee: "Mêlée", att: "A", f: "F+2", pa: "−3", d: "2", regle: "Critique sur 5+ en duel", tir: false }
+];
+
+/* Résout une arme PÉ en stats de combat : « A »/« A+1 » contre l'Attaque de
+   l'unité, « F+1 »/« F+2 » contre sa Force, « D3 » se lance aux dégâts. */
+function peArmeCombat(def, st) {
+  const mF = /^F\+(\d)$/.exec(String(def.f));
+  return {
+    nom: def.nom, tir: def.tir, portee: def.portee, regle: def.regle,
+    bs_ws: def.tir ? st.ct : st.cc,
+    attaques: def.att === "A" ? st.a : def.att === "A+1" ? st.a + 1 : parseInt(def.att, 10),
+    f: mF ? st.f + Number(mF[1]) : parseInt(def.f, 10),
+    pa: -parseInt(String(def.pa).replace("−", ""), 10),
+    degats: def.d === "D3" ? () => 1 + Math.floor(Math.random() * 3) : parseInt(def.d, 10)
+  };
+}
+
+/* ══════════ Le noyau-d100 : primitive commune Stormbringer / Bloodlust ══════════
+   Même principe que le noyau-40k : le launcher lit de la donnée. Le noyau
+   fournit resoudreD100(seuil %, modificateur) + les garde-fous communs
+   (plancher 5 % de réussite, « 00 » échec automatique) ; les critiques et les
+   tests spéciaux (lutte de POU, paliers de Bloodlust) vivent en surcharge
+   de chaque pack — le manifeste v1.2 en action. */
+const NOYAU_D100 = {
+  id: "noyau-d100", version: "0.1.0",
+  tests: {
+    de: { nb: 1, faces: 100 }, lecture: "inferieur_ou_egal",
+    exceptions: { plancher_reussite: 5, echec_auto: 100 }
+  }
+};
+
+const d100 = () => 1 + Math.floor(Math.random() * 100); /* 1-100 ; 100 se lit « 00 » */
+const fmtD100 = (r) => (r === 100 ? "00" : String(r).padStart(2, "0"));
+
+function resoudreD100(seuil, mod = 0, regles = "brp") {
+  const sFinal = Math.max(NOYAU_D100.tests.exceptions.plancher_reussite, seuil + mod);
+  const de = d100();
+  const autoEchec = de === NOYAU_D100.tests.exceptions.echec_auto;
+  const reussi = !autoEchec && de <= sFinal;
+  let nat = null;
+  if (autoEchec) nat = "« 00 » — échec automatique (garde-fou du noyau)";
+  else if (regles === "brp") { if (de === 1) nat = "« 01 » — réussite critique"; }
+  else {
+    if (reussi && de % 10 === 0) nat = "réussite critique — unités 0";
+    if (!reussi && de % 10 === 1) nat = "échec critique — unités 1";
+  }
+  return { de, sFinal, reussi, nat };
+}
+
+/* ── Stormbringer : perso de test + démon (caracs 3D6, 3-18) ── */
+const SB_PERSO = {
+  id: "vyon-kesh", nom: "Vyon-Kesh", origine: "Melnibonéen · apprenti sorcier",
+  caracs: { FOR: 11, CON: 13, TAI: 10, INT: 15, POU: 16, DEX: 12, CHA: 13 },
+  competences: { "Escrime": 45, "Discrétion": 40, "Connaissance des démons": 30, "Premiers soins": 25 },
+  sanMax: 80 /* POU 16 × 5 */
+};
+const SB_DEMON = { nom: "Démon mineur des Maraises", pou: 18, ligne: "convoqué pour le test — lié par l'octogone (contrôle : CHA/2 démons)" };
+/* L'ordre des 7 caractéristiques Stormbringer — création : 3D6 chacune (3-18),
+   total ≤ 52 sinon le livre permet de tout relancer ; SAN de départ = POU×5. */
+const SB_7 = ["FOR", "CON", "TAI", "INT", "POU", "DEX", "CHA"];
+
+/* ── Bloodlust : porteur Piorad + Arme vivante — EXTRACTION OFFICIELLE COMPLÈTE
+   du chapitre V (livre p. 88-100, PDF p. 89-101, OCR du 29/10/2026).
+   Les cinq tables d% de création d'arme sont intégrales ci-dessous : c'est de
+   la DONNÉE de pack (manifeste v1.2), la source de vérité pour la forge. */
+const BL_PORTEUR = {
+  id: "urkhar", nom: "Urkhar", peuple: "Piorad · troupes de guerre",
+  caracs: { FO: 14, EN: 12, Ag: 8, RA: 8, PE: 10, VO: 12 }, /* table raciale p. 82 */
+  desirs: { "Prestige": 7, "Richesse": 7, "Sexe": 7, "Violence": 7, "Réputation": 7 }, /* Piorads, table p. 88 — un PJ ajuste de ±1 à ±2 par désir */
+  competences: { "Att. brutale (FO)": 20, "Att. normale (Ag)": 15, "Att. rapide (RA)": 5, "Feinte (PE)": 5, "Parade (RA)": 20, "Esquive (RA)": 10, "Tir (PE)": 5 } /* % de base p. 87 — un PJ y répartit +40 % (combat) et +80 % (secondaires), multiples de 5, plancher 5 % */
+};
+const BL_ARME = { nom: "Oraghrh", nature: "longue épée vivante", base: 20, budget: 100 }; /* épée longue = 20 pts de base (livre p. 95) */
+
+/* Désirs des 9 peuples (livre p. 88) — ordre : Prestige, Richesse, Sexe, Violence, Réputation.
+   Donnée pour la future création de personnage. */
+const BL_DESIRS_PEUPLES = {
+  Alwegs: [4, 6, 6, 5, 4], Batranobans: [7, 7, 7, 4, 4], Derigions: [6, 8, 8, 3, 3],
+  Gadhars: [5, 3, 5, 7, 7], Hysnatons: [4, 5, 5, 4, 6], Piorads: [7, 7, 7, 7, 7],
+  Sekekers: [6, 3, 2, 7, 8], Thunks: [5, 8, 5, 7, 5], Vorozions: [5, 5, 5, 5, 5]
+};
+
+/* Les 9 peuples : caracs raciales (livre p. 82) — les désirs sont dans
+   BL_DESIRS_PEUPLES (livre p. 88). Un adolescent (13-15 ans) : caracs −2. */
+const BL_PEUPLES = [
+  { id: "alwegs", nom: "Alwegs", caracs: { FO: 10, EN: 12, Ag: 12, RA: 10, PE: 10, VO: 10 } },
+  { id: "batranobans", nom: "Batranobans", caracs: { FO: 10, EN: 10, Ag: 12, RA: 12, PE: 10, VO: 10 } },
+  { id: "derigions", nom: "Derigions", caracs: { FO: 12, EN: 12, Ag: 10, RA: 10, PE: 8, VO: 12 } },
+  { id: "gadhars", nom: "Gadhars", caracs: { FO: 10, EN: 10, Ag: 12, RA: 12, PE: 12, VO: 8 } },
+  { id: "hysnatons", nom: "Hysnatons", caracs: { FO: 12, EN: 12, Ag: 10, RA: 10, PE: 12, VO: 8 } },
+  { id: "piorads", nom: "Piorads", caracs: { FO: 14, EN: 12, Ag: 8, RA: 8, PE: 10, VO: 12 } },
+  { id: "sekekers", nom: "Sekekers", caracs: { FO: 10, EN: 8, Ag: 14, RA: 12, PE: 10, VO: 10 } },
+  { id: "thunks", nom: "Thunks", caracs: { FO: 8, EN: 10, Ag: 12, RA: 12, PE: 12, VO: 10 } },
+  { id: "vorozions", nom: "Vorozions", caracs: { FO: 12, EN: 10, Ag: 10, RA: 10, PE: 10, VO: 12 } }
+];
+
+/* L'ordre des 5 désirs (clé de BL_DESIRS_PEUPLES) */
+const DESIRS_BL = ["Prestige", "Richesse", "Sexe", "Violence", "Réputation"];
+
+/* % de base (livre p. 87) — un PJ y répartit +40 % (combat) et +80 %
+   (secondaires), en multiples de 5, plancher 5 %. Les modificateurs par
+   valeur de caractéristique (image p. 87-88, à recouper) sont ignorés
+   dans l'alpha. Secondaires : extrait — le reste des 17 est à 5 %. */
+const BL_BASE_COMBAT = [
+  ["Att. brutale (FO)", 20], ["Att. normale (Ag)", 15], ["Att. rapide (RA)", 5],
+  ["Feinte (PE)", 5], ["Parade (RA)", 20], ["Esquive (RA)", 10], ["Tir (PE)", 5]
+];
+const BL_BASE_SECONDAIRES = [
+  ["Acrobatie (Ag)", 5], ["Artisanat (PE)", 5], ["Commandement (FO)", 25],
+  ["Discrétion (Ag)", 5], ["Équitation (Ag)", 5], ["Marchandage (PE)", 5],
+  ["Médecine (VO)", 5], ["Repérage (PE)", 5], ["Tactique (VO)", 5]
+];
+
+/* Table 1 — Pouvoirs principaux (livre p. 96-97). Prix = paliers (niveau 1/2/3). */
+const T_PRINCIPAUX = [
+  { de: [1, 2], nom: "Comp. de combat : Attaque brutale", prix: [5, 10, 20] },
+  { de: [3, 4], nom: "Comp. de combat : Attaque normale", prix: [5, 10, 20] },
+  { de: [5, 6], nom: "Comp. de combat : Attaque rapide", prix: [5, 10, 20] },
+  { de: [7, 8], nom: "Comp. de combat : Feinte", prix: [5, 10, 20] },
+  { de: [9, 10], nom: "Comp. de combat : Parade", prix: [5, 10, 20] },
+  { de: [11, 12], nom: "Comp. de combat : Esquive", prix: [5, 10, 20] },
+  { de: [13, 14], nom: "Comp. de combat : Combinaison offensive", prix: [35] },
+  { de: [15, 16], nom: "Comp. de combat : Combinaison défensive", prix: [35] },
+  { de: [17, 18], nom: "Initiative accrue", prix: [5, 10, 20] },
+  { de: [19, 20], nom: "Dommages supplémentaires", prix: [10, 20, 30] },
+  { de: [21, 22], nom: "Protection accrue", prix: [5, 20, 50] },
+  { de: [23, 24], nom: "Attaque brutale incontrôlée", prix: [10, 30, 50] },
+  { de: [25, 26], nom: "Attaque normale incontrôlée", prix: [10, 30, 50] },
+  { de: [27, 28], nom: "Attaque rapide incontrôlée", prix: [10, 30, 50] },
+  { de: [29, 30], nom: "Feinte incontrôlée", prix: [10, 30, 50] },
+  { de: [31, 32], nom: "Parade incontrôlée", prix: [10, 30, 50] },
+  { de: [33, 34], nom: "Esquive incontrôlée", prix: [10, 30, 50] },
+  { de: [35, 36], nom: "Combinaison offensive incontrôlée", prix: [30] },
+  { de: [37, 38], nom: "Combinaison défensive incontrôlée", prix: [30] },
+  { de: [39, 40], nom: "Attaque brutale critique", prix: [20] },
+  { de: [41, 42], nom: "Attaque normale critique", prix: [20] },
+  { de: [43, 44], nom: "Attaque rapide critique", prix: [20] },
+  { de: [45, 46], nom: "Feinte critique", prix: [20] },
+  { de: [47, 48], nom: "Parade critique", prix: [20] },
+  { de: [49, 50], nom: "Esquive critique", prix: [15] },
+  { de: [51, 52], nom: "Combinaison offensive critique", prix: [30] },
+  { de: [53, 54], nom: "Combinaison défensive critique", prix: [30] },
+  { de: [55, 56], nom: "Attaques brutales multiples", prix: [35] },
+  { de: [57, 58], nom: "Attaques normales multiples", prix: [35] },
+  { de: [59, 60], nom: "Attaques rapides multiples", prix: [35] },
+  { de: [61, 62], nom: "Feintes multiples", prix: [30] },
+  { de: [63, 64], nom: "Parades multiples", prix: [30] },
+  { de: [65, 66], nom: "Esquives multiples", prix: [30] },
+  { de: [67, 68], nom: "Combinaisons offensives multiples", prix: [50] },
+  { de: [69, 70], nom: "Combinaisons défensives multiples", prix: [50] },
+  { de: [71, 72], nom: "Combat urbain", prix: [50] },
+  { de: [73, 74], nom: "Combat rural", prix: [50] },
+  { de: [75, 76], nom: "Combat nocturne", prix: [50] },
+  { de: [77, 78], nom: "Combat monté", prix: [50] },
+  { de: [79, 80], nom: "Combat de masse", prix: [50] },
+  { de: [81, 82], nom: "Combat singulier", prix: [50] },
+  { de: [83, 84], nom: "Point faible", prix: [25] },
+  { de: [85, 86], nom: "Force accrue", prix: [20, 30, 40] },
+  { de: [87, 88], nom: "Endurance accrue", prix: [20, 30, 40] },
+  { de: [89, 90], nom: "Agilité accrue", prix: [20, 30, 40] },
+  { de: [91, 92], nom: "Rapidité accrue", prix: [20, 30, 40] },
+  { de: [93, 94], nom: "Perception accrue", prix: [20, 30, 40] },
+  { de: [95, 96], nom: "Volonté accrue", prix: [20, 30, 40] },
+  { de: [97, 98], nom: "Destruction", prix: [25] },
+  { de: [99, 100], nom: "Au choix du joueur", prix: null }
+];
+
+/* Table 2 — Pouvoirs secondaires (livre p. 97-98). */
+const T_SECONDAIRES = [
+  { de: [1, 2], nom: "Acrobatie", prix: [5, 10, 20] },
+  { de: [3, 4], nom: "Artisanat Batranoban", prix: [5, 10, 20] },
+  { de: [5, 6], nom: "Artisanat Derigion", prix: [5, 10, 20] },
+  { de: [7, 8], nom: "Artisanat Gadhar", prix: [5, 10, 20] },
+  { de: [9, 10], nom: "Artisanat Piorad", prix: [5, 10, 20] },
+  { de: [11, 12], nom: "Artisanat Sekeker", prix: [5, 10, 20] },
+  { de: [13, 14], nom: "Artisanat Thunk", prix: [5, 10, 20] },
+  { de: [15, 16], nom: "Artisanat Vorozion", prix: [5, 10, 20] },
+  { de: [17, 18], nom: "Astronomie", prix: [5, 10, 20] },
+  { de: [19, 20], nom: "Commandement", prix: [5, 10, 20] },
+  { de: [21, 22], nom: "Connaissance Batranoban", prix: [5, 10, 20] },
+  { de: [23, 24], nom: "Connaissance Derigion", prix: [5, 10, 20] },
+  { de: [25, 26], nom: "Connaissance Gadhar", prix: [5, 10, 20] },
+  { de: [27, 28], nom: "Connaissance Piorad", prix: [5, 10, 20] },
+  { de: [29, 30], nom: "Connaissance Sekeker", prix: [5, 10, 20] },
+  { de: [31, 32], nom: "Connaissance Thunk", prix: [5, 10, 20] },
+  { de: [33, 34], nom: "Connaissance Vorozion", prix: [5, 10, 20] },
+  { de: [35, 36], nom: "Course", prix: [5, 10, 20] },
+  { de: [37, 38], nom: "Discrétion", prix: [5, 10, 20] },
+  { de: [39, 40], nom: "Équitation", prix: [5, 10, 20] },
+  { de: [41, 42], nom: "Lire et écrire le Batranoban", prix: [5, 10, 20] },
+  { de: [43, 44], nom: "Lire et écrire le Derigion", prix: [5, 10, 20] },
+  { de: [45, 46], nom: "Lire et écrire le Piorad", prix: [5, 10, 20] },
+  { de: [47, 48], nom: "Lire et écrire le Vorozion", prix: [5, 10, 20] },
+  { de: [49, 50], nom: "Marchandage", prix: [5, 10, 20] },
+  { de: [51, 52], nom: "Médecine", prix: [5, 10, 20] },
+  { de: [53, 54], nom: "Nage", prix: [5, 10, 20] },
+  { de: [55, 56], nom: "Repérage", prix: [5, 10, 20] },
+  { de: [57, 58], nom: "Séduction", prix: [5, 10, 20] },
+  { de: [59, 60], nom: "Stratégie", prix: [5, 10, 20] },
+  { de: [61, 62], nom: "Tactique", prix: [10, 20, 30] },
+  { de: [63, 64], nom: "Acrobatie incontrôlée", prix: [10, 20, 30] },
+  { de: [65, 66], nom: "Commandement incontrôlé", prix: [10, 20, 30] },
+  { de: [67, 68], nom: "Course incontrôlée", prix: [10, 20, 30] },
+  { de: [69, 70], nom: "Discrétion incontrôlée", prix: [10, 20, 30] },
+  { de: [71, 72], nom: "Équitation incontrôlée", prix: [10, 20, 30] },
+  { de: [73, 74], nom: "Marchandage incontrôlé", prix: [10, 20, 30] },
+  { de: [75, 76], nom: "Médecine incontrôlée", prix: [10, 20, 30] },
+  { de: [77, 78], nom: "Nage incontrôlée", prix: [10, 20, 30] },
+  { de: [79, 80], nom: "Repérage incontrôlé", prix: [10, 20, 30] },
+  { de: [81, 82], nom: "Séduction incontrôlée", prix: [10, 20, 30] },
+  { de: [83, 84], nom: "Stratégie incontrôlée", prix: [10, 20, 30] },
+  { de: [85, 86], nom: "Tactique incontrôlée", prix: [10, 20, 30] },
+  { de: [87, 88], nom: "Force accrue", prix: [10, 20, 30] },
+  { de: [89, 90], nom: "Endurance accrue", prix: [10, 20, 30] },
+  { de: [91, 92], nom: "Agilité accrue", prix: [10, 20, 30] },
+  { de: [93, 94], nom: "Rapidité accrue", prix: [10, 20, 30] },
+  { de: [95, 96], nom: "Perception accrue", prix: [10, 20, 30] },
+  { de: [97, 98], nom: "Volonté accrue", prix: [10, 20, 30] },
+  { de: [99, 100], nom: "Au choix du joueur", prix: null }
+];
+
+/* Table 3 — Conditionnels (livre p. 98-99) : modificateurs attachés à UN pouvoir
+   (une seule condition par pouvoir, prix final min 5). Donnée intégrale ;
+   le branchement UI attendra la fiche d'arme complète. */
+const T_CONDITIONNELS = [
+  { de: [1, 2], nom: "Ne fonctionne pas le jour", prix: [-15] },
+  { de: [3, 4], nom: "Ne fonctionne pas la nuit", prix: [-10] },
+  { de: [5, 6], nom: "Ne fonctionne pas contre un Alweg", prix: [-5] },
+  { de: [7, 8], nom: "Ne fonctionne pas contre un Batranoban", prix: [-5] },
+  { de: [9, 10], nom: "Ne fonctionne pas contre un Derigion", prix: [-5] },
+  { de: [11, 12], nom: "Ne fonctionne pas contre un Gadhar", prix: [-5] },
+  { de: [13, 14], nom: "Ne fonctionne pas contre un Hysnaton", prix: [-5] },
+  { de: [15, 16], nom: "Ne fonctionne pas contre un Piorad", prix: [-5] },
+  { de: [17, 18], nom: "Ne fonctionne pas contre une Sekeker", prix: [-5] },
+  { de: [19, 20], nom: "Ne fonctionne pas contre un Thunk", prix: [-5] },
+  { de: [21, 22], nom: "Ne fonctionne pas contre un Vorozion", prix: [-5] },
+  { de: [23, 24], nom: "Fonctionne uniquement sur un Alweg", prix: [-10] },
+  { de: [25, 26], nom: "Fonctionne uniquement sur un Batranoban", prix: [-10] },
+  { de: [27, 28], nom: "Fonctionne uniquement sur un Derigion", prix: [-10] },
+  { de: [29, 30], nom: "Fonctionne uniquement sur un Gadhar", prix: [-10] },
+  { de: [31, 32], nom: "Fonctionne uniquement sur un Hysnaton", prix: [-10] },
+  { de: [33, 34], nom: "Fonctionne uniquement sur un Piorad", prix: [-10] },
+  { de: [35, 36], nom: "Fonctionne uniquement sur une Sekeker", prix: [-10] },
+  { de: [37, 38], nom: "Fonctionne uniquement sur un Thunk", prix: [-10] },
+  { de: [39, 40], nom: "Fonctionne uniquement sur un Vorozion", prix: [-10] },
+  { de: [41, 42], nom: "Sacrifice", prix: [-5] },
+  { de: [43, 44], nom: "Sacrifice humain", prix: [-10] },
+  { de: [45, 46], nom: "Fonctionnement différé (tours)", prix: [-5] },
+  { de: [47, 48], nom: "Fonctionnement différé (minutes)", prix: [-10] },
+  { de: [49, 50], nom: "Fonctionnement différé (heures)", prix: [-15] },
+  { de: [51, 52], nom: "Auto-mutilation", prix: [-10] },
+  { de: [53, 54], nom: "Rituel rapide (tours)", prix: [-5] },
+  { de: [55, 56], nom: "Rituel long (minutes)", prix: [-10] },
+  { de: [57, 58], nom: "Offrande", prix: [-10] },
+  { de: [59, 60], nom: "Mot de commande", prix: [-5] },
+  { de: [61, 62], nom: "Fonctionnement aléatoire", prix: [-10] },
+  { de: [63, 64], nom: "Restriction vestimentaire", prix: [-5] },
+  { de: [65, 66], nom: "Fonctionne uniquement sur les êtres humains", prix: [-5] },
+  { de: [67, 68], nom: "Fonctionne uniquement sur les animaux", prix: [-15] },
+  { de: [69, 70], nom: "Nudité", prix: [-10] },
+  { de: [71, 72], nom: "Phase de la lune : Nienerg ascendante", prix: [-5] },
+  { de: [73, 74], nom: "Phase de la lune : Nienerg descendante", prix: [-5] },
+  { de: [75, 76], nom: "Phase de la lune : Œphis ascendante", prix: [-5] },
+  { de: [77, 78], nom: "Phase de la lune : Œphis descendante", prix: [-5] },
+  { de: [79, 80], nom: "Phase de la lune : Taamish ascendante", prix: [-5] },
+  { de: [81, 82], nom: "Phase de la lune : Taamish descendante", prix: [-5] },
+  { de: [83, 84], nom: "Ne fonctionne pas sur les hommes", prix: [-20] },
+  { de: [85, 86], nom: "Ne fonctionne pas sur les femmes", prix: [-15] },
+  { de: [87, 88], nom: "Force minimum du porteur", prix: [-5, -10] },
+  { de: [89, 90], nom: "Endurance minimum du porteur", prix: [-5, -10] },
+  { de: [91, 92], nom: "Rapidité minimum du porteur", prix: [-5, -10] },
+  { de: [93, 94], nom: "Agilité minimum du porteur", prix: [-5, -10] },
+  { de: [95, 96], nom: "Perception minimum du porteur", prix: [-5, -10] },
+  { de: [97, 98], nom: "Volonté minimum du porteur", prix: [-5, -10] },
+  { de: [99, 100], nom: "Au choix du joueur", prix: null }
+];
+
+/* Table 4 — Pouvoirs exotiques (livre p. 99) : 99 entrées individuelles.
+   4 jets MAXIMUM sur cette table à la création d'une arme de PJ (100 pts). */
+const T_EXOTIQUES = [
+  { de: [1, 1], nom: "Absorption : Agilité", prix: [30] },
+  { de: [2, 2], nom: "Absorption : Endurance", prix: [35] },
+  { de: [3, 3], nom: "Absorption : Force", prix: [30] },
+  { de: [4, 4], nom: "Absorption : Perception", prix: [25] },
+  { de: [5, 5], nom: "Absorption : Rapidité", prix: [30] },
+  { de: [6, 6], nom: "Absorption : Volonté", prix: [25] },
+  { de: [7, 7], nom: "Acide", prix: [15] },
+  { de: [8, 8], nom: "Apaisement mental", prix: [15] },
+  { de: [9, 9], nom: "Augmentation temporaire : Agilité", prix: [10] },
+  { de: [10, 10], nom: "Augmentation temporaire : Endurance", prix: [10] },
+  { de: [11, 11], nom: "Augmentation temporaire : Force", prix: [10] },
+  { de: [12, 12], nom: "Augmentation temporaire : Perception", prix: [10] },
+  { de: [13, 13], nom: "Augmentation temporaire : Rapidité", prix: [10] },
+  { de: [14, 14], nom: "Augmentation temporaire : Volonté", prix: [10] },
+  { de: [15, 15], nom: "Aura d'invulnérabilité", prix: [30] },
+  { de: [16, 16], nom: "Aura de confusion", prix: [20] },
+  { de: [17, 17], nom: "Aura de contrôle", prix: [30] },
+  { de: [18, 18], nom: "Aura de courage", prix: [10] },
+  { de: [19, 19], nom: "Aura de peur", prix: [20] },
+  { de: [20, 20], nom: "Aura de protection", prix: [15] },
+  { de: [21, 21], nom: "Bio-mécanique : Bouche", prix: [5] },
+  { de: [22, 22], nom: "Bio-mécanique : Crochet", prix: [10] },
+  { de: [23, 23], nom: "Bio-mécanique : Dard", prix: [10] },
+  { de: [24, 24], nom: "Bio-mécanique : Infection", prix: [10] },
+  { de: [25, 25], nom: "Bio-mécanique : Méchoire", prix: [15] },
+  { de: [26, 26], nom: "Bio-mécanique : Organes sexuels", prix: [5] },
+  { de: [27, 27], nom: "Bio-mécanique : Œil", prix: [10] },
+  { de: [28, 28], nom: "Bio-mécanique : Poils urticants", prix: [10] },
+  { de: [29, 29], nom: "Bio-mécanique : Pseudopode", prix: [5] },
+  { de: [30, 30], nom: "Bond", prix: [5] },
+  { de: [31, 31], nom: "Brouillard", prix: [15] },
+  { de: [32, 32], nom: "Chaleur", prix: [15] },
+  { de: [33, 33], nom: "Chance", prix: [30] },
+  { de: [34, 34], nom: "Communication à longue distance", prix: [10] },
+  { de: [35, 35], nom: "Composition : Mercure", prix: [30] },
+  { de: [36, 36], nom: "Composition : Obsidienne", prix: [20] },
+  { de: [37, 37], nom: "Composition : Os", prix: [10] },
+  { de: [38, 38], nom: "Composition : Pierre d'Œphis", prix: [50] },
+  { de: [39, 39], nom: "Composition : Pierre de Taamish", prix: [50] },
+  { de: [40, 40], nom: "Composition : Pierre de Nienerg", prix: [50] },
+  { de: [41, 41], nom: "Composition : Pierre ponce", prix: [20] },
+  { de: [42, 42], nom: "Décrépitude", prix: [35] },
+  { de: [43, 43], nom: "Déplacement sur l'eau", prix: [10] },
+  { de: [44, 44], nom: "Déplacement temporel", prix: [25] },
+  { de: [45, 45], nom: "Détection de la vie", prix: [15] },
+  { de: [46, 46], nom: "Détection du danger", prix: [30] },
+  { de: [47, 47], nom: "Détection du mensonge", prix: [20] },
+  { de: [48, 48], nom: "Disparition", prix: [15] },
+  { de: [49, 49], nom: "Dommages supplémentaires", prix: [20] },
+  { de: [50, 50], nom: "Douleur", prix: [15] },
+  { de: [51, 51], nom: "Empathie avec les animaux", prix: [10] },
+  { de: [52, 52], nom: "Froid", prix: [20] },
+  { de: [53, 53], nom: "Illusion", prix: [25] },
+  { de: [54, 54], nom: "Immortalité", prix: [40] },
+  { de: [55, 55], nom: "Immunité au feu", prix: [25] },
+  { de: [56, 56], nom: "Immunité au froid", prix: [15] },
+  { de: [57, 57], nom: "Immunité aux maladies", prix: [20] },
+  { de: [58, 58], nom: "Immunité aux poisons", prix: [30] },
+  { de: [59, 59], nom: "Initiative accrue", prix: [15] },
+  { de: [60, 60], nom: "Invisibilité", prix: [30] },
+  { de: [61, 61], nom: "Invocation d'animaux", prix: [20] },
+  { de: [62, 62], nom: "Invocation de morts-vivants", prix: [40] },
+  { de: [63, 63], nom: "Invulnérabilité aux projectiles", prix: [35] },
+  { de: [64, 64], nom: "Lire les pensées", prix: [30] },
+  { de: [65, 65], nom: "Lumière", prix: [5] },
+  { de: [66, 66], nom: "Mécanique : Choc électrique", prix: [20] },
+  { de: [67, 67], nom: "Mécanique : Lame escamotable", prix: [10] },
+  { de: [68, 68], nom: "Mécanique : Lame tournante", prix: [15] },
+  { de: [69, 69], nom: "Mécanique : Lame vibrante", prix: [20] },
+  { de: [70, 70], nom: "Mécanique : Projectile", prix: [15] },
+  { de: [71, 71], nom: "Mécanique : Suspenseur", prix: [10] },
+  { de: [72, 72], nom: "Mécanique : Transformation", prix: [40] },
+  { de: [73, 73], nom: "Mécanique : Tronçonneuse", prix: [35] },
+  { de: [74, 74], nom: "Ombre", prix: [10] },
+  { de: [75, 75], nom: "Orientation", prix: [5] },
+  { de: [76, 76], nom: "Peur", prix: [15] },
+  { de: [77, 77], nom: "Poison", prix: [15] },
+  { de: [78, 78], nom: "Polymorphe", prix: [15] },
+  { de: [79, 79], nom: "Possession", prix: [40] },
+  { de: [80, 80], nom: "Précognition de combat", prix: [15] },
+  { de: [81, 81], nom: "Prémonition", prix: [25] },
+  { de: [82, 82], nom: "Projection d'acide", prix: [30] },
+  { de: [83, 83], nom: "Projection de flammes", prix: [40] },
+  { de: [84, 84], nom: "Protection accrue", prix: [20] },
+  { de: [85, 85], nom: "Régénération", prix: [25] },
+  { de: [86, 86], nom: "Résistance à la douleur", prix: [15] },
+  { de: [87, 87], nom: "Résistance à la faim", prix: [5] },
+  { de: [88, 88], nom: "Stase temporelle", prix: [30] },
+  { de: [89, 89], nom: "Terreur", prix: [25] },
+  { de: [90, 90], nom: "Téléportation", prix: [40] },
+  { de: [91, 91], nom: "Téléportation de combat", prix: [25] },
+  { de: [92, 92], nom: "Tornade", prix: [20] },
+  { de: [93, 93], nom: "Lévitation", prix: [20] },
+  { de: [94, 94], nom: "Vampirisme", prix: [30] },
+  { de: [95, 95], nom: "Vieillissement", prix: [15] },
+  { de: [96, 96], nom: "Vision infrarouge", prix: [15] },
+  { de: [97, 97], nom: "Vision nocturne", prix: [20] },
+  { de: [98, 98], nom: "Voix", prix: [5] },
+  { de: [99, 99], nom: "Vol", prix: [30] },
+  { de: [100, 100], nom: "Au choix du joueur", prix: null }
+];
+
+/* Table 5 — Limitations (livre p. 100) : gratuites ET baissent le prix de l'arme.
+   2 jets MAXIMUM à la création d'une arme de PJ. */
+const T_LIMITATIONS = [
+  { de: [1, 2], nom: "Restriction vestimentaire", prix: [-5] },
+  { de: [3, 4], nom: "Nudité", prix: [-15] },
+  { de: [5, 6], nom: "Jalousie", prix: [-15] },
+  { de: [7, 8], nom: "Désir exacerbé : Prestige", prix: [-5] },
+  { de: [9, 10], nom: "Désir exacerbé : Richesse", prix: [-5] },
+  { de: [11, 12], nom: "Désir exacerbé : Sexe", prix: [-5] },
+  { de: [13, 14], nom: "Désir exacerbé : Violence", prix: [-5] },
+  { de: [15, 16], nom: "Désir exacerbé : Réputation", prix: [-5] },
+  { de: [17, 18], nom: "Désir atrophié : Prestige", prix: [-5] },
+  { de: [19, 20], nom: "Désir atrophié : Richesse", prix: [-5] },
+  { de: [21, 22], nom: "Désir atrophié : Sexe", prix: [-5] },
+  { de: [23, 24], nom: "Désir atrophié : Violence", prix: [-5] },
+  { de: [25, 26], nom: "Désir atrophié : Réputation", prix: [-5] },
+  { de: [27, 28], nom: "Curiosité", prix: [-10] },
+  { de: [29, 30], nom: "Sacrifice (rare)", prix: [-5] },
+  { de: [31, 32], nom: "Sacrifice", prix: [-10] },
+  { de: [33, 34], nom: "Sacrifice (fréquent)", prix: [-15] },
+  { de: [35, 36], nom: "Code de conduite", prix: [-10] },
+  { de: [37, 38], nom: "Peur incontrôlable", prix: [-10] },
+  { de: [39, 40], nom: "Auto-mutilation", prix: [-10] },
+  { de: [41, 42], nom: "Racisme envers les Alwegs", prix: [-5] },
+  { de: [43, 44], nom: "Racisme envers les Batranobans", prix: [-5] },
+  { de: [45, 45], nom: "Racisme envers les Derigions", prix: [-5] },
+  { de: [46, 47], nom: "Racisme envers les Gadhars", prix: [-5] },
+  { de: [48, 49], nom: "Racisme envers les Hysnatons", prix: [-5] },
+  { de: [50, 51], nom: "Racisme envers les Florads", prix: [-5] },
+  { de: [52, 53], nom: "Racisme envers les Sekekers", prix: [-5] },
+  { de: [54, 55], nom: "Racisme envers les Thunks", prix: [-5] },
+  { de: [56, 56], nom: "Racisme envers les Vorozions", prix: [-5] },
+  { de: [57, 58], nom: "Fonctionnement limité sur les Alwegs", prix: [-5] },
+  { de: [59, 60], nom: "Fonctionnement limité sur les Batranobans", prix: [-5] },
+  { de: [61, 62], nom: "Fonctionnement limité sur les Derigions", prix: [-5] },
+  { de: [63, 64], nom: "Fonctionnement limité sur les Gadhars", prix: [-5] },
+  { de: [65, 66], nom: "Fonctionnement limité sur les Hysnatons", prix: [-5] },
+  { de: [67, 68], nom: "Fonctionnement limité sur les Florads", prix: [-5] },
+  { de: [69, 70], nom: "Fonctionnement limité sur les Sekekers", prix: [-5] },
+  { de: [71, 72], nom: "Fonctionnement limité sur les Thunks", prix: [-5] },
+  { de: [73, 74], nom: "Fonctionnement limité sur les Vorozions", prix: [-5] },
+  { de: [75, 76], nom: "Phase de la lune : Nienerg ascendante", prix: [-5] },
+  { de: [77, 78], nom: "Phase de la lune : Nienerg descendante", prix: [-5] },
+  { de: [79, 80], nom: "Phase de la lune : Œphis ascendante", prix: [-5] },
+  { de: [81, 82], nom: "Phase de la lune : Œphis descendante", prix: [-5] },
+  { de: [83, 84], nom: "Phase de la lune : Taamish ascendante", prix: [-5] },
+  { de: [85, 86], nom: "Phase de la lune : Taamish descendante", prix: [-5] },
+  { de: [87, 88], nom: "Fonctionnement limité le jour", prix: [-15] },
+  { de: [89, 90], nom: "Fonctionnement limité la nuit", prix: [-10] },
+  { de: [91, 92], nom: "Fonctionnement limité sur les hommes", prix: [-15] },
+  { de: [93, 94], nom: "Fonctionnement limité sur les femmes", prix: [-10] },
+  { de: [95, 96], nom: "Malédiction (bénigne)", prix: [-5] },
+  { de: [97, 98], nom: "Malédiction", prix: [-10] },
+  { de: [99, 100], nom: "Malédiction (grave)", prix: [-15] }
+];
+
+/* Le registre des tables de forge — prix = palier 1 ; prestige : +2/principal,
+   +1/secondaire, +5/exotique (livre p. 100) ; limitations : 0 et 2 jets max ;
+   exotiques : 4 jets max (règles pour une arme de PJ à 100 points). */
+const BL_TABLES = [
+  { id: "principaux", nom: "Pouvoirs principaux", court: "principal", max: null, prestige: 2, table: T_PRINCIPAUX },
+  { id: "secondaires", nom: "Pouvoirs secondaires", court: "secondaire", max: null, prestige: 1, table: T_SECONDAIRES },
+  { id: "exotiques", nom: "Pouvoirs exotiques", court: "exotique", max: 4, prestige: 5, table: T_EXOTIQUES },
+  { id: "limitations", nom: "Limitations", court: "limitation", max: 2, prestige: 0, table: T_LIMITATIONS }
+];
+const PALIERS_BL = [
+  { label: "Très facile", mod: 50 }, { label: "Facile", mod: 25 },
+  { label: "Moyen", mod: 0 }, { label: "Difficile", mod: -25 },
+  { label: "Très difficile", mod: -50 }
+];
+const SURCHARGES_D100 = {
+  stormbringer: ["critique « 01 »/« 00 » (BRP)", "jets sous carac ×multiplicateur (POU×3, CHA×5)", "lutte de POU : 50 % ± 5 %/pt d'écart", "création : 7×3D6, total ≤ 52 · SAN = POU×5"],
+  bloodlust: ["paliers +50/+25/0/−25/−50", "réussite critique unités 0 · échec critique unités 1", "contrôle VO×5 · PV EN×2 · plancher 5 %"]
+};
+
+/* Les étapes de chargement selon le pack (le noyau commandé change) */
+function etapesChargement(p, role) {
+  const roleTxt = `rôle de session : ${role === "mj" ? "MAÎTRE DU JEU — zone ambre" : "JOUEUR — zone teal"}`;
+  if (p.id === "stormbringer" || p.id === "bloodlust") {
+    const sb = p.id === "stormbringer";
+    return [
+      `installation vérifiée — ${p.nom} présent dans la bibliothèque locale`,
+      `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`,
+      `dépendance résolue : noyau-d100@1 — primitive resoudreD100(seuil %, modificateur)`,
+      roleTxt,
+      sb
+        ? "surcharges appliquées : critique 01/00 · jets sous POU×3 · lutte de POU 50 %±5/pt · SAN POU×5"
+        : "surcharges appliquées : paliers +50/+25/0/−25/−50 · critique unités 0/1 · contrôle VO×5",
+      `thème ${sb ? "des Jeunes Royaumes" : "de Tanæphis"} appliqué — palette du pack`,
+      "pack prêt."
+    ];
+  }
+  return [
+    `installation vérifiée — ${p.nom} présent dans la bibliothèque locale`,
+    `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`,
+    `dépendance résolue : ${p.depend_de.map(d => d.id + "@" + d.format_min).join(", ") || "aucune"}`,
+    roleTxt,
+    "surcharges appliquées : initiative.bonus = rfx · hors_combat = protocole_de_secours",
+    "thème nécroderme appliqué — palette teal / ambre",
+    "pack prêt."
+  ];
+}
+
+/* ── Les comptes (phase 2 simulée : email + mot de passe) ──
+   Tous les comptes sont JOUEURS — le rôle MJ/Joueur se choisit au lancement
+   du pack. Le compte_id est un UUID stable gravé à la création ; l'email est
+   l'identité serveur (unique, jamais affichée publiquement). Le mot de passe
+   ne vit JAMAIS ici : vérification déléguée au serveur (l'Archiviste ne garde
+   jamais les mots de passe). */
+/* ── Palette « Zinc d'Archiviste » — thème NEUTRE du chrome du launcher ──
+   fond #0c0d10 · panneaux #14161b · bordures #27272a · accent zinc #a8adb8.
+   Le launcher est une vitrine : les couleurs appartiennent aux packs.
+   Teal #2ee6c9 = exclusive du pack PÉ · ambre #f0b24a = rôle MJ + Archivisterium. */
+const PROFILS_INIT = [
+  { compteId: "a3f2c9d1", pseudo: "Maître de la Tombe", tag: "JR-0001", email: "maitre@larchiviste.jdr", avatarId: "tombe" },
+  { compteId: "7b91e044", pseudo: "Signa Test", tag: "JR-0002", email: "signa@larchiviste.jdr", avatarId: "de" },
+  { compteId: "3fa7b1e9", pseudo: "MadChat", tag: "JR-0003", email: "arf@arf.fr", avatarId: "crane" }
+];
+
+/* La liste d'images de compte : dans le vrai launcher, choisie dans le profil.
+   En alpha : des glyphes déclinés sur les palettes des packs. */
+const AVATARS = [
+  { id: "tombe", glyph: "⟁", label: "Glyphe de tombe", fond: "#0f2620", bord: "#2ee6c9" },
+  { id: "crane", glyph: "💀", label: "Crâne en os", fond: "#26200f", bord: "#f0b24a" },
+  { id: "epee", glyph: "⚔", label: "Lames croisées", fond: "#1f1226", bord: "#9d86e8" },
+  { id: "de", glyph: "🎲", label: "D6 rituel", fond: "#0f1a26", bord: "#7dd3fc" },
+  { id: "arc", glyph: "⚡", label: "Arc vivant", fond: "#26140f", bord: "#fb923c" },
+  { id: "oeil", glyph: "👁", label: "Œil du MJ", fond: "#261017", bord: "#fb7185" }
+];
+
+/* ══════════ Le moteur : la primitive de test, paramétrée par le noyau ══════════ */
+const d6 = () => 1 + Math.floor(Math.random() * 6);
+const cibleNum = (c) => parseInt(String(c).replace("+", ""), 10);
+
+function resoudreTest(cible, mod = 0) {
+  const de = d6();
+  const nat6 = de === NOYAU.tests.exceptions.reussite_auto;
+  const nat1 = de === NOYAU.tests.exceptions.echec_auto;
+  const reussi = nat6 ? true : nat1 ? false : de + mod >= cibleNum(cible);
+  return { de, reussi, nat: nat6 ? "6 naturel — réussite auto" : nat1 ? "1 naturel — échec auto" : null };
+}
+
+function cibleBlessure(f, e) {
+  if (f >= e * 2) return "2+";
+  if (f > e) return "3+";
+  if (f === e) return "4+";
+  if (f <= e / 2) return "6+";
+  return "5+";
+}
+
+function cibleSauvegarde(sv, pa) {
+  return (cibleNum(sv) - (pa || 0)) + "+";
+}
+
+/* ══════════ La Cible — glyphe du launcher (clin d'œil à la tuile du site) ══════════ */
+function Cible({ size = 40, color = "#e8e4d8", fond = "transparent" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
+      <rect width="100" height="100" fill={fond} rx="14" />
+      <circle cx="50" cy="50" r="42" fill="none" stroke={color} strokeWidth="5.5" strokeDasharray="55 11" transform="rotate(11 50 50)" />
+      <circle cx="50" cy="50" r="27" fill="none" stroke={color} strokeWidth="5" strokeDasharray="36.6 6" transform="rotate(11 50 50)" />
+      <circle cx="50" cy="50" r="8.5" fill={color} />
+    </svg>
+  );
+}
+
+/* ══════════ L'Archivisterium (ROOT) — l'admin gère packs, images, thèmes ══════════
+   En production : app séparée en parallèle de l'Archiviste, accès administrateur. */
+function RootConsole({ packs, symbole, onFermer }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "#000000b3" }} onClick={onFermer}>
+      <div className="rounded-2xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+        style={{ background: "#14161b", border: "1px solid #f0b24a55", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+        <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: "1px solid #27272a" }}>
+          <div>
+            <div className="font-bold text-lg" style={{ color: "#f0b24a" }}>⚙ L'ARCHIVISTERIUM</div>
+            <div className="text-xs" style={{ color: "#71717a" }}>La salle d'administration de l'Archiviste — simulation (l'édition arrive en beta)</div>
+          </div>
+          <button onClick={onFermer} className="text-xl px-2" style={{ color: "#71717a" }}>✕</button>
+        </div>
+
+        <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>PACKS DU MAGASIN</div>
+        <div className="flex flex-col gap-1.5 mb-4">
+          {packs.map(p => (
+            <div key={p.id} className="flex items-center justify-between rounded px-2.5 py-1.5 text-sm"
+              style={{ background: "#ffffff08" }}>
+              <div>
+                <span className="font-bold" style={{ color: "#e8e4d8" }}>{p.nom}</span>{" "}
+                <span className="text-xs" style={{ color: "#71717a" }}>v{p.version} · {p.type} · {p.taille}</span>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                style={{
+                  border: "1px solid " + (p.statut === "disponible" ? "#2ee6c966" : "#52525b"),
+                  color: p.statut === "disponible" ? "#2ee6c9" : "#71717a"
+                }}>
+                {p.statut === "disponible" ? "publié" : "à venir"} · {p.visibilite}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>IMAGES DE COMPTE DISPONIBLES</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {AVATARS.map(a => (
+            <div key={a.id} className="flex flex-col items-center gap-1" style={{ width: 68 }}>
+              <Avatar a={a} size={38} />
+              <div className="text-center text-xs leading-tight" style={{ color: "#71717a" }}>{a.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>SYMBOLES DU LAUNCHER DISPONIBLES</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[
+            { id: "cible", label: "La Cible aux quatre coupes", note: "glyphe officiel",
+              el: <Cible size={40} color="#e8e4d8" /> },
+            { id: "d20", label: "L'Icosaèdre — silhouette hexagonale", note: "glyphe du hub",
+              el: <Icosaedre size={40} color="#e8e4d8" /> },
+            { id: "d20s", label: "L'Icosaèdre — vue par le sommet (pentagone)", note: "bibliothèque",
+              el: <IcosaedreSommet size={40} color="#e8e4d8" /> },
+            { id: "pe", label: "Glyphe Protocoles Éternels", note: "vignette pack",
+              el: <div className="flex items-center justify-center text-3xl" style={{ width: 40, height: 40, color: "#e8e4d8" }}>⟁</div> },
+            { id: "sb", label: "Glyphe Stormbringer", note: "vignette pack",
+              el: <div className="flex items-center justify-center text-3xl" style={{ width: 40, height: 40, color: "#e8e4d8" }}>⚔</div> }
+          ].map(s => (
+            <div key={s.id} className="flex flex-col items-center gap-1 rounded-xl p-2"
+              style={{ width: 104, background: symbole === s.id ? "#a8adb814" : "#ffffff08",
+                border: "1px solid " + (symbole === s.id ? "#a8adb844" : "transparent") }}>
+              {s.el}
+              <div className="text-center text-xs leading-tight" style={{ color: "#c8c8ce" }}>{s.label}</div>
+              <div className="text-xs" style={{ color: symbole === s.id ? "#a8adb8" : "#71717a" }}>
+                {symbole === s.id ? "● en usage" : s.note}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>THÈMES DISPONIBLES</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {packs.map(p => (
+            <div key={p.id} className="flex items-center gap-2 rounded-full px-3 py-1 text-xs"
+              style={{ background: p.theme.fond, border: "1px solid " + p.theme.accent + "44" }}>
+              <span style={{ width: 10, height: 10, borderRadius: 999, background: p.theme.accent }} />
+              <span style={{ width: 10, height: 10, borderRadius: 999, background: p.theme.or }} />
+              <span style={{ color: "#c8c8ce" }}>thème {p.nom}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs pt-3" style={{ color: "#71717a", borderTop: "1px solid #27272a" }}>
+          En production : l'Archivisterium est une app séparée, accès admin — elle gère les packs
+          publiés au magasin, les images de compte et les thèmes proposés aux packs. L'Archiviste, lui, ne fait que lire.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ L'Icosaèdre vu par le sommet (pentagone) — modèle de Michael, conservé en bibliothèque ROOT ══════════
+   Pentagone extérieur (pointe en haut), pentagone interne inversé,
+   5 rayons convergents au centre, 10 faces triangulaires visibles — arêtes fines, sans chiffres. */
+function IcosaedreSommet({ size = 40, color = "#e8e4d8", fond = "transparent" }) {
+  const V = [[50, 6], [93.7, 37.8], [77, 89.2], [23, 89.2], [6.3, 37.8]];
+  const A = [[62.2, 35.3], [69.7, 58.4], [50, 72.7], [30.3, 58.4], [37.8, 35.3]];
+  const C = [50, 52];
+  const P = (p) => p.join(",");
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
+      <rect width="100" height="100" fill={fond} rx="14" />
+      <g fill="none" stroke={color} strokeWidth="3.8" strokeLinejoin="round" strokeLinecap="round">
+        {/* silhouette : pentagone vu par le sommet */}
+        <polygon points={V.map(P).join(" ")} />
+        {/* anneau interne inversé (pointe en bas) */}
+        <polygon points={A.map(P).join(" ")} />
+        {/* 5 rayons : le sommet du dé converge au centre */}
+        {A.map((a, i) => <polyline key={"c" + i} points={P(C) + " " + P(a)} />)}
+        {/* 10 arêtes : anneau interne vers les sommets du pentagone */}
+        {A.map((a, i) => (
+          <g key={"v" + i}>
+            <polyline points={P(a) + " " + P(V[i])} />
+            <polyline points={P(a) + " " + P(V[(i + 1) % 5])} />
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/* ══════════ L'Icosaèdre — glyphe D20 retenu : fidèle au modèle de Michael ══════════
+   Silhouette hexagonale (pointe en haut) + 6 arêtes droites :
+   de chaque sommet du contour, une ligne rejoint le point central. Rien d'autre. */
+function Icosaedre({ size = 40, color = "#e8e4d8", fond = "transparent" }) {
+  const V = [[50, 6], [88.5, 28.5], [88.5, 71.5], [50, 94], [11.5, 71.5], [11.5, 28.5]];
+  const C = [50, 50];
+  const P = (p) => p.join(",");
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
+      <rect width="100" height="100" fill={fond} rx="14" />
+      <g fill="none" stroke={color} strokeWidth="3.8" strokeLinejoin="round" strokeLinecap="round">
+        {/* silhouette hexagonale */}
+        <polygon points={V.map(P).join(" ")} />
+        {/* 6 arêtes : chaque sommet rejoint le point central */}
+        {V.map((v, i) => (
+          <polyline key={i} points={P(v) + " " + P(C)} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/* ══════════ Le compte joueur : avatar + session simulée ══════════ */
+function Avatar({ a, size = 40, selectionne = false }) {
+  return (
+    <div
+      className="rounded-full flex items-center justify-center shrink-0"
+      style={{
+        width: size, height: size, background: a.fond,
+        border: (selectionne ? 2.5 : 1.5) + "px solid " + (selectionne ? a.bord : "#3f3f46"),
+        fontSize: Math.round(size * 0.5), lineHeight: 1
+      }}
+    >
+      <span>{a.glyph}</span>
+    </div>
+  );
+}
+
+function CompteJoueur({ joueur, avatar, onAvatar, mobile, ouvert, onOuvert, onLogout }) {
+  return (
+    <div className="relative">
+      {/* En navigateur (PC) : avatar + pseudo, comme sur Steam. En mobile : avatar seul. */}
+      <button
+        onClick={onOuvert}
+        className="flex items-center gap-2.5 rounded-full pl-1 pr-3 py-1 transition-colors"
+        style={{ background: ouvert ? "#ffffff0d" : "transparent" }}
+        title="Compte joueur"
+      >
+        <Avatar a={avatar} size={40} />
+        {!mobile && (
+          <div className="text-left leading-tight">
+            <div className="font-bold text-white text-sm">{joueur.pseudo}</div>
+            <div className="text-xs flex items-center gap-1" style={{ color: "#a8adb8" }}>
+              <span style={{ fontSize: 8 }}>●</span> en ligne
+            </div>
+          </div>
+        )}
+      </button>
+
+      {ouvert && (
+        <div className="absolute right-0 mt-2 w-72 rounded-xl p-4 z-50 shadow-2xl"
+          style={{ background: "#14161b", border: "1px solid #a8adb844" }}>
+          <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>{CLOUD ? "COMPTE — CLOUD" : "COMPTE — SIMULATION"}</div>
+          <div className="flex items-center gap-3 mb-4">
+            <Avatar a={avatar} size={52} selectionne />
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="font-bold text-white">{joueur.pseudo}</div>
+                <span className="text-xs px-1.5 py-0.5 rounded font-bold"
+                  style={{ background: "#2ee6c922", color: "#2ee6c9" }}>
+                  JOUEUR
+                </span>
+              </div>
+              <div className="text-xs" style={{ color: "#71717a" }}>compte #{joueur.compteId.slice(0, 8)} · {joueur.tag} · {CLOUD ? "compte cloud" : "profil local"} · en ligne</div>
+            </div>
+          </div>
+          <div className="text-xs font-bold mb-2" style={{ color: "#c8c8ce" }}>Image de compte — choisie dans la liste :</div>
+          <div className="flex flex-wrap gap-2">
+            {AVATARS.map(a => (
+              <button key={a.id} onClick={() => onAvatar(a.id)} title={a.label}
+                className="transition-transform"
+                style={{ transform: a.id === avatar.id ? "scale(1.12)" : "none" }}>
+                <Avatar a={a} size={38} selectionne={a.id === avatar.id} />
+              </button>
+            ))}
+          </div>
+          <div className="text-xs mt-4" style={{ color: "#71717a" }}>
+            Dans le vrai launcher : le joueur choisit une petite image dans une liste du profil —
+            elle s'affiche à côté de son nom sur PC, seule sur mobile.
+          </div>
+          <button onClick={onLogout} className="w-full mt-4 py-1.5 rounded-lg font-bold text-xs"
+            style={{ border: "1px solid #71717a55", color: "#c8c8ce" }}>
+            Se déconnecter
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════ La création de compte — pseudo + email + image, UUID gravé ══════════ */
+function EcranCreation({ onCreer, onAnnuler }) {
+  const [pseudo, setPseudo] = useState("");
+  const [email, setEmail] = useState("");
+  const [mdp, setMdp] = useState("");
+  const [avatarId, setAvatarId] = useState("crane");
+  const pret = pseudo.trim() && email.trim().includes("@") && mdp.length >= 4;
+  const [enCours, setEnCours] = useState(false);
+  const [erreurCreation, setErreurCreation] = useState(null);
+  const creer = async () => {
+    if (!pret || enCours) return;
+    if (!CLOUD) { onCreer({ pseudo: pseudo.trim(), email: email.trim().toLowerCase(), avatarId }); return; }
+    setEnCours(true); setErreurCreation(null);
+    try {
+      onCreer(await CLOUD.inscription(pseudo.trim(), email.trim().toLowerCase(), mdp, avatarId));
+    } catch (e) {
+      setErreurCreation(e && e.message ? e.message : "Serveur injoignable — vérifiez votre connexion.");
+    }
+    setEnCours(false);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#000000b3" }}>
+      <div className="rounded-2xl p-5 w-full max-w-sm"
+        style={{ background: "#14161b", border: "1px solid #a8adb844", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+        <div className="font-bold text-lg mb-1" style={{ color: "#e8e4d8" }}>＋ Créer un compte</div>
+        <div className="text-xs mb-4" style={{ color: "#71717a" }}>
+          Un UUID de compte est généré à la création — il restera stable pour toujours. En phase
+          serveur, c'est ici que Supabase Auth prendra le relais pour le mot de passe.
+        </div>
+
+        <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Pseudo :</div>
+        <input value={pseudo} onChange={e => setPseudo(e.target.value)} placeholder="Ex. : Vétéran de la Tombe"
+          className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
+          style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" }} />
+
+        <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Email :</div>
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.fr" type="email"
+          className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
+          style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" }} />
+
+        <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Mot de passe :</div>
+        <input value={mdp} onChange={e => setMdp(e.target.value)} placeholder="4 caractères minimum" type="password"
+          className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
+          style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" }} />
+        <div className="text-xs mb-3" style={{ color: "#52525b" }}>
+          En phase serveur, ce mot de passe part chez Supabase Auth — l'Archiviste ne le garde jamais ici.
+        </div>
+
+        <div className="text-xs font-bold mb-2" style={{ color: "#c8c8ce" }}>Image de compte :</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {AVATARS.map(a => (
+            <button key={a.id} onClick={() => setAvatarId(a.id)} title={a.label}
+              className="transition-transform" style={{ transform: a.id === avatarId ? "scale(1.12)" : "none" }}>
+              <Avatar a={a} size={38} selectionne={a.id === avatarId} />
+            </button>
+          ))}
+        </div>
+
+        <div className="text-xs mb-5" style={{ color: "#71717a" }}>
+          Tous les comptes sont joueurs — le rôle MJ se choisit plus tard, au lancement du pack.
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onAnnuler} className="flex-1 py-2 rounded-lg font-bold text-sm"
+            style={{ border: "1px solid #3f3f46", color: "#71717a" }}>Annuler</button>
+          <button onClick={creer}
+            disabled={!pret || enCours}
+            className="flex-1 py-2 rounded-lg font-bold text-sm text-black"
+            style={{ background: pret && !enCours ? "#a8adb8" : "#52525b" }}>
+            {enCours ? "Création…" : "Créer et entrer"}
+          </button>
+        </div>
+        {erreurCreation && (
+          <div className="text-xs mt-3 text-center" style={{ color: "#fb7185" }}>{erreurCreation}</div>
+        )}
+        <div className="text-xs mt-3 text-center" style={{ color: "#52525b" }}>
+          {CLOUD
+            ? "Le mot de passe part directement chez Supabase Auth — l'Archiviste ne le garde jamais ici."
+            : "Simulation : le mot de passe n'est pas vérifié localement — il ne quitte pas ce champ (décor honnête)."}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ Connexion — écran phase 2 : email + mot de passe ══════════
+   Simulation honnête de ce que fera Supabase Auth : l'Archiviste ne garde
+   jamais les mots de passe — la vérification sera DÉLÉGUÉE au serveur.
+   En local, tout mot de passe ≥ 4 caractères « passe » (décor assumé).
+   « Mot de passe perdu » = lien magique par email (boîte simulée). */
+function AuthModal({ profils, onLogin, onCreer, onFermer }) {
+  const [mode, setMode] = useState("login"); // login | perdu | envoye
+  const [enCreation, setEnCreation] = useState(false);
+  const [email, setEmail] = useState("");
+  const [mdp, setMdp] = useState("");
+  const [erreur, setErreur] = useState(null);
+  const [apresLien, setApresLien] = useState(false);
+  const [enVerif, setEnVerif] = useState(false);
+  const [perduEmail, setPerduEmail] = useState("");
+  const champ = { background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" };
+
+  const tenter = async () => {
+    if (!email.trim() || mdp.length < 4) { setErreur("Email et mot de passe requis (4 caractères min.)"); return; }
+    if (CLOUD) {
+      setEnVerif(true); setErreur(null);
+      try {
+        onLogin(await CLOUD.connexion(email.trim().toLowerCase(), mdp));
+      } catch (e) {
+        setErreur(e && e.message ? e.message : "Serveur injoignable — vérifiez votre connexion.");
+      }
+      setEnVerif(false);
+      return;
+    }
+    const p = profils.find(x => x.email.toLowerCase() === email.trim().toLowerCase());
+    if (!p) { setErreur("Aucun compte sur cet email — créez-en un ci-dessous"); return; }
+    onLogin(p);
+  };
+
+  const envoyerLien = async () => {
+    if (!perduEmail.trim() || enVerif) return;
+    if (CLOUD) {
+      setEnVerif(true); setErreur(null);
+      try { await CLOUD.perdu(perduEmail.trim().toLowerCase()); }
+      catch (e) {
+        setErreur(e && e.message ? e.message : "Serveur injoignable — vérifiez votre connexion.");
+        setEnVerif(false);
+        return;
+      }
+      setEnVerif(false);
+    }
+    setMode("envoye");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#000000b3" }}>
+      <div className="rounded-2xl p-6 w-full max-w-sm"
+        style={{ background: "#14161b", border: "1px solid #a8adb844", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+
+        {mode === "login" && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-bold text-lg" style={{ color: "#e8e4d8" }}>Connexion</div>
+              <button onClick={onFermer} className="text-xl px-2" style={{ color: "#71717a" }}>✕</button>
+            </div>
+            <div className="text-xs mb-4" style={{ color: "#71717a" }}>
+              Tous les comptes sont joueurs — le rôle MJ se choisit au lancement d'un pack.
+            </div>
+
+            {apresLien && (
+              <div className="text-xs mb-3 px-2 py-1.5 rounded" style={{ background: "#a8adb814", color: "#a8adb8" }}>
+                ✓ Lien magique vérifié — saisissez votre nouveau mot de passe.
+              </div>
+            )}
+
+            <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Email :</div>
+            <input value={email} onChange={e => { setEmail(e.target.value); setErreur(null); }}
+              placeholder="vous@exemple.fr" type="email"
+              className="w-full rounded-lg px-3 py-2 mb-3 text-sm" style={champ} />
+
+            <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Mot de passe :</div>
+            <input value={mdp} onChange={e => { setMdp(e.target.value); setErreur(null); }}
+              placeholder="••••••••" type="password"
+              className="w-full rounded-lg px-3 py-2 mb-2 text-sm" style={champ} />
+            <div className="text-xs mb-3" style={{ color: erreur ? "#fb7185" : "#52525b" }}>
+              {erreur || "\u00a0"}
+            </div>
+
+            <button onClick={tenter} disabled={enVerif}
+              className="w-full py-2.5 rounded-lg font-bold text-sm text-black"
+              style={{ background: enVerif ? "#52525b" : "#a8adb8" }}>
+              {enVerif ? "Vérification auprès du serveur…" : "Se connecter"}
+            </button>
+
+            <div className="flex justify-between mt-3 text-xs font-bold">
+              <button onClick={() => { setPerduEmail(email); setErreur(null); setMode("perdu"); }}
+                style={{ color: "#71717a" }}>Mot de passe perdu ?</button>
+              <button onClick={() => setEnCreation(true)} style={{ color: "#a8adb8" }}>＋ Créer un compte</button>
+            </div>
+
+            <div className="text-xs mt-4 text-center" style={{ color: "#52525b" }}>
+              {CLOUD
+                ? "Comptes vérifiés par Supabase Auth — l'Archiviste ne garde jamais les mots de passe."
+                : "Démo : maitre@larchiviste.jdr · signa@larchiviste.jdr · arf@arf.fr — mot de passe : n'importe lequel (4+ caractères)."}
+            </div>
+          </div>
+        )}
+
+        {mode === "perdu" && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-bold text-lg" style={{ color: "#e8e4d8" }}>Mot de passe perdu</div>
+              <button onClick={() => setMode("login")} className="text-xl px-2" style={{ color: "#71717a" }}>✕</button>
+            </div>
+            <div className="text-xs mb-4" style={{ color: "#71717a" }}>
+              Un lien magique vous est envoyé par email — pas de question secrète sur votre ville natale.
+            </div>
+            <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Votre email :</div>
+            <input value={perduEmail} onChange={e => setPerduEmail(e.target.value)} type="email"
+              placeholder="vous@exemple.fr"
+              className="w-full rounded-lg px-3 py-2 mb-4 text-sm" style={champ} />
+            <button onClick={envoyerLien}
+              disabled={!perduEmail.trim() || enVerif}
+              className="w-full py-2.5 rounded-lg font-bold text-sm text-black"
+              style={{ background: perduEmail.trim() && !enVerif ? "#a8adb8" : "#52525b" }}>
+              {enVerif ? "Envoi…" : "Envoyer le lien magique"}
+            </button>
+            {erreur && (
+              <div className="text-xs mt-3 text-center" style={{ color: "#fb7185" }}>{erreur}</div>
+            )}
+            <button onClick={() => setMode("login")} className="w-full mt-3 text-xs font-bold" style={{ color: "#71717a" }}>
+              ← Retour à la connexion
+            </button>
+          </div>
+        )}
+
+        {mode === "envoye" && (
+          <div>
+            <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>
+              {CLOUD ? "📧 EMAIL ENVOYÉ" : "📧 SIMULATION DE BOÎTE MAIL"}
+            </div>
+            {CLOUD ? (
+              <div className="rounded-xl p-4 text-left mb-4" style={{ background: "#ffffff08", border: "1px solid #27272a" }}>
+                <div className="text-sm" style={{ color: "#c8c8ce" }}>
+                  Un lien de réinitialisation part vers <b>{perduEmail}</b> — vérifiez votre boîte (et vos spams),
+                  puis revenez choisir un nouveau mot de passe.
+                </div>
+                <button onClick={() => setMode("login")}
+                  className="mt-3 px-4 py-2 rounded-lg font-bold text-sm text-black" style={{ background: "#f0b24a" }}>
+                  ← Retour à la connexion
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl p-4 text-left mb-4" style={{ background: "#ffffff08", border: "1px solid #27272a" }}>
+                <div className="text-xs mb-1" style={{ color: "#71717a" }}>
+                  De : no-reply@larchiviste.jdr — « Réinitialisation de votre mot de passe »
+                </div>
+                <div className="text-sm" style={{ color: "#c8c8ce" }}>
+                  Bonjour — cliquez sur ce lien pour choisir un nouveau mot de passe. Il expire dans 60 minutes.
+                </div>
+                <button onClick={() => { setEmail(perduEmail); setMdp(""); setApresLien(true); setMode("login"); }}
+                  className="mt-3 px-4 py-2 rounded-lg font-bold text-sm text-black" style={{ background: "#f0b24a" }}>
+                  🔗 Ouvrir le lien magique
+                </button>
+              </div>
+            )}
+            <div className="text-xs text-center" style={{ color: "#52525b" }}>
+              {CLOUD ? "Lien envoyé et vérifié par Supabase Auth." : "En production : ce lien arrive par email, vérifié par Supabase Auth."}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {enCreation && <EcranCreation onCreer={onCreer} onAnnuler={() => setEnCreation(false)} />}
+    </div>
+  );
+}
+
+/* ══════════ Le choix de rôle au LANCEMENT d'un pack — Steam-like ══════════
+   Le compte est joueur ; le rôle (MJ ou joueur) se choisit pack par pack,
+   au moment de LANCER le pack depuis la bibliothèque — pas à l'installation.
+   MJ = zone ambre, joueur = zone teal. */
+function ChoixRole({ pack, onChoisi, onAnnuler }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "#000000b3" }}>
+      <div className="rounded-2xl p-6 w-full max-w-md text-center"
+        style={{ background: "#14161b", border: "1px solid #f0b24a44", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+        <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "#71717a" }}>
+          LANCER — {pack.nom.toUpperCase()}
+        </div>
+        <div className="font-bold text-lg mb-1" style={{ color: "#e8e4d8" }}>Simple joueur, ou Maître du Jeu ?</div>
+        <div className="text-xs mb-5" style={{ color: "#71717a" }}>
+          Tous les comptes sont joueurs — le rôle se choisit ici, à chaque lancement du pack.
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => onChoisi("mj")}
+            className="rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105"
+            style={{ background: "#f0b24a14", border: "1px solid #f0b24a66" }}>
+            <div className="text-3xl">🎭</div>
+            <div className="font-bold" style={{ color: "#f0b24a" }}>MAÎTRE DU JEU</div>
+            <div className="text-xs" style={{ color: "#a1a1aa" }}>dirige la séance — zone MJ (ambre)</div>
+          </button>
+          <button onClick={() => onChoisi("joueur")}
+            className="rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105"
+            style={{ background: "#2ee6c914", border: "1px solid #2ee6c955" }}>
+            <div className="text-3xl">🛡️</div>
+            <div className="font-bold" style={{ color: "#2ee6c9" }}>JOUEUR</div>
+            <div className="text-xs" style={{ color: "#a1a1aa" }}>vit l'aventure</div>
+          </button>
+        </div>
+        <button onClick={onAnnuler} className="mt-5 text-xs font-bold" style={{ color: "#71717a" }}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ Le Hub (magasin + bibliothèque = favoris) ══════════ */
+function Vignette({ pack, favori, onFavori, onInstaller, onLancer, showToast, contexte = "magasin", installe = false, enInstallation = false, connecte = true }) {
+  const dispo = pack.statut === "disponible";
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden flex flex-col transition-transform duration-200"
+      style={{
+        borderColor: dispo ? pack.theme.accent + "55" : "#3f3f46",
+        background: `linear-gradient(150deg, ${pack.theme.fond} 0%, #14161b 100%)`,
+        opacity: dispo ? 1 : 0.72
+      }}
+    >
+      <div className="p-5 flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl"
+            style={{ background: pack.theme.fond, border: `1px solid ${pack.theme.accent}44` }}
+          >
+            {pack.glyphs}
+          </div>
+          <div>
+            <div className="text-white font-bold text-lg leading-tight">{pack.nom}</div>
+            <div className="text-xs mt-0.5" style={{ color: "#a1a1aa" }}>
+              {pack.type} · dépend de {pack.depend_de.map(d => `${d.id}@${d.format_min}`).join(", ")}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => { onFavori(pack.id); showToast(favori ? "Retiré des favoris" : "Ajouté à la bibliothèque ★"); }}
+          className="text-xl px-1 leading-none hover:scale-110 transition-transform"
+          title="Favori"
+        >
+          {favori ? "★" : "☆"}
+        </button>
+      </div>
+      <div className="px-5 pb-4 text-sm" style={{ color: "#c8c8ce" }}>{pack.resume}</div>
+      <div className="mt-auto p-4 flex items-center justify-between" style={{ background: "#ffffff08" }}>
+        <div className="text-xs flex items-center gap-1.5" style={{ color: "#71717a" }}>
+          <span>v{pack.version}{pack.visibilite === "prive" && " · privé"} · {pack.taille}</span>
+        </div>
+        {contexte === "bibliotheque" ? (
+          <button
+            onClick={() => onLancer(pack)}
+            className="px-4 py-2 rounded-lg font-bold text-sm text-black"
+            style={{ background: pack.theme.accent }}
+          >
+            ▶ Lancer
+          </button>
+        ) : !connecte ? (
+          <span className="text-xs font-bold" style={{ color: "#52525b" }} title="Connectez-vous pour installer">
+            🔒 connexion requise
+          </span>
+        ) : dispo ? (
+          installe ? (
+            <button
+              disabled
+              className="px-4 py-2 rounded-lg font-bold text-sm border border-zinc-700 text-zinc-500"
+              style={{ background: "#ffffff08", cursor: "not-allowed" }}
+            >
+              ✓ Déjà installé
+            </button>
+          ) : (
+            <button
+              onClick={() => onInstaller(pack)}
+              disabled={enInstallation}
+              className={"px-4 py-2 rounded-lg font-bold text-sm text-black" + (enInstallation ? " animate-pulse" : "")}
+              style={{ background: enInstallation ? "#52525b" : pack.theme.accent }}
+            >
+              {enInstallation ? "Installation…" : "⬇ Installer"}
+            </button>
+          )
+        ) : (
+          <button
+            onClick={() => showToast(`${pack.nom} — pack non packagé. À venir !`)}
+            className="px-4 py-2 rounded-lg font-bold text-sm border border-zinc-600 text-zinc-400"
+          >
+            À venir
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Hub({ packs, favoris, onFavori, onInstaller, onLancer, showToast, joueur, avatar, onAvatar, onLogout, onLogin, onCreer, profils, mobile, ecran, setEcran, installes, enInstallation, symbole }) {
+  const [onglet, setOnglet] = useState("magasin");
+  const [compteOuvert, setCompteOuvert] = useState(false);
+  const [rootOuvert, setRootOuvert] = useState(false);
+  const [authOuvert, setAuthOuvert] = useState(false);
+  const packsInstalles = packs.filter(p => installes.includes(p.id));
+
+  const onglets = [
+    ["magasin", "MAGASIN", packs.length],
+    ["bibliotheque", "BIBLIOTHÈQUE", packsInstalles.length]
+  ];
+
+  return (
+    <div className="min-h-screen text-zinc-200" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="max-w-4xl mx-auto px-5 py-8">
+        <header className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            {/* Le glyphe du hub : l'Icosaèdre D20 — CHOISI par Michael, désormais
+               statique. (La Cible reste dans la bibliothèque de symboles de l'Archivisterium.) */}
+            <div title="L'Icosaèdre D20 — glyphe de L'Archiviste">
+              <Icosaedre size={44} color="#e8e4d8" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white tracking-wide leading-tight">
+                L'ARCHIVISTE{" "}
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold border align-middle" style={{ borderColor: "#f0b24a", color: "#f0b24a" }}>
+                  ALPHA ZÉRO
+                </span>
+              </div>
+              <div className="text-xs tracking-widest" style={{ color: "#71717a" }}>CUSTODES MEMORIAE</div>
+            </div>
+          </div>
+          {joueur && avatar ? (
+            <CompteJoueur
+              joueur={joueur} avatar={avatar} onAvatar={onAvatar}
+              mobile={mobile} ouvert={compteOuvert} onOuvert={() => setCompteOuvert(o => !o)}
+              onLogout={onLogout}
+            />
+          ) : (
+            <button onClick={() => setAuthOuvert(true)}
+              className="px-4 py-2 rounded-lg font-bold text-sm text-black"
+              style={{ background: "#a8adb8" }}>
+              Inscription / Connexion
+            </button>
+          )}
+        </header>
+
+        {/* Onglets Magasin / Bibliothèque */}
+        <div className="flex gap-1 mb-6" style={{ borderBottom: "1px solid #27272a" }}>
+          {onglets.map(([id, lbl, n]) => (
+            <button key={id} onClick={() => { setOnglet(id); setCompteOuvert(false); }}
+              className="px-4 py-2 text-sm font-bold tracking-wider"
+              style={{
+                background: onglet === id ? "#a8adb814" : "transparent",
+                color: onglet === id ? "#a8adb8" : "#71717a",
+                borderBottom: onglet === id ? "2px solid #a8adb8" : "2px solid transparent",
+                marginBottom: -1
+              }}>
+              {lbl} <span style={{ opacity: 0.7 }}>({n})</span>
+            </button>
+          ))}
+        </div>
+
+        {onglet === "magasin" && (
+          <div className="grid md:grid-cols-2 gap-4">
+            {packs.map(p => (
+              <Vignette
+                key={p.id}
+                pack={p}
+                favori={favoris.includes(p.id)}
+                onFavori={onFavori}
+                onInstaller={onInstaller}
+                showToast={showToast}
+                contexte="magasin"
+                installe={installes.includes(p.id)}
+                enInstallation={enInstallation === p.id}
+                connecte={!!joueur}
+              />
+            ))}
+          </div>
+        )}
+
+        {onglet === "bibliotheque" && (
+          packsInstalles.length === 0 ? (
+            <div className="rounded-xl border border-zinc-800 p-4 text-sm" style={{ color: "#71717a" }}>
+              Vide — installez un pack depuis le magasin (⬇ Installer), puis lancez-le ici.
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {packsInstalles.map(p => (
+                <Vignette key={p.id} pack={p} favori={favoris.includes(p.id)} onFavori={onFavori}
+                  onLancer={onLancer} showToast={showToast} contexte="bibliotheque" />
+              ))}
+            </div>
+          )
+        )}
+
+        {rootOuvert && <RootConsole packs={packs} symbole={symbole} onFermer={() => setRootOuvert(false)} />}
+
+        {authOuvert && (
+          <AuthModal profils={profils}
+            onLogin={(p) => { onLogin(p); setAuthOuvert(false); }}
+            onCreer={(d) => { onCreer(d); setAuthOuvert(false); }}
+            onFermer={() => setAuthOuvert(false)} />
+        )}
+
+        <footer className="mt-10 flex flex-col items-center gap-2 text-center text-xs" style={{ color: "#52525b" }}>
+          <div>L'Archiviste est une app · les packs s'installent dedans · tout vit en local · Alpha Zéro du 28/10/2026</div>
+          <button onClick={() => setRootOuvert(true)} className="px-2 py-0.5 rounded font-bold"
+            style={{ border: "1px solid #f0b24a44", color: "#f0b24a" }}
+            title="L'Archivisterium — salle d'administration (simulation)">
+            ⚙ ARCHIVISTERIUM
+          </button>
+          <div className="flex items-center gap-1.5">
+            <span style={{ color: "#71717a" }}>Simulation d'écran :</span>
+            {[["auto", "AUTO"], ["desktop", "🖥 NAVIGATEUR"], ["mobile", "📱 MOBILE"]].map(([v, lbl]) => (
+              <button key={v} onClick={() => setEcran(v)}
+                className="px-2 py-0.5 rounded font-bold"
+                style={{
+                  background: ecran === v ? "#a8adb818" : "transparent",
+                  color: ecran === v ? "#a8adb8" : "#71717a",
+                  border: "1px solid " + (ecran === v ? "#a8adb844" : "#27272a")
+                }}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ Le pack PÉ chargé (light light) ══════════ */
+function PvBarre({ pv, pvMax, accent }) {
+  return (
+    <div className="flex gap-1">
+      {Array.from({ length: pvMax }).map((_, i) => (
+        <div key={i} className="h-8 flex-1 rounded" style={{ background: i < pv ? accent : "#5c1f1f", border: "1px solid #ffffff18" }} />
+      ))}
+    </div>
+  );
+}
+
+function PackView({ pack, onRetour, role }) {
+  const T = pack.theme;
+  const [journal, setJournal] = useState([]);
+  const [pvSigna, setPvSigna] = useState(SIGNA.pvMax);
+  const [pvOrk, setPvOrk] = useState(ORK.pvMax);
+  const [enCombat, setEnCombat] = useState(false);
+  const [finCombat, setFinCombat] = useState(null);
+  const [round, setRound] = useState(0);
+  const [cibleLibre, setCibleLibre] = useState("4+");
+  const [modLibre, setModLibre] = useState(0);
+  /* — création d'unité : l'unité éveillée remplace Signa-3 partout — */
+  const [enCreationPE, setEnCreationPE] = useState(false);
+  const [persoCree, setPersoCree] = useState(null);
+  const evId = useRef(1);
+
+  const heure = () => new Date().toLocaleTimeString("fr-FR", { hour12: false });
+  const logEvent = (type, texte) =>
+    setJournal(j => [...j, { id: evId.current++, quand: heure(), type, texte }]);
+
+  /* Jet libre (la primitive du noyau, étiquetée) */
+  const jetLibre = () => {
+    const r = resoudreTest(cibleLibre, modLibre);
+    const modTxt = modLibre === 0 ? "" : modLibre > 0 ? " (+1)" : " (−1)";
+    logEvent("libre.jet", `Jet libre — cible ${cibleLibre}${modTxt} → ${r.de}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
+  };
+
+  /* Écriture compensatoire : on n'efface JAMAIS, on annule par écrit */
+  const corrigerDernier = () => {
+    const dernier = journal[journal.length - 1];
+    if (!dernier) return;
+    setJournal(j => [
+      ...j.map(e => (e.id === dernier.id ? { ...e, annule: true } : e)),
+      { id: evId.current++, quand: heure(), type: "journal.correction",
+        texte: `Écriture compensatoire : annule l'événement #${dernier.id} (« ${dernier.texte.slice(0, 60)}${dernier.texte.length > 60 ? "…" : ""} ») — motif : démonstration append-only` }
+    ]);
+  };
+
+  /* La fiche active : Signa-3 (démo) ou l'unité éveillée — et son arme de
+     combat (les armes du manuel portent « A »/« F+1 »/« D3 », résolues ici) */
+  const perso = persoCree || SIGNA;
+  const armeCombat = persoCree ? peArmeCombat(persoCree.armeDef, persoCree.st) : ARMES[SIGNA.arme];
+
+  const validerCreationPE = (p) => {
+    setPersoCree(p);
+    setEnCreationPE(false);
+    setPvSigna(p.pvMax);
+    logEvent("perso.creation", `Éveil de ${p.nom} — ${p.chassis} · code ${p.code} · PV ${p.pvMax} (W×3) · Rfx +${p.rfx} · ${p.armeDef.nom}`);
+  };
+
+  /* Le combat : la séquence du noyau, les surcharges du mod */
+  const demarrerCombat = () => {
+    setEnCombat(true);
+    setFinCombat(null);
+    logEvent("scene.debut", `Combat engagé — ${perso.nom} (${perso.chassis}) vs Ork Boy (Kass Krane)`);
+  };
+
+  const nouveauCombat = () => {
+    setPvSigna(perso.pvMax); setPvOrk(ORK.pvMax);
+    setRound(0); setFinCombat(null);
+    logEvent("scene.debut", "Nouvel engagement — PV réinitialisés (light light)");
+  };
+
+  const jouerRound = () => {
+    let pvS = pvSigna, pvO = pvOrk;
+    const isJ = d6() + perso.rfx, isO = d6() + ORK.ini;
+    logEvent("combat.initiative",
+      `Initiative — ${perso.nom} : ${isJ} (1D6 + Rfx +${perso.rfx}, surcharge du mod) vs Ork : ${isO} (1D6 + Ini ${ORK.ini}) — ${isJ >= isO ? perso.nom + " agit d'abord" : "l'Ork agit d'abord"}`);
+    const ordre = isJ >= isO ? ["joueur", "ork"] : ["ork", "joueur"];
+
+    ordre.forEach(qui => {
+      if (pvS <= 0 || pvO <= 0) return;
+      if (qui === "joueur") {
+        const arme = armeCombat;
+        for (let t = 0; t < arme.attaques; t++) {
+          const jt = resoudreTest(arme.bs_ws, 0);
+          logEvent("combat.jet", `${arme.tir ? "Tir" : "Frappe"} ${t + 1}/${arme.attaques} — ${arme.nom} : toucher ${arme.tir ? "CT" : "CC"} ${arme.bs_ws} → ${jt.de}${jt.nat ? " · " + jt.nat : ""} — ${jt.reussi ? "touché" : "raté"}`);
+          if (!jt.reussi) continue;
+          const cb = cibleBlessure(arme.f, ORK.st.e);
+          const jb = resoudreTest(cb, 0);
+          logEvent("combat.blesse", `Blessure F${arme.f} vs E${ORK.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
+          if (!jb.reussi) continue;
+          const cs = cibleSauvegarde(ORK.st.sv, arme.pa);
+          const js = resoudreTest(cs, 0);
+          logEvent("combat.sauvegarde", `Sauvegarde Ork ${ORK.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
+          if (!js.reussi) {
+            const dgt = typeof arme.degats === "function" ? arme.degats() : arme.degats;
+            pvO = Math.max(0, pvO - dgt);
+            logEvent("combat.degats", `Ork Boy : −${dgt} PV (${pvO}/${ORK.pvMax})`);
+          }
+        }
+      } else {
+        const arme = ARMES[ORK.arme];
+        const jt = resoudreTest(arme.bs_ws, 0);
+        logEvent("combat.riposte", `L'Ork riposte — choppa : toucher CC ${arme.bs_ws} → ${jt.de} — ${jt.reussi ? "touché" : "raté"}`);
+        if (jt.reussi) {
+          const cb = cibleBlessure(arme.f, perso.st.e);
+          const jb = resoudreTest(cb, 0);
+          logEvent("combat.blesse", `Blessure F${arme.f} vs E${perso.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
+          if (jb.reussi) {
+            const cs = cibleSauvegarde(perso.st.sv, arme.pa);
+            const js = resoudreTest(cs, 0);
+            logEvent("combat.sauvegarde", `Sauvegarde ${perso.nom} ${perso.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
+            if (!js.reussi) {
+              pvS = Math.max(0, pvS - arme.degats);
+              logEvent("combat.degats", `${perso.nom} : −${arme.degats} PV (${pvS}/${perso.pvMax})`);
+            }
+          }
+        }
+      }
+    });
+
+    setPvSigna(pvS); setPvOrk(pvO); setRound(r => r + 1);
+
+    if (pvO <= 0) {
+      logEvent("combat.fin", "Ork Boy ☠ à terre — fin du combat, retour au dialogue");
+      setFinCombat("victoire");
+    } else if (pvS <= 0) {
+      /* surcharge hors_combat du mod : le Protocole de Secours */
+      const js = resoudreTest("5+", 0);
+      logEvent("protocole.secours", `${perso.nom} à 0 PV — Protocole de Secours (surcharge du mod) : 5+ → ${js.de} — ${js.reussi ? "l'unité se redresse ⚡ (1 PV)" : "échec"}`);
+      if (js.reussi) {
+        pvS = 1; setPvSigna(1);
+      } else {
+        logEvent("protocole.extraction", `Extraction d'urgence — ${perso.nom} téléporté hors scène (1 PV à la scène suivante)`);
+        setFinCombat("extraction");
+      }
+    }
+  };
+
+  const familleCouleur = {
+    combat: T.accent, libre: "#7dd3fc", protocole: T.or,
+    scene: "#a1a1aa", journal: "#fb7185", perso: T.accent
+  };
+  const journalInverse = [...journal].reverse();
+
+  return (
+    <div className="min-h-screen" style={{ background: T.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="max-w-4xl mx-auto px-5 py-6">
+        <header className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "1px solid " + T.accent + "33" }}>
+          <button onClick={onRetour} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
+            ← Hub
+          </button>
+          <div className="text-center">
+            <div className="text-xl font-bold flex items-center justify-center gap-2" style={{ color: "#e8e4d8" }}>
+              {pack.nom}
+              {role && (
+                <span className="text-xs px-1.5 py-0.5 rounded font-bold"
+                  style={{ background: role === "mj" ? "#f0b24a22" : "#2ee6c922", color: role === "mj" ? "#f0b24a" : "#2ee6c9" }}>
+                  {role === "mj" ? "MJ" : "JOUEUR"}
+                </span>
+              )}
+            </div>
+            <div className="text-xs" style={{ color: "#71717a" }}>
+              {pack.type} · dépend de {pack.depend_de.map(d => d.id + "@" + d.format_min).join(", ")} · v{pack.version} · privé
+            </div>
+          </div>
+          <div style={{ color: T.or }}>⟁</div>
+        </header>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-5">
+          {enCreationPE ? (
+            <div className="md:col-span-2">
+              <EcranCreationUnite accent={T.accent} onValide={validerCreationPE} onAnnule={() => setEnCreationPE(false)} />
+            </div>
+          ) : (
+          <>
+          {/* Fiche */}
+          <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="font-bold text-lg" style={{ color: T.accent }}>{perso.nom}</div>
+              <div className="text-xs" style={{ color: "#71717a" }}>{persoCree ? `${perso.chassis} · code ${perso.code}` : perso.chassis}</div>
+            </div>
+            <PvBarre pv={pvSigna} pvMax={perso.pvMax} accent={T.accent} />
+            <div className="text-right text-xs mt-1" style={{ color: "#a1a1aa" }}>{pvSigna} / {perso.pvMax} PV</div>
+            <div className="grid grid-cols-3 gap-2 mt-3 text-center text-sm">
+              {[["CC", perso.st.cc], ["CT", perso.st.ct], ["F", perso.st.f], ["E", perso.st.e], ["Sv", perso.st.sv], ["Cd", perso.st.cd]]
+                .concat(perso.st.a ? [["A", perso.st.a]] : [])
+                .map(([k, v]) => (
+                <div key={k} className="rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+                  <span className="text-xs" style={{ color: "#71717a" }}>{k} </span>{v}
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 rounded py-1.5 text-center text-sm" style={{ background: T.or + "22", color: T.or }}>
+              Rfx +{perso.rfx} <span className="text-xs">— surcharge du mod PÉ</span>
+            </div>
+            {persoCree ? (
+              <div className="mt-3 rounded p-2 text-xs" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+                <b style={{ color: "#e8e4d8" }}>{perso.armeDef.nom}</b> · {perso.armeDef.tir ? "tir" : "mêlée"} · {perso.armeDef.portee} ·
+                A {perso.armeDef.att} · {perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc} · F {perso.armeDef.f} ·
+                PA {perso.armeDef.pa} · D {perso.armeDef.d}
+                <span style={{ color: "#71717a" }}> · {perso.armeDef.regle}</span>
+              </div>
+            ) : (
+              <div className="mt-3 rounded p-2 text-xs" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+                <b style={{ color: "#e8e4d8" }}>{ARMES[perso.arme].nom}</b> · {ARMES[perso.arme].type} · {ARMES[perso.arme].portee} ·
+                A {ARMES[perso.arme].attaques} · {ARMES[perso.arme].bs_ws} · F {ARMES[perso.arme].f} ·
+                PA {ARMES[perso.arme].pa} · D {ARMES[perso.arme].degats}
+              </div>
+            )}
+            {perso.apt && (
+              <div className="mt-2 rounded p-2 text-xs" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+                <b style={{ color: "#e8e4d8" }}>Aptitude de châssis — </b>{perso.apt}
+              </div>
+            )}
+            {perso.comps && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {perso.comps.map(c => (
+                  <span key={c} className="text-xs px-1.5 py-0.5 rounded" style={{ background: T.accent + "22", color: T.accent }}>{c}</span>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setEnCreationPE(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
+              style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
+              {persoCree ? "↺ Éveiller une nouvelle unité" : "⚙ Éveiller une unité"}
+            </button>
+          </div>
+
+          {/* Adversaire + combat */}
+          <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid #3f3f46" }}>
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="font-bold text-lg" style={{ color: pvOrk > 0 ? "#e8e4d8" : "#52525b" }}>{pvOrk > 0 ? "Ork Boy" : "Ork Boy ☠"}</div>
+              <div className="text-xs" style={{ color: "#71717a" }}>ennemi de test</div>
+            </div>
+            <PvBarre pv={pvOrk} pvMax={ORK.pvMax} accent="#f0b24a" />
+            <div className="text-right text-xs mt-1" style={{ color: "#a1a1aa" }}>{pvOrk} / {ORK.pvMax} PV</div>
+            <div className="mt-3 flex flex-col gap-2">
+              {!enCombat || finCombat ? (
+                <button onClick={enCombat ? nouveauCombat : demarrerCombat}
+                  className="py-2.5 rounded-lg font-bold text-black" style={{ background: finCombat ? "#3f3f46" : T.or, color: finCombat ? "#e8e4d8" : "#0a120f" }}>
+                  {enCombat ? "↺ Nouvel engagement" : "⚔ Engager le combat (test)"}
+                </button>
+              ) : (
+                <button onClick={jouerRound} className="py-2.5 rounded-lg font-bold text-black" style={{ background: T.accent }}>
+                  ⚔ Jouer le round {round + 1}
+                </button>
+              )}
+              {finCombat && (
+                <div className="text-center text-sm py-2 rounded" style={{ background: "#ffffff0d", color: finCombat === "victoire" ? T.accent : T.or }}>
+                  {finCombat === "victoire" ? "Victoire — la Tombe se tait." : finCombat === "extraction" ? `Extraction d'urgence — ${perso.nom} est sorti du combat.` : ""}
+                </div>
+              )}
+              <div className="text-xs text-center" style={{ color: "#71717a" }}>
+                Séquence du noyau : toucher → blesser (F vs E) → sauvegarde (PA) → dégâts
+              </div>
+            </div>
+          </div>
+          </>
+          )}
+        </div>
+
+        {/* Jet libre */}
+        <div className="rounded-xl p-4 mb-5" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+          <div className="font-bold mb-3" style={{ color: T.accent }}>🎲 Jet libre étiqueté</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm" style={{ color: "#c8c8ce" }}>
+              Cible{" "}
+              <select value={cibleLibre} onChange={e => setCibleLibre(e.target.value)}
+                className="ml-1 rounded px-2 py-1" style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
+                {["2+", "3+", "4+", "5+", "6+"].map(c => <option key={c} value={c}>{c} {c === "2+" ? "(trivial)" : c === "6+" ? "(héroïque)" : ""}</option>)}
+              </select>
+            </label>
+            <div className="flex rounded overflow-hidden" style={{ border: "1px solid #3f3f46" }}>
+              {[["−1", -1], ["±0", 0], ["+1", 1]].map(([lbl, v]) => (
+                <button key={v} onClick={() => setModLibre(v)}
+                  className="px-3 py-1 text-sm"
+                  style={{ background: modLibre === v ? T.accent : "#14161b", color: modLibre === v ? "#0a120f" : "#c8c8ce" }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            <button onClick={jetLibre} className="px-4 py-1.5 rounded-lg font-bold text-black" style={{ background: T.or }}>
+              Lancer 1D6
+            </button>
+            <span className="text-xs" style={{ color: "#71717a" }}>1D6 ≥ cible · 6 naturel réussit toujours · 1 naturel échoue</span>
+          </div>
+        </div>
+
+        {/* Journal append-only */}
+        <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.or + "44" }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-bold" style={{ color: T.or }}>📜 Journal du personnage — append-only</div>
+            <button onClick={corrigerDernier}
+              className="text-xs px-3 py-1 rounded font-bold"
+              style={{ border: "1px solid #fb718566", color: "#fb7185" }}
+              disabled={journal.length === 0}>
+              ✎ Annuler le dernier (par écrit)
+            </button>
+          </div>
+          <div className="max-h-80 overflow-y-auto flex flex-col gap-1.5 pr-1">
+            {journalInverse.length === 0 && (
+              <div className="text-sm py-3 text-center" style={{ color: "#71717a" }}>Le fil est vide — chaque action s'y gravera, sans retour en arrière.</div>
+            )}
+            {journalInverse.map(e => {
+              const fam = e.type.split(".")[0];
+              return (
+                <div key={e.id} className="flex items-start gap-2 rounded px-2 py-1.5 text-sm"
+                  style={{ background: "#ffffff08", opacity: e.annule ? 0.45 : 1 }}>
+                  <span className="text-xs px-1.5 py-0.5 rounded font-bold shrink-0"
+                    style={{ background: (familleCouleur[fam] || "#71717a") + "26", color: familleCouleur[fam] || "#a1a1aa" }}>
+                    {e.type}
+                  </span>
+                  <span className="text-xs shrink-0 mt-0.5" style={{ color: "#71717a" }}>{e.quand}</span>
+                  <span style={{ color: e.annule ? "#71717a" : "#e8e4d8", textDecoration: e.annule ? "line-through" : "none" }}>
+                    {e.texte}{e.annule ? " (annulé par écriture compensatoire)" : ""}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-xs mt-3" style={{ color: "#71717a" }}>
+            Surcharges du mod appliquées : {SURCHARGES.join(" · ")}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ Le journal d100 (append-only, comme le noyau-40k) ══════════ */
+function useJournal() {
+  const [journal, setJournal] = useState([]);
+  const evId = useRef(1);
+  const heure = () => new Date().toLocaleTimeString("fr-FR", { hour12: false });
+  const log = (type, texte) =>
+    setJournal(j => [...j, { id: evId.current++, quand: heure(), type, texte }]);
+  const corrigerDernier = () => {
+    setJournal(j => {
+      const dernier = j[j.length - 1];
+      if (!dernier) return j;
+      return [
+        ...j.map(e => (e.id === dernier.id ? { ...e, annule: true } : e)),
+        { id: evId.current++, quand: heure(), type: "journal.correction",
+          texte: `Écriture compensatoire : annule l'événement #${dernier.id} (« ${dernier.texte.slice(0, 60)}${dernier.texte.length > 60 ? "…" : ""} ») — motif : démonstration append-only` }
+      ];
+    });
+  };
+  return { journal, log, corrigerDernier };
+}
+
+function BarrePct({ valeur, max, accent, label }) {
+  const pct = Math.max(0, Math.min(100, Math.round((valeur / max) * 100)));
+  return (
+    <div>
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "#ffffff14" }}>
+        <div className="h-full rounded-full transition-all" style={{ width: pct + "%", background: accent }} />
+      </div>
+      {label && <div className="text-right text-xs mt-0.5" style={{ color: "#a1a1aa" }}>{label}</div>}
+    </div>
+  );
+}
+
+function JournalBloc({ journal, corriger, accent, or, surcharges }) {
+  const familleCouleur = {
+    combat: accent, libre: "#7dd3fc", protocole: or, scene: "#a1a1aa", journal: "#fb7185",
+    pou: accent, forge: or, controle: "#fb7185", san: "#7dd3fc", perso: accent
+  };
+  const journalInverse = [...journal].reverse();
+  return (
+    <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + or + "44" }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-bold" style={{ color: or }}>📜 Journal du personnage — append-only</div>
+        <button onClick={corriger}
+          className="text-xs px-3 py-1 rounded font-bold"
+          style={{ border: "1px solid #fb718566", color: "#fb7185" }}
+          disabled={journal.length === 0}>
+          ✎ Annuler le dernier (par écrit)
+        </button>
+      </div>
+      <div className="max-h-80 overflow-y-auto flex flex-col gap-1.5 pr-1">
+        {journalInverse.length === 0 && (
+          <div className="text-sm py-3 text-center" style={{ color: "#71717a" }}>Le fil est vide — chaque action s'y gravera, sans retour en arrière.</div>
+        )}
+        {journalInverse.map(e => {
+          const fam = e.type.split(".")[0];
+          return (
+            <div key={e.id} className="flex items-start gap-2 rounded px-2 py-1.5 text-sm"
+              style={{ background: "#ffffff08", opacity: e.annule ? 0.45 : 1 }}>
+              <span className="text-xs px-1.5 py-0.5 rounded font-bold shrink-0"
+                style={{ background: (familleCouleur[fam] || "#71717a") + "26", color: familleCouleur[fam] || "#a1a1aa" }}>
+                {e.type}
+              </span>
+              <span className="text-xs shrink-0 mt-0.5" style={{ color: "#71717a" }}>{e.quand}</span>
+              <span style={{ color: e.annule ? "#71717a" : "#e8e4d8", textDecoration: e.annule ? "line-through" : "none" }}>
+                {e.texte}{e.annule ? " (annulé par écriture compensatoire)" : ""}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-xs mt-3" style={{ color: "#71717a" }}>
+        Surcharges du mod appliquées : {surcharges}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ Bloodlust : création d'un porteur (livre p. 81-88) ══════════ */
+function EcranCreationPorteur({ accent, onValide, onAnnule }) {
+  const [peuple, setPeuple] = useState(null);
+  const [nom, setNom] = useState("");
+  const [ajust, setAjust] = useState({}); /* désir → −2..+2 (un PJ ajuste de ±1 à ±2) */
+  const [bonus, setBonus] = useState({}); /* compétence → multiple de 5 */
+
+  const listeCombat = BL_BASE_COMBAT, listeSec = BL_BASE_SECONDAIRES;
+  const totalGroupe = (liste) => liste.reduce((s, [k]) => s + (bonus[k] || 0), 0);
+  const totCombat = totalGroupe(listeCombat), totSec = totalGroupe(listeSec);
+  const majBonus = (liste, plafond, k, delta) => {
+    const nv = (bonus[k] || 0) + delta;
+    if (nv < 0 || nv > 100 || totalGroupe(liste) + delta > plafond) return;
+    setBonus(b => ({ ...b, [k]: nv }));
+  };
+  const peutValider = peuple && nom.trim().length > 0;
+
+  const valider = () => {
+    const competences = {};
+    [...listeCombat, ...listeSec].forEach(([k, base]) => { competences[k] = base + (bonus[k] || 0); });
+    const desirs = {};
+    DESIRS_BL.forEach((d, i) => { desirs[d] = BL_DESIRS_PEUPLES[peuple.nom][i] + (ajust[d] || 0); });
+    onValide({ id: "cree", nom: nom.trim(), peuple: peuple.nom, caracs: peuple.caracs, desirs, competences });
+  };
+
+  return (
+    <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + accent + "33" }}>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="font-bold text-lg" style={{ color: accent }}>🧬 Créer un porteur</div>
+        <div className="text-xs" style={{ color: "#71717a" }}>livre p. 81-88</div>
+      </div>
+      <div className="text-xs mb-4" style={{ color: "#a1a1aa" }}>
+        Peuple → nom → désirs → compétences. PV = EN×2, contrôle = VO×5.
+        Modificateurs par valeur de carac (image p. 87-88) ignorés dans l'alpha.
+      </div>
+
+      {/* ① Identité + peuple */}
+      <input value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom du porteur…"
+        className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
+        style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8" }} />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        {BL_PEUPLES.map(p => (
+          <button key={p.id} onClick={() => setPeuple(p)}
+            className="rounded-lg p-2.5 text-left"
+            style={{ border: "1px solid " + (peuple && peuple.id === p.id ? accent : "#3f3f46"),
+                     background: peuple && peuple.id === p.id ? "#ffffff0d" : "#ffffff08" }}>
+            <div className="font-bold text-sm" style={{ color: peuple && peuple.id === p.id ? accent : "#e8e4d8" }}>{p.nom}</div>
+            <div className="text-xs mt-0.5" style={{ color: "#a1a1aa" }}>
+              FO {p.caracs.FO} · EN {p.caracs.EN} · Ag {p.caracs.Ag} · RA {p.caracs.RA} · PE {p.caracs.PE} · VO {p.caracs.VO}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {peuple && (<>
+        {/* ② Désirs du peuple */}
+        <div className="text-xs mt-4 mb-1.5" style={{ color: "#71717a" }}>
+          Désirs du peuple {peuple.nom} (livre p. 88) — un PJ ajuste chaque désir de ±1 à ±2
+        </div>
+        {DESIRS_BL.map((d, i) => {
+          const base = BL_DESIRS_PEUPLES[peuple.nom][i];
+          return (
+            <div key={d} className="flex items-center justify-between rounded-lg px-2.5 py-1.5 mb-1.5" style={{ background: "#ffffff08" }}>
+              <span className="text-sm" style={{ color: "#c8c8ce" }}>
+                {d} <span style={{ color: "#71717a" }}>peuple : {base}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                {[-2, -1, 0, 1, 2].map(v => (
+                  <button key={v} onClick={() => setAjust(a => ({ ...a, [d]: v }))}
+                    className="w-7 h-7 rounded text-xs font-bold"
+                    style={{ background: (ajust[d] || 0) === v ? accent : "#0c0d10",
+                             color: (ajust[d] || 0) === v ? "#0c0d10" : "#c8c8ce", border: "1px solid #3f3f46" }}>
+                    {v > 0 ? "+" + v : v}
+                  </button>
+                ))}
+                <span className="ml-2 text-sm font-bold" style={{ color: "#e8e4d8" }}>
+                  {base + (ajust[d] || 0)}/10{(base + (ajust[d] || 0)) >= 9 ? " 🔥" : ""}
+                </span>
+              </span>
+            </div>
+          );
+        })}
+
+        {/* ③ Compétences : budgets PJ (multiples de 5, plancher 5 %) */}
+        {[["Compétences de combat — +40 % à répartir", listeCombat, 40, totCombat],
+          ["Compétences secondaires — +80 % à répartir", listeSec, 80, totSec]].map(([titre, liste, plafond, tot]) => (
+          <div key={titre}>
+            <div className="flex justify-between text-xs mt-4 mb-1.5">
+              <span style={{ color: "#71717a" }}>{titre}</span>
+              <span style={{ color: tot >= plafond ? "#71717a" : accent }}>{tot} / {plafond} %</span>
+            </div>
+            {liste.map(([k, base]) => (
+              <div key={k} className="flex items-center justify-between rounded-lg px-2.5 py-1 mb-1" style={{ background: "#ffffff08" }}>
+                <span className="text-sm" style={{ color: "#c8c8ce" }}>
+                  {k} <span style={{ color: "#71717a" }}>base {base} %</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <button onClick={() => majBonus(liste, plafond, k, -5)}
+                    className="w-6 h-6 rounded text-xs font-bold" style={{ background: "#0c0d10", color: "#c8c8ce", border: "1px solid #3f3f46" }}>−</button>
+                  <span className="text-sm font-bold w-12 text-right" style={{ color: "#e8e4d8" }}>{base + (bonus[k] || 0)} %</span>
+                  <button onClick={() => majBonus(liste, plafond, k, 5)}
+                    className="w-6 h-6 rounded text-xs font-bold" style={{ background: "#0c0d10", color: "#c8c8ce", border: "1px solid #3f3f46" }}>+</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        {/* ④ Aperçu dérivé */}
+        <div className="flex gap-2 mt-4 text-center text-xs">
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+            PV = EN×2 <b>{peuple.caracs.EN * 2}</b>
+          </div>
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+            Contrôle = VO×5 <b>{peuple.caracs.VO * 5} %</b>
+          </div>
+        </div>
+      </>)}
+
+      {/* Pied : annuler / faire naître */}
+      <div className="flex gap-2 mt-4">
+        <button onClick={onAnnule} className="flex-1 py-2 rounded-lg text-sm font-bold"
+          style={{ background: "#0c0d10", color: "#a1a1aa", border: "1px solid #3f3f46" }}>✕ Annuler</button>
+        <button onClick={valider} disabled={!peutValider}
+          className="flex-1 py-2 rounded-lg text-sm font-bold"
+          style={{ background: peutValider ? accent : "#27272a", color: peutValider ? "#0c0d10" : "#71717a" }}>
+          {peutValider ? `🧬 Faire naître ${nom.trim()}` : "🧬 Choisir un peuple et un nom"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ Stormbringer : création de l'aventurier (Livre du Joueur) ══════════
+   7 caractéristiques à 3D6 : FOR, CON, TAI, INT, POU, DEX, CHA. Si le total
+   dépasse 52, le livre permet de TOUT relancer. SAN de départ = POU×5.
+   Les compétences du ch. 4 ne sont pas encore extraites : l'aventurier né
+   ici joue ses caracs (brute, ×2, ×3, ×5) — honnêteté d'alpha assumée. */
+function EcranCreationAventurier({ accent, onValide, onAnnule }) {
+  const [nom, setNom] = useState("");
+  const [jets, setJets] = useState(null); /* carac → les trois dés */
+  const [essais, setEssais] = useState(0);
+
+  const lancer = () => {
+    const j = {};
+    SB_7.forEach(k => { j[k] = [d6(), d6(), d6()]; });
+    setJets(j);
+    setEssais(e => e + 1);
+  };
+  const caracs = jets ? Object.fromEntries(SB_7.map(k => [k, jets[k][0] + jets[k][1] + jets[k][2]])) : null;
+  const total = caracs ? SB_7.reduce((s, k) => s + caracs[k], 0) : 0;
+  const trop = !!caracs && total > 52;
+  const peutValider = !!caracs && nom.trim().length > 0;
+
+  const valider = () => onValide({
+    id: "cree", nom: nom.trim(), origine: "aventurier des Jeunes Royaumes",
+    caracs, sanMax: caracs.POU * 5
+  });
+
+  return (
+    <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + accent + "33" }}>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="font-bold text-lg" style={{ color: accent }}>⚔ Créer un aventurier</div>
+        <div className="text-xs" style={{ color: "#71717a" }}>7 caracs à 3D6 · total ≤ 52</div>
+      </div>
+      <div className="text-xs mb-4" style={{ color: "#a1a1aa" }}>
+        Nom → les dés de naissance. SAN de départ = POU×5. Si le total dépasse 52, le livre permet de tout relancer.
+      </div>
+
+      {/* ① Identité */}
+      <input value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom de l'aventurier…"
+        className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
+        style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8" }} />
+
+      {/* ② Les 3D6 de naissance */}
+      <button onClick={lancer} className="w-full py-2.5 rounded-lg font-bold text-black mb-3" style={{ background: accent }}>
+        {jets ? "🎲 Tout relancer (7 × 3D6)" : "🎲 Lancer les dés de naissance (7 × 3D6)"}
+      </button>
+
+      {jets && (<>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+          {SB_7.map(k => (
+            <div key={k} className="rounded-lg py-2" style={{ background: "#ffffff0d" }}>
+              <div className="text-xs" style={{ color: "#71717a" }}>{k}</div>
+              <div className="text-2xl font-bold" style={{ color: "#e8e4d8" }}>{caracs[k]}</div>
+              <div className="text-xs" style={{ color: "#a1a1aa" }}>{jets[k].join(" + ")}</div>
+            </div>
+          ))}
+          <div className="rounded-lg py-2" style={{ background: trop ? "#fb718522" : accent + "22", border: "1px solid " + (trop ? "#fb718566" : accent + "44") }}>
+            <div className="text-xs" style={{ color: "#71717a" }}>Total</div>
+            <div className="text-2xl font-bold" style={{ color: trop ? "#fb7185" : accent }}>{total}</div>
+            <div className="text-xs" style={{ color: "#a1a1aa" }}>{trop ? "> 52 — relance autorisée" : "≤ 52 ✓"}</div>
+          </div>
+        </div>
+
+        {/* ③ Aperçu dérivé */}
+        <div className="flex gap-2 mt-3 text-center text-xs">
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+            SAN = POU×5 <b>{caracs.POU * 5}</b>
+          </div>
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+            Lutte de POU vs {SB_DEMON.pou} : <b>{50 - 5 * (SB_DEMON.pou - caracs.POU)} %</b>
+          </div>
+        </div>
+        <div className="text-xs mt-2 text-center" style={{ color: "#71717a" }}>
+          Tentative n° {essais} · compétences du ch. 4 non extraites — l'aventurier né ici joue ses caracs (brute, ×2, ×3, ×5)
+        </div>
+      </>)}
+
+      {/* Pied : annuler / faire naître */}
+      <div className="flex gap-2 mt-4">
+        <button onClick={onAnnule} className="flex-1 py-2 rounded-lg text-sm font-bold"
+          style={{ background: "#0c0d10", color: "#a1a1aa", border: "1px solid #3f3f46" }}>✕ Annuler</button>
+        <button onClick={valider} disabled={!peutValider}
+          className="flex-1 py-2 rounded-lg text-sm font-bold"
+          style={{ background: peutValider ? accent : "#27272a", color: peutValider ? "#0c0d10" : "#71717a" }}>
+          {peutValider ? `⚔ Faire naître ${nom.trim()}` : "⚔ Lancer les dés et choisir un nom"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ PÉ : éveil d'une unité (manuel joueur — noms neutres) ══════════
+   Données du manuel joueur (10 châssis, 6 codes de fabrique, arsenal neutre).
+   L'unité éveillée remplace Signa-3 partout. Modules, wargear et protocoles :
+   hors alpha (places Mémoire/Calcul affichées, limites de taille par châssis
+   pas encore extraites). */
+function EcranCreationUnite({ accent, onValide, onAnnule }) {
+  const [nom, setNom] = useState("");
+  const [chNom, setChNom] = useState(null);
+  const [code, setCode] = useState(null);
+  const [armeId, setArmeId] = useState("fusil");
+  const ch = PE_CHASSIS.find(c => c.n === chNom) || null;
+  const arme = PE_ARMES.find(a => a.id === armeId);
+  const peutValider = !!ch && !!code && nom.trim().length > 0;
+
+  const valider = () => onValide({
+    id: "cree", nom: nom.trim(),
+    chassis: ch.n, code,
+    st: { cc: ch.cc, ct: ch.ct, f: parseInt(ch.f, 10), e: parseInt(ch.e, 10), sv: ch.sv, cd: ch.cd, a: parseInt(ch.a, 10) },
+    rfx: parseInt(ch.rfx, 10), pvMax: parseInt(ch.pv, 10),
+    apt: ch.apt, comps: ch.cp.slice(), arme: arme.id, armeDef: arme
+  });
+
+  return (
+    <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + accent + "33" }}>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="font-bold text-lg" style={{ color: accent }}>⚙ Éveil d'une unité</div>
+        <div className="text-xs" style={{ color: "#71717a" }}>10 châssis · 6 codes de fabrique</div>
+      </div>
+      <div className="text-xs mb-4" style={{ color: "#a1a1aa" }}>
+        Nom → châssis → code de fabrique → arme. PV et Rfx viennent du châssis (PV = W×3).
+        Modules, wargear et protocoles : hors alpha — les places Mémoire/Calcul sont gravées pour la suite.
+      </div>
+
+      {/* ① Identité */}
+      <input value={nom} onChange={e => setNom(e.target.value)} placeholder="Désignation de l'unité…"
+        className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
+        style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8" }} />
+
+      {/* ② Châssis */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        {PE_CHASSIS.map(c => (
+          <button key={c.n} onClick={() => setChNom(c.n)} className="rounded-lg p-2.5 text-left"
+            style={{ border: "1px solid " + (chNom === c.n ? accent : "#3f3f46"), background: chNom === c.n ? "#ffffff0d" : "#ffffff08" }}>
+            <div className="font-bold text-sm" style={{ color: chNom === c.n ? accent : "#e8e4d8" }}>{c.n}</div>
+            <div className="text-xs mt-0.5" style={{ color: "#a1a1aa" }}>
+              CC {c.cc} · CT {c.ct} · F {c.f} · E {c.e} · PV {c.pv} · A {c.a} · Sv {c.sv} · Rfx {c.rfx}
+            </div>
+            <div className="text-xs mt-0.5" style={{ color: "#71717a" }}>Mémoire {c.mem} · Calcul {c.cal}</div>
+          </button>
+        ))}
+      </div>
+
+      {ch && (<>
+        {/* ③ Code de fabrique */}
+        <div className="text-xs mt-4 mb-1.5" style={{ color: "#71717a" }}>Code de fabrique de la lignée</div>
+        <div className="flex flex-wrap gap-1.5">
+          {PE_CODES.map(c => (
+            <button key={c} onClick={() => setCode(c)} className="px-2.5 py-1 rounded-lg text-sm font-bold"
+              style={{ background: code === c ? accent : "#14161b", color: code === c ? "#0a120f" : "#c8c8ce", border: "1px solid " + (code === c ? accent : "#3f3f46") }}>
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {/* ④ Arme de départ */}
+        <div className="text-xs mt-4 mb-1.5" style={{ color: "#71717a" }}>Arme de départ — arsenal neutre (choix libre dans l'alpha)</div>
+        <select value={armeId} onChange={e => setArmeId(e.target.value)} className="w-full rounded px-2 py-1.5 text-sm"
+          style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
+          {PE_ARMES.map(a => (
+            <option key={a.id} value={a.id}>
+              {a.nom} · {a.tir ? "tir" : "mêlée"} · {a.portee} · A {a.att} · F {a.f} · PA {a.pa} · D {a.d} · T{a.taille}
+            </option>
+          ))}
+        </select>
+        <div className="text-xs mt-1" style={{ color: "#71717a" }}>{arme.regle}</div>
+
+        {/* ⑤ Aperçu dérivé */}
+        <div className="flex gap-2 mt-3 text-center text-xs">
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>PV <b>{ch.pv}</b></div>
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>Initiative 1D6 <b>Rfx {ch.rfx}</b></div>
+          <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>Mémoire <b>{ch.mem}</b> · Calcul <b>{ch.cal}</b></div>
+        </div>
+        <div className="text-xs mt-2 rounded p-2" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+          <b style={{ color: "#e8e4d8" }}>Aptitude de châssis — </b>{ch.apt}
+        </div>
+        <div className="flex flex-wrap gap-1 mt-2">
+          {ch.cp.map(c => (
+            <span key={c} className="text-xs px-1.5 py-0.5 rounded" style={{ background: accent + "22", color: accent }}>{c}</span>
+          ))}
+        </div>
+      </>)}
+
+      {/* Pied : annuler / éveiller */}
+      <div className="flex gap-2 mt-4">
+        <button onClick={onAnnule} className="flex-1 py-2 rounded-lg text-sm font-bold"
+          style={{ background: "#0c0d10", color: "#a1a1aa", border: "1px solid #3f3f46" }}>✕ Annuler</button>
+        <button onClick={valider} disabled={!peutValider}
+          className="flex-1 py-2 rounded-lg text-sm font-bold"
+          style={{ background: peutValider ? accent : "#27272a", color: peutValider ? "#0a120f" : "#71717a" }}>
+          {peutValider ? `⟁ Éveiller ${nom.trim()}` : "⟁ Châssis, code et nom requis"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ PackViewD100 : squelette alpha des packs d100 ══════════ */
+function PackViewD100({ pack, onRetour, role }) {
+  const T = pack.theme;
+  const sb = pack.id === "stormbringer";
+  const { journal, log, corrigerDernier } = useJournal();
+
+  /* — état Stormbringer — */
+  const [persoSBCree, setPersoSBCree] = useState(null); /* aventurier né de la création (remplace Vyon-Kesh) */
+  const [enCreationSB, setEnCreationSB] = useState(false); /* écran de création de l'aventurier */
+  const sbPerso = persoSBCree || SB_PERSO; /* fiche active : Vyon-Kesh (démo) ou l'aventurier créé */
+  const c = sbPerso.caracs;
+  const sourcesSB = [
+    ...SB_7.map(k => ({ label: `${k} ${c[k]} — carac brute (${c[k]} %)`, seuil: c[k] })),
+    { label: `POU×3 — lier un démon (${c.POU * 3} %)`, seuil: c.POU * 3 },
+    { label: `CHA×2 — marchander (${c.CHA * 2} %)`, seuil: c.CHA * 2 },
+    { label: `CHA×5 — marché démoniaque (${c.CHA * 5} %)`, seuil: c.CHA * 5 },
+    ...Object.entries(sbPerso.competences || {}).map(([k, v]) => ({ label: `${k} (${v} %)`, seuil: v }))
+  ];
+  const [srcIdx, setSrcIdx] = useState(0);
+  const [san, setSan] = useState(SB_PERSO.sanMax);
+  const [ronde, setRonde] = useState(0);
+  const [lutteFinie, setLutteFinie] = useState(null);
+
+  /* — état Bloodlust — */
+  const [enCreation, setEnCreation] = useState(false);   /* écran de création du porteur */
+  const [persoCree, setPersoCree] = useState(null);      /* porteur né de la création (remplace Urkhar) */
+  const [compIdx, setCompIdx] = useState(0);
+  const [palierIdx, setPalierIdx] = useState(2);
+  const [pts, setPts] = useState(BL_ARME.base); /* base de l'épée longue : 20 pts (livre p. 95) */
+  const [acquis, setAcquis] = useState([]);
+  const [jetsTable, setJetsTable] = useState({});    /* tableId → jets consommés */
+  const [forge, setForge] = useState(null);          /* { a, b, tableId } — chiffres tirés, ordre à choisir */
+  const [choixLibre, setChoixLibre] = useState(null);/* { tableId } — « Au choix du joueur » */
+  const [armeEveillee, setArmeEveillee] = useState(false);
+  const perso = persoCree || BL_PORTEUR; /* fiche active : Urkhar (démo) ou le porteur créé */
+  const compsBL = Object.keys(perso.competences);
+
+  /* Stormbringer : la lutte de POU (surcharge : 50 % ± 5 %/pt d'écart) */
+  const lutterPOU = () => {
+    const ecart = SB_DEMON.pou - c.POU;
+    const pJ = 50 - 5 * ecart, pD = 50 + 5 * ecart;
+    const rJ = resoudreD100(pJ, 0, "brp"), rD = resoudreD100(pD, 0, "brp");
+    log("pou.jet", `Lutte de POU (round ${ronde + 1}) — ${sbPerso.nom} ${pJ} % → ${fmtD100(rJ.de)}${rJ.nat ? " · " + rJ.nat : ""} ; ${SB_DEMON.nom} ${pD} % → ${fmtD100(rD.de)}${rD.nat ? " · " + rD.nat : ""}`);
+    if (rJ.reussi && !rD.reussi) {
+      setLutteFinie("victoire"); setRonde(0);
+      log("pou.victoire", "L'octogone tient — le démon est renvoyé au plan d'où il vient");
+    } else if (rD.reussi && !rJ.reussi) {
+      const perte = d6();
+      const nv = Math.max(0, san - perte);
+      setSan(nv); setLutteFinie("defaite"); setRonde(0);
+      log("pou.defaite", `Le démon brise la lutte — ${perte} SAN perdus (${nv}/${sbPerso.sanMax})`);
+      if (nv === 0) log("san.perdu", `SAN à zéro — l'âme de ${sbPerso.nom} vacille… (un repos la restaurera, squelette alpha)`);
+    } else {
+      setRonde(r => r + 1);
+      log("pou.tension", "Les deux volontés tiennent — la lutte continue");
+    }
+  };
+  const reposerSAN = () => {
+    setSan(sbPerso.sanMax);
+    log("san.repos", `Repos — Santé Mentale de ${sbPerso.nom} restaurée (squelette alpha)`);
+  };
+
+  /* Bloodlust : la forge de l'Arme vivante (tables officielles p. 96-100 ;
+     total > 100 → l'arme s'éveille ; prix = palier 1 ; jets max par table) */
+  const lancerForge = (tableId) => {
+    if (armeEveillee) return;
+    const t = BL_TABLES.find(x => x.id === tableId);
+    if (!t || (t.max !== null && (jetsTable[tableId] || 0) >= t.max)) return;
+    const a = Math.floor(Math.random() * 10), b = Math.floor(Math.random() * 10);
+    setForge({ a, b, tableId });
+    log("forge.des", `Forge d'${BL_ARME.nom} (${t.nom}) — d% tiré : ${a} et ${b} — le joueur choisit l'ordre des chiffres (la règle d'or du livre :D)`);
+  };
+  const ajouterPouvoir = (tableId, cle, pouvoir) => {
+    if (acquis.some(p => p.tableId === tableId && p.nom === pouvoir.nom)) {
+      log("forge.refus", `${pouvoir.nom} — déjà possédé : un même pouvoir ne s'acquiert qu'une fois, relancez`);
+      return;
+    }
+    const t = BL_TABLES.find(x => x.id === tableId);
+    const prixN1 = pouvoir.prix[0];
+    const nvPts = pts + prixN1;
+    const nvAcquis = [...acquis, { cle, tableId, nom: pouvoir.nom, prix: prixN1 }];
+    const prestige = BL_TABLES.reduce((s, tb) => s + tb.prestige * nvAcquis.filter(p => p.tableId === tb.id).length, 0);
+    setJetsTable(j => ({ ...j, [tableId]: (j[tableId] || 0) + 1 }));
+    setAcquis(nvAcquis);
+    setPts(nvPts);
+    log("forge.achat", `${t.nom} ${fmtD100(cle)} — ${pouvoir.nom} · ${prixN1 > 0 ? "+" : ""}${prixN1} → total ${nvPts}/100`);
+    if (nvPts > 100 && !armeEveillee) {
+      setArmeEveillee(true);
+      log("forge.fin", `Total ${nvPts} > 100 — ${BL_ARME.nom} s'ÉVEILLE ⚔ l'épée est terminée (prestige de l'arme : ${prestige} pts — nouveaux pouvoirs uniquement en jeu)`);
+    }
+  };
+  const choisirOrdreForge = (premier) => {
+    const { a, b, tableId } = forge;
+    const t = BL_TABLES.find(x => x.id === tableId);
+    setForge(null);
+    const n = premier === "a" ? a * 10 + b : b * 10 + a;
+    const cle = n === 0 ? 100 : n;
+    const trouve = t.table.find(p => cle >= p.de[0] && cle <= p.de[1]);
+    if (!trouve) return;
+    if (trouve.prix === null) {
+      setChoixLibre({ tableId });
+      setJetsTable(j => ({ ...j, [tableId]: (j[tableId] || 0) + 1 }));
+      log("forge.choix", `d% = ${fmtD100(cle)} — « Au choix du joueur » : le porteur désigne un pouvoir de la table ${t.nom}`);
+      return;
+    }
+    ajouterPouvoir(tableId, cle, trouve);
+  };
+  /* Stormbringer : validation de la création d'un aventurier (écran dédié) */
+  const validerCreationSB = (p) => {
+    setPersoSBCree(p);
+    setEnCreationSB(false);
+    setSan(p.sanMax);
+    log("perso.creation", `Fait naître ${p.nom}, ${p.origine} — 7 caracs 3D6 (total ${SB_7.reduce((s, k) => s + p.caracs[k], 0)}/52) · SAN ${p.sanMax} (POU ${p.caracs.POU}×5)`);
+  };
+
+  /* Bloodlust : validation de la création d'un porteur (écran dédié) */
+  const validerCreation = (p) => {
+    setPersoCree(p);
+    setEnCreation(false);
+    log("perso.creation", `Fait naître ${p.nom}, ${p.peuple} — PV ${p.caracs.EN * 2} · contrôle ${p.caracs.VO * 5} % (l'arme, elle, attend sa forge)`);
+  };
+
+  const testerControle = () => {
+    const seuil = perso.caracs.VO * 5;
+    const r = resoudreD100(seuil, 0, "bloodlust");
+    log("controle.jet", `Test de contrôle — VO ${perso.caracs.VO} ×5 = ${seuil} % → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "réussi" : "ÉCHOUÉ"}`);
+    if (r.reussi) log("controle.ok", `${perso.nom} garde la main — la lame rumuse, mais elle obéit`);
+    else log("controle.perdu", `${BL_ARME.nom} prend le dessus — ce round, c'est la Violence qui décide 😈`);
+  };
+
+  /* Jet libre étiqueté (la primitive du noyau-d100) */
+  const jetLibre = () => {
+    if (sb) {
+      const src = sourcesSB[srcIdx];
+      const r = resoudreD100(src.seuil, 0, "brp");
+      log("libre.jet", `Jet libre — ${src.label} → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
+    } else {
+      const comp = compsBL[compIdx];
+      const seuil = perso.competences[comp];
+      const p = PALIERS_BL[palierIdx];
+      const r = resoudreD100(seuil, p.mod, "bloodlust");
+      const modTxt = p.mod > 0 ? "+" + p.mod : p.mod < 0 ? "−" + Math.abs(p.mod) : "±0";
+      log("libre.jet", `Jet libre — ${comp} ${seuil} % (${p.label} ${modTxt}) → seuil ${r.sFinal} % → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen" style={{ background: T.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="max-w-4xl mx-auto px-5 py-6">
+        <header className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "1px solid " + T.accent + "33" }}>
+          <button onClick={onRetour} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
+            ← Hub
+          </button>
+          <div className="text-center">
+            <div className="text-xl font-bold flex items-center justify-center gap-2" style={{ color: "#e8e4d8" }}>
+              {pack.nom}
+              {role && (
+                <span className="text-xs px-1.5 py-0.5 rounded font-bold"
+                  style={{ background: role === "mj" ? "#f0b24a22" : "#2ee6c922", color: role === "mj" ? "#f0b24a" : "#2ee6c9" }}>
+                  {role === "mj" ? "MJ" : "JOUEUR"}
+                </span>
+              )}
+            </div>
+            <div className="text-xs" style={{ color: "#71717a" }}>
+              {pack.type} · dépend de {pack.depend_de.map(d => d.id + "@" + d.format_min).join(", ")} · v{pack.version} · privé
+            </div>
+          </div>
+          <div style={{ color: T.or }}>{pack.glyphs}</div>
+        </header>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-5">
+          {sb ? (
+            enCreationSB ? (
+              <div className="md:col-span-2">
+                <EcranCreationAventurier accent={T.accent} onValide={validerCreationSB} onAnnule={() => setEnCreationSB(false)} />
+              </div>
+            ) : (
+            <>
+              {/* Fiche Stormbringer */}
+              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+                <div className="flex items-baseline justify-between mb-3">
+                  <div className="font-bold text-lg" style={{ color: T.accent }}>{sbPerso.nom}</div>
+                  <div className="text-xs" style={{ color: "#71717a" }}>{sbPerso.origine}</div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                  {Object.entries(sbPerso.caracs).map(([k, v]) => (
+                    <div key={k} className="rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+                      <span className="text-xs" style={{ color: "#71717a" }}>{k} </span>{v}
+                    </div>
+                  ))}
+                </div>
+                {sbPerso.competences ? (
+                  <div className="grid grid-cols-2 gap-1.5 mt-2 text-xs">
+                    {Object.entries(sbPerso.competences).map(([k, v]) => (
+                      <div key={k} className="flex justify-between rounded px-2 py-1" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+                        <span>{k}</span><span style={{ color: "#e8e4d8" }}>{v} %</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs mt-2 rounded px-2 py-1.5" style={{ background: "#ffffff08", color: "#71717a" }}>
+                    Compétences du ch. 4 pas encore extraites — les jets se font sous les caracs (brute, ×2, ×3, ×5)
+                  </div>
+                )}
+                <div className="mt-3">
+                  <div className="text-xs mb-1" style={{ color: "#71717a" }}>Santé Mentale — POU×5 ({sbPerso.sanMax})</div>
+                  <BarrePct valeur={san} max={sbPerso.sanMax} accent={T.accent} label={`${san} / ${sbPerso.sanMax} SAN`} />
+                </div>
+                <button onClick={() => setEnCreationSB(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
+                  style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
+                  {persoSBCree ? "↺ Créer un nouvel aventurier" : "⚔ Créer un aventurier"}
+                </button>
+              </div>
+
+              {/* Démon + lutte de POU */}
+              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid #3f3f46" }}>
+                <div className="flex items-baseline justify-between mb-3">
+                  <div className="font-bold text-lg" style={{ color: "#e8e4d8" }}>{SB_DEMON.nom}</div>
+                  <div className="text-xs" style={{ color: "#71717a" }}>adversaire de test</div>
+                </div>
+                <div className="text-xs mb-3" style={{ color: "#c8c8ce" }}>{SB_DEMON.ligne}</div>
+                <div className="rounded p-2 mb-3 text-xs" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+                  Lutte de POU : 50 % ± 5 % par point d'écart — POU {c.POU} vs {SB_DEMON.pou} →
+                  {" "}{50 - 5 * (SB_DEMON.pou - c.POU)} % contre {50 + 5 * (SB_DEMON.pou - c.POU)} %
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button onClick={lutterPOU} className="py-2.5 rounded-lg font-bold text-black" style={{ background: T.accent }}>
+                    ⚡ Lutter un round (test)
+                  </button>
+                  <button onClick={reposerSAN} className="py-2 rounded-lg text-sm font-bold"
+                    style={{ border: "1px solid " + T.accent + "66", color: T.accent, background: "transparent" }}>
+                    Repos — restaurer la SAN
+                  </button>
+                  {lutteFinie && (
+                    <div className="text-center text-sm py-2 rounded" style={{ background: "#ffffff0d", color: lutteFinie === "victoire" ? T.accent : "#fb7185" }}>
+                      {lutteFinie === "victoire" ? "Victoire — le démon regagne son plan." : "Défaite — le pacte a un prix."}
+                    </div>
+                  )}
+                  <div className="text-xs text-center" style={{ color: "#71717a" }}>
+                    Les deux réussissent ou échouent : la lutte se prolonge (relancez)
+                  </div>
+                </div>
+              </div>
+            </>
+            )
+          ) : enCreation ? (
+            <div className="md:col-span-2">
+              <EcranCreationPorteur accent={T.accent} onValide={validerCreation} onAnnule={() => setEnCreation(false)} />
+            </div>
+          ) : (
+            <>
+              {/* Fiche du porteur Bloodlust */}
+              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+                <div className="flex items-baseline justify-between mb-3">
+                  <div className="font-bold text-lg" style={{ color: T.accent }}>{perso.nom}</div>
+                  <div className="text-xs" style={{ color: "#71717a" }}>{perso.peuple}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                  {Object.entries(perso.caracs).map(([k, v]) => (
+                    <div key={k} className="rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+                      <span className="text-xs" style={{ color: "#71717a" }}>{k} </span>{v}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-2 text-center text-xs">
+                  <div className="flex-1 rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>PV = EN×2 <b>{perso.caracs.EN * 2}</b></div>
+                  <div className="flex-1 rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>Contrôle = VO×5 <b>{perso.caracs.VO * 5} %</b></div>
+                </div>
+                <div className="text-xs mt-3 mb-1" style={{ color: "#71717a" }}>Désirs du peuple {perso.peuple} (livre p. 88 — un PJ ajuste de ±1 à ±2 par désir)</div>
+                {Object.entries(perso.desirs).map(([k, v]) => (
+                  <div key={k} className="mb-1.5">
+                    <div className="flex justify-between text-xs mb-0.5">
+                      <span style={{ color: "#c8c8ce" }}>{k}</span>
+                      <span style={{ color: "#e8e4d8" }}>{v}/10{v >= 9 ? " 🔥" : ""}</span>
+                    </div>
+                    <PvBarre pv={v} pvMax={10} accent={v >= 8 ? T.accent : "#a8adb8"} />
+                  </div>
+                ))}
+                <button onClick={() => setEnCreation(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
+                  style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
+                  {persoCree ? "↺ Créer un nouveau porteur" : "🧬 Créer un porteur"}
+                </button>
+              </div>
+
+              {/* L'Arme vivante : forge (tables officielles) + contrôle */}
+              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.or + "44" }}>
+                <div className="flex items-baseline justify-between mb-3">
+                  <div className="font-bold text-lg" style={{ color: T.or }}>{BL_ARME.nom}</div>
+                  <div className="text-xs" style={{ color: "#71717a" }}>{BL_ARME.nature} · base {BL_ARME.base} pts</div>
+                </div>
+                <div className="mb-3">
+                  <BarrePct valeur={Math.min(pts, 100)} max={100} accent={T.or}
+                    label={armeEveillee
+                      ? `${pts} points — l'arme s'éveille ⚔ · prestige : ${BL_TABLES.reduce((s, tb) => s + tb.prestige * acquis.filter(p => p.tableId === tb.id).length, 0)} pts`
+                      : `${pts} / 100 points de forge (base épée longue : ${BL_ARME.base})`} />
+                </div>
+                {acquis.length === 0 ? (
+                  <div className="text-xs mb-3 text-center py-2 rounded" style={{ color: "#71717a", background: "#ffffff08" }}>
+                    L'âme dort encore dans le métal — tirez le d% sur une table, puis choisissez l'ordre des chiffres
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5 mb-3">
+                    {acquis.map(p => (
+                      <div key={p.tableId + "-" + p.cle} className="flex justify-between items-center rounded px-2 py-1 text-xs" style={{ background: "#ffffff08" }}>
+                        <span style={{ color: "#e8e4d8" }}>
+                          <span className="px-1 rounded mr-1" style={{ background: T.or + "22", color: T.or }}>
+                            {BL_TABLES.find(t => t.id === p.tableId).court}
+                          </span>
+                          {p.nom}
+                        </span>
+                        <span style={{ color: p.prix > 0 ? T.or : "#7dd3fc" }}>{p.prix > 0 ? "+" : ""}{p.prix}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  {forge ? (
+                    <div className="rounded-lg p-3 text-center" style={{ background: "#ffffff0d", border: "1px solid " + T.or + "44" }}>
+                      <div className="text-xs mb-2" style={{ color: "#c8c8ce" }}>
+                        {BL_TABLES.find(x => x.id === forge.tableId).nom} — chiffres tirés :{" "}
+                        <b style={{ color: T.or }}>{forge.a}</b> et <b style={{ color: T.or }}>{forge.b}</b> — quel ordre ?
+                      </div>
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => choisirOrdreForge("a")} className="px-5 py-2 rounded-lg font-bold text-black" style={{ background: T.or }}>{forge.a}{forge.b}</button>
+                        <button onClick={() => choisirOrdreForge("b")} className="px-5 py-2 rounded-lg font-bold text-black" style={{ background: T.or }}>{forge.b}{forge.a}</button>
+                      </div>
+                    </div>
+                  ) : choixLibre ? (
+                    <div className="rounded-lg p-3" style={{ background: "#ffffff0d", border: "1px solid " + T.or + "44" }}>
+                      <div className="text-xs mb-2" style={{ color: "#c8c8ce" }}>
+                        « Au choix du joueur » — {BL_TABLES.find(x => x.id === choixLibre.tableId).nom} : désignez le pouvoir
+                      </div>
+                      <select
+                        onChange={e => {
+                          const t = BL_TABLES.find(x => x.id === choixLibre.tableId);
+                          const p = t.table.find(x => String(x.de[0]) === e.target.value);
+                          if (!p) return;
+                          setChoixLibre(null);
+                          ajouterPouvoir(choixLibre.tableId, p.de[0], p);
+                        }}
+                        className="w-full rounded px-2 py-1.5 text-sm"
+                        style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
+                        <option value="">— choisir un pouvoir —</option>
+                        {BL_TABLES.find(x => x.id === choixLibre.tableId).table.filter(p => p.prix !== null).map(p => (
+                          <option key={p.de[0]} value={p.de[0]}>
+                            {p.de[1] === p.de[0] ? fmtD100(p.de[0]) : fmtD100(p.de[0]) + "-" + fmtD100(p.de[1])} · {p.nom} · {p.prix[0] > 0 ? "+" : ""}{p.prix[0]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {BL_TABLES.map(t => {
+                        const n = jetsTable[t.id] || 0;
+                        const bloque = armeEveillee || (t.max !== null && n >= t.max);
+                        return (
+                          <button key={t.id} onClick={() => lancerForge(t.id)} disabled={bloque}
+                            className="py-2 rounded-lg text-sm font-bold"
+                            style={{ background: bloque ? "#52525b" : T.or, color: bloque ? "#a1a1aa" : "#0c0d10", cursor: bloque ? "not-allowed" : "pointer" }}>
+                            🎲 {t.nom.replace("Pouvoirs ", "")}
+                            {t.max !== null && <span className="text-xs font-normal ml-1">({n}/{t.max})</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {armeEveillee && (
+                    <div className="text-center text-sm py-2 rounded" style={{ background: "#ffffff0d", color: T.or }}>
+                      ⚔ {BL_ARME.nom} est éveillée — la forge est close (nouveaux pouvoirs en jeu, par l'XP)
+                    </div>
+                  )}
+                  <button onClick={testerControle} className="py-2 rounded-lg text-sm font-bold"
+                    style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
+                    Test de contrôle — VO×5 (test)
+                  </button>
+                  <div className="text-xs text-center" style={{ color: "#71717a" }}>
+                    Tables officielles p. 96-100 · prix = palier 1 · un même pouvoir une seule fois ·
+                    exotiques 4 jets max · limitations 2 jets max · « 99-00 » : au choix du joueur
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Jet libre (masqué pendant une création — Stormbringer ou Bloodlust) */}
+        {(sb ? !enCreationSB : !enCreation) && (
+        <div className="rounded-xl p-4 mb-5" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+          <div className="font-bold mb-3" style={{ color: T.accent }}>🎲 Jet libre étiqueté</div>
+          <div className="flex flex-wrap items-center gap-3">
+            {sb ? (
+              <label className="text-sm" style={{ color: "#c8c8ce" }}>
+                Sous{" "}
+                <select value={srcIdx} onChange={e => setSrcIdx(Number(e.target.value))}
+                  className="ml-1 rounded px-2 py-1" style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
+                  {sourcesSB.map((s, i) => <option key={i} value={i}>{s.label}</option>)}
+                </select>
+              </label>
+            ) : (
+              <>
+                <label className="text-sm" style={{ color: "#c8c8ce" }}>
+                  Compétence{" "}
+                  <select value={compIdx} onChange={e => setCompIdx(Number(e.target.value))}
+                    className="ml-1 rounded px-2 py-1" style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
+                    {compsBL.map((k, i) => <option key={k} value={i}>{k} — {perso.competences[k]} %</option>)}
+                  </select>
+                </label>
+                <div className="flex rounded overflow-hidden" style={{ border: "1px solid #3f3f46" }}>
+                  {PALIERS_BL.map((p, i) => (
+                    <button key={p.label} onClick={() => setPalierIdx(i)} className="px-2.5 py-1 text-xs"
+                      style={{ background: palierIdx === i ? T.accent : "#14161b", color: palierIdx === i ? "#0c0d10" : "#c8c8ce" }}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            <button onClick={jetLibre} className="px-4 py-1.5 rounded-lg font-bold text-black" style={{ background: T.or }}>
+              Lancer 1D100
+            </button>
+            <span className="text-xs" style={{ color: "#71717a" }}>
+              1D100 ≤ seuil · plancher 5 % · « 00 » échec automatique
+              {sb ? " · « 01 » réussite critique" : " · critique = unités 0, échec critique = unités 1"}
+            </span>
+          </div>
+        </div>
+        )}
+
+        {/* Journal append-only */}
+        <JournalBloc journal={journal} corriger={corrigerDernier} accent={T.accent} or={T.or}
+          surcharges={SURCHARGES_D100[pack.id].join(" · ")} />
+      </div>
+    </div>
+  );
+}
+
+/* ══════════ L'app : le hub, le chargement du pack, le pack ══════════ */
+function App() {
+  const [vue, setVue] = useState("hub");
+  const [packActif, setPackActif] = useState(null);
+  const [favoris, setFavoris] = useState([]);
+  const [installes, setInstalles] = useState([]);
+  const [enInstallation, setEnInstallation] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [etapes, setEtapes] = useState([]);
+  const [totalEtapes, setTotalEtapes] = useState(7);
+  const [rolesPacks, setRolesPacks] = useState({}); // packId → rôle du DERNIER lancement ("mj" | "joueur")
+  const [rolePour, setRolePour] = useState(null);    // pack en attente du choix de rôle, au lancement
+
+  /* Les comptes — phase 1 : profils locaux (UUID stable). Tous les comptes sont
+     joueurs ; le rôle (MJ ou joueur) se choisit pack par pack, au lancement.
+     Le vrai mot de passe arrivera avec le serveur (Supabase) ; l'Archiviste ne
+     garde jamais les mots de passe. */
+  const [profils, setProfils] = useState(PROFILS_INIT);
+  const [session, setSession] = useState(null);
+
+  /* Sauvegarde simulée des choix PAR COMPTE : installations, favoris, rôles.
+     Phase locale : en mémoire de l'app (tant qu'elle tourne). Phase serveur :
+     ce sera exactement cette structure qui vivra dans la base du compte. */
+  const [memoireComptes, setMemoireComptes] = useState({});
+
+  const seConnecter = (p) => {
+    /* En mode CLOUD, la mémoire arrive DU NUAGE avec le profil (p.memoire) ;
+       en simulation, elle vit dans le sac du compte local. */
+    const memo = (CLOUD && p.memoire) || memoireComptes[p.compteId] || {};
+    setInstalles(memo.installes || []);
+    setFavoris(memo.favoris || []);
+    setRolesPacks(memo.rolesPacks || {});
+    setSession(p);
+    showToast((memo.installes || []).length
+      ? `Bienvenue, ${p.pseudo} — bibliothèque restaurée (${memo.installes.length} pack${memo.installes.length > 1 ? "s" : ""})`
+      : `Bienvenue, ${p.pseudo} — ${CLOUD ? "compte connecté" : "profil local connecté"}`);
+  };
+
+  const seDeconnecter = () => {
+    /* On range les choix dans le sac du compte (installations, favoris, rôles),
+       puis on rafraîchit l'écran : le launcher repart vierge, mais rien n'est
+       perdu — la bibliothèque est restaurée à la reconnexion. */
+    if (session) {
+      setMemoireComptes(m => ({ ...m, [session.compteId]: { installes, favoris, rolesPacks } }));
+    }
+    if (CLOUD) CLOUD.deconnexion().catch(() => {});
+    setSession(null);
+    setInstalles([]);
+    setFavoris([]);
+    setRolesPacks({});
+    setEnInstallation(null);
+    setRolePour(null);
+    setPackActif(null);
+    showToast("Session fermée — le magasin reste ouvert");
+  };
+
+  const creerProfil = (profil) => {
+    /* En mode CLOUD : le profil arrive du nuage — UUID serveur + tag JR-000n
+       attribué par la base. En simulation : UUID local gravé à la création. */
+    const p = profil.compteId ? profil : (() => {
+      const n = profils.length + 1;
+      return {
+        compteId: Math.floor(Math.random() * 4294967296).toString(16).padStart(8, "0"),
+        pseudo: profil.pseudo,
+        tag: "JR-" + String(n).padStart(4, "0"),
+        email: profil.email, avatarId: profil.avatarId
+      };
+    })();
+    setProfils(l => [...l, p]);
+    seConnecter(p);
+  };
+
+  const changerAvatar = (id) => {
+    setSession(s => (s ? { ...s, avatarId: id } : s));
+    setProfils(l => l.map(p => (session && p.compteId === session.compteId ? { ...p, avatarId: id } : p)));
+    if (CLOUD && session) CLOUD.sauveCompte({ avatarId: id }).catch(() => {});
+  };
+
+  /* Mode CLOUD — restauration de session au démarrage : si un compte est déjà
+     connecté (token gardé par le navigateur), sa bibliothèque est restaurée
+     depuis le nuage, comme sur Steam. */
+  useEffect(() => {
+    if (!CLOUD) return;
+    CLOUD.sessionActuelle().then(p => { if (p) seConnecter(p); }).catch(() => {});
+  }, []);
+
+  /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
+     nuage dès qu'il change (débouncé) : l'état vit dans le compte, jamais
+     dans l'appareil. */
+  useEffect(() => {
+    if (!CLOUD || !session) return;
+    const t = setTimeout(
+      () => CLOUD.sauveMemoire(session.compteId, { installes, favoris, rolesPacks }).catch(() => {}),
+      700
+    );
+    return () => clearTimeout(t);
+  }, [session, installes, favoris, rolesPacks]);
+
+  /* Le glyphe du launcher : l'Icosaèdre D20 — CHOISI par Michael, point final.
+     La Cible aux quatre coupes reste dans la bibliothèque de symboles de
+     l'Archivisterium. */
+  const [symbole] = useState("d20");
+
+  /* Détection navigateur / mobile : la largeur d'écran réelle du device.
+     Sur mobile, le compte n'affiche que l'avatar (comme Steam). */
+  const [estMobile, setEstMobile] = useState(false);
+  const [ecran, setEcran] = useState("auto"); // auto | desktop | mobile (simulation forcée)
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const maj = () => setEstMobile(mq.matches);
+    maj();
+    mq.addEventListener("change", maj);
+    return () => mq.removeEventListener("change", maj);
+  }, []);
+  const mobile = ecran === "auto" ? estMobile : ecran === "mobile";
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2600);
+  };
+
+  const basculerFavori = (id) =>
+    setFavoris(f => (f.includes(id) ? f.filter(x => x !== id) : [...f, id]));
+
+  /* Installer un pack depuis le magasin : simulation de téléchargement local —
+     SANS choix de rôle (tous les comptes sont joueurs, le rôle se choisit au
+     lancement). Une fois installé, la vignette du magasin passe en "Déjà
+     installé" (grisée), et le pack se lance depuis la Bibliothèque. */
+  const installerPack = (p) => {
+    setEnInstallation(p.id);
+    setTimeout(() => {
+      setEnInstallation(null);
+      setInstalles(l => (l.includes(p.id) ? l : [...l, p.id]));
+      showToast(`${p.nom} installé — lancez-le depuis la Bibliothèque`);
+    }, 1500);
+  };
+
+  /* Lancer un pack depuis la Bibliothèque : d'abord le choix du rôle (MJ ou
+     joueur — c'est LÀ qu'on décide, pas à l'installation, pas dans le compte),
+     puis le chargement simulé avec le rôle de session appliqué. */
+  const lancerPack = (p) => setRolePour(p);
+
+  const choisirRole = (role) => {
+    const p = rolePour;
+    setRolePour(null);
+    setRolesPacks(r => ({ ...r, [p.id]: role }));
+    setPackActif(p);
+    setVue("chargement");
+    setEtapes([]);
+    const liste = etapesChargement(p, role);
+    setTotalEtapes(liste.length);
+    liste.forEach((t, i) => setTimeout(() => setEtapes(e => [...e, t]), 320 * (i + 1)));
+    setTimeout(() => setVue("pack"), 320 * liste.length + 550);
+  };
+
+  return (
+    <div className="min-h-screen" style={{ background: "#0c0d10" }}>
+      {vue === "hub" && (
+        <Hub key={session ? session.compteId : "anonyme"} packs={PACKS} favoris={favoris} onFavori={basculerFavori} onLancer={lancerPack} onInstaller={installerPack}
+          showToast={showToast}
+          joueur={session}
+          avatar={session ? (AVATARS.find(a => a.id === session.avatarId) || AVATARS[0]) : null}
+          onAvatar={changerAvatar}
+          onLogout={seDeconnecter}
+          onLogin={seConnecter} onCreer={creerProfil} profils={profils}
+          mobile={mobile} ecran={ecran} setEcran={setEcran}
+          installes={installes} enInstallation={enInstallation}
+          symbole={symbole} />
+      )}
+
+      {vue === "chargement" && packActif && (
+        <div className="min-h-screen flex items-center justify-center" style={{ background: packActif.theme.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+          <div className="rounded-2xl p-8 w-full max-w-md" style={{ background: "#ffffff0a", border: "1px solid " + packActif.theme.accent + "44" }}>
+            <div className="flex items-center gap-3 mb-5">
+              <Icosaedre size={38} color={packActif.theme.accent} />
+              <div>
+                <div className="font-bold text-lg" style={{ color: "#e8e4d8" }}>Chargement de {packActif.nom}…</div>
+                <div className="text-xs" style={{ color: "#71717a" }}>pack installé — chargement local, aucune connexion requise</div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 text-sm">
+              {etapes.map((e, i) => (
+                <div key={i} style={{ color: "#c8c8ce" }}>✓ {e}</div>
+              ))}
+              {etapes.length < totalEtapes && <div className="animate-pulse" style={{ color: packActif.theme.accent }}>⟁ …</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {vue === "pack" && packActif && (
+        packActif.id === "stormbringer" || packActif.id === "bloodlust" ? (
+          <PackViewD100 pack={packActif} role={rolesPacks[packActif.id]} onRetour={() => setVue("hub")} />
+        ) : (
+          <PackView pack={packActif} role={rolesPacks[packActif.id]} onRetour={() => setVue("hub")} />
+        )
+      )}
+
+      {rolePour && (
+        <ChoixRole pack={rolePour} onChoisi={choisirRole} onAnnuler={() => setRolePour(null)} />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-xl text-sm font-bold text-black shadow-2xl z-50"
+          style={{ background: "#a8adb8" }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+var _attente = document.getElementById("attente"); if (_attente) _attente.remove();
+ReactDOM.createRoot(document.getElementById("racine")).render(<App />);
+  </script>
+</body>
+</html>
