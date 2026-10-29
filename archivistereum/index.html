@@ -86,7 +86,8 @@
             user_already_exists: "Un compte existe déjà sur cet email.",
             weak_password: "Mot de passe trop faible — 4 caractères minimum.",
             email_address_invalid: "Adresse email invalide — vérifiez son orthographe.",
-            signups_disabled: "Les inscriptions sont fermées sur le serveur."
+            signups_disabled: "Les inscriptions sont fermées sur le serveur.",
+            "23505": "Un compte existe déjà avec cet email — la Tombe n'accepte pas les doublons."
           };
           var err = new Error(msgs[code] || msgBrut || "Serveur injoignable — vérifiez votre connexion.");
           err.code = code;
@@ -235,7 +236,7 @@ const { useState, useRef, useEffect } = React;
 const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.15";
+const BUILD = "0.19";
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -257,6 +258,33 @@ const BANC = {
     { compte_id: "sim-1", contenu: { installes: ["protocoles-eternels", "stormbringer"], favoris: ["protocoles-eternels"], rolesPacks: {} } },
     { compte_id: "sim-2", contenu: { installes: ["bloodlust"], favoris: ["bloodlust"], rolesPacks: {} } },
   ],
+};
+
+/* ── Banc d'essai : la pierre locale. Les gestes du banc survivent aux
+   Alt+F5 et aux rechargements — gravés dans localStorage, silencieusement
+   ignoré si le navigateur refuse (mode privé, bac à sable…). ── */
+const CLE_BANC = "archivistereum_banc_v1";
+const lireBanc = () => {
+  try {
+    const brut = localStorage.getItem(CLE_BANC);
+    if (!brut) return null;
+    const d = JSON.parse(brut);
+    if (!d || !Array.isArray(d.comptes)) return null;
+    return {
+      comptes: d.comptes,
+      memoires: d.memoires || [],
+      parametres: d.parametres || BANC.parametres,
+    };
+  } catch (e) { return null; }
+};
+const sauverBanc = (d) => {
+  try {
+    if (d) localStorage.setItem(CLE_BANC, JSON.stringify({
+      comptes: d.comptes,
+      memoires: d.memoires || [],
+      parametres: d.parametres || BANC.parametres,
+    }));
+  } catch (e) { /* la pierre refuse : le banc vivra en mémoire vive */ }
 };
 
 /* ══════════ L'Icosaèdre — glyphe D20 de L'Archiviste ══════════ */
@@ -292,7 +320,7 @@ function heureCourte(iso) {
 const ACTIF_7J = 7 * 24 * 60 * 60 * 1000;
 
 /* ══════════ La porte : email + mot de passe ══════════ */
-function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement }) {
+function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement, simulation }) {
   const champ = { background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" };
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
@@ -325,13 +353,19 @@ function Porte({ email, mdp, setEmail, setMdp, onEntrer, erreur, enChargement })
             style={{ background: "#f0b24a", opacity: enChargement ? 0.6 : 1 }}>
             {enChargement ? "La porte évalue…" : "Franchir le seuil"}
           </button>
+          {simulation && (
+            <div className="text-center text-xs mt-4 leading-relaxed" style={{ color: "#71717a" }}>
+              Banc d'essai — la porte n'ouvre qu'à l'admin simulé :<br />
+              <span style={{ color: "#f0b24a" }}>archiviste.test@larchiviste.jdr</span> · mot de passe libre (4+)
+            </div>
+          )}
           <div className="text-center mt-4 text-xs">
             <a href="https://chokmah-hash.github.io/" style={{ color: "#71717a" }}>⟁ Retour au launcher</a>
           </div>
         </form>
       </div>
       <footer className="text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
-        Powered by Vibe · N° {BUILD}
+        Powered by <a href="https://chat.mistral.ai" target="_blank" rel="noopener noreferrer" style={{ color: "#a8adb8" }}>Vibe</a> · N° {BUILD}
       </footer>
     </div>
   );
@@ -355,7 +389,7 @@ function Refus({ onRetour }) {
         </div>
       </div>
       <footer className="text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
-        Powered by Vibe · N° {BUILD}
+        Powered by <a href="https://chat.mistral.ai" target="_blank" rel="noopener noreferrer" style={{ color: "#a8adb8" }}>Vibe</a> · N° {BUILD}
       </footer>
     </div>
   );
@@ -386,10 +420,23 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
   const [nMdp, setNMdp] = useState("");
   const [nErreur, setNErreur] = useState(null);
   const [nEnCours, setNEnCours] = useState(false);
+  /* Garde anti-fantôme : si le compte de la fiche ouverte disparaît du
+     registre (sentence prononcée ailleurs, synchronisation plus rapide),
+     la fiche se referme d'elle-même. */
+  useEffect(() => {
+    if (detail && !comptes.some((c) => c.compte_id === detail.compte_id)) {
+      setDetail(null);
+      setConfSuppr(false);
+      setMotSuppr("");
+    }
+  }, [comptes, detail]);
   const champ = { background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8", outline: "none" };
   const admins = comptes.filter((c) => c.role === "admin").length;
   const enAttente = comptes.filter((c) => c.statut === "en_attente").length;
   const modeValidation = ((parametres || []).find((p) => p.cle === "mode_validation") || {}).valeur || "admin";
+  /* La version de l'état de la base : la Tombe annonce elle-même son
+     état — le pied de page dit ce qu'il CHARGE, pas ce qu'il est. */
+  const versionBase = ((parametres || []).find((p) => p.cle === "version") || {}).valeur || null;
   const visites = comptes
     .filter((c) => c.derniere_connexion)
     .sort((a, b) => new Date(b.derniere_connexion) - new Date(a.derniere_connexion))
@@ -770,12 +817,15 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
               <form onSubmit={(e) => { e.preventDefault(); graver(); }}>
                 <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Pseudo :</div>
                 <input value={nPseudo} onChange={(e) => setNPseudo(e.target.value)} placeholder="Novice de la Tombe" type="text"
+                  name="archiviste-pseudo" autoComplete="off"
                   className="w-full rounded-lg px-3 py-2 mb-3 text-sm" style={champ} />
                 <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Email :</div>
                 <input value={nEmail} onChange={(e) => setNEmail(e.target.value)} placeholder="novice@exemple.fr" type="email"
+                  name="archiviste-email" autoComplete="off"
                   className="w-full rounded-lg px-3 py-2 mb-3 text-sm" style={champ} />
                 <div className="text-xs font-bold mb-1" style={{ color: "#c8c8ce" }}>Mot de passe :</div>
                 <input value={nMdp} onChange={(e) => setNMdp(e.target.value)} placeholder="••••••••" type="password"
+                  name="archiviste-mdp" autoComplete="new-password"
                   className="w-full rounded-lg px-3 py-2 mb-3 text-sm" style={champ} />
                 <div className="text-xs mb-4" style={{ color: nErreur ? "#fb7185" : "#52525b" }}>
                   {nErreur || "\u00a0"}
@@ -797,7 +847,9 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
         )}
       </div>
       <footer className="mt-auto text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
-        Powered by Vibe · N° {BUILD}
+        {/* N° : l'état de la BASE (Supabase, parametre « version ») — le pied de
+            page dit ce qu'il charge ; en banc d'essai, la version locale. */}
+        Powered by <a href="https://chat.mistral.ai" target="_blank" rel="noopener noreferrer" style={{ color: "#a8adb8" }}>Vibe</a> · N° {versionBase || BUILD}
       </footer>
     </div>
   );
@@ -826,19 +878,53 @@ function App() {
     return () => { vivant = false; };
   }, []);
 
+  /* Banc d'essai : chaque geste se grave dans la pierre locale —
+     les modifications survivent aux Alt+F5 et aux rechargements. */
+  useEffect(() => {
+    if (!CLOUD && donnees) sauverBanc(donnees);
+  }, [donnees]);
+
+  /* ════════ Le module de Synchronisation (Core) ════════
+     Le nuage local ne fait foi : après chaque geste, et en pulsation
+     toutes les 12 secondes, la salle réinterroge la Tombe — aucune
+     info fantôme ne survit à une synchronisation. (En ligne seulement :
+     le banc d'essai vit sa vie de simulation.) */
+  const synchroniser = async () => {
+    const res = await CLOUD.recharger();
+    setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+  };
+
+  useEffect(() => {
+    if (!CLOUD || phase !== "salle") return;
+    const pulsation = setInterval(() => {
+      synchroniser().catch(() => {}); /* la Tombe sommeille : on retentera */
+    }, 12000);
+    return () => clearInterval(pulsation);
+  }, [phase]);
+
   const entrer = async () => {
     setErreur(null);
-    /* Simulation (canvas) : la porte s'ouvre sur le banc d'essai —
-       mais un banc qui garde la mémoire : les comptes gravés/effacés
-       survivent aux déco-reco de la session. */
-    if (!CLOUD) {
-      setSession({ pseudo: "Test Archiviste (banc d'essai)" });
-      setDonnees((d) => d || BANC);
-      setPhase("salle");
-      return;
-    }
     if (!email.trim() || mdp.length < 4) {
       setErreur("Email et mot de passe requis (4 caractères min.).");
+      return;
+    }
+    /* Simulation (canvas) : la porte se comporte comme en ligne — elle
+       n'ouvre qu'au compte admin du registre simulé (le banc d'essai, lui,
+       garde la mémoire à travers les déco-reco de la session). */
+    if (!CLOUD) {
+      const banc = donnees || lireBanc() || BANC;
+      const cible = banc.comptes.find((c) => c.email === email.trim().toLowerCase());
+      if (!cible) {
+        setErreur("Sceau brisé : identifiants non reconnus par la Tombe.");
+        return;
+      }
+      if (cible.role !== "admin") {
+        setPhase("refus");
+        return;
+      }
+      setSession({ pseudo: cible.pseudo + " (banc d'essai)", email: cible.email });
+      setDonnees((d) => d || banc);
+      setPhase("salle");
       return;
     }
     setEnChargement(true);
@@ -860,8 +946,7 @@ function App() {
        pas de retour aux comptes d'origine ici non plus. */
     if (!CLOUD) return;
     try {
-      const res = await CLOUD.recharger();
-      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+      await synchroniser();
     } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
   };
 
@@ -873,8 +958,7 @@ function App() {
     }
     try {
       await CLOUD.majStatut(compte.compte_id, statut);
-      const res = await CLOUD.recharger();
-      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+      await synchroniser();
     } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
   };
 
@@ -888,18 +972,31 @@ function App() {
     }
     try {
       await CLOUD.majMode(mode);
-      const res = await CLOUD.recharger();
-      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+      await synchroniser();
     } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
   };
 
   /* Graver un compte joueur à la main : inscription + ligne compte,
      puis la salle se recharge pour inscrire le nouveau venu au registre. */
   const creerJoueur = async (pseudo, email, mdp) => {
+    /* Avant toute gravure : la Tombe n'accepte pas deux sceaux sur le même
+       email — le registre de l'admin voit toutes les lignes. */
+    const existant = ((donnees || {}).comptes || []).some(
+      (c) => (c.email || "").toLowerCase() === email.toLowerCase()
+    );
+    if (existant) {
+      throw new Error("Un compte existe déjà avec cet email — la Tombe n'accepte pas les doublons.");
+    }
     if (!CLOUD) {
-      /* Banc d'essai : la ligne apparaît dans le registre comme si de rien n'était */
+      /* Banc d'essai : la ligne apparaît dans le registre — avec un
+         identifiant TOUJOURS unique (max des sim-N + 1), même après des
+         effacements : plus jamais deux comptes au même sceau, effacés ensemble. */
       setDonnees(d => {
-        const n = d.comptes.length + 1;
+        const nums = d.comptes
+          .map((c) => /^sim-(\d+)$/.exec(c.compte_id || ""))
+          .filter(Boolean)
+          .map((m) => Number(m[1]));
+        const n = (nums.length ? Math.max(...nums) : 0) + 1;
         return { ...d, comptes: [...d.comptes, {
           compte_id: "sim-" + n, pseudo: pseudo, tag: "JR-" + String(n + 3).padStart(4, "0"),
           email: email, role: "joueur", statut: "en_attente",
@@ -909,8 +1006,7 @@ function App() {
       return;
     }
     await CLOUD.creerCompte(pseudo, email, mdp);
-    const res = await CLOUD.recharger();
-    setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+    await synchroniser();
   };
 
   /* La sentence : effacer un compte et sa mémoire du registre — le
@@ -922,8 +1018,7 @@ function App() {
       return;
     }
     await CLOUD.supprimerCompte(compte.compte_id);
-    const res = await CLOUD.recharger();
-    setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+    await synchroniser();
   };
 
   const sortir = () => {
@@ -949,7 +1044,7 @@ function App() {
   }
   return (
     <Porte email={email} mdp={mdp} setEmail={setEmail} setMdp={setMdp}
-      onEntrer={entrer} erreur={erreur} enChargement={enChargement} />
+      onEntrer={entrer} erreur={erreur} enChargement={enChargement} simulation={!CLOUD} />
   );
 }
 
