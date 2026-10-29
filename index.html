@@ -256,7 +256,7 @@ const PACKS = [
     type: "mod", nom: "Les Protocoles Éternels",
     depend_de: [{ id: "noyau-40k", format_min: 1 }],
     statut: "disponible", visibilite: "prive", taille: "18 Mo",
-    theme: { fond: "#0a120f", accent: "#2ee6c9", or: "#f0b24a" },
+    theme: { nom: "nécroderme", fond: "#0a120f", accent: "#2ee6c9", or: "#f0b24a" },
     resume: "Gardiens royaux amnésiques dans la chair d'une tombe qui murmure. Version light light : fiche, dés, combat, journal.",
     glyphs: "⟁"
   },
@@ -265,7 +265,7 @@ const PACKS = [
     type: "mod", nom: "Stormbringer",
     depend_de: [{ id: "noyau-d100", format_min: 1 }],
     statut: "disponible", visibilite: "prive", taille: "9 Mo",
-    theme: { fond: "#141021", accent: "#9d86e8", or: "#cbb26b" },
+    theme: { nom: "des Jeunes Royaumes", fond: "#141021", accent: "#9d86e8", or: "#cbb26b" },
     resume: "L'épée noire, Law et Chaos. Squelette alpha : fiche D100, jets sous carac ×multiplicateur, lutte de POU, Santé Mentale.",
     glyphs: "⚔"
   },
@@ -274,7 +274,7 @@ const PACKS = [
     type: "mod", nom: "Bloodlust",
     depend_de: [{ id: "noyau-d100", format_min: 1 }],
     statut: "disponible", visibilite: "prive", taille: "12 Mo",
-    theme: { fond: "#190b0e", accent: "#e0524d", or: "#d4a24e" },
+    theme: { nom: "de Tanæphis", fond: "#190b0e", accent: "#e0524d", or: "#d4a24e" },
     resume: "Les porteurs d'Armes vivantes de Tanæphis. Squelette alpha : désirs, forge de l'arme (budget 100 points), contrôle VO×5, paliers de difficulté.",
     glyphs: "🗡"
   }
@@ -386,10 +386,10 @@ const NOYAU_D100 = {
 const d100 = () => 1 + Math.floor(Math.random() * 100); /* 1-100 ; 100 se lit « 00 » */
 const fmtD100 = (r) => (r === 100 ? "00" : String(r).padStart(2, "0"));
 
-function resoudreD100(seuil, mod = 0, regles = "brp") {
-  const sFinal = Math.max(NOYAU_D100.tests.exceptions.plancher_reussite, seuil + mod);
+function resoudreD100(seuil, mod = 0, regles = "brp", noyau = NOYAU_D100) {
+  const sFinal = Math.max(noyau.tests.exceptions.plancher_reussite, seuil + mod);
   const de = d100();
-  const autoEchec = de === NOYAU_D100.tests.exceptions.echec_auto;
+  const autoEchec = de === noyau.tests.exceptions.echec_auto;
   const reussi = !autoEchec && de <= sFinal;
   let nat = null;
   if (autoEchec) nat = "« 00 » — échec automatique (garde-fou du noyau)";
@@ -423,7 +423,7 @@ const BL_PORTEUR = {
   desirs: { "Prestige": 7, "Richesse": 7, "Sexe": 7, "Violence": 7, "Réputation": 7 }, /* Piorads, table p. 88 — un PJ ajuste de ±1 à ±2 par désir */
   competences: { "Att. brutale (FO)": 20, "Att. normale (Ag)": 15, "Att. rapide (RA)": 5, "Feinte (PE)": 5, "Parade (RA)": 20, "Esquive (RA)": 10, "Tir (PE)": 5 } /* % de base p. 87 — un PJ y répartit +40 % (combat) et +80 % (secondaires), multiples de 5, plancher 5 % */
 };
-const BL_ARME = { nom: "Oraghrh", nature: "longue épée vivante", base: 20, budget: 100 }; /* épée longue = 20 pts de base (livre p. 95) */
+const BL_ARME = { nom: "Oraghrh", nature: "longue épée vivante", typeArme: "épée longue", base: 20, budget: 100 }; /* épée longue = 20 pts de base (livre p. 95) */
 
 /* Désirs des 9 peuples (livre p. 88) — ordre : Prestige, Richesse, Sexe, Violence, Réputation.
    Donnée pour la future création de personnage. */
@@ -803,35 +803,135 @@ const PALIERS_BL = [
   { label: "Moyen", mod: 0 }, { label: "Difficile", mod: -25 },
   { label: "Très difficile", mod: -50 }
 ];
-const SURCHARGES_D100 = {
-  stormbringer: ["critique « 01 »/« 00 » (BRP)", "jets sous carac ×multiplicateur (POU×3, CHA×5)", "lutte de POU : 50 % ± 5 %/pt d'écart", "création : 7×3D6, total ≤ 52 · SAN = POU×5"],
-  bloodlust: ["paliers +50/+25/0/−25/−50", "réussite critique unités 0 · échec critique unités 1", "contrôle VO×5 · PV EN×2 · plancher 5 %"]
+/* ════════ LE SAC DE DONNÉES DE CHAQUE PACK — consolidation du Core ════════
+   Contrat (manifeste v1.3) : un pack = des DONNÉES autonomes, jamais du code.
+   Chaque entrée de CONTENU assemble les « fichiers » du pack (fiche, arsenal,
+   tables, recettes, documents) ; le noyau commandé par depend_de est résolu
+   par chargerPack. Les vues du Core ne lisent QUE pack.contenu / pack.noyau :
+   plus une seule constante de pack n'est référencée dans le moteur ou les vues.
+   Les fonctions ci-dessous (journalCreation, sources de jets) sont des
+   « recettes » du pack — de la donnée active, pas de l'interface. */
+const NOYAUX = {
+  "noyau-40k": NOYAU,
+  "noyau-d100": NOYAU_D100
 };
 
-/* Les étapes de chargement selon le pack (le noyau commandé change) */
+const CONTENU = {
+  "protocoles-eternels": {
+    surcharges: SURCHARGES,
+    primitive: "resoudreTest(cible, modificateur) — 1D6 ≥ cible",
+    perso: SIGNA, adversaire: ORK, armes: ARMES,
+    chassis: PE_CHASSIS, codes: PE_CODES, arsenal: PE_ARMES,
+    creation: "unite",
+    textes: { creer: "⚙ Éveiller une unité", recreer: "↺ Éveiller une nouvelle unité" },
+    journalCreation: (p) => `Éveil de ${p.nom} — ${p.chassis} · code ${p.code} · PV ${p.pvMax} (W×3) · Rfx +${p.rfx} · ${p.armeDef.nom}`,
+    documents: [
+      { id: "regles-pe", titre: "Livret des règles (extraits)", sections: [
+        { titre: "Les tests", blocs: [
+          { type: "para", texte: "Tout test se résout par un jet de 1D6 contre une cible fixe, ajustée par la situation (±1). Un 6 naturel réussit toujours ; un 1 naturel échoue toujours." },
+          { type: "liste", items: ["Cible 2+ : trivial", "Cible 3+ : aisé", "Cible 4+ : ordinaire", "Cible 5+ : difficile", "Cible 6+ : héroïque"] }
+        ] },
+        { titre: "Le combat", blocs: [
+          { type: "para", texte: "La séquence du noyau : toucher → blesser (F vs E) → sauvegarde (PA) → dégâts. L'arme porte tout : attaques, Force, PA, dégâts." },
+          { type: "table", entetes: ["F vs E", "Cible de blessure"], lignes: [["F ≥ E×2", "2+"], ["F > E", "3+"], ["F = E", "4+"], ["F < E", "5+"], ["F ≤ E/2", "6+"]] },
+          { type: "para", texte: "Initiative : 1D6 + Rfx (surcharge du mod). À 0 PV, le Protocole de Secours se déclenche : sur 5+, l'unité se redresse avec 1 PV ; sinon, extraction d'urgence hors scène." }
+        ] },
+        { titre: "L'éveil — créer une unité", blocs: [
+          { type: "para", texte: "Chaque unité naît de l'union d'un châssis (10 profils du manuel joueur) et d'un code de fabrique ; l'arsenal neutre arme le tout." },
+          { type: "liste", items: ["Châssis : profil de base, PV (W×3), Rfx, Mémoire/Calcul, aptitude de châssis, compétences offertes", "Codes de fabrique : " + PE_CODES.join(", "), "Arsenal : « A » et « F+1 » se résolvent contre les stats de l'unité"] }
+        ] },
+        { titre: "Progression (règles maison)", blocs: [
+          { type: "para", texte: "Le pack fait la loi des prix : les dépenses se font en fenêtre de progression sanctifiée (HUB) ; le moteur refuse gentiment au-delà du plafond de gains MJ (1 à 3 XP par séance)." },
+          { type: "table", entetes: ["Amélioration", "Coût"], lignes: [["+1 PV (max base×2)", "5 XP"], ["CC / CT un cran", "10 XP"], ["+1 Réflexes", "10 XP"], ["Compétence", "8 XP"], ["Aptitude", "12 XP"], ["+1 Attaque", "12 XP"], ["Wargear", "15-25 XP"]] }
+        ] }
+      ] }
+    ]
+  },
+  "stormbringer": {
+    surcharges: ["critique « 01 »/« 00 » (BRP)", "jets sous carac ×multiplicateur (POU×3, CHA×5)", "lutte de POU : 50 % ± 5 %/pt d'écart", "création : 7×3D6, total ≤ 52 · SAN = POU×5"],
+    primitive: "resoudreD100(seuil %, modificateur)",
+    critiques: "brp",
+    perso: SB_PERSO, demon: SB_DEMON, ordreCaracs: SB_7, totalCaracs: 52,
+    mults: [{ carac: "POU", mult: 3, label: "lier un démon" }, { carac: "CHA", mult: 2, label: "marchander" }, { carac: "CHA", mult: 5, label: "marché démoniaque" }],
+    lutte: { base: 50, pas: 5 },
+    aideJet: "« 01 » réussite critique",
+    creation: "aventurier",
+    textes: { creer: "⚔ Créer un aventurier", recreer: "↺ Créer un nouvel aventurier" },
+    journalCreation: (p) => `Fait naître ${p.nom}, ${p.origine} — 7 caracs 3D6 (total ${SB_7.reduce((s, k) => s + p.caracs[k], 0)}/52) · SAN ${p.sanMax} (POU ${p.caracs.POU}×5)`,
+    documents: [
+      { id: "regles-sb", titre: "Livre du Joueur (extraits)", sections: [
+        { titre: "Création de l'aventurier", blocs: [
+          { type: "para", texte: "Sept caractéristiques (FOR, CON, TAI, INT, POU, DEX, CHA), chacune lancée à 3D6 (3-18). Si le total dépasse 52, le livre permet de tout relancer." },
+          { type: "para", texte: "Santé Mentale de départ = POU × 5. Un repos restaure la SAN (squelette alpha)." }
+        ] },
+        { titre: "Les tests", blocs: [
+          { type: "para", texte: "Jet sous le pourcentage : 1D100 ≤ seuil. « 01 » = réussite critique, « 00 » = échec automatique. Les caracs se lancent en brute, ×2, ×3 ou ×5 selon l'action." }
+        ] },
+        { titre: "La lutte de Pouvoir", blocs: [
+          { type: "para", texte: "50 % ± 5 % par point d'écart de POU. Les deux réussissent ou échouent : la lutte se prolonge. Défaite : −1D6 SAN." }
+        ] },
+        { titre: "Les démons", blocs: [
+          { type: "para", texte: "Contrôle : CHA/2 démons liés par l'octogone ; le nombre d'anneaux gravés limite la puissance du démon convoqué." }
+        ] }
+      ] }
+    ]
+  },
+  "bloodlust": {
+    surcharges: ["paliers +50/+25/0/−25/−50", "réussite critique unités 0 · échec critique unités 1", "contrôle VO×5 · PV EN×2 · plancher 5 %"],
+    primitive: "resoudreD100(seuil %, modificateur)",
+    critiques: "bloodlust",
+    perso: BL_PORTEUR, forge: BL_ARME, tablesForge: BL_TABLES, paliers: PALIERS_BL,
+    peuples: BL_PEUPLES, desirsPeuples: BL_DESIRS_PEUPLES, desirsNoms: DESIRS_BL, baseCombat: BL_BASE_COMBAT, baseSecondaires: BL_BASE_SECONDAIRES,
+    derivees: [{ label: "PV = EN×2", calc: (caracs) => caracs.EN * 2 }, { label: "Contrôle = VO×5", calc: (caracs) => caracs.VO * 5, suffixe: " %" }],
+    controle: { carac: "VO", mult: 5 },
+    aideJet: "critique = unités 0, échec critique = unités 1",
+    forgeAide: "Tables officielles p. 96-100 · prix = palier 1 · un même pouvoir une seule fois · exotiques 4 jets max · limitations 2 jets max · « 99-00 » : au choix du joueur",
+    horsCombat: { seuil: "5+", pv: 1 }, /* Protocole de Secours — surcharge du mod PÉ */
+    creation: "porteur",
+    textes: { creer: "🧬 Créer un porteur", recreer: "↺ Créer un nouveau porteur" },
+    journalCreation: (p) => `Fait naître ${p.nom}, ${p.peuple} — PV ${p.caracs.EN * 2} · contrôle ${p.caracs.VO * 5} % (l'arme, elle, attend sa forge)`,
+    documents: [
+      { id: "regles-bl", titre: "Livre de règles (extraits)", sections: [
+        { titre: "Le porteur", blocs: [
+          { type: "para", texte: "Caractéristiques par table raciale du peuple (livre p. 82). PV = EN×2 ; test de contrôle de l'Arme = VO×5." },
+          { type: "para", texte: "Cinq désirs notés de 1 à 10 (Prestige, Richesse, Sexe, Violence, Réputation) — un PJ ajuste les valeurs de sa table de ±1 à ±2 par désir. Un désir à 9 ou 10 brûle 🔥." }
+        ] },
+        { titre: "La forge de l'Arme vivante", blocs: [
+          { type: "para", texte: "Règle d'or : après le jet de d%, le joueur CHOISIT l'ordre des deux chiffres. Le prix d'un pouvoir est son palier 1 ; l'arme part de la base de son type (épée longue : 20 pts)." },
+          { type: "liste", items: ["Un même pouvoir ne s'acquiert qu'une seule fois", "Exotiques : 4 jets max · Limitations : 2 jets max (elles baissent le budget)", "« 99-00 » : pouvoir au choix du joueur", "Total > 100 points : l'arme s'ÉVEILLE ⚔"] }
+        ] },
+        { titre: "Les paliers de difficulté", blocs: [
+          { type: "table", entetes: ["Palier", "Modificateur"], lignes: [["Très facile", "+50"], ["Facile", "+25"], ["Moyen", "±0"], ["Difficile", "−25"], ["Très difficile", "−50"]] },
+          { type: "para", texte: "Plancher de réussite : 5 %. « 00 » = échec automatique. Réussite critique : unités 0 · échec critique : unités 1." }
+        ] }
+      ] }
+    ]
+  }
+};
+
+/* Le chargeur universel : manifeste → dépendance résolue → noyau + contenu.
+   Règle d'or du manifeste : un mod dont une référence ne résout pas est
+   refusé avec un message clair — jamais de crash mystérieux. */
+function chargerPack(manifeste) {
+  const dep = manifeste.depend_de[0];
+  return {
+    ...manifeste,
+    noyau: dep && NOYAUX[dep.id] ? NOYAUX[dep.id] : null,
+    contenu: CONTENU[manifeste.id] || null
+  };
+}
+
+/* Les étapes de chargement — génériques, tirées du sac (plus aucun id en dur) */
 function etapesChargement(p, role) {
   const roleTxt = `rôle de session : ${role === "mj" ? "MAÎTRE DU JEU — zone ambre" : "JOUEUR — zone teal"}`;
-  if (p.id === "stormbringer" || p.id === "bloodlust") {
-    const sb = p.id === "stormbringer";
-    return [
-      `installation vérifiée — ${p.nom} présent dans la bibliothèque locale`,
-      `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`,
-      `dépendance résolue : noyau-d100@1 — primitive resoudreD100(seuil %, modificateur)`,
-      roleTxt,
-      sb
-        ? "surcharges appliquées : critique 01/00 · jets sous POU×3 · lutte de POU 50 %±5/pt · SAN POU×5"
-        : "surcharges appliquées : paliers +50/+25/0/−25/−50 · critique unités 0/1 · contrôle VO×5",
-      `thème ${sb ? "des Jeunes Royaumes" : "de Tanæphis"} appliqué — palette du pack`,
-      "pack prêt."
-    ];
-  }
+  const C = chargerPack(p).contenu;
   return [
     `installation vérifiée — ${p.nom} présent dans la bibliothèque locale`,
     `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`,
-    `dépendance résolue : ${p.depend_de.map(d => d.id + "@" + d.format_min).join(", ") || "aucune"}`,
+    `dépendance résolue : ${p.depend_de.map(d => d.id + "@" + d.format_min).join(", ") || "aucune"} — primitive ${C.primitive}`,
     roleTxt,
-    "surcharges appliquées : initiative.bonus = rfx · hors_combat = protocole_de_secours",
-    "thème nécroderme appliqué — palette teal / ambre",
+    `surcharges appliquées : ${C.surcharges.join(" · ")}`,
+    `thème « ${p.theme.nom} » appliqué — palette du pack`,
     "pack prêt."
   ];
 }
@@ -867,10 +967,10 @@ const AVATARS = [
 const d6 = () => 1 + Math.floor(Math.random() * 6);
 const cibleNum = (c) => parseInt(String(c).replace("+", ""), 10);
 
-function resoudreTest(cible, mod = 0) {
+function resoudreTest(cible, mod = 0, noyau = NOYAU) {
   const de = d6();
-  const nat6 = de === NOYAU.tests.exceptions.reussite_auto;
-  const nat1 = de === NOYAU.tests.exceptions.echec_auto;
+  const nat6 = de === noyau.tests.exceptions.reussite_auto;
+  const nat1 = de === noyau.tests.exceptions.echec_auto;
   const reussi = nat6 ? true : nat1 ? false : de + mod >= cibleNum(cible);
   return { de, reussi, nat: nat6 ? "6 naturel — réussite auto" : nat1 ? "1 naturel — échec auto" : null };
 }
@@ -1646,11 +1746,137 @@ function PvBarre({ pv, pvMax, accent }) {
   );
 }
 
-function PackView({ pack, onRetour, role }) {
+/* ════════ L'entête de pack — UNIVERSELLE (le chrome ne connaît que le pack) ════════ */
+function PackEntete({ pack, role, onRetour, onLivre }) {
   const T = pack.theme;
+  return (
+    <header className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "1px solid " + T.accent + "33" }}>
+      <div className="flex gap-2">
+        <button onClick={onRetour} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
+          ← Hub
+        </button>
+        <button onClick={onLivre} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.or + "66", color: T.or }}>
+          📖 Règles
+        </button>
+      </div>
+      <div className="text-center">
+        <div className="text-xl font-bold flex items-center justify-center gap-2" style={{ color: "#e8e4d8" }}>
+          {pack.nom}
+          {role && (
+            <span className="text-xs px-1.5 py-0.5 rounded font-bold"
+              style={{ background: role === "mj" ? "#f0b24a22" : "#2ee6c922", color: role === "mj" ? "#f0b24a" : "#2ee6c9" }}>
+              {role === "mj" ? "MJ" : "JOUEUR"}
+            </span>
+          )}
+        </div>
+        <div className="text-xs" style={{ color: "#71717a" }}>
+          {pack.type} · dépend de {pack.depend_de.map(d => d.id + "@" + d.format_min).join(", ")} · v{pack.version} · privé
+        </div>
+      </div>
+      <div style={{ color: T.or }}>{pack.glyphs || "⟁"}</div>
+    </header>
+  );
+}
+
+/* ════════ Le lecteur de documents — UNIVERSEL (couche « documents » du pack) ════════
+   Le livre de règles de chaque jeu est une DONNÉE du pack (manifeste v1.3) :
+   documents → sections → blocs (para, liste, table). Le Core affiche, le pack
+   raconte — le même lecteur pour tous les packs, présents et à venir. */
+function BlocDoc({ bloc, T }) {
+  if (bloc.type === "para") return <p className="text-sm leading-relaxed" style={{ color: "#c8c8ce" }}>{bloc.texte}</p>;
+  if (bloc.type === "liste") return (
+    <ul className="text-sm flex flex-col gap-1.5">
+      {bloc.items.map((it, i) => (
+        <li key={i} className="flex gap-2" style={{ color: "#c8c8ce" }}><span style={{ color: T.accent }}>▸</span>{it}</li>
+      ))}
+    </ul>
+  );
+  if (bloc.type === "table") return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            {bloc.entetes.map((h, i) => (
+              <th key={i} className="text-left px-3 py-2 rounded" style={{ background: T.accent + "22", color: T.accent }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {bloc.lignes.map((l, i) => (
+            <tr key={i}>
+              {l.map((cel, j) => (
+                <td key={j} className="px-3 py-1.5" style={{ color: "#e8e4d8", borderBottom: "1px solid #27272a" }}>{cel}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+  return null;
+}
+
+function LecteurDocuments({ pack, onFermer }) {
+  const T = pack.theme;
+  const docs = pack.contenu.documents || [];
+  const [docIdx, setDocIdx] = useState(0);
+  const [secIdx, setSecIdx] = useState(0);
+  const doc = docs[docIdx];
+  const section = doc && doc.sections[Math.min(secIdx, doc.sections.length - 1)];
+  return (
+    <div className="min-h-screen" style={{ background: T.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="max-w-4xl mx-auto px-5 py-6">
+        <header className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "1px solid " + T.or + "44" }}>
+          <button onClick={onFermer} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
+            ← Retour à la table
+          </button>
+          <div className="text-center">
+            <div className="text-xl font-bold" style={{ color: "#e8e4d8" }}>📖 {doc ? doc.titre : "—"}</div>
+            <div className="text-xs" style={{ color: "#71717a" }}>couche « documents » du pack — lue par le lecteur universel</div>
+          </div>
+          <div style={{ color: T.or }}>{pack.glyphs || "⟁"}</div>
+        </header>
+        <div className="grid md:grid-cols-3 gap-4">
+          <nav className="rounded-xl p-3 md:max-h-[70vh] md:overflow-y-auto" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+            {docs.map((d, i) => (
+              <div key={d.id} className="mb-3 last:mb-0">
+                <div className="text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: "#71717a" }}>{d.titre}</div>
+                {d.sections.map((s, j) => (
+                  <button key={j} onClick={() => { setDocIdx(i); setSecIdx(j); }}
+                    className="w-full text-left text-sm px-2 py-1.5 rounded mb-1"
+                    style={{ background: i === docIdx && j === secIdx ? T.accent + "22" : "transparent", color: i === docIdx && j === secIdx ? T.accent : "#c8c8ce" }}>
+                    {j + 1}. {s.titre}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </nav>
+          <div className="md:col-span-2 rounded-xl p-5" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+            {section ? (
+              <>
+                <div className="font-bold text-lg mb-4 pb-2" style={{ color: T.accent, borderBottom: "1px solid " + T.accent + "22" }}>{section.titre}</div>
+                <div className="flex flex-col gap-4">
+                  {section.blocs.map((b, i) => <BlocDoc key={i} bloc={b} T={T} />)}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm py-8 text-center" style={{ color: "#71717a" }}>Ce pack n'embarque pas encore de documents.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════ La vue du noyau-40k — générique : elle ne lit QUE pack.contenu ════════ */
+function VueNoyau40k({ pack, onRetour, role }) {
+  const T = pack.theme;
+  const C = pack.contenu; /* le sac de données du pack : fiche, adversaire, arsenal… */
+  const [enLivre, setEnLivre] = useState(false);
   const [journal, setJournal] = useState([]);
-  const [pvSigna, setPvSigna] = useState(SIGNA.pvMax);
-  const [pvOrk, setPvOrk] = useState(ORK.pvMax);
+  const [pvSigna, setPvSigna] = useState(C.perso.pvMax);
+  const [pvOrk, setPvOrk] = useState(C.adversaire.pvMax);
   const [enCombat, setEnCombat] = useState(false);
   const [finCombat, setFinCombat] = useState(null);
   const [round, setRound] = useState(0);
@@ -1667,7 +1893,7 @@ function PackView({ pack, onRetour, role }) {
 
   /* Jet libre (la primitive du noyau, étiquetée) */
   const jetLibre = () => {
-    const r = resoudreTest(cibleLibre, modLibre);
+    const r = resoudreTest(cibleLibre, modLibre, pack.noyau);
     const modTxt = modLibre === 0 ? "" : modLibre > 0 ? " (+1)" : " (−1)";
     logEvent("libre.jet", `Jet libre — cible ${cibleLibre}${modTxt} → ${r.de}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
   };
@@ -1685,68 +1911,69 @@ function PackView({ pack, onRetour, role }) {
 
   /* La fiche active : Signa-3 (démo) ou l'unité éveillée — et son arme de
      combat (les armes du manuel portent « A »/« F+1 »/« D3 », résolues ici) */
-  const perso = persoCree || SIGNA;
-  const armeCombat = persoCree ? peArmeCombat(persoCree.armeDef, persoCree.st) : ARMES[SIGNA.arme];
+  const perso = persoCree || C.perso;
+  const armeCombat = persoCree ? peArmeCombat(persoCree.armeDef, persoCree.st) : C.armes[C.perso.arme];
 
-  const validerCreationPE = (p) => {
+  const validerCreation = (p) => {
     setPersoCree(p);
     setEnCreationPE(false);
     setPvSigna(p.pvMax);
-    logEvent("perso.creation", `Éveil de ${p.nom} — ${p.chassis} · code ${p.code} · PV ${p.pvMax} (W×3) · Rfx +${p.rfx} · ${p.armeDef.nom}`);
+    logEvent("perso.creation", C.journalCreation(p));
   };
 
   /* Le combat : la séquence du noyau, les surcharges du mod */
   const demarrerCombat = () => {
     setEnCombat(true);
     setFinCombat(null);
-    logEvent("scene.debut", `Combat engagé — ${perso.nom} (${perso.chassis}) vs Ork Boy (Kass Krane)`);
+    logEvent("scene.debut", `Combat engagé — ${perso.nom} (${perso.chassis}) vs ${C.adversaire.nom} (${C.adversaire.chassis})`);
   };
 
   const nouveauCombat = () => {
-    setPvSigna(perso.pvMax); setPvOrk(ORK.pvMax);
+    setPvSigna(perso.pvMax); setPvOrk(C.adversaire.pvMax);
     setRound(0); setFinCombat(null);
     logEvent("scene.debut", "Nouvel engagement — PV réinitialisés (light light)");
   };
 
   const jouerRound = () => {
+    const adv = C.adversaire;
     let pvS = pvSigna, pvO = pvOrk;
-    const isJ = d6() + perso.rfx, isO = d6() + ORK.ini;
+    const isJ = d6() + perso.rfx, isO = d6() + adv.ini;
     logEvent("combat.initiative",
-      `Initiative — ${perso.nom} : ${isJ} (1D6 + Rfx +${perso.rfx}, surcharge du mod) vs Ork : ${isO} (1D6 + Ini ${ORK.ini}) — ${isJ >= isO ? perso.nom + " agit d'abord" : "l'Ork agit d'abord"}`);
-    const ordre = isJ >= isO ? ["joueur", "ork"] : ["ork", "joueur"];
+      `Initiative — ${perso.nom} : ${isJ} (1D6 + Rfx +${perso.rfx}, surcharge du mod) vs ${adv.nom} : ${isO} (1D6 + Ini ${adv.ini}) — ${isJ >= isO ? perso.nom + " agit d'abord" : adv.nom + " agit d'abord"}`);
+    const ordre = isJ >= isO ? ["joueur", "adversaire"] : ["adversaire", "joueur"];
 
     ordre.forEach(qui => {
       if (pvS <= 0 || pvO <= 0) return;
       if (qui === "joueur") {
         const arme = armeCombat;
         for (let t = 0; t < arme.attaques; t++) {
-          const jt = resoudreTest(arme.bs_ws, 0);
+          const jt = resoudreTest(arme.bs_ws, 0, pack.noyau);
           logEvent("combat.jet", `${arme.tir ? "Tir" : "Frappe"} ${t + 1}/${arme.attaques} — ${arme.nom} : toucher ${arme.tir ? "CT" : "CC"} ${arme.bs_ws} → ${jt.de}${jt.nat ? " · " + jt.nat : ""} — ${jt.reussi ? "touché" : "raté"}`);
           if (!jt.reussi) continue;
-          const cb = cibleBlessure(arme.f, ORK.st.e);
-          const jb = resoudreTest(cb, 0);
-          logEvent("combat.blesse", `Blessure F${arme.f} vs E${ORK.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
+          const cb = cibleBlessure(arme.f, adv.st.e);
+          const jb = resoudreTest(cb, 0, pack.noyau);
+          logEvent("combat.blesse", `Blessure F${arme.f} vs E${adv.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
           if (!jb.reussi) continue;
-          const cs = cibleSauvegarde(ORK.st.sv, arme.pa);
-          const js = resoudreTest(cs, 0);
-          logEvent("combat.sauvegarde", `Sauvegarde Ork ${ORK.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
+          const cs = cibleSauvegarde(adv.st.sv, arme.pa);
+          const js = resoudreTest(cs, 0, pack.noyau);
+          logEvent("combat.sauvegarde", `Sauvegarde ${adv.nom} ${adv.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
           if (!js.reussi) {
             const dgt = typeof arme.degats === "function" ? arme.degats() : arme.degats;
             pvO = Math.max(0, pvO - dgt);
-            logEvent("combat.degats", `Ork Boy : −${dgt} PV (${pvO}/${ORK.pvMax})`);
+            logEvent("combat.degats", `${adv.nom} : −${dgt} PV (${pvO}/${adv.pvMax})`);
           }
         }
       } else {
-        const arme = ARMES[ORK.arme];
-        const jt = resoudreTest(arme.bs_ws, 0);
-        logEvent("combat.riposte", `L'Ork riposte — choppa : toucher CC ${arme.bs_ws} → ${jt.de} — ${jt.reussi ? "touché" : "raté"}`);
+        const arme = C.armes[adv.arme];
+        const jt = resoudreTest(arme.bs_ws, 0, pack.noyau);
+        logEvent("combat.riposte", `${adv.nom} riposte — ${arme.nom} : toucher CC ${arme.bs_ws} → ${jt.de} — ${jt.reussi ? "touché" : "raté"}`);
         if (jt.reussi) {
           const cb = cibleBlessure(arme.f, perso.st.e);
-          const jb = resoudreTest(cb, 0);
+          const jb = resoudreTest(cb, 0, pack.noyau);
           logEvent("combat.blesse", `Blessure F${arme.f} vs E${perso.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
           if (jb.reussi) {
             const cs = cibleSauvegarde(perso.st.sv, arme.pa);
-            const js = resoudreTest(cs, 0);
+            const js = resoudreTest(cs, 0, pack.noyau);
             logEvent("combat.sauvegarde", `Sauvegarde ${perso.nom} ${perso.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
             if (!js.reussi) {
               pvS = Math.max(0, pvS - arme.degats);
@@ -1760,14 +1987,14 @@ function PackView({ pack, onRetour, role }) {
     setPvSigna(pvS); setPvOrk(pvO); setRound(r => r + 1);
 
     if (pvO <= 0) {
-      logEvent("combat.fin", "Ork Boy ☠ à terre — fin du combat, retour au dialogue");
+      logEvent("combat.fin", `${C.adversaire.nom} ☠ à terre — fin du combat, retour au dialogue`);
       setFinCombat("victoire");
     } else if (pvS <= 0) {
       /* surcharge hors_combat du mod : le Protocole de Secours */
-      const js = resoudreTest("5+", 0);
-      logEvent("protocole.secours", `${perso.nom} à 0 PV — Protocole de Secours (surcharge du mod) : 5+ → ${js.de} — ${js.reussi ? "l'unité se redresse ⚡ (1 PV)" : "échec"}`);
+      const js = resoudreTest(C.horsCombat.seuil, 0, pack.noyau);
+      logEvent("protocole.secours", `${perso.nom} à 0 PV — Protocole de Secours (surcharge du mod) : ${C.horsCombat.seuil} → ${js.de} — ${js.reussi ? `l'unité se redresse ⚡ (${C.horsCombat.pv} PV)` : "échec"}`);
       if (js.reussi) {
-        pvS = 1; setPvSigna(1);
+        pvS = C.horsCombat.pv; setPvSigna(C.horsCombat.pv);
       } else {
         logEvent("protocole.extraction", `Extraction d'urgence — ${perso.nom} téléporté hors scène (1 PV à la scène suivante)`);
         setFinCombat("extraction");
@@ -1781,34 +2008,17 @@ function PackView({ pack, onRetour, role }) {
   };
   const journalInverse = [...journal].reverse();
 
+  if (enLivre) return <LecteurDocuments pack={pack} onFermer={() => setEnLivre(false)} />;
+
   return (
     <div className="min-h-screen" style={{ background: T.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
       <div className="max-w-4xl mx-auto px-5 py-6">
-        <header className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "1px solid " + T.accent + "33" }}>
-          <button onClick={onRetour} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
-            ← Hub
-          </button>
-          <div className="text-center">
-            <div className="text-xl font-bold flex items-center justify-center gap-2" style={{ color: "#e8e4d8" }}>
-              {pack.nom}
-              {role && (
-                <span className="text-xs px-1.5 py-0.5 rounded font-bold"
-                  style={{ background: role === "mj" ? "#f0b24a22" : "#2ee6c922", color: role === "mj" ? "#f0b24a" : "#2ee6c9" }}>
-                  {role === "mj" ? "MJ" : "JOUEUR"}
-                </span>
-              )}
-            </div>
-            <div className="text-xs" style={{ color: "#71717a" }}>
-              {pack.type} · dépend de {pack.depend_de.map(d => d.id + "@" + d.format_min).join(", ")} · v{pack.version} · privé
-            </div>
-          </div>
-          <div style={{ color: T.or }}>⟁</div>
-        </header>
+        <PackEntete pack={pack} role={role} onRetour={onRetour} onLivre={() => setEnLivre(true)} />
 
         <div className="grid md:grid-cols-2 gap-4 mb-5">
           {enCreationPE ? (
             <div className="md:col-span-2">
-              <EcranCreationUnite accent={T.accent} onValide={validerCreationPE} onAnnule={() => setEnCreationPE(false)} />
+              <EcranCreationUnite contenu={C} accent={T.accent} onValide={validerCreation} onAnnule={() => setEnCreationPE(false)} />
             </div>
           ) : (
           <>
@@ -1841,9 +2051,9 @@ function PackView({ pack, onRetour, role }) {
               </div>
             ) : (
               <div className="mt-3 rounded p-2 text-xs" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
-                <b style={{ color: "#e8e4d8" }}>{ARMES[perso.arme].nom}</b> · {ARMES[perso.arme].type} · {ARMES[perso.arme].portee} ·
-                A {ARMES[perso.arme].attaques} · {ARMES[perso.arme].bs_ws} · F {ARMES[perso.arme].f} ·
-                PA {ARMES[perso.arme].pa} · D {ARMES[perso.arme].degats}
+                <b style={{ color: "#e8e4d8" }}>{C.armes[perso.arme].nom}</b> · {C.armes[perso.arme].type} · {C.armes[perso.arme].portee} ·
+                A {C.armes[perso.arme].attaques} · {C.armes[perso.arme].bs_ws} · F {C.armes[perso.arme].f} ·
+                PA {C.armes[perso.arme].pa} · D {C.armes[perso.arme].degats}
               </div>
             )}
             {perso.apt && (
@@ -1860,18 +2070,18 @@ function PackView({ pack, onRetour, role }) {
             )}
             <button onClick={() => setEnCreationPE(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
               style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
-              {persoCree ? "↺ Éveiller une nouvelle unité" : "⚙ Éveiller une unité"}
+              {persoCree ? C.textes.recreer : C.textes.creer}
             </button>
           </div>
 
           {/* Adversaire + combat */}
           <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid #3f3f46" }}>
             <div className="flex items-baseline justify-between mb-3">
-              <div className="font-bold text-lg" style={{ color: pvOrk > 0 ? "#e8e4d8" : "#52525b" }}>{pvOrk > 0 ? "Ork Boy" : "Ork Boy ☠"}</div>
+              <div className="font-bold text-lg" style={{ color: pvOrk > 0 ? "#e8e4d8" : "#52525b" }}>{pvOrk > 0 ? C.adversaire.nom : C.adversaire.nom + " ☠"}</div>
               <div className="text-xs" style={{ color: "#71717a" }}>ennemi de test</div>
             </div>
-            <PvBarre pv={pvOrk} pvMax={ORK.pvMax} accent="#f0b24a" />
-            <div className="text-right text-xs mt-1" style={{ color: "#a1a1aa" }}>{pvOrk} / {ORK.pvMax} PV</div>
+            <PvBarre pv={pvOrk} pvMax={C.adversaire.pvMax} accent="#f0b24a" />
+            <div className="text-right text-xs mt-1" style={{ color: "#a1a1aa" }}>{pvOrk} / {C.adversaire.pvMax} PV</div>
             <div className="mt-3 flex flex-col gap-2">
               {!enCombat || finCombat ? (
                 <button onClick={enCombat ? nouveauCombat : demarrerCombat}
@@ -1957,7 +2167,7 @@ function PackView({ pack, onRetour, role }) {
             })}
           </div>
           <div className="text-xs mt-3" style={{ color: "#71717a" }}>
-            Surcharges du mod appliquées : {SURCHARGES.join(" · ")}
+            Surcharges du mod appliquées : {C.surcharges.join(" · ")}
           </div>
         </div>
       </div>
@@ -2044,13 +2254,14 @@ function JournalBloc({ journal, corriger, accent, or, surcharges }) {
 }
 
 /* ══════════ Bloodlust : création d'un porteur (livre p. 81-88) ══════════ */
-function EcranCreationPorteur({ accent, onValide, onAnnule }) {
+function EcranCreationPorteur({ contenu, accent, onValide, onAnnule }) {
   const [peuple, setPeuple] = useState(null);
   const [nom, setNom] = useState("");
   const [ajust, setAjust] = useState({}); /* désir → −2..+2 (un PJ ajuste de ±1 à ±2) */
   const [bonus, setBonus] = useState({}); /* compétence → multiple de 5 */
 
-  const listeCombat = BL_BASE_COMBAT, listeSec = BL_BASE_SECONDAIRES;
+  const listeCombat = contenu.baseCombat, listeSec = contenu.baseSecondaires;
+  const nomsDesirs = contenu.desirsNoms;
   const totalGroupe = (liste) => liste.reduce((s, [k]) => s + (bonus[k] || 0), 0);
   const totCombat = totalGroupe(listeCombat), totSec = totalGroupe(listeSec);
   const majBonus = (liste, plafond, k, delta) => {
@@ -2064,7 +2275,7 @@ function EcranCreationPorteur({ accent, onValide, onAnnule }) {
     const competences = {};
     [...listeCombat, ...listeSec].forEach(([k, base]) => { competences[k] = base + (bonus[k] || 0); });
     const desirs = {};
-    DESIRS_BL.forEach((d, i) => { desirs[d] = BL_DESIRS_PEUPLES[peuple.nom][i] + (ajust[d] || 0); });
+    nomsDesirs.forEach((d, i) => { desirs[d] = contenu.desirsPeuples[peuple.nom][i] + (ajust[d] || 0); });
     onValide({ id: "cree", nom: nom.trim(), peuple: peuple.nom, caracs: peuple.caracs, desirs, competences });
   };
 
@@ -2084,7 +2295,7 @@ function EcranCreationPorteur({ accent, onValide, onAnnule }) {
         className="w-full rounded-lg px-3 py-2 mb-3 text-sm"
         style={{ background: "#0c0d10", border: "1px solid #3f3f46", color: "#e8e4d8" }} />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        {BL_PEUPLES.map(p => (
+        {contenu.peuples.map(p => (
           <button key={p.id} onClick={() => setPeuple(p)}
             className="rounded-lg p-2.5 text-left"
             style={{ border: "1px solid " + (peuple && peuple.id === p.id ? accent : "#3f3f46"),
@@ -2102,8 +2313,8 @@ function EcranCreationPorteur({ accent, onValide, onAnnule }) {
         <div className="text-xs mt-4 mb-1.5" style={{ color: "#71717a" }}>
           Désirs du peuple {peuple.nom} (livre p. 88) — un PJ ajuste chaque désir de ±1 à ±2
         </div>
-        {DESIRS_BL.map((d, i) => {
-          const base = BL_DESIRS_PEUPLES[peuple.nom][i];
+        {nomsDesirs.map((d, i) => {
+          const base = contenu.desirsPeuples[peuple.nom][i];
           return (
             <div key={d} className="flex items-center justify-between rounded-lg px-2.5 py-1.5 mb-1.5" style={{ background: "#ffffff08" }}>
               <span className="text-sm" style={{ color: "#c8c8ce" }}>
@@ -2181,20 +2392,21 @@ function EcranCreationPorteur({ accent, onValide, onAnnule }) {
    dépasse 52, le livre permet de TOUT relancer. SAN de départ = POU×5.
    Les compétences du ch. 4 ne sont pas encore extraites : l'aventurier né
    ici joue ses caracs (brute, ×2, ×3, ×5) — honnêteté d'alpha assumée. */
-function EcranCreationAventurier({ accent, onValide, onAnnule }) {
+function EcranCreationAventurier({ contenu, accent, onValide, onAnnule }) {
   const [nom, setNom] = useState("");
   const [jets, setJets] = useState(null); /* carac → les trois dés */
   const [essais, setEssais] = useState(0);
+  const ordre = contenu.ordreCaracs, totalMax = contenu.totalCaracs || 52;
 
   const lancer = () => {
     const j = {};
-    SB_7.forEach(k => { j[k] = [d6(), d6(), d6()]; });
+    ordre.forEach(k => { j[k] = [d6(), d6(), d6()]; });
     setJets(j);
     setEssais(e => e + 1);
   };
-  const caracs = jets ? Object.fromEntries(SB_7.map(k => [k, jets[k][0] + jets[k][1] + jets[k][2]])) : null;
-  const total = caracs ? SB_7.reduce((s, k) => s + caracs[k], 0) : 0;
-  const trop = !!caracs && total > 52;
+  const caracs = jets ? Object.fromEntries(ordre.map(k => [k, jets[k][0] + jets[k][1] + jets[k][2]])) : null;
+  const total = caracs ? ordre.reduce((s, k) => s + caracs[k], 0) : 0;
+  const trop = !!caracs && total > totalMax;
   const peutValider = !!caracs && nom.trim().length > 0;
 
   const valider = () => onValide({
@@ -2224,7 +2436,7 @@ function EcranCreationAventurier({ accent, onValide, onAnnule }) {
 
       {jets && (<>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-          {SB_7.map(k => (
+          {ordre.map(k => (
             <div key={k} className="rounded-lg py-2" style={{ background: "#ffffff0d" }}>
               <div className="text-xs" style={{ color: "#71717a" }}>{k}</div>
               <div className="text-2xl font-bold" style={{ color: "#e8e4d8" }}>{caracs[k]}</div>
@@ -2234,7 +2446,7 @@ function EcranCreationAventurier({ accent, onValide, onAnnule }) {
           <div className="rounded-lg py-2" style={{ background: trop ? "#fb718522" : accent + "22", border: "1px solid " + (trop ? "#fb718566" : accent + "44") }}>
             <div className="text-xs" style={{ color: "#71717a" }}>Total</div>
             <div className="text-2xl font-bold" style={{ color: trop ? "#fb7185" : accent }}>{total}</div>
-            <div className="text-xs" style={{ color: "#a1a1aa" }}>{trop ? "> 52 — relance autorisée" : "≤ 52 ✓"}</div>
+            <div className="text-xs" style={{ color: "#a1a1aa" }}>{trop ? `> ${totalMax} — relance autorisée` : `≤ ${totalMax} ✓`}</div>
           </div>
         </div>
 
@@ -2244,7 +2456,7 @@ function EcranCreationAventurier({ accent, onValide, onAnnule }) {
             SAN = POU×5 <b>{caracs.POU * 5}</b>
           </div>
           <div className="flex-1 rounded-lg py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
-            Lutte de POU vs {SB_DEMON.pou} : <b>{50 - 5 * (SB_DEMON.pou - caracs.POU)} %</b>
+            Lutte de POU vs {contenu.demon.pou} : <b>{contenu.lutte.base - contenu.lutte.pas * (contenu.demon.pou - caracs.POU)} %</b>
           </div>
         </div>
         <div className="text-xs mt-2 text-center" style={{ color: "#71717a" }}>
@@ -2271,13 +2483,13 @@ function EcranCreationAventurier({ accent, onValide, onAnnule }) {
    L'unité éveillée remplace Signa-3 partout. Modules, wargear et protocoles :
    hors alpha (places Mémoire/Calcul affichées, limites de taille par châssis
    pas encore extraites). */
-function EcranCreationUnite({ accent, onValide, onAnnule }) {
+function EcranCreationUnite({ contenu, accent, onValide, onAnnule }) {
   const [nom, setNom] = useState("");
   const [chNom, setChNom] = useState(null);
   const [code, setCode] = useState(null);
-  const [armeId, setArmeId] = useState("fusil");
-  const ch = PE_CHASSIS.find(c => c.n === chNom) || null;
-  const arme = PE_ARMES.find(a => a.id === armeId);
+  const [armeId, setArmeId] = useState(contenu.arsenal[0] ? contenu.arsenal[0].id : "");
+  const ch = contenu.chassis.find(c => c.n === chNom) || null;
+  const arme = contenu.arsenal.find(a => a.id === armeId);
   const peutValider = !!ch && !!code && nom.trim().length > 0;
 
   const valider = () => onValide({
@@ -2306,7 +2518,7 @@ function EcranCreationUnite({ accent, onValide, onAnnule }) {
 
       {/* ② Châssis */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        {PE_CHASSIS.map(c => (
+        {contenu.chassis.map(c => (
           <button key={c.n} onClick={() => setChNom(c.n)} className="rounded-lg p-2.5 text-left"
             style={{ border: "1px solid " + (chNom === c.n ? accent : "#3f3f46"), background: chNom === c.n ? "#ffffff0d" : "#ffffff08" }}>
             <div className="font-bold text-sm" style={{ color: chNom === c.n ? accent : "#e8e4d8" }}>{c.n}</div>
@@ -2322,7 +2534,7 @@ function EcranCreationUnite({ accent, onValide, onAnnule }) {
         {/* ③ Code de fabrique */}
         <div className="text-xs mt-4 mb-1.5" style={{ color: "#71717a" }}>Code de fabrique de la lignée</div>
         <div className="flex flex-wrap gap-1.5">
-          {PE_CODES.map(c => (
+          {contenu.codes.map(c => (
             <button key={c} onClick={() => setCode(c)} className="px-2.5 py-1 rounded-lg text-sm font-bold"
               style={{ background: code === c ? accent : "#14161b", color: code === c ? "#0a120f" : "#c8c8ce", border: "1px solid " + (code === c ? accent : "#3f3f46") }}>
               {c}
@@ -2334,7 +2546,7 @@ function EcranCreationUnite({ accent, onValide, onAnnule }) {
         <div className="text-xs mt-4 mb-1.5" style={{ color: "#71717a" }}>Arme de départ — arsenal neutre (choix libre dans l'alpha)</div>
         <select value={armeId} onChange={e => setArmeId(e.target.value)} className="w-full rounded px-2 py-1.5 text-sm"
           style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
-          {PE_ARMES.map(a => (
+          {contenu.arsenal.map(a => (
             <option key={a.id} value={a.id}>
               {a.nom} · {a.tir ? "tir" : "mêlée"} · {a.portee} · A {a.att} · F {a.f} · PA {a.pa} · D {a.d} · T{a.taille}
             </option>
@@ -2372,49 +2584,57 @@ function EcranCreationUnite({ accent, onValide, onAnnule }) {
   );
 }
 
-/* ══════════ PackViewD100 : squelette alpha des packs d100 ══════════ */
-function PackViewD100({ pack, onRetour, role }) {
+/* ════════ La vue du noyau-d100 — UNIVERSELLE : modules déclarés par le sac ════════
+   Une seule vue pour tous les packs d100, présents et à venir. Le sac
+   (pack.contenu) déclare ce qui existe — demon+lutte (Stormbringer),
+   forge+controle+paliers (Bloodlust)… — et la vue affiche les modules
+   déclarés. Plus un seul pack.id dans le moteur : le pack raconte,
+   le Core cuisine. */
+function VueNoyauD100({ pack, onRetour, role }) {
   const T = pack.theme;
-  const sb = pack.id === "stormbringer";
+  const C = pack.contenu; /* le sac de données du pack */
   const { journal, log, corrigerDernier } = useJournal();
+  const [enLivre, setEnLivre] = useState(false);
+  const [enCreation, setEnCreation] = useState(false);
+  const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
+  const perso = persoCree || C.perso;
+  const c = perso.caracs;
 
-  /* — état Stormbringer — */
-  const [persoSBCree, setPersoSBCree] = useState(null); /* aventurier né de la création (remplace Vyon-Kesh) */
-  const [enCreationSB, setEnCreationSB] = useState(false); /* écran de création de l'aventurier */
-  const sbPerso = persoSBCree || SB_PERSO; /* fiche active : Vyon-Kesh (démo) ou l'aventurier créé */
-  const c = sbPerso.caracs;
-  const sourcesSB = [
-    ...SB_7.map(k => ({ label: `${k} ${c[k]} — carac brute (${c[k]} %)`, seuil: c[k] })),
-    { label: `POU×3 — lier un démon (${c.POU * 3} %)`, seuil: c.POU * 3 },
-    { label: `CHA×2 — marchander (${c.CHA * 2} %)`, seuil: c.CHA * 2 },
-    { label: `CHA×5 — marché démoniaque (${c.CHA * 5} %)`, seuil: c.CHA * 5 },
-    ...Object.entries(sbPerso.competences || {}).map(([k, v]) => ({ label: `${k} (${v} %)`, seuil: v }))
+  /* — sources de jets : déclarées par le pack (caracs brutes, multiplicateurs,
+     compétences). Un pack à paliers (Bloodlust) joue ses compétences avec
+     modificateurs de palier ; un pack à sources joue tout sous %. — */
+  const sources = [
+    ...(C.ordreCaracs || Object.keys(c)).map(k => ({ label: `${k} ${c[k]} — carac brute (${c[k]} %)`, seuil: c[k] })),
+    ...(C.mults || []).map(m => ({ label: `${m.carac}×${m.mult} — ${m.label} (${c[m.carac] * m.mult} %)`, seuil: c[m.carac] * m.mult })),
+    ...Object.entries(perso.competences || {}).map(([k, v]) => ({ label: `${k} (${v} %)`, seuil: v }))
   ];
+  const comps = Object.keys(perso.competences || {});
   const [srcIdx, setSrcIdx] = useState(0);
-  const [san, setSan] = useState(SB_PERSO.sanMax);
+  const [compIdx, setCompIdx] = useState(0);
+  const [palierIdx, setPalierIdx] = useState(2);
+
+  /* — Santé Mentale (si le pack en déclare une : SAN = POU×5) — */
+  const [san, setSan] = useState(C.perso.sanMax || 0);
   const [ronde, setRonde] = useState(0);
   const [lutteFinie, setLutteFinie] = useState(null);
 
-  /* — état Bloodlust — */
-  const [enCreation, setEnCreation] = useState(false);   /* écran de création du porteur */
-  const [persoCree, setPersoCree] = useState(null);      /* porteur né de la création (remplace Urkhar) */
-  const [compIdx, setCompIdx] = useState(0);
-  const [palierIdx, setPalierIdx] = useState(2);
-  const [pts, setPts] = useState(BL_ARME.base); /* base de l'épée longue : 20 pts (livre p. 95) */
+  /* — la forge de l'Arme vivante (si le pack en déclare une) — */
+  const [pts, setPts] = useState(C.forge ? C.forge.base : 0);
   const [acquis, setAcquis] = useState([]);
   const [jetsTable, setJetsTable] = useState({});    /* tableId → jets consommés */
   const [forge, setForge] = useState(null);          /* { a, b, tableId } — chiffres tirés, ordre à choisir */
   const [choixLibre, setChoixLibre] = useState(null);/* { tableId } — « Au choix du joueur » */
   const [armeEveillee, setArmeEveillee] = useState(false);
-  const perso = persoCree || BL_PORTEUR; /* fiche active : Urkhar (démo) ou le porteur créé */
-  const compsBL = Object.keys(perso.competences);
+  const prestige = C.tablesForge
+    ? C.tablesForge.reduce((s, tb) => s + tb.prestige * acquis.filter(p => p.tableId === tb.id).length, 0)
+    : 0;
 
-  /* Stormbringer : la lutte de POU (surcharge : 50 % ± 5 %/pt d'écart) */
+  /* La lutte de POU (surcharge déclarée : base ± pas par point d'écart) */
   const lutterPOU = () => {
-    const ecart = SB_DEMON.pou - c.POU;
-    const pJ = 50 - 5 * ecart, pD = 50 + 5 * ecart;
-    const rJ = resoudreD100(pJ, 0, "brp"), rD = resoudreD100(pD, 0, "brp");
-    log("pou.jet", `Lutte de POU (round ${ronde + 1}) — ${sbPerso.nom} ${pJ} % → ${fmtD100(rJ.de)}${rJ.nat ? " · " + rJ.nat : ""} ; ${SB_DEMON.nom} ${pD} % → ${fmtD100(rD.de)}${rD.nat ? " · " + rD.nat : ""}`);
+    const ecart = C.demon.pou - c.POU;
+    const pJ = C.lutte.base - C.lutte.pas * ecart, pD = C.lutte.base + C.lutte.pas * ecart;
+    const rJ = resoudreD100(pJ, 0, C.critiques, pack.noyau), rD = resoudreD100(pD, 0, C.critiques, pack.noyau);
+    log("pou.jet", `Lutte de POU (round ${ronde + 1}) — ${perso.nom} ${pJ} % → ${fmtD100(rJ.de)}${rJ.nat ? " · " + rJ.nat : ""} ; ${C.demon.nom} ${pD} % → ${fmtD100(rD.de)}${rD.nat ? " · " + rD.nat : ""}`);
     if (rJ.reussi && !rD.reussi) {
       setLutteFinie("victoire"); setRonde(0);
       log("pou.victoire", "L'octogone tient — le démon est renvoyé au plan d'où il vient");
@@ -2422,50 +2642,49 @@ function PackViewD100({ pack, onRetour, role }) {
       const perte = d6();
       const nv = Math.max(0, san - perte);
       setSan(nv); setLutteFinie("defaite"); setRonde(0);
-      log("pou.defaite", `Le démon brise la lutte — ${perte} SAN perdus (${nv}/${sbPerso.sanMax})`);
-      if (nv === 0) log("san.perdu", `SAN à zéro — l'âme de ${sbPerso.nom} vacille… (un repos la restaurera, squelette alpha)`);
+      log("pou.defaite", `Le démon brise la lutte — ${perte} SAN perdus (${nv}/${perso.sanMax})`);
+      if (nv === 0) log("san.perdu", `SAN à zéro — l'âme de ${perso.nom} vacille… (un repos la restaurera, squelette alpha)`);
     } else {
       setRonde(r => r + 1);
       log("pou.tension", "Les deux volontés tiennent — la lutte continue");
     }
   };
   const reposerSAN = () => {
-    setSan(sbPerso.sanMax);
-    log("san.repos", `Repos — Santé Mentale de ${sbPerso.nom} restaurée (squelette alpha)`);
+    setSan(perso.sanMax);
+    log("san.repos", `Repos — Santé Mentale de ${perso.nom} restaurée (squelette alpha)`);
   };
 
-  /* Bloodlust : la forge de l'Arme vivante (tables officielles p. 96-100 ;
-     total > 100 → l'arme s'éveille ; prix = palier 1 ; jets max par table) */
+  /* La forge (tables officielles du pack ; total > budget → l'arme s'éveille) */
   const lancerForge = (tableId) => {
     if (armeEveillee) return;
-    const t = BL_TABLES.find(x => x.id === tableId);
+    const t = C.tablesForge.find(x => x.id === tableId);
     if (!t || (t.max !== null && (jetsTable[tableId] || 0) >= t.max)) return;
     const a = Math.floor(Math.random() * 10), b = Math.floor(Math.random() * 10);
     setForge({ a, b, tableId });
-    log("forge.des", `Forge d'${BL_ARME.nom} (${t.nom}) — d% tiré : ${a} et ${b} — le joueur choisit l'ordre des chiffres (la règle d'or du livre :D)`);
+    log("forge.des", `Forge d'${C.forge.nom} (${t.nom}) — d% tiré : ${a} et ${b} — le joueur choisit l'ordre des chiffres (la règle d'or du livre :D)`);
   };
   const ajouterPouvoir = (tableId, cle, pouvoir) => {
     if (acquis.some(p => p.tableId === tableId && p.nom === pouvoir.nom)) {
       log("forge.refus", `${pouvoir.nom} — déjà possédé : un même pouvoir ne s'acquiert qu'une fois, relancez`);
       return;
     }
-    const t = BL_TABLES.find(x => x.id === tableId);
+    const t = C.tablesForge.find(x => x.id === tableId);
     const prixN1 = pouvoir.prix[0];
     const nvPts = pts + prixN1;
     const nvAcquis = [...acquis, { cle, tableId, nom: pouvoir.nom, prix: prixN1 }];
-    const prestige = BL_TABLES.reduce((s, tb) => s + tb.prestige * nvAcquis.filter(p => p.tableId === tb.id).length, 0);
+    const prestigeNv = C.tablesForge.reduce((s, tb) => s + tb.prestige * nvAcquis.filter(p => p.tableId === tb.id).length, 0);
     setJetsTable(j => ({ ...j, [tableId]: (j[tableId] || 0) + 1 }));
     setAcquis(nvAcquis);
     setPts(nvPts);
-    log("forge.achat", `${t.nom} ${fmtD100(cle)} — ${pouvoir.nom} · ${prixN1 > 0 ? "+" : ""}${prixN1} → total ${nvPts}/100`);
-    if (nvPts > 100 && !armeEveillee) {
+    log("forge.achat", `${t.nom} ${fmtD100(cle)} — ${pouvoir.nom} · ${prixN1 > 0 ? "+" : ""}${prixN1} → total ${nvPts}/${C.forge.budget}`);
+    if (nvPts > C.forge.budget && !armeEveillee) {
       setArmeEveillee(true);
-      log("forge.fin", `Total ${nvPts} > 100 — ${BL_ARME.nom} s'ÉVEILLE ⚔ l'épée est terminée (prestige de l'arme : ${prestige} pts — nouveaux pouvoirs uniquement en jeu)`);
+      log("forge.fin", `Total ${nvPts} > ${C.forge.budget} — ${C.forge.nom} s'ÉVEILLE ⚔ l'épée est terminée (prestige de l'arme : ${prestigeNv} pts — nouveaux pouvoirs uniquement en jeu)`);
     }
   };
   const choisirOrdreForge = (premier) => {
     const { a, b, tableId } = forge;
-    const t = BL_TABLES.find(x => x.id === tableId);
+    const t = C.tablesForge.find(x => x.id === tableId);
     setForge(null);
     const n = premier === "a" ? a * 10 + b : b * 10 + a;
     const cle = n === 0 ? 100 : n;
@@ -2479,132 +2698,136 @@ function PackViewD100({ pack, onRetour, role }) {
     }
     ajouterPouvoir(tableId, cle, trouve);
   };
-  /* Stormbringer : validation de la création d'un aventurier (écran dédié) */
-  const validerCreationSB = (p) => {
-    setPersoSBCree(p);
-    setEnCreationSB(false);
-    setSan(p.sanMax);
-    log("perso.creation", `Fait naître ${p.nom}, ${p.origine} — 7 caracs 3D6 (total ${SB_7.reduce((s, k) => s + p.caracs[k], 0)}/52) · SAN ${p.sanMax} (POU ${p.caracs.POU}×5)`);
-  };
 
-  /* Bloodlust : validation de la création d'un porteur (écran dédié) */
+  /* La validation de création — la ligne de journal est une recette du pack */
   const validerCreation = (p) => {
     setPersoCree(p);
     setEnCreation(false);
-    log("perso.creation", `Fait naître ${p.nom}, ${p.peuple} — PV ${p.caracs.EN * 2} · contrôle ${p.caracs.VO * 5} % (l'arme, elle, attend sa forge)`);
+    if (p.sanMax) setSan(p.sanMax);
+    log("perso.creation", C.journalCreation(p));
   };
 
+  /* Le test de contrôle de l'Arme (carac × mult, déclarés par le pack) */
   const testerControle = () => {
-    const seuil = perso.caracs.VO * 5;
-    const r = resoudreD100(seuil, 0, "bloodlust");
-    log("controle.jet", `Test de contrôle — VO ${perso.caracs.VO} ×5 = ${seuil} % → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "réussi" : "ÉCHOUÉ"}`);
+    const seuil = perso.caracs[C.controle.carac] * C.controle.mult;
+    const r = resoudreD100(seuil, 0, C.critiques, pack.noyau);
+    log("controle.jet", `Test de contrôle — ${C.controle.carac} ${perso.caracs[C.controle.carac]} ×${C.controle.mult} = ${seuil} % → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "réussi" : "ÉCHOUÉ"}`);
     if (r.reussi) log("controle.ok", `${perso.nom} garde la main — la lame rumuse, mais elle obéit`);
-    else log("controle.perdu", `${BL_ARME.nom} prend le dessus — ce round, c'est la Violence qui décide 😈`);
+    else log("controle.perdu", `${C.forge.nom} prend le dessus — ce round, c'est la Violence qui décide 😈`);
   };
 
-  /* Jet libre étiqueté (la primitive du noyau-d100) */
+  /* Jet libre étiqueté (la primitive du noyau-d100, recette du pack) */
   const jetLibre = () => {
-    if (sb) {
-      const src = sourcesSB[srcIdx];
-      const r = resoudreD100(src.seuil, 0, "brp");
-      log("libre.jet", `Jet libre — ${src.label} → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
-    } else {
-      const comp = compsBL[compIdx];
+    if (C.paliers) {
+      const comp = comps[compIdx];
       const seuil = perso.competences[comp];
-      const p = PALIERS_BL[palierIdx];
-      const r = resoudreD100(seuil, p.mod, "bloodlust");
+      const p = C.paliers[palierIdx];
+      const r = resoudreD100(seuil, p.mod, C.critiques, pack.noyau);
       const modTxt = p.mod > 0 ? "+" + p.mod : p.mod < 0 ? "−" + Math.abs(p.mod) : "±0";
       log("libre.jet", `Jet libre — ${comp} ${seuil} % (${p.label} ${modTxt}) → seuil ${r.sFinal} % → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
+    } else {
+      const src = sources[srcIdx];
+      const r = resoudreD100(src.seuil, 0, C.critiques, pack.noyau);
+      log("libre.jet", `Jet libre — ${src.label} → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
     }
   };
+
+  const nbCaracs = Object.keys(c).length;
+  const EcranCreation = { aventurier: EcranCreationAventurier, porteur: EcranCreationPorteur }[C.creation];
+
+  if (enLivre) return <LecteurDocuments pack={pack} onFermer={() => setEnLivre(false)} />;
 
   return (
     <div className="min-h-screen" style={{ background: T.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
       <div className="max-w-4xl mx-auto px-5 py-6">
-        <header className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "1px solid " + T.accent + "33" }}>
-          <button onClick={onRetour} className="px-3 py-1.5 rounded-lg text-sm font-bold" style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
-            ← Hub
-          </button>
-          <div className="text-center">
-            <div className="text-xl font-bold flex items-center justify-center gap-2" style={{ color: "#e8e4d8" }}>
-              {pack.nom}
-              {role && (
-                <span className="text-xs px-1.5 py-0.5 rounded font-bold"
-                  style={{ background: role === "mj" ? "#f0b24a22" : "#2ee6c922", color: role === "mj" ? "#f0b24a" : "#2ee6c9" }}>
-                  {role === "mj" ? "MJ" : "JOUEUR"}
-                </span>
-              )}
-            </div>
-            <div className="text-xs" style={{ color: "#71717a" }}>
-              {pack.type} · dépend de {pack.depend_de.map(d => d.id + "@" + d.format_min).join(", ")} · v{pack.version} · privé
-            </div>
-          </div>
-          <div style={{ color: T.or }}>{pack.glyphs}</div>
-        </header>
+        <PackEntete pack={pack} role={role} onRetour={onRetour} onLivre={() => setEnLivre(true)} />
 
         <div className="grid md:grid-cols-2 gap-4 mb-5">
-          {sb ? (
-            enCreationSB ? (
-              <div className="md:col-span-2">
-                <EcranCreationAventurier accent={T.accent} onValide={validerCreationSB} onAnnule={() => setEnCreationSB(false)} />
+          {enCreation && EcranCreation ? (
+            <div className="md:col-span-2">
+              <EcranCreation contenu={C} accent={T.accent} onValide={validerCreation} onAnnule={() => setEnCreation(false)} />
+            </div>
+          ) : (
+          <>
+            {/* Fiche — générique : caracs, compétences, modules déclarés */}
+            <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
+              <div className="flex items-baseline justify-between mb-3">
+                <div className="font-bold text-lg" style={{ color: T.accent }}>{perso.nom}</div>
+                <div className="text-xs" style={{ color: "#71717a" }}>{perso.origine || perso.peuple}</div>
               </div>
-            ) : (
-            <>
-              {/* Fiche Stormbringer */}
-              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
-                <div className="flex items-baseline justify-between mb-3">
-                  <div className="font-bold text-lg" style={{ color: T.accent }}>{sbPerso.nom}</div>
-                  <div className="text-xs" style={{ color: "#71717a" }}>{sbPerso.origine}</div>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                  {Object.entries(sbPerso.caracs).map(([k, v]) => (
-                    <div key={k} className="rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
-                      <span className="text-xs" style={{ color: "#71717a" }}>{k} </span>{v}
+              <div className={"grid gap-2 text-center text-sm " + (nbCaracs > 6 ? "grid-cols-4" : "grid-cols-3")}>
+                {Object.entries(c).map(([k, v]) => (
+                  <div key={k} className="rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+                    <span className="text-xs" style={{ color: "#71717a" }}>{k} </span>{v}
+                  </div>
+                ))}
+              </div>
+              {perso.competences ? (
+                <div className="grid grid-cols-2 gap-1.5 mt-2 text-xs">
+                  {Object.entries(perso.competences).map(([k, v]) => (
+                    <div key={k} className="flex justify-between rounded px-2 py-1" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
+                      <span>{k}</span><span style={{ color: "#e8e4d8" }}>{v} %</span>
                     </div>
                   ))}
                 </div>
-                {sbPerso.competences ? (
-                  <div className="grid grid-cols-2 gap-1.5 mt-2 text-xs">
-                    {Object.entries(sbPerso.competences).map(([k, v]) => (
-                      <div key={k} className="flex justify-between rounded px-2 py-1" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
-                        <span>{k}</span><span style={{ color: "#e8e4d8" }}>{v} %</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs mt-2 rounded px-2 py-1.5" style={{ background: "#ffffff08", color: "#71717a" }}>
-                    Compétences du ch. 4 pas encore extraites — les jets se font sous les caracs (brute, ×2, ×3, ×5)
-                  </div>
-                )}
-                <div className="mt-3">
-                  <div className="text-xs mb-1" style={{ color: "#71717a" }}>Santé Mentale — POU×5 ({sbPerso.sanMax})</div>
-                  <BarrePct valeur={san} max={sbPerso.sanMax} accent={T.accent} label={`${san} / ${sbPerso.sanMax} SAN`} />
+              ) : null}
+              {C.derivees && (
+                <div className="flex gap-2 mt-2 text-center text-xs">
+                  {C.derivees.map(d => (
+                    <div key={d.label} className="flex-1 rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
+                      {d.label} <b>{d.calc(c)}{d.suffixe || ""}</b>
+                    </div>
+                  ))}
                 </div>
-                <button onClick={() => setEnCreationSB(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
-                  style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
-                  {persoSBCree ? "↺ Créer un nouvel aventurier" : "⚔ Créer un aventurier"}
-                </button>
-              </div>
+              )}
+              {perso.sanMax ? (
+                <div className="mt-3">
+                  <div className="text-xs mb-1" style={{ color: "#71717a" }}>Santé Mentale — POU×5 ({perso.sanMax})</div>
+                  <BarrePct valeur={san} max={perso.sanMax} accent={T.accent} label={`${san} / ${perso.sanMax} SAN`} />
+                </div>
+              ) : null}
+              {perso.desirs && (
+                <>
+                  <div className="text-xs mt-3 mb-1" style={{ color: "#71717a" }}>Désirs du peuple {perso.peuple} (livre p. 88 — un PJ ajuste de ±1 à ±2 par désir)</div>
+                  {Object.entries(perso.desirs).map(([k, v]) => (
+                    <div key={k} className="mb-1.5">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span style={{ color: "#c8c8ce" }}>{k}</span>
+                        <span style={{ color: "#e8e4d8" }}>{v}/10{v >= 9 ? " 🔥" : ""}</span>
+                      </div>
+                      <PvBarre pv={v} pvMax={10} accent={v >= 8 ? T.accent : "#a8adb8"} />
+                    </div>
+                  ))}
+                </>
+              )}
+              <button onClick={() => setEnCreation(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
+                style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
+                {persoCree ? C.textes.recreer : C.textes.creer}
+              </button>
+            </div>
 
-              {/* Démon + lutte de POU */}
+            {/* Adversaire + lutte de POU (si le pack déclare un démon) */}
+            {C.demon ? (
               <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid #3f3f46" }}>
                 <div className="flex items-baseline justify-between mb-3">
-                  <div className="font-bold text-lg" style={{ color: "#e8e4d8" }}>{SB_DEMON.nom}</div>
+                  <div className="font-bold text-lg" style={{ color: "#e8e4d8" }}>{C.demon.nom}</div>
                   <div className="text-xs" style={{ color: "#71717a" }}>adversaire de test</div>
                 </div>
-                <div className="text-xs mb-3" style={{ color: "#c8c8ce" }}>{SB_DEMON.ligne}</div>
+                <div className="text-xs mb-3" style={{ color: "#c8c8ce" }}>{C.demon.ligne}</div>
                 <div className="rounded p-2 mb-3 text-xs" style={{ background: "#ffffff08", color: "#c8c8ce" }}>
-                  Lutte de POU : 50 % ± 5 % par point d'écart — POU {c.POU} vs {SB_DEMON.pou} →
-                  {" "}{50 - 5 * (SB_DEMON.pou - c.POU)} % contre {50 + 5 * (SB_DEMON.pou - c.POU)} %
+                  Lutte de POU : {C.lutte.base} % ± {C.lutte.pas} % par point d'écart — POU {c.POU} vs {C.demon.pou} →
+                  {" "}{C.lutte.base - C.lutte.pas * (C.demon.pou - c.POU)} % contre {C.lutte.base + C.lutte.pas * (C.demon.pou - c.POU)} %
                 </div>
                 <div className="flex flex-col gap-2">
                   <button onClick={lutterPOU} className="py-2.5 rounded-lg font-bold text-black" style={{ background: T.accent }}>
                     ⚡ Lutter un round (test)
                   </button>
-                  <button onClick={reposerSAN} className="py-2 rounded-lg text-sm font-bold"
-                    style={{ border: "1px solid " + T.accent + "66", color: T.accent, background: "transparent" }}>
-                    Repos — restaurer la SAN
-                  </button>
+                  {perso.sanMax ? (
+                    <button onClick={reposerSAN} className="py-2 rounded-lg text-sm font-bold"
+                      style={{ border: "1px solid " + T.accent + "66", color: T.accent, background: "transparent" }}>
+                      Repos — restaurer la SAN
+                    </button>
+                  ) : null}
                   {lutteFinie && (
                     <div className="text-center text-sm py-2 rounded" style={{ background: "#ffffff0d", color: lutteFinie === "victoire" ? T.accent : "#fb7185" }}>
                       {lutteFinie === "victoire" ? "Victoire — le démon regagne son plan." : "Défaite — le pacte a un prix."}
@@ -2615,58 +2838,20 @@ function PackViewD100({ pack, onRetour, role }) {
                   </div>
                 </div>
               </div>
-            </>
-            )
-          ) : enCreation ? (
-            <div className="md:col-span-2">
-              <EcranCreationPorteur accent={T.accent} onValide={validerCreation} onAnnule={() => setEnCreation(false)} />
-            </div>
-          ) : (
-            <>
-              {/* Fiche du porteur Bloodlust */}
-              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
-                <div className="flex items-baseline justify-between mb-3">
-                  <div className="font-bold text-lg" style={{ color: T.accent }}>{perso.nom}</div>
-                  <div className="text-xs" style={{ color: "#71717a" }}>{perso.peuple}</div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                  {Object.entries(perso.caracs).map(([k, v]) => (
-                    <div key={k} className="rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>
-                      <span className="text-xs" style={{ color: "#71717a" }}>{k} </span>{v}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2 mt-2 text-center text-xs">
-                  <div className="flex-1 rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>PV = EN×2 <b>{perso.caracs.EN * 2}</b></div>
-                  <div className="flex-1 rounded py-1.5" style={{ background: "#ffffff0d", color: "#e8e4d8" }}>Contrôle = VO×5 <b>{perso.caracs.VO * 5} %</b></div>
-                </div>
-                <div className="text-xs mt-3 mb-1" style={{ color: "#71717a" }}>Désirs du peuple {perso.peuple} (livre p. 88 — un PJ ajuste de ±1 à ±2 par désir)</div>
-                {Object.entries(perso.desirs).map(([k, v]) => (
-                  <div key={k} className="mb-1.5">
-                    <div className="flex justify-between text-xs mb-0.5">
-                      <span style={{ color: "#c8c8ce" }}>{k}</span>
-                      <span style={{ color: "#e8e4d8" }}>{v}/10{v >= 9 ? " 🔥" : ""}</span>
-                    </div>
-                    <PvBarre pv={v} pvMax={10} accent={v >= 8 ? T.accent : "#a8adb8"} />
-                  </div>
-                ))}
-                <button onClick={() => setEnCreation(true)} className="w-full py-2 rounded-lg text-sm font-bold mt-2"
-                  style={{ background: "#0c0d10", border: "1px solid " + T.accent + "66", color: T.accent }}>
-                  {persoCree ? "↺ Créer un nouveau porteur" : "🧬 Créer un porteur"}
-                </button>
-              </div>
+            ) : null}
 
-              {/* L'Arme vivante : forge (tables officielles) + contrôle */}
-              <div className="rounded-xl p-4" style={{ background: "#ffffff08", border: "1px solid " + T.or + "44" }}>
+            {/* L'Arme vivante : forge + contrôle (si le pack en déclare une) */}
+            {C.forge ? (
+              <div className="rounded-xl p-4 md:col-span-2" style={{ background: "#ffffff08", border: "1px solid " + T.or + "44" }}>
                 <div className="flex items-baseline justify-between mb-3">
-                  <div className="font-bold text-lg" style={{ color: T.or }}>{BL_ARME.nom}</div>
-                  <div className="text-xs" style={{ color: "#71717a" }}>{BL_ARME.nature} · base {BL_ARME.base} pts</div>
+                  <div className="font-bold text-lg" style={{ color: T.or }}>{C.forge.nom}</div>
+                  <div className="text-xs" style={{ color: "#71717a" }}>{C.forge.nature} · base {C.forge.base} pts</div>
                 </div>
                 <div className="mb-3">
-                  <BarrePct valeur={Math.min(pts, 100)} max={100} accent={T.or}
+                  <BarrePct valeur={Math.min(pts, C.forge.budget)} max={C.forge.budget} accent={T.or}
                     label={armeEveillee
-                      ? `${pts} points — l'arme s'éveille ⚔ · prestige : ${BL_TABLES.reduce((s, tb) => s + tb.prestige * acquis.filter(p => p.tableId === tb.id).length, 0)} pts`
-                      : `${pts} / 100 points de forge (base épée longue : ${BL_ARME.base})`} />
+                      ? `${pts} points — l'arme s'éveille ⚔ · prestige : ${prestige} pts`
+                      : `${pts} / ${C.forge.budget} points de forge (base ${C.forge.typeArme || "de l'arme"} : ${C.forge.base})`} />
                 </div>
                 {acquis.length === 0 ? (
                   <div className="text-xs mb-3 text-center py-2 rounded" style={{ color: "#71717a", background: "#ffffff08" }}>
@@ -2678,7 +2863,7 @@ function PackViewD100({ pack, onRetour, role }) {
                       <div key={p.tableId + "-" + p.cle} className="flex justify-between items-center rounded px-2 py-1 text-xs" style={{ background: "#ffffff08" }}>
                         <span style={{ color: "#e8e4d8" }}>
                           <span className="px-1 rounded mr-1" style={{ background: T.or + "22", color: T.or }}>
-                            {BL_TABLES.find(t => t.id === p.tableId).court}
+                            {C.tablesForge.find(t => t.id === p.tableId).court}
                           </span>
                           {p.nom}
                         </span>
@@ -2691,7 +2876,7 @@ function PackViewD100({ pack, onRetour, role }) {
                   {forge ? (
                     <div className="rounded-lg p-3 text-center" style={{ background: "#ffffff0d", border: "1px solid " + T.or + "44" }}>
                       <div className="text-xs mb-2" style={{ color: "#c8c8ce" }}>
-                        {BL_TABLES.find(x => x.id === forge.tableId).nom} — chiffres tirés :{" "}
+                        {C.tablesForge.find(x => x.id === forge.tableId).nom} — chiffres tirés :{" "}
                         <b style={{ color: T.or }}>{forge.a}</b> et <b style={{ color: T.or }}>{forge.b}</b> — quel ordre ?
                       </div>
                       <div className="flex gap-2 justify-center">
@@ -2702,11 +2887,11 @@ function PackViewD100({ pack, onRetour, role }) {
                   ) : choixLibre ? (
                     <div className="rounded-lg p-3" style={{ background: "#ffffff0d", border: "1px solid " + T.or + "44" }}>
                       <div className="text-xs mb-2" style={{ color: "#c8c8ce" }}>
-                        « Au choix du joueur » — {BL_TABLES.find(x => x.id === choixLibre.tableId).nom} : désignez le pouvoir
+                        « Au choix du joueur » — {C.tablesForge.find(x => x.id === choixLibre.tableId).nom} : désignez le pouvoir
                       </div>
                       <select
                         onChange={e => {
-                          const t = BL_TABLES.find(x => x.id === choixLibre.tableId);
+                          const t = C.tablesForge.find(x => x.id === choixLibre.tableId);
                           const p = t.table.find(x => String(x.de[0]) === e.target.value);
                           if (!p) return;
                           setChoixLibre(null);
@@ -2715,7 +2900,7 @@ function PackViewD100({ pack, onRetour, role }) {
                         className="w-full rounded px-2 py-1.5 text-sm"
                         style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
                         <option value="">— choisir un pouvoir —</option>
-                        {BL_TABLES.find(x => x.id === choixLibre.tableId).table.filter(p => p.prix !== null).map(p => (
+                        {C.tablesForge.find(x => x.id === choixLibre.tableId).table.filter(p => p.prix !== null).map(p => (
                           <option key={p.de[0]} value={p.de[0]}>
                             {p.de[1] === p.de[0] ? fmtD100(p.de[0]) : fmtD100(p.de[0]) + "-" + fmtD100(p.de[1])} · {p.nom} · {p.prix[0] > 0 ? "+" : ""}{p.prix[0]}
                           </option>
@@ -2724,7 +2909,7 @@ function PackViewD100({ pack, onRetour, role }) {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
-                      {BL_TABLES.map(t => {
+                      {C.tablesForge.map(t => {
                         const n = jetsTable[t.id] || 0;
                         const bloque = armeEveillee || (t.max !== null && n >= t.max);
                         return (
@@ -2740,47 +2925,41 @@ function PackViewD100({ pack, onRetour, role }) {
                   )}
                   {armeEveillee && (
                     <div className="text-center text-sm py-2 rounded" style={{ background: "#ffffff0d", color: T.or }}>
-                      ⚔ {BL_ARME.nom} est éveillée — la forge est close (nouveaux pouvoirs en jeu, par l'XP)
+                      ⚔ {C.forge.nom} est éveillée — la forge est close (nouveaux pouvoirs en jeu, par l'XP)
                     </div>
                   )}
-                  <button onClick={testerControle} className="py-2 rounded-lg text-sm font-bold"
-                    style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
-                    Test de contrôle — VO×5 (test)
-                  </button>
-                  <div className="text-xs text-center" style={{ color: "#71717a" }}>
-                    Tables officielles p. 96-100 · prix = palier 1 · un même pouvoir une seule fois ·
-                    exotiques 4 jets max · limitations 2 jets max · « 99-00 » : au choix du joueur
-                  </div>
+                  {C.controle ? (
+                    <button onClick={testerControle} className="py-2 rounded-lg text-sm font-bold"
+                      style={{ border: "1px solid " + T.accent + "66", color: T.accent }}>
+                      Test de contrôle — {C.controle.carac}×{C.controle.mult} (test)
+                    </button>
+                  ) : null}
+                  {C.forgeAide && (
+                    <div className="text-xs text-center" style={{ color: "#71717a" }}>{C.forgeAide}</div>
+                  )}
                 </div>
               </div>
-            </>
+            ) : null}
+          </>
           )}
         </div>
 
-        {/* Jet libre (masqué pendant une création — Stormbringer ou Bloodlust) */}
-        {(sb ? !enCreationSB : !enCreation) && (
+        {/* Jet libre (masqué pendant une création) */}
+        {!enCreation && (
         <div className="rounded-xl p-4 mb-5" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "33" }}>
           <div className="font-bold mb-3" style={{ color: T.accent }}>🎲 Jet libre étiqueté</div>
           <div className="flex flex-wrap items-center gap-3">
-            {sb ? (
-              <label className="text-sm" style={{ color: "#c8c8ce" }}>
-                Sous{" "}
-                <select value={srcIdx} onChange={e => setSrcIdx(Number(e.target.value))}
-                  className="ml-1 rounded px-2 py-1" style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
-                  {sourcesSB.map((s, i) => <option key={i} value={i}>{s.label}</option>)}
-                </select>
-              </label>
-            ) : (
+            {C.paliers ? (
               <>
                 <label className="text-sm" style={{ color: "#c8c8ce" }}>
                   Compétence{" "}
                   <select value={compIdx} onChange={e => setCompIdx(Number(e.target.value))}
                     className="ml-1 rounded px-2 py-1" style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
-                    {compsBL.map((k, i) => <option key={k} value={i}>{k} — {perso.competences[k]} %</option>)}
+                    {comps.map((k, i) => <option key={k} value={i}>{k} — {perso.competences[k]} %</option>)}
                   </select>
                 </label>
                 <div className="flex rounded overflow-hidden" style={{ border: "1px solid #3f3f46" }}>
-                  {PALIERS_BL.map((p, i) => (
+                  {C.paliers.map((p, i) => (
                     <button key={p.label} onClick={() => setPalierIdx(i)} className="px-2.5 py-1 text-xs"
                       style={{ background: palierIdx === i ? T.accent : "#14161b", color: palierIdx === i ? "#0c0d10" : "#c8c8ce" }}>
                       {p.label}
@@ -2788,13 +2967,20 @@ function PackViewD100({ pack, onRetour, role }) {
                   ))}
                 </div>
               </>
+            ) : (
+              <label className="text-sm" style={{ color: "#c8c8ce" }}>
+                Sous{" "}
+                <select value={srcIdx} onChange={e => setSrcIdx(Number(e.target.value))}
+                  className="ml-1 rounded px-2 py-1" style={{ background: "#14161b", color: "#e8e4d8", border: "1px solid #3f3f46" }}>
+                  {sources.map((s, i) => <option key={i} value={i}>{s.label}</option>)}
+                </select>
+              </label>
             )}
             <button onClick={jetLibre} className="px-4 py-1.5 rounded-lg font-bold text-black" style={{ background: T.or }}>
               Lancer 1D100
             </button>
             <span className="text-xs" style={{ color: "#71717a" }}>
-              1D100 ≤ seuil · plancher 5 % · « 00 » échec automatique
-              {sb ? " · « 01 » réussite critique" : " · critique = unités 0, échec critique = unités 1"}
+              1D100 ≤ seuil · plancher 5 % · « 00 » échec automatique{C.aideJet ? " · " + C.aideJet : ""}
             </span>
           </div>
         </div>
@@ -2802,13 +2988,44 @@ function PackViewD100({ pack, onRetour, role }) {
 
         {/* Journal append-only */}
         <JournalBloc journal={journal} corriger={corrigerDernier} accent={T.accent} or={T.or}
-          surcharges={SURCHARGES_D100[pack.id].join(" · ")} />
+          surcharges={C.surcharges.join(" · ")} />
       </div>
     </div>
   );
 }
 
 /* ══════════ L'app : le hub, le chargement du pack, le pack ══════════ */
+/* ════════ Le registre des vues — routage PAR DÉPENDANCE ════════
+   Le launcher choisit la vue du pack lancé selon le NOYAU qu'il commande,
+   jamais selon son id : un futur pack d100 s'affichera dans VueNoyauD100 sans
+   toucher une ligne du Core. Noyau ou sac introuvable → refus clair, pas de
+   crash mystérieux (règle d'or du manifeste). */
+const VUES = {
+  "noyau-40k": VueNoyau40k,
+  "noyau-d100": VueNoyauD100
+};
+
+function VueInconnue({ pack, onRetour }) {
+  const T = pack.theme || { fond: "#0c0d10", accent: "#a8adb8", or: "#f0b24a" };
+  const dep = pack.depend_de && pack.depend_de[0];
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: T.fond, fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <div className="rounded-2xl p-8 max-w-md text-center" style={{ background: "#ffffff08", border: "1px solid " + T.accent + "44" }}>
+        <div className="text-3xl mb-3">⚠</div>
+        <div className="font-bold text-lg mb-2" style={{ color: "#e8e4d8" }}>{pack.nom} — pack refusé</div>
+        <div className="text-sm mb-4" style={{ color: "#c8c8ce" }}>
+          {dep
+            ? `Le launcher ne connaît pas le noyau « ${dep.id} » ou son contenu (dépendance non résolue) — ${pack.id} v${pack.version}.`
+            : "Ce pack ne déclare aucune dépendance de noyau."}
+        </div>
+        <button onClick={onRetour} className="px-4 py-2 rounded-lg font-bold text-black" style={{ background: T.accent }}>
+          ← Retour au magasin
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [vue, setVue] = useState("hub");
   const [packActif, setPackActif] = useState(null);
@@ -2955,7 +3172,7 @@ function App() {
     const p = rolePour;
     setRolePour(null);
     setRolesPacks(r => ({ ...r, [p.id]: role }));
-    setPackActif(p);
+    setPackActif(chargerPack(p)); /* le manifeste devient un pack CHARGÉ : noyau résolu + sac de données */
     setVue("chargement");
     setEtapes([]);
     const liste = etapesChargement(p, role);
@@ -2999,13 +3216,11 @@ function App() {
         </div>
       )}
 
-      {vue === "pack" && packActif && (
-        packActif.id === "stormbringer" || packActif.id === "bloodlust" ? (
-          <PackViewD100 pack={packActif} role={rolesPacks[packActif.id]} onRetour={() => setVue("hub")} />
-        ) : (
-          <PackView pack={packActif} role={rolesPacks[packActif.id]} onRetour={() => setVue("hub")} />
-        )
-      )}
+      {vue === "pack" && packActif && (() => {
+        const dep = packActif.depend_de[0];
+        const Vue = dep && VUES[dep.id] && packActif.noyau && packActif.contenu ? VUES[dep.id] : VueInconnue;
+        return <Vue pack={packActif} role={rolesPacks[packActif.id]} onRetour={() => setVue("hub")} />;
+      })()}
 
       {rolePour && (
         <ChoixRole pack={rolePour} onChoisi={choisirRole} onAnnuler={() => setRolePour(null)} />
