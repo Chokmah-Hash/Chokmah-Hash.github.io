@@ -196,6 +196,24 @@
             .then(function () { return (cree && cree[0]) || { pseudo: pseudo, email: u.email }; });
         });
       });
+    },
+
+    /* La sentence : la ligne compte ET sa mémoire s'effacent du registre.
+       Le RLS ne le permet qu'à l'admin — et JAMAIS sur sa propre ligne ;
+       le tombeau du serveur empêche l'adresse de ressusciter. */
+    supprimerCompte: function (compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+        method: "DELETE", token: m.access_token, prefer: "return=representation"
+      }).then(function (supprimes) {
+        if (!supprimes || !supprimes.length) {
+          throw new Error("Le serveur a refusé la sentence.");
+        }
+        return api("/rest/v1/archiviste_memoire?compte_id=eq." + compteId, {
+          method: "DELETE", token: m.access_token
+        }).catch(function () {});
+      });
     }
   };
 })();
@@ -214,7 +232,7 @@ const { useState, useRef, useEffect } = React;
 const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.11";
+const BUILD = "0.14";
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -351,10 +369,14 @@ function Carte({ valeur, libelle, accent }) {
 }
 
 /* ══════════ La salle : les stats de la Tombe ══════════ */
-function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onCreer, simulation }) {
+function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onCreer, onSupprimer, simulation }) {
   const { comptes, memoires, parametres } = donnees;
   const [onglet, setOnglet] = useState("stat"); // stat | bibliotheque | comptes
   const [detail, setDetail] = useState(null); // la fiche ouverte, si ouverte
+  const [confSuppr, setConfSuppr] = useState(false); // la sentence se prépare-t-elle ?
+  const [motSuppr, setMotSuppr] = useState(""); // la consécration écrite : « suppression »
+  const [supprEnCours, setSupprEnCours] = useState(false);
+  const [supprErreur, setSupprErreur] = useState(null);
   const [creation, setCreation] = useState(false); // le cadre de gravure, si ouvert
   const [nPseudo, setNPseudo] = useState("");
   const [nEmail, setNEmail] = useState("");
@@ -393,6 +415,25 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
       setNEnCours(false);
     }
   };
+  /* La sentence : effacer un compte du registre — après consécration écrite */
+  const effacer = async () => {
+    setSupprErreur(null);
+    setSupprEnCours(true);
+    try {
+      await onSupprimer(detail);
+      setDetail(null);
+      setConfSuppr(false); setMotSuppr("");
+    } catch (e) {
+      setSupprErreur((e && e.message) || "La pierre a refusé l'effacement.");
+    } finally {
+      setSupprEnCours(false);
+    }
+  };
+  /* Ouvrir une fiche saine : la sentence précédente ne suit pas */
+  const ouvrirFiche = (c) => {
+    setDetail(c);
+    setConfSuppr(false); setMotSuppr(""); setSupprErreur(null);
+  };
   const actifs = comptes.filter(
     (c) => c.derniere_connexion && (Date.now() - new Date(c.derniere_connexion).getTime() < ACTIF_7J)
   ).length;
@@ -414,6 +455,8 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
 
   return (
     <div className="min-h-screen flex flex-col text-zinc-200" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+      <style>{`@keyframes glisseHaut { from { transform: translateY(-110%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.glisseHaut { animation: glisseHaut 280ms ease-out; }`}</style>
       <div className="max-w-4xl w-full mx-auto px-5 pt-8 pb-0 flex-1 flex flex-col">
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -517,9 +560,10 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
         {/* ── Le registre des comptes ── */}
         <div className="text-sm font-bold tracking-widest mb-2 flex items-center justify-between" style={{ color: "#a1a1aa" }}>
           LE REGISTRE DES COMPTES
+          {/* 13 px de marge : le + suit l'axe X de la colonne des écrous (px-3 de cellule + 1 px de bordure) */}
           <button onClick={() => setCreation(true)} title="Graver un nouveau compte joueur"
-            className="px-2.5 py-0.5 rounded-lg text-sm font-bold"
-            style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>+</button>
+            className="px-2.5 py-1 rounded-lg text-sm font-bold"
+            style={{ marginRight: "13px", background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>+</button>
         </div>
         <div className="rounded-xl mb-8 overflow-x-auto" style={{ border: "1px solid #27272a" }}>
           <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
@@ -545,7 +589,7 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
                   </td>
                   <td className="px-3 py-2 text-right" style={{ borderBottom: "1px solid #27272a" }}>
                     {/* L'écrou : il ouvre la fiche complète du compte */}
-                    <button onClick={() => setDetail(c)} title="Ouvrir la fiche du compte"
+                    <button onClick={() => ouvrirFiche(c)} title="Ouvrir la fiche du compte"
                       className="px-2.5 py-1 rounded-lg text-sm font-bold"
                       style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>⚙</button>
                   </td>
@@ -600,7 +644,7 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
             style={{ background: "#0c0d10cc" }}
             onClick={() => setDetail(null)}>
             <div onClick={(e) => e.stopPropagation()}
-              className="rounded-2xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto"
+              className="glisseHaut rounded-2xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto"
               style={{ background: "#14161b", border: "1px solid #f0b24a44" }}>
               <div className="flex justify-center mb-3">
                 <Icosaedre size={44} color="#f0b24a" />
@@ -661,6 +705,44 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
                   Fermer
                 </button>
               )}
+              {/* ── La sentence : effacer le compte, jamais sur sa propre ligne ── */}
+              {session.email !== detail.email && (
+                <div className="mt-4 pt-3" style={{ borderTop: "1px solid #27272a" }}>
+                  {!confSuppr ? (
+                    <button onClick={() => { setConfSuppr(true); setSupprErreur(null); }}
+                      className="w-full px-4 py-2 rounded-lg text-xs font-bold"
+                      style={{ background: "#fb718510", color: "#fb7185", border: "1px solid #fb718544" }}>
+                      ✕ Supprimer ce compte
+                    </button>
+                  ) : (
+                    <div>
+                      <div className="text-xs mb-2 leading-relaxed" style={{ color: "#fb7185" }}>
+                        « {detail.pseudo} » et sa mémoire seront effacés du registre, à jamais.
+                        Écrivez « suppression » pour sceller la sentence.
+                      </div>
+                      <input value={motSuppr} onChange={(e) => setMotSuppr(e.target.value)}
+                        placeholder="suppression" type="text" autoComplete="off"
+                        className="w-full rounded-lg px-3 py-2 mb-2 text-sm" style={champ} />
+                      {supprErreur && (
+                        <div className="text-xs mb-2" style={{ color: "#fb7185" }}>{supprErreur}</div>
+                      )}
+                      <div className="flex gap-2">
+                        <button onClick={effacer} disabled={motSuppr !== "suppression" || supprEnCours}
+                          className="flex-1 px-4 py-2 rounded-lg font-bold text-sm"
+                          style={{ background: "#fb7185", color: "#0c0d10",
+                            opacity: motSuppr !== "suppression" || supprEnCours ? 0.4 : 1 }}>
+                          {supprEnCours ? "La pierre s'efface…" : "✕ Supprimer définitivement"}
+                        </button>
+                        <button onClick={() => { setConfSuppr(false); setMotSuppr(""); setSupprErreur(null); }}
+                          className="px-4 py-2 rounded-lg text-xs font-bold"
+                          style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -671,7 +753,7 @@ function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, onC
             style={{ background: "#0c0d10cc" }}
             onClick={() => setCreation(false)}>
             <div onClick={(e) => e.stopPropagation()}
-              className="rounded-2xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto"
+              className="glisseHaut rounded-2xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto"
               style={{ background: "#14161b", border: "1px solid #f0b24a44" }}>
               <div className="flex justify-center mb-3">
                 <Icosaedre size={44} color="#f0b24a" />
@@ -824,6 +906,19 @@ function App() {
     setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
   };
 
+  /* La sentence : effacer un compte et sa mémoire du registre — le
+     serveur scelle l'adresse dans le tombeau, elle ne ressuscite pas. */
+  const supprimerJoueur = async (compte) => {
+    if (!CLOUD) {
+      /* Banc d'essai : la ligne s'efface du registre simulé */
+      setDonnees(d => ({ ...d, comptes: d.comptes.filter(c => c.compte_id !== compte.compte_id) }));
+      return;
+    }
+    await CLOUD.supprimerCompte(compte.compte_id);
+    const res = await CLOUD.recharger();
+    setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+  };
+
   const sortir = () => {
     if (CLOUD) CLOUD.deconnexion();
     setSession(null);
@@ -837,7 +932,7 @@ function App() {
     return (
       <Salle session={session} donnees={donnees} onSortir={sortir}
         onRafraichir={rafraichir} onStatut={poserSceau} onMode={choisirMode} onCreer={creerJoueur}
-        simulation={!CLOUD} />
+        onSupprimer={supprimerJoueur} simulation={!CLOUD} />
     );
   }
   if (phase === "refus") {
