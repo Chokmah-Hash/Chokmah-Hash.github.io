@@ -823,7 +823,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.16";
+const BUILD = "0.17";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6634,7 +6634,10 @@ function App() {
       document.removeEventListener("visibilitychange", auRetour);
       if (attente) clearTimeout(attente);
     };
-  }, [CLOUD, session]);
+  }, [CLOUD, session.compteId]); /* ⚠️ compteId SEUL : verifierSession recrée
+                                 l'objet session à chaque poussée — avec « session » entier en dépendance,
+                                 l'effet bouclait (fermer → leave → rejoindre → track) et le point
+                                 clignotait rouge/vert au registre. */
 
   /* La pulsation de SECOURS : seulement quand le canal temps réel est coupé. */
   useEffect(() => {
