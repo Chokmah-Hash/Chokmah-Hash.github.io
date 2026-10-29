@@ -325,7 +325,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.26";
+const BUILD = "0.27";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -972,12 +972,10 @@ function Salle({
   session,
   donnees,
   onSortir,
-  onRafraichir,
   onStatut,
   onMode,
   onCreer,
-  onSupprimer,
-  tempsReel
+  onSupprimer
 }) {
   const {
     comptes,
@@ -1117,29 +1115,7 @@ function Salle({
     }
   }, "SALLE D'ADMINISTRATION"))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center px-3 py-2 rounded-lg text-xs font-bold tracking-widest",
-    title: tempsReel === "branche" ? "La Tombe pousse ses changements en direct — l'écran est à jour à l'instant." : "Canal temps réel coupé — pulsation de secours toutes les 30 secondes.",
-    style: {
-      background: "#14161b",
-      border: "1px solid #27272a",
-      color: tempsReel === "branche" ? "#f0b24a" : "#fb7185"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 9,
-      marginRight: 6
-    }
-  }, "\u25CF"), tempsReel === "branche" ? "TEMPS RÉEL" : "HORS CANAL"), /*#__PURE__*/React.createElement("button", {
-    onClick: onRafraichir,
-    title: "Rafra\xEEchir les donn\xE9es",
-    className: "px-3 py-2 rounded-lg font-bold text-sm",
-    style: {
-      background: "#a8adb814",
-      color: "#a8adb8",
-      border: "1px solid #27272a"
-    }
-  }, "\u21BB"), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: onSortir,
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
@@ -1822,11 +1798,6 @@ function App() {
       setEnChargement(false);
     }
   };
-  const rafraichir = async () => {
-    try {
-      await synchroniser();
-    } catch (e) {/* la salle garde ses chiffres en attendant mieux */}
-  };
 
   /* Poser ou retirer le sceau : valider / suspendre un compte du registre */
   const poserSceau = async (compte, statut) => {
@@ -1879,12 +1850,10 @@ function App() {
       session: session,
       donnees: donnees,
       onSortir: sortir,
-      onRafraichir: rafraichir,
       onStatut: poserSceau,
       onMode: choisirMode,
       onCreer: creerJoueur,
-      onSupprimer: supprimerJoueur,
-      tempsReel: etatTempsReel
+      onSupprimer: supprimerJoueur
     });
   }
   if (phase === "refus") {
