@@ -245,7 +245,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.24";
+const BUILD = "0.25";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -806,10 +806,13 @@ function Salle({
     color: "#e8e4d8",
     outline: "none"
   };
-  /* Le voile du Maître du Jeu : sa pierre (rôle « MJ ») vit dans la base,
-     hors APP — registre et stats n affichent QUE les comptes joueurs. */
-  const visibles = comptes.filter(c => c.role !== "MJ");
-  const admins = visibles.filter(c => c.role === "admin").length;
+  /* Le voile du Maître du Jeu : les pierres des MAÎTRES (rôles « MJ » ET
+     « admin » — la ligne compte est recréée par l APP avec le rôle admin quand
+     elle manque, ne jamais filtrer sur un seul rôle) vivent dans la base,
+     hors APP — registre, visites et stats de joueurs : QUE les comptes joueurs. */
+  const visibles = comptes.filter(c => c.role !== "MJ" && c.role !== "admin");
+  /* Les maîtres restent COMPTÉS (carte ADMINISTRATEURS) mais jamais montrés. */
+  const admins = comptes.filter(c => c.role === "admin" || c.role === "MJ").length;
   const enAttente = visibles.filter(c => c.statut === "en_attente").length;
   const modeValidation = ((parametres || []).find(p => p.cle === "mode_validation") || {}).valeur || "admin";
   /* La version de l'état de la base : la Tombe annonce elle-même son
@@ -1143,7 +1146,7 @@ function Salle({
       borderBottom: "1px solid #27272a",
       fontStyle: "italic"
     }
-  }, "Registre vide : seuls les comptes joueurs s y gravent \u2014 la pierre du Ma\xEEtre du Jeu vit dans la base, volontairement masqu\xE9e."))))), /*#__PURE__*/React.createElement("div", {
+  }, "Registre vide : seuls les comptes joueurs s y gravent \u2014 les pierres des ma\xEEtres vivent dans la base, volontairement masqu\xE9es."))))), /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold tracking-widest mb-2 mt-8",
     style: {
       color: "#a1a1aa"
