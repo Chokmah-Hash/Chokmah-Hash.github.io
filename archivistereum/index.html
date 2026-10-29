@@ -179,7 +179,7 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
            remarque seul. Aucune écriture en base, aucun code à la fermeture. */
         if (presenceCle) {
           ws.send(JSON.stringify({
-            topic: "tombe",
+            topic: "realtime:tombe",
             event: "phx_join",
             payload: {
               config: { broadcast: { self: false }, presence: { key: presenceCle }, postgres_changes: [] },
@@ -346,7 +346,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.28";
+const BUILD = "0.29";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -542,7 +542,7 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
              remarque seul. Aucune écriture en base, aucun code à la fermeture. */
           if (presenceCle) {
             ws.send(JSON.stringify({
-              topic: "tombe",
+              topic: "realtime:tombe",
               event: "phx_join",
               payload: {
                 config: {
@@ -1340,7 +1340,7 @@ function Salle({
   }, /*#__PURE__*/React.createElement("th", {
     className: "px-3 py-2",
     style: {
-      width: 32,
+      width: 22,
       borderBottom: "1px solid #27272a"
     }
   }), ["PSEUDO", "STATUT", ""].map((h, i) => /*#__PURE__*/React.createElement("th", {
