@@ -108,6 +108,7 @@
       tag: (compte && compte.tag) || "JR-????",
       email: user.email,
       avatarId: (compte && compte.avatar_ref) || meta.avatar_ref || "crane",
+      statut: (compte && compte.statut) || "actif",
       memoire: {}
     };
   }
@@ -246,7 +247,7 @@ const CLOUD = (typeof window !== "undefined" && window.LARCHIVISTE_CLOUD) || nul
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.08";
+const BUILD = "0.09";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3035,6 +3036,14 @@ function App() {
   const [memoireComptes, setMemoireComptes] = useState({});
 
   const seConnecter = (p) => {
+    /* La double porte : un compte « en_attente » ne franchit pas le seuil —
+       il attend le sceau de l'Archiviste (apposé dans l'Archivisterium,
+       ou par le lien email si ce mode est en vigueur). */
+    if (CLOUD && p.statut === "en_attente") {
+      setSession(p);
+      setVue("attente");
+      return;
+    }
     /* En mode CLOUD, la mémoire arrive DU NUAGE avec le profil (p.memoire) ;
        en simulation, elle vit dans le sac du compte local. */
     const memo = (CLOUD && p.memoire) || memoireComptes[p.compteId] || {};
@@ -3062,6 +3071,7 @@ function App() {
     setEnInstallation(null);
     setRolePour(null);
     setPackActif(null);
+    setVue("hub");
     showToast("Session fermée — le magasin reste ouvert");
   };
 
@@ -3178,6 +3188,23 @@ function App() {
           mobile={mobile} ecran={ecran} setEcran={setEcran}
           installes={installes} enInstallation={enInstallation}
           symbole={symbole} />
+      )}
+
+      {vue === "attente" && session && (
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0c0d10", fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif" }}>
+          <div className="rounded-2xl p-8 w-full max-w-md text-center" style={{ background: "#14161b", border: "1px solid #f0b24a33" }}>
+            <div className="flex justify-center mb-4"><Icosaedre size={64} color="#f0b24a" /></div>
+            <div className="font-bold text-xl mb-2" style={{ color: "#e8e4d8" }}>Votre compte attend le sceau de l'Archiviste.</div>
+            <div className="text-sm mb-6" style={{ color: "#71717a" }}>
+              Bienvenue, {session.pseudo} — votre inscription est bien gravée dans la Tombe,
+              mais l'Archiviste doit apposer sa validation avant que les archives ne s'ouvrent.
+              Revenez plus tard.
+            </div>
+            <button onClick={seDeconnecter} className="px-4 py-2 rounded-lg font-bold text-sm text-black" style={{ background: "#a8adb8" }}>
+              Se déconnecter
+            </button>
+          </div>
+        </div>
       )}
 
       {vue === "chargement" && packActif && (

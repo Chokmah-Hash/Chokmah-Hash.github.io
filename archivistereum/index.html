@@ -106,7 +106,10 @@
         }
         return api("/rest/v1/archiviste_memoire?select=compte_id,contenu,maj_le", { token: token })
           .then(function (memoires) {
-            return { profil: moi, comptes: comptes, memoires: memoires };
+            return api("/rest/v1/parametres?select=cle,valeur", { token: token })
+              .then(function (parametres) {
+                return { profil: moi, comptes: comptes, memoires: memoires, parametres: parametres || [] };
+              });
           });
       });
   }
@@ -140,6 +143,27 @@
         return api("/auth/v1/logout", { method: "POST", token: m.access_token }).catch(function () {});
       }
       return Promise.resolve();
+    },
+
+    /* Le sceau de l'Archiviste : valider (actif) ou suspendre (en_attente)
+       un compte du registre — la politique RLS ne le permet qu'aux admins. */
+    majStatut: function (compteId, statut) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+        method: "PATCH", token: m.access_token, body: { statut: statut }
+      });
+    },
+
+    /* Le mode de validation des inscriptions : « admin » (sceau manuel)
+       ou « email » (le lien de confirmation fait foi). */
+    majMode: function (valeur) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/parametres", {
+        method: "POST", token: m.access_token, prefer: "resolution=merge-duplicates",
+        body: { cle: "mode_validation", valeur: valeur }
+      });
     }
   };
 })();
@@ -158,7 +182,7 @@ const { useState, useRef, useEffect } = React;
 const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.08";
+const BUILD = "0.09";
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -169,9 +193,12 @@ const PACKS = [
 
 /* ── Banc d'essai : la salle en simulation, sans le nuage ── */
 const BANC = {
+  parametres: [
+    { cle: "mode_validation", valeur: "admin" },
+  ],
   comptes: [
-    { compte_id: "sim-1", pseudo: "Test Archiviste", tag: "JR-0004", email: "archiviste.test@larchiviste.jdr", role: "admin", cree_le: "2026-10-29T08:09:15Z", derniere_connexion: "2026-10-29T08:15:28Z" },
-    { compte_id: "sim-2", pseudo: "Invité de la Tombe", tag: "JR-0005", email: "invite@larchiviste.jdr", role: "joueur", cree_le: "2026-10-29T10:00:00Z", derniere_connexion: null },
+    { compte_id: "sim-1", pseudo: "Test Archiviste", tag: "JR-0004", email: "archiviste.test@larchiviste.jdr", role: "admin", statut: "actif", cree_le: "2026-10-29T08:09:15Z", derniere_connexion: "2026-10-29T08:15:28Z" },
+    { compte_id: "sim-2", pseudo: "Invité de la Tombe", tag: "JR-0005", email: "invite@larchiviste.jdr", role: "joueur", statut: "en_attente", cree_le: "2026-10-29T10:00:00Z", derniere_connexion: null },
   ],
   memoires: [
     { compte_id: "sim-1", contenu: { installes: ["protocoles-eternels", "stormbringer"], favoris: ["protocoles-eternels"], rolesPacks: {} } },
@@ -292,9 +319,16 @@ function Carte({ valeur, libelle, accent }) {
 }
 
 /* ══════════ La salle : les stats de la Tombe ══════════ */
-function Salle({ session, donnees, onSortir, onRafraichir, simulation }) {
-  const { comptes, memoires } = donnees;
+function Salle({ session, donnees, onSortir, onRafraichir, onStatut, onMode, simulation }) {
+  const { comptes, memoires, parametres } = donnees;
+  const [onglet, setOnglet] = useState("stat"); // stat | bibliotheque | comptes
   const admins = comptes.filter((c) => c.role === "admin").length;
+  const enAttente = comptes.filter((c) => c.statut === "en_attente").length;
+  const modeValidation = ((parametres || []).find((p) => p.cle === "mode_validation") || {}).valeur || "admin";
+  const visites = comptes
+    .filter((c) => c.derniere_connexion)
+    .sort((a, b) => new Date(b.derniere_connexion) - new Date(a.derniere_connexion))
+    .slice(0, 5);
   const actifs = comptes.filter(
     (c) => c.derniere_connexion && (Date.now() - new Date(c.derniere_connexion).getTime() < ACTIF_7J)
   ).length;
@@ -353,19 +387,63 @@ function Salle({ session, donnees, onSortir, onRafraichir, simulation }) {
           </div>
         )}
 
+        {/* Onglets Stat / Bibliothèque / Comptes — l'ergonomie du launcher, en or */}
+        <div className="flex gap-1 mb-6" style={{ borderBottom: "1px solid #27272a" }}>
+          {[["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"]].map(([id, lbl]) => (
+            <button key={id} onClick={() => setOnglet(id)}
+              className="px-4 py-2 text-sm font-bold tracking-wider"
+              style={{
+                background: onglet === id ? "#f0b24a12" : "transparent",
+                color: onglet === id ? "#f0b24a" : "#71717a",
+                borderBottom: onglet === id ? "2px solid #f0b24a" : "2px solid transparent",
+                marginBottom: -1
+              }}>
+              {lbl}
+              {id === "comptes" && comptes.length ? <span style={{ opacity: 0.7 }}> ({comptes.length})</span> : null}
+            </button>
+          ))}
+        </div>
+
         {/* ── Les grandes lignes ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        {onglet === "stat" && (<div className="mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Carte valeur={comptes.length} libelle="COMPTES" accent="#e8e4d8" />
           <Carte valeur={admins} libelle="ADMINISTRATEURS" accent="#f0b24a" />
+          <Carte valeur={enAttente} libelle="EN ATTENTE" accent="#fb7185" />
           <Carte valeur={actifs} libelle="ACTIFS (7 JOURS)" accent="#2ee6c9" />
           <Carte valeur={totalInstalles} libelle="INSTALLATIONS" accent="#9d86e8" />
         </div>
 
+        {/* ── Les dernières visites : qui est passé dans la Tombe ── */}
+        <div className="text-sm font-bold tracking-widest mb-2 mt-8" style={{ color: "#a1a1aa" }}>
+          DERNIÈRES VISITES
+        </div>
+        {visites.length ? (
+          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #27272a" }}>
+            {visites.map((c, i) => (
+              <div key={c.compte_id} className="flex items-center gap-3 px-4 py-3"
+                style={{ background: "#14161b", borderBottom: i < visites.length - 1 ? "1px solid #27272a" : "none" }}>
+                <div className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ background: (Date.now() - new Date(c.derniere_connexion).getTime() < ACTIF_7J) ? "#2ee6c9" : "#52525b" }} />
+                <div className="font-bold text-sm flex-1 truncate" style={{ color: "#e8e4d8" }}>{c.pseudo}</div>
+                <div className="text-xs" style={{ color: "#a1a1aa" }}>{c.tag}</div>
+                <div className="text-xs w-44 text-right" style={{ color: "#71717a" }}>{heureCourte(c.derniere_connexion)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl p-4 text-sm" style={{ border: "1px solid #27272a", color: "#71717a" }}>
+            Aucune visite enregistrée pour l'instant.
+          </div>
+        )}
+        </div>)}
+
         {/* ── Les packs du magasin ── */}
+        {onglet === "bibliotheque" && (<div className="mb-8">
         <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
           LES PACKS DU MAGASIN
         </div>
-        <div className="rounded-xl mb-8 overflow-hidden" style={{ border: "1px solid #27272a" }}>
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #27272a" }}>
           {statsPack.map((p, i) => (
             <div key={p.id} className="flex items-center gap-3 px-4 py-3"
               style={{ background: "#14161b", borderBottom: i < statsPack.length - 1 ? "1px solid #27272a" : "none" }}>
@@ -380,6 +458,46 @@ function Salle({ session, donnees, onSortir, onRafraichir, simulation }) {
             </div>
           ))}
         </div>
+        </div>)}
+
+        {/* ── Le mode de validation des inscriptions ── */}
+        {onglet === "comptes" && (<>
+        <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
+          MODE DE VALIDATION DES INSCRIPTIONS
+        </div>
+        <div className="grid md:grid-cols-2 gap-3 mb-3">
+          {[{
+            id: "admin", nom: "SCEAU DE L'ADMIN",
+            desc: "Inscription fluide, sans email : le compte naît « en attente » et s'ouvre dès que vous le validez dans le registre, d'un clic.",
+          }, {
+            id: "email", nom: "LIEN PAR EMAIL",
+            desc: "Le message de confirmation fait foi : le joueur clique son lien, son compte naît actif — aucun sceau à apposer.",
+          }].map((m) => {
+            const actifM = modeValidation === m.id;
+            return (
+              <button key={m.id} onClick={() => onMode(m.id)}
+                className="text-left rounded-xl p-4"
+                style={{
+                  background: actifM ? "#f0b24a12" : "#14161b",
+                  border: actifM ? "1px solid #f0b24a66" : "1px solid #27272a",
+                }}>
+                <div className="font-bold text-sm mb-1 flex items-center gap-2"
+                  style={{ color: actifM ? "#f0b24a" : "#e8e4d8" }}>
+                  {actifM && <span>●</span>}{m.nom}
+                </div>
+                <div className="text-xs leading-relaxed" style={{ color: "#71717a" }}>{m.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-xs mb-8 px-3 py-2 rounded-lg leading-relaxed"
+          style={{ background: "#14161b", color: "#71717a", border: "1px solid #27272a" }}>
+          ⚙ Le réglage serveur doit suivre ce commutateur dans Supabase (Authentication → Sign In / Up) :
+          « Confirm email » DÉSACTIVÉ pour le sceau de l'admin, ACTIVÉ pour le lien par email.
+          {modeValidation === "email"
+            ? " Mode actuel : chaque inscription reçoit un lien de confirmation."
+            : " Mode actuel : les comptes naissent « en attente » — le registre attend votre sceau."}
+        </div>
 
         {/* ── Le registre des comptes ── */}
         <div className="text-sm font-bold tracking-widest mb-2" style={{ color: "#a1a1aa" }}>
@@ -389,7 +507,7 @@ function Salle({ session, donnees, onSortir, onRafraichir, simulation }) {
           <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#14161b", color: "#71717a" }}>
-                {["PSEUDO", "TAG", "EMAIL", "RÔLE", "CRÉÉ LE", "DERNIÈRE CONNEXION"].map((h) => (
+                {["PSEUDO", "TAG", "EMAIL", "RÔLE", "STATUT", "CRÉÉ LE", "DERNIÈRE CONNEXION", "SCEAU"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 text-xs font-bold tracking-wider"
                     style={{ borderBottom: "1px solid #27272a" }}>{h}</th>
                 ))}
@@ -409,13 +527,38 @@ function Salle({ session, donnees, onSortir, onRafraichir, simulation }) {
                       {c.role || "joueur"}
                     </span>
                   </td>
+                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
+                    <span className="px-1.5 py-0.5 rounded text-xs font-bold"
+                      style={c.statut === "en_attente"
+                        ? { background: "#fb718514", color: "#fb7185", border: "1px solid #fb718544" }
+                        : { background: "#2ee6c910", color: "#2ee6c9", border: "1px solid #2ee6c933" }}>
+                      {c.statut === "en_attente" ? "en attente" : "actif"}
+                    </span>
+                  </td>
                   <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{dateCourte(c.cree_le)}</td>
                   <td className="px-3 py-2" style={{ color: "#71717a", borderBottom: "1px solid #27272a" }}>{heureCourte(c.derniere_connexion)}</td>
+                  <td className="px-3 py-2" style={{ borderBottom: "1px solid #27272a" }}>
+                    {session.email === c.email ? (
+                      <span className="text-xs" style={{ color: "#52525b" }}>— vous —</span>
+                    ) : c.statut === "en_attente" ? (
+                      <button onClick={() => onStatut(c, "actif")}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold text-black" style={{ background: "#f0b24a" }}>
+                        ✓ Valider
+                      </button>
+                    ) : (
+                      <button onClick={() => onStatut(c, "en_attente")}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold"
+                        style={{ background: "#a8adb814", color: "#a8adb8", border: "1px solid #27272a" }}>
+                        Suspendre
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        </>)}
       </div>
       <footer className="mt-auto text-center text-xs" style={{ color: "#52525b", padding: "5px 0" }}>
         Powered by Vibe · N° {BUILD}
@@ -441,7 +584,7 @@ function App() {
     CLOUD.session().then((res) => {
       if (!vivant || !res) return;
       setSession({ pseudo: res.profil.pseudo, email: res.profil.email });
-      setDonnees({ comptes: res.comptes, memoires: res.memoires });
+      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
       setPhase("salle");
     }).catch(() => {});
     return () => { vivant = false; };
@@ -464,7 +607,7 @@ function App() {
     try {
       const res = await CLOUD.connexion(email.trim().toLowerCase(), mdp);
       setSession({ pseudo: res.profil.pseudo, email: res.profil.email });
-      setDonnees({ comptes: res.comptes, memoires: res.memoires });
+      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
       setPhase("salle");
     } catch (e) {
       if (e && e.refus) { setPhase("refus"); return; }
@@ -478,7 +621,35 @@ function App() {
     if (!CLOUD) { setDonnees(BANC); return; }
     try {
       const res = await CLOUD.recharger();
-      setDonnees({ comptes: res.comptes, memoires: res.memoires });
+      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+    } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
+  };
+
+  /* Poser ou retirer le sceau : valider / suspendre un compte du registre */
+  const poserSceau = async (compte, statut) => {
+    if (!CLOUD) {
+      setDonnees(d => ({ ...d, comptes: d.comptes.map(c => (c.compte_id === compte.compte_id ? { ...c, statut } : c)) }));
+      return;
+    }
+    try {
+      await CLOUD.majStatut(compte.compte_id, statut);
+      const res = await CLOUD.recharger();
+      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
+    } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
+  };
+
+  /* Basculer le mode de validation des inscriptions : sceau de l'admin ou lien email */
+  const choisirMode = async (mode) => {
+    const courant = (((donnees || {}).parametres || []).find(p => p.cle === "mode_validation") || {}).valeur;
+    if (mode === courant) return;
+    if (!CLOUD) {
+      setDonnees(d => ({ ...d, parametres: [{ cle: "mode_validation", valeur: mode }] }));
+      return;
+    }
+    try {
+      await CLOUD.majMode(mode);
+      const res = await CLOUD.recharger();
+      setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
     } catch (e) { /* la salle garde ses chiffres en attendant mieux */ }
   };
 
@@ -494,7 +665,8 @@ function App() {
   if (phase === "salle") {
     return (
       <Salle session={session} donnees={donnees} onSortir={sortir}
-        onRafraichir={rafraichir} simulation={!CLOUD} />
+        onRafraichir={rafraichir} onStatut={poserSceau} onMode={choisirMode}
+        simulation={!CLOUD} />
     );
   }
   if (phase === "refus") {
