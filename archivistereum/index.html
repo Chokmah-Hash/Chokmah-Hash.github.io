@@ -67,7 +67,10 @@
     var headers = { apikey: CLE_PUBLIQUE, "Content-Type": "application/json" };
     if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
     if (opts.prefer) headers["Prefer"] = opts.prefer;
+    /* no-store : le registre ne se lit jamais dans la poussière du cache —
+       chaque requête repart vers la Tombe chercher la vérité. */
     return fetch(URL + chemin, {
+      cache: "no-store",
       method: opts.method || "GET",
       headers: headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined
@@ -232,7 +235,7 @@ const { useState, useRef, useEffect } = React;
 const CLOUD = (typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD) || null;
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.14";
+const BUILD = "0.15";
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [
@@ -825,10 +828,12 @@ function App() {
 
   const entrer = async () => {
     setErreur(null);
-    /* Simulation (canvas) : la porte s'ouvre sur le banc d'essai */
+    /* Simulation (canvas) : la porte s'ouvre sur le banc d'essai —
+       mais un banc qui garde la mémoire : les comptes gravés/effacés
+       survivent aux déco-reco de la session. */
     if (!CLOUD) {
       setSession({ pseudo: "Test Archiviste (banc d'essai)" });
-      setDonnees(BANC);
+      setDonnees((d) => d || BANC);
       setPhase("salle");
       return;
     }
@@ -851,7 +856,9 @@ function App() {
   };
 
   const rafraichir = async () => {
-    if (!CLOUD) { setDonnees(BANC); return; }
+    /* Banc d'essai : la mémoire du banc survit au rafraîchissement,
+       pas de retour aux comptes d'origine ici non plus. */
+    if (!CLOUD) return;
     try {
       const res = await CLOUD.recharger();
       setDonnees({ comptes: res.comptes, memoires: res.memoires, parametres: res.parametres });
@@ -922,7 +929,9 @@ function App() {
   const sortir = () => {
     if (CLOUD) CLOUD.deconnexion();
     setSession(null);
-    setDonnees(null);
+    /* En banc d'essai, la mémoire du banc survit à la déconnexion ;
+       en ligne, la salle se vide — la prochaine entrée rechargera tout. */
+    if (CLOUD) setDonnees(null);
     setEmail("");
     setMdp("");
     setPhase("porte");
