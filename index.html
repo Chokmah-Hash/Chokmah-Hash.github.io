@@ -378,6 +378,18 @@ window.LARCHIVISTE_CLOUD = (function () {
         .catch(function () { return []; });
     },
 
+    /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
+       connaît le résultat avant de le graver, le client ne choisit plus
+       son jet ; il l'apprend par la poussée, comme les autres. */
+    lancerDes: function (nb, faces, note) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/rpc/lancer_des", {
+        method: "POST", token: m.access_token,
+        body: { nb: nb, faces: faces, note: note || null }
+      });
+    },
+
     /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
@@ -867,6 +879,22 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           return (l || []).slice().reverse();
         }).catch(function () {
           return [];
+        });
+      },
+      /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
+         connaît le résultat avant de le graver, le client ne choisit plus
+         son jet ; il l'apprend par la poussée, comme les autres. */
+      lancerDes: function (nb, faces, note) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve();
+        return api("/rest/v1/rpc/lancer_des", {
+          method: "POST",
+          token: m.access_token,
+          body: {
+            nb: nb,
+            faces: faces,
+            note: note || null
+          }
         });
       },
       /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
@@ -4329,6 +4357,27 @@ function ConsoleGlobale({
       color: "#2ee6c9",
       overflowWrap: "anywhere"
     }
+  }, e.contenu), e.donnees && e.donnees.serveur && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    },
+    title: "Roul\xE9 et sign\xE9 par la Tombe"
+  }, "\uD83C\uDFDB")) : e.type === "journal" ?
+  /*#__PURE__*/
+  /* L'événement de moteur : le journal du pack, partagé au canal */
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs px-1 rounded font-bold shrink-0",
+    style: {
+      background: "#a8adb822",
+      color: "#a8adb8"
+    }
+  }, e.donnees && e.donnees.evenement || "journal"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs italic",
+    style: {
+      color: "#71717a",
+      overflowWrap: "anywhere"
+    }
   }, e.contenu)) : /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
@@ -4780,7 +4829,8 @@ function LecteurDocuments({
 function VueNoyau40k({
   pack,
   onRetour,
-  role
+  role,
+  onJournal
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack : fiche, adversaire, arsenal… */
@@ -4800,12 +4850,15 @@ function VueNoyau40k({
   const heure = () => new Date().toLocaleTimeString("fr-FR", {
     hour12: false
   });
-  const logEvent = (type, texte) => setJournal(j => [...j, {
-    id: evId.current++,
-    quand: heure(),
-    type,
-    texte
-  }]);
+  const logEvent = (type, texte) => {
+    setJournal(j => [...j, {
+      id: evId.current++,
+      quand: heure(),
+      type,
+      texte
+    }]);
+    onJournal && onJournal(type, texte); /* V3 : chaque événement du moteur se grave aussi dans la Console Globale */
+  };
 
   /* Jet libre (la primitive du noyau, étiquetée) */
   const jetLibre = () => {
@@ -5226,18 +5279,21 @@ function VueNoyau40k({
 }
 
 /* ══════════ Le journal d100 (append-only, comme le noyau-40k) ══════════ */
-function useJournal() {
+function useJournal(onJournal) {
   const [journal, setJournal] = useState([]);
   const evId = useRef(1);
   const heure = () => new Date().toLocaleTimeString("fr-FR", {
     hour12: false
   });
-  const log = (type, texte) => setJournal(j => [...j, {
-    id: evId.current++,
-    quand: heure(),
-    type,
-    texte
-  }]);
+  const log = (type, texte) => {
+    setJournal(j => [...j, {
+      id: evId.current++,
+      quand: heure(),
+      type,
+      texte
+    }]);
+    onJournal && onJournal(type, texte); /* V3 : gravé aussi dans la Console Globale */
+  };
   const corrigerDernier = () => {
     setJournal(j => {
       const dernier = j[j.length - 1];
@@ -5953,7 +6009,8 @@ function EcranCreationUnite({
 function VueNoyauD100({
   pack,
   onRetour,
-  role
+  role,
+  onJournal
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack */
@@ -5961,7 +6018,7 @@ function VueNoyauD100({
     journal,
     log,
     corrigerDernier
-  } = useJournal();
+  } = useJournal(onJournal);
   const [enLivre, setEnLivre] = useState(false);
   const [enCreation, setEnCreation] = useState(false);
   const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
@@ -6601,27 +6658,21 @@ function VueInconnue({
 /* ── L'interprète de la Console : les commandes deviennent des événements typés ──
    /de XdY : le jet gravé (ex. /de 3d6 → jets + total dans « donnees ») ;
    /tour X : l'annonce du tour, rendue en bandeau ;
-   tout le reste : parole libre V1. Le dé roule ICI, côté client — la V2
-   est de confiance, le serveur signe le pseudo ; le dé serveur viendra
-   en V3 avec la vérification du rôle. */
+   tout le reste : parole libre V1. Depuis la V3, /de ne roule plus ici :
+   la demande part à la Tombe (rpc lancer_des) qui roule, signe et grave —
+   le client ne choisit plus son jet. */
 function interpreterConsole(texte) {
   const t = (texte || "").trim();
   const mDe = t.match(/^\/de\s+(\d{0,2})d(\d{1,3})$/i);
   if (mDe) {
     const n = Math.min(Math.max(parseInt(mDe[1] || "1", 10) || 1, 1), 12);
     const faces = Math.min(Math.max(parseInt(mDe[2], 10) || 6, 2), 100);
-    const jets = [];
-    for (let i = 0; i < n; i++) jets.push(1 + Math.floor(Math.random() * faces));
-    const total = jets.reduce((a, b) => a + b, 0);
     return {
-      contenu: n + "d" + faces + " : " + (n > 1 ? jets.join(" + ") + " = " : "") + total,
-      type: "de",
-      donnees: {
-        de: n + "d" + faces,
-        jets: jets,
-        total: total
+      des: {
+        nb: n,
+        faces: faces
       }
-    };
+    }; /* V3 : la demande part à la Tombe — elle roule et grave elle-même */
   }
   const mTour = t.match(/^\/tour\s+(.{1,40})$/i);
   if (mTour) return {
@@ -6742,9 +6793,20 @@ function App() {
   const envoyerConsoleMessage = texte => {
     if (!CLOUD || !session) return;
     const ev = interpreterConsole(texte); /* /de 3d6 et /tour X deviennent typés */
-    if (!ev.contenu) return;
+    if (!ev.contenu && !ev.des) return;
     setConsoleEnvoi(true);
-    CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees).catch(() => showToast("La Console n'a pas gravé — réessayez.")).then(() => setConsoleEnvoi(false));
+    /* V3 : /de part à la Tombe — elle roule et grave elle-même */
+    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces).catch(() => showToast("La Tombe n'a pas gravé le dé — réessayez.")) : CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees).catch(() => showToast("La Console n'a pas gravé — réessayez."));
+    envoi.then(() => setConsoleEnvoi(false));
+  };
+
+  /* V3 : le journal de chaque moteur se grave aussi dans la Console Globale —
+     les jets du pack deviennent des événements partagés, vus de tous. */
+  const journalVersConsole = (type, texte) => {
+    if (!CLOUD || !session) return;
+    CLOUD.envoyerConsole(session.compteId, texte, "journal", {
+      evenement: type
+    }).catch(() => {});
   };
 
   /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
@@ -7029,7 +7091,8 @@ function App() {
     return /*#__PURE__*/React.createElement(Vue, {
       pack: packActif,
       role: rolesPacks[packActif.id],
-      onRetour: () => setVue("hub")
+      onRetour: () => setVue("hub"),
+      onJournal: journalVersConsole
     });
   })(), rolePour && /*#__PURE__*/React.createElement(ChoixRole, {
     pack: rolePour,
