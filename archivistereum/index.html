@@ -1663,3 +1663,526 @@ function Salle({
   }, "R\xD4LE"), /*#__PURE__*/React.createElement("span", {
     className: "px-1.5 py-0.5 rounded text-xs font-bold",
     style: detail.role === "admin" ? {
+      background: "#f0b24a18",
+      color: "#f0b24a",
+      border: "1px solid #f0b24a44"
+    } : {
+      background: "#a8adb810",
+      color: "#a8adb8",
+      border: "1px solid #27272a"
+    }
+  }, detail.role || "joueur")), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center gap-4 py-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, "STATUT"), /*#__PURE__*/React.createElement("span", {
+    className: "px-1.5 py-0.5 rounded text-xs font-bold",
+    style: detail.statut === "en_attente" ? {
+      background: "#fb718514",
+      color: "#fb7185",
+      border: "1px solid #fb718544"
+    } : {
+      background: "#2ee6c910",
+      color: "#2ee6c9",
+      border: "1px solid #2ee6c933"
+    }
+  }, detail.statut === "en_attente" ? "en attente" : "actif"))), modeValidation === "admin" && session.email !== detail.email ? /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, detail.statut === "en_attente" ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      onStatut(detail, "actif");
+      setDetail({
+        ...detail,
+        statut: "actif"
+      });
+    },
+    className: "flex-1 px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#f0b24a"
+    }
+  }, "\u2713 Valider") : /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      onStatut(detail, "en_attente");
+      setDetail({
+        ...detail,
+        statut: "en_attente"
+      });
+    },
+    className: "flex-1 px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a"
+    }
+  }, "Suspendre"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setDetail(null),
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#a8adb8"
+    }
+  }, "Fermer")) : /*#__PURE__*/React.createElement("button", {
+    onClick: () => setDetail(null),
+    className: "w-full px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#a8adb8"
+    }
+  }, "Fermer"), session.email !== detail.email && /*#__PURE__*/React.createElement("div", {
+    className: "mt-4 pt-3",
+    style: {
+      borderTop: "1px solid #27272a"
+    }
+  }, !confSuppr ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setConfSuppr(true);
+      setSupprErreur(null);
+    },
+    className: "w-full px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#fb718510",
+      color: "#fb7185",
+      border: "1px solid #fb718544"
+    }
+  }, "\u2715 Supprimer ce compte") : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2 leading-relaxed",
+    style: {
+      color: "#fb7185"
+    }
+  }, "\xAB ", detail.pseudo, " \xBB et sa m\xE9moire seront effac\xE9s du registre, \xE0 jamais. \xC9crivez \xAB suppression \xBB pour sceller la sentence."), /*#__PURE__*/React.createElement("input", {
+    value: motSuppr,
+    onChange: e => setMotSuppr(e.target.value),
+    placeholder: "suppression",
+    type: "text",
+    autoComplete: "off",
+    className: "w-full rounded-lg px-3 py-2 mb-2 text-sm",
+    style: champ
+  }), supprErreur && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#fb7185"
+    }
+  }, supprErreur), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: effacer,
+    disabled: motSuppr !== "suppression" || supprEnCours,
+    className: "flex-1 px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#fb7185",
+      color: "#0c0d10",
+      opacity: motSuppr !== "suppression" || supprEnCours ? 0.4 : 1
+    }
+  }, supprEnCours ? "La pierre s'efface…" : "✕ Supprimer définitivement"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setConfSuppr(false);
+      setMotSuppr("");
+      setSupprErreur(null);
+    },
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a"
+    }
+  }, "Annuler")))))), creation && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "#0c0d10cc"
+    },
+    onClick: () => setCreation(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    className: "glisseHaut rounded-2xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto",
+    style: {
+      background: "#14161b",
+      border: "1px solid #f0b24a44"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center mb-3"
+  }, /*#__PURE__*/React.createElement(Icosaedre, {
+    size: 44,
+    color: "#f0b24a"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-center font-bold text-xl tracking-wide",
+    style: {
+      color: "#f0b24a"
+    }
+  }, "\u2699 GRAVER UN COMPTE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-center text-xs mb-5 tracking-widest",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "NOUVEAU JOUEUR \u2014 DE LA MAIN DE L'ARCHIVISTE"), /*#__PURE__*/React.createElement("form", {
+    onSubmit: e => {
+      e.preventDefault();
+      graver();
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold mb-1",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Pseudo :"), /*#__PURE__*/React.createElement("input", {
+    value: nPseudo,
+    onChange: e => setNPseudo(e.target.value),
+    placeholder: "Novice de la Tombe",
+    type: "text",
+    name: "archiviste-pseudo",
+    autoComplete: "off",
+    className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
+    style: champ
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold mb-1",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Email :"), /*#__PURE__*/React.createElement("input", {
+    value: nEmail,
+    onChange: e => setNEmail(e.target.value),
+    placeholder: "novice@exemple.fr",
+    type: "email",
+    name: "archiviste-email",
+    autoComplete: "off",
+    className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
+    style: champ
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold mb-1",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Mot de passe :"), /*#__PURE__*/React.createElement("input", {
+    value: nMdp,
+    onChange: e => setNMdp(e.target.value),
+    placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+    type: "password",
+    name: "archiviste-mdp",
+    autoComplete: "new-password",
+    className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
+    style: champ
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-4",
+    style: {
+      color: nErreur ? "#fb7185" : "#52525b"
+    }
+  }, nErreur || "\u00a0"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    disabled: nEnCours,
+    className: "flex-1 px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#f0b24a",
+      opacity: nEnCours ? 0.6 : 1
+    }
+  }, nEnCours ? "La pierre grave…" : "+ Graver le compte"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setCreation(false),
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#a8adb8"
+    }
+  }, "Fermer")))))), /*#__PURE__*/React.createElement("footer", {
+    className: "mt-auto text-center text-xs",
+    style: {
+      color: "#52525b",
+      padding: "5px 0"
+    }
+  }, "Powered by ", /*#__PURE__*/React.createElement("a", {
+    href: "https://chat.mistral.ai",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "Vibe"), " \xB7 N\xB0 ", versionBase || BUILD, versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : ""));
+}
+
+/* ══════════ L'App : la porte, le refus, la salle ══════════ */
+function App() {
+  const [phase, setPhase] = useState("porte"); // porte | salle | refus
+  const [email, setEmail] = useState("");
+  const [mdp, setMdp] = useState("");
+  const [erreur, setErreur] = useState(null);
+  const [enChargement, setEnChargement] = useState(false);
+  const [session, setSession] = useState(null);
+  const [donnees, setDonnees] = useState(null);
+
+  /* ── La Console Globale : le fil des événements de jeu (idée de Michael) ──
+     L'institution y parle aux joueurs — messages libres en V1, les dés et le
+     tour se typeront par-dessus. Gravé en base, poussé en temps réel. */
+  const [consoleFil, setConsoleFil] = useState([]);
+  const [consoleEnvoi, setConsoleEnvoi] = useState(false);
+  useEffect(() => {
+    if (phase !== "salle" || !CLOUD) {
+      setConsoleFil([]);
+      return;
+    }
+    CLOUD.lireConsole().then(f => setConsoleFil(f || [])).catch(() => {});
+  }, [phase]);
+  const envoyerConsole = texte => {
+    const t = (texte || "").trim();
+    if (!t || !CLOUD) return;
+    setConsoleEnvoi(true);
+    CLOUD.envoyerConsole(t).catch(() => {}).then(() => setConsoleEnvoi(false));
+  };
+
+  /* Restauration de session au chargement (mode en ligne) */
+  useEffect(() => {
+    if (!CLOUD) return;
+    let vivant = true;
+    CLOUD.session().then(res => {
+      if (!vivant || !res) return;
+      setSession({
+        pseudo: res.profil.pseudo,
+        email: res.profil.email
+      });
+      setDonnees({
+        comptes: res.comptes,
+        memoires: res.memoires,
+        parametres: res.parametres
+      });
+      setPhase("salle");
+    }).catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
+  /* ════════ Le module de Synchronisation (Core) ════════
+     Le nuage local ne fait jamais foi : après chaque geste et à chaque
+     poussée de la Tombe, la salle relit la vérité en base — aucune info
+     fantôme ne survit à une synchronisation. */
+  const synchroniser = async () => {
+    const res = await CLOUD.recharger();
+    setDonnees({
+      comptes: res.comptes,
+      memoires: res.memoires,
+      parametres: res.parametres
+    });
+  };
+
+  /* ════════ Le module de Synchronisation (Core) — TEMPS RÉEL ════════
+     La Tombe POUSSÉ ses changements (Supabase Realtime, WebSocket) :
+     chaque gravure, sceau, sentence ou bascule de mode arrive à l'écran
+     instantanément — plus aucune pulsation. En coupure de canal, une
+     pulsation de secours (30 s) reprend le relais ; à chaque rebranchement
+     et au retour sur l'onglet, la vérité repart de la Tombe entière. */
+  const [etatTempsReel, setEtatTempsReel] = useState("coupure");
+  /* Les présents : les compte_id actuellement EN LIGNE dans L'Archiviste,
+     tenus par la ronde du canal « tombe » (entrée et sortie instantanées,
+     fermeture de fenêtre comprise — la socket qui se ferme les retire seule). */
+  const [presents, setPresents] = useState([]);
+  /* La GRÂCE : un leave ne devient rouge qu'après 10 s de silence. Un launcher
+     qui se reconnecte (onglet, réseau, ancienne version qui boucle) revient
+     dans la fenêtre → grâce annulée → le point tient vert. La Tombe
+     n'enterre personne sans certitude. */
+  const presentsRef = useRef(new Set());
+  const delaisRef = useRef({});
+  useEffect(() => {
+    if (!CLOUD || phase !== "salle") return;
+    let attente = null;
+    const relance = () => {
+      if (attente) return;
+      attente = setTimeout(() => {
+        attente = null;
+        synchroniser().catch(() => {});
+      }, 350);
+    };
+    const canal = CLOUD.tempsReel({
+      presenceKey: "archivisterium",
+      /* l'institution écoute la ronde des présents */
+      tables: [{
+        table: "archiviste_comptes"
+      }, {
+        table: "archiviste_memoire"
+      }, {
+        table: "parametres"
+      }, {
+        table: "archiviste_console"
+      } /* le fil de la Console — poussé, pas rechargé */],
+      surChangement: donnee => {
+        /* Les messages de la Console arrivent DROIT au fil — la salle ne
+           se resynchronise pas pour un message de jeu. */
+        const evType = donnee && (donnee.type || donnee.eventType); /* payload réel : « type » (eventType ancien accepté) */
+        if (donnee && donnee.table === "archiviste_console" && evType === "INSERT" && donnee.new) {
+          setConsoleFil(f => {
+            if (f.some(x => x.id === donnee.new.id)) return f; /* anti-écho */
+            return [...f, donnee.new].slice(-80);
+          });
+          return;
+        }
+        relance();
+      },
+      surPresence: ronde => {
+        /* état initial ({clé: …}) ou diff ({joins, leaves}) : on maintient la
+           liste des compte_id en ligne (seuls les UUID comptent — l'institution
+           s'écoute elle-même mais ne s'affiche pas, elle est voilée). */
+        const entrants = ronde.joins || ronde;
+        Object.keys(entrants || {}).forEach(k => {
+          if (!/^[0-9a-f-]{36}$/.test(k)) return;
+          if (delaisRef.current[k]) {
+            clearTimeout(delaisRef.current[k]);
+            delete delaisRef.current[k];
+          }
+          if (!presentsRef.current.has(k)) {
+            presentsRef.current.add(k);
+            setPresents([...presentsRef.current]);
+          }
+        });
+        Object.keys(ronde.leaves || {}).forEach(k => {
+          if (!/^[0-9a-f-]{36}$/.test(k) || !presentsRef.current.has(k)) return;
+          if (delaisRef.current[k]) return; /* une grâce coule déjà */
+          delaisRef.current[k] = setTimeout(() => {
+            delete delaisRef.current[k];
+            presentsRef.current.delete(k);
+            setPresents([...presentsRef.current]);
+          }, 10000); /* dix secondes de grâce avant l'absence */
+        });
+      },
+      surEtat: etat => {
+        setEtatTempsReel(etat);
+        if (etat === "branche") relance(); /* on a peut-être raté des poussées pendant la coupure */
+      }
+    });
+    const auRetour = () => {
+      if (document.visibilityState === "visible") synchroniser().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", auRetour);
+    return () => {
+      canal.fermer();
+      document.removeEventListener("visibilitychange", auRetour);
+      if (attente) clearTimeout(attente);
+    };
+  }, [phase]);
+
+  /* La pulsation de SECOURS : seulement quand le canal temps réel est coupé. */
+  useEffect(() => {
+    if (!CLOUD || phase !== "salle" || etatTempsReel === "branche") return;
+    const secours = setInterval(() => synchroniser().catch(() => {}), 30000);
+    return () => clearInterval(secours);
+  }, [phase, etatTempsReel]);
+  const entrer = async () => {
+    setErreur(null);
+    if (!email.trim() || mdp.length < 4) {
+      setErreur("Email et mot de passe requis (4 caractères min.).");
+      return;
+    }
+    setEnChargement(true);
+    try {
+      const res = await CLOUD.connexion(email.trim().toLowerCase(), mdp);
+      setSession({
+        pseudo: res.profil.pseudo,
+        email: res.profil.email
+      });
+      setDonnees({
+        comptes: res.comptes,
+        memoires: res.memoires,
+        parametres: res.parametres
+      });
+      setPhase("salle");
+    } catch (e) {
+      if (e && e.refus) {
+        setPhase("refus");
+        return;
+      }
+      setErreur(e && e.message || "Serveur injoignable — vérifiez votre connexion.");
+    } finally {
+      setEnChargement(false);
+    }
+  };
+
+  /* Poser ou retirer le sceau : valider / suspendre un compte du registre */
+  const poserSceau = async (compte, statut) => {
+    try {
+      await CLOUD.majStatut(compte.compte_id, statut);
+      await synchroniser();
+    } catch (e) {/* la salle garde ses chiffres en attendant mieux */}
+  };
+
+  /* Basculer le mode de validation des inscriptions : sceau de l'admin ou lien email */
+  const choisirMode = async mode => {
+    const courant = (((donnees || {}).parametres || []).find(p => p.cle === "mode_validation") || {}).valeur;
+    if (mode === courant) return;
+    try {
+      await CLOUD.majMode(mode);
+      await synchroniser();
+    } catch (e) {/* la salle garde ses chiffres en attendant mieux */}
+  };
+
+  /* Graver un compte joueur à la main : inscription + ligne compte,
+     puis la salle se recharge pour inscrire le nouveau venu au registre. */
+  const creerJoueur = async (pseudo, email, mdp) => {
+    /* Avant toute gravure : la Tombe n'accepte pas deux sceaux sur le même
+       email — le registre de l'admin voit toutes les lignes. */
+    const existant = ((donnees || {}).comptes || []).some(c => (c.email || "").toLowerCase() === email.toLowerCase());
+    if (existant) {
+      throw new Error("Un compte existe déjà avec cet email — la Tombe n'accepte pas les doublons.");
+    }
+    await CLOUD.creerCompte(pseudo, email, mdp);
+    await synchroniser();
+  };
+
+  /* La sentence : effacer un compte et sa mémoire du registre — le
+     serveur scelle l'adresse dans le tombeau, elle ne ressuscite pas. */
+  const supprimerJoueur = async compte => {
+    await CLOUD.supprimerCompte(compte.compte_id);
+    await synchroniser();
+  };
+  const sortir = () => {
+    CLOUD.deconnexion().catch(() => {});
+    setSession(null);
+    /* La salle se vide — la prochaine entrée rechargera tout depuis la Tombe. */
+    setDonnees(null);
+    setEmail("");
+    setMdp("");
+    setPhase("porte");
+  };
+  if (phase === "salle") {
+    return /*#__PURE__*/React.createElement(Salle, {
+      session: session,
+      donnees: donnees,
+      onSortir: sortir,
+      onStatut: poserSceau,
+      onMode: choisirMode,
+      onCreer: creerJoueur,
+      onSupprimer: supprimerJoueur,
+      presents: presents,
+      consoleFil: consoleFil,
+      onConsoleEnvoyer: envoyerConsole,
+      consoleEnvoi: consoleEnvoi
+    });
+  }
+  if (phase === "refus") {
+    return /*#__PURE__*/React.createElement(Refus, {
+      onRetour: () => {
+        setMdp("");
+        setPhase("porte");
+      }
+    });
+  }
+  return /*#__PURE__*/React.createElement(Porte, {
+    email: email,
+    mdp: mdp,
+    setEmail: setEmail,
+    setMdp: setMdp,
+    onEntrer: entrer,
+    erreur: erreur,
+    enChargement: enChargement
+  });
+}
+var _attente = document.getElementById("attente");
+if (_attente) _attente.remove();
+ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
+</script>
+
+  <script>
+    /* PWA : service worker propre à la salle (portée /archivistereum/) */
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
