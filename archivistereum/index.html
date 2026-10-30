@@ -290,12 +290,12 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
        des événements de jeu, idée de Michael). Le message est GRAVÉ dans
        la Tombe — le trigger console_verite le signe du pseudo et du rôle
        admin de la ligne compte, personne ne se déguise. */
-    envoyerConsole: function (contenu) {
+    envoyerConsole: function (contenu, type, donnees) {
       var m = lire();
       if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
       return api("/rest/v1/archiviste_console", {
         method: "POST", token: m.access_token,
-        body: { compte_id: m.user_id, contenu: contenu }
+        body: { compte_id: m.user_id, contenu: contenu, type: type || "message", donnees: donnees || {} }
       });
     },
 
@@ -304,7 +304,7 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     lireConsole: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", { token: m.access_token })
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", { token: m.access_token })
         .then(function (l) { return (l || []).slice().reverse(); })
         .catch(function () { return []; });
     },
@@ -733,7 +733,7 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
          des événements de jeu, idée de Michael). Le message est GRAVÉ dans
          la Tombe — le trigger console_verite le signe du pseudo et du rôle
          admin de la ligne compte, personne ne se déguise. */
-      envoyerConsole: function (contenu) {
+      envoyerConsole: function (contenu, type, donnees) {
         var m = lire();
         if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
         return api("/rest/v1/archiviste_console", {
@@ -741,7 +741,9 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           token: m.access_token,
           body: {
             compte_id: m.user_id,
-            contenu: contenu
+            contenu: contenu,
+            type: type || "message",
+            donnees: donnees || {}
           }
         });
       },
@@ -750,7 +752,7 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       lireConsole: function () {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve([]);
-        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", {
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", {
           token: m.access_token
         }).then(function (l) {
           return (l || []).slice().reverse();
@@ -1572,7 +1574,28 @@ function Salle({
     style: {
       color: "#52525b"
     }
-  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), consoleFil.map(e => /*#__PURE__*/React.createElement("div", {
+  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), consoleFil.map(e => e.type === "tour" ? /*#__PURE__*/React.createElement("div", {
+    key: e.id,
+    className: "flex items-center gap-3 px-4 py-2",
+    style: {
+      background: "#14161b",
+      borderBottom: "1px solid #f0b24a33"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    }
+  }, new Date(e.cree_le).toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold flex-1 text-center",
+    style: {
+      color: "#f0b24a",
+      letterSpacing: "0.06em"
+    }
+  }, "\u25B8 AU TOUR DE ", e.contenu.toUpperCase())) : /*#__PURE__*/React.createElement("div", {
     key: e.id,
     className: "flex items-baseline gap-3 px-4 py-2",
     style: {
@@ -1592,7 +1615,15 @@ function Salle({
     style: {
       color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
     }
-  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), /*#__PURE__*/React.createElement("span", {
+  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), e.type === "de" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm"
+  }, "\uD83C\uDFB2"), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold flex-1",
+    style: {
+      color: "#2ee6c9",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu)) : /*#__PURE__*/React.createElement("span", {
     className: "text-sm flex-1",
     style: {
       color: "#a1a1aa",
@@ -1636,7 +1667,29 @@ function Salle({
       color: consoleTexte.trim() ? "#0c0d10" : "#71717a",
       cursor: consoleTexte.trim() ? "pointer" : "default"
     }
-  }, consoleEnvoi ? "…" : "GRAVER")))), detail && /*#__PURE__*/React.createElement("div", {
+  }, consoleEnvoi ? "…" : "GRAVER")), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 flex-wrap items-center px-3 pb-3",
+    style: {
+      background: "#14161b"
+    }
+  }, ["d3", "d6", "d20", "d100"].map(d => /*#__PURE__*/React.createElement("button", {
+    key: d,
+    onClick: () => onConsoleEnvoyer("/de " + d),
+    disabled: consoleEnvoi,
+    className: "px-2 py-0.5 rounded text-xs font-bold",
+    style: {
+      background: "#f0b24a14",
+      color: "#f0b24a",
+      border: "1px solid #f0b24a44",
+      cursor: "pointer"
+    },
+    title: "Lancer un " + d + " — le jet se grave dans le fil"
+  }, d)), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs pl-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "commandes : /de 3d6 \xB7 /tour Pr\xE9nom")))), detail && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-center justify-center p-4",
     style: {
       background: "#0c0d10cc"
@@ -1929,6 +1982,43 @@ function Salle({
 }
 
 /* ══════════ L'App : la porte, le refus, la salle ══════════ */
+/* ── L'interprète de la Console : les commandes deviennent des événements typés ──
+   /de XdY : le jet gravé (ex. /de 3d6 → jets + total dans « donnees ») ;
+   /tour X : l'annonce du tour, rendue en bandeau ;
+   tout le reste : parole libre V1. Le dé roule ICI, côté client — la V2
+   est de confiance, le serveur signe le pseudo ; le dé serveur viendra
+   en V3 avec la vérification du rôle. */
+function interpreterConsole(texte) {
+  const t = (texte || "").trim();
+  const mDe = t.match(/^\/de\s+(\d{0,2})d(\d{1,3})$/i);
+  if (mDe) {
+    const n = Math.min(Math.max(parseInt(mDe[1] || "1", 10) || 1, 1), 12);
+    const faces = Math.min(Math.max(parseInt(mDe[2], 10) || 6, 2), 100);
+    const jets = [];
+    for (let i = 0; i < n; i++) jets.push(1 + Math.floor(Math.random() * faces));
+    const total = jets.reduce((a, b) => a + b, 0);
+    return {
+      contenu: n + "d" + faces + " : " + (n > 1 ? jets.join(" + ") + " = " : "") + total,
+      type: "de",
+      donnees: {
+        de: n + "d" + faces,
+        jets: jets,
+        total: total
+      }
+    };
+  }
+  const mTour = t.match(/^\/tour\s+(.{1,40})$/i);
+  if (mTour) return {
+    contenu: mTour[1].trim(),
+    type: "tour",
+    donnees: {}
+  };
+  return {
+    contenu: t,
+    type: "message",
+    donnees: {}
+  };
+}
 function App() {
   const [phase, setPhase] = useState("porte"); // porte | salle | refus
   const [email, setEmail] = useState("");
@@ -1953,8 +2043,9 @@ function App() {
   const envoyerConsole = texte => {
     const t = (texte || "").trim();
     if (!t || !CLOUD) return;
+    const ev = interpreterConsole(t); /* /de 3d6 et /tour X deviennent typés */
     setConsoleEnvoi(true);
-    CLOUD.envoyerConsole(t).catch(() => {}).then(() => setConsoleEnvoi(false));
+    CLOUD.envoyerConsole(ev.contenu, ev.type, ev.donnees).catch(() => {}).then(() => setConsoleEnvoi(false));
   };
 
   /* Restauration de session au chargement (mode en ligne) */
