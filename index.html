@@ -517,6 +517,27 @@ window.LARCHIVISTE_CLOUD = (function () {
       });
     },
 
+    /* V43 — LA FICHE AU CENTRE DE LA TABLE : le personnage du joueur vit
+       dans la Tombe (une fiche par joueur et par partie, contenu libre).
+       Upsert sur la pk (partie_id, compte_id) : recréer écrase, la fiche
+       suit l'unité. Le MJ lit la vue lobby (contenu + pseudo) pour son
+       écran — le joueur ne voit QUE les fiches de sa propre table. */
+    sauverFichePartie: function (partieId, compteId, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_partie_fiches", {
+        method: "POST", token: m.access_token, prefer: "resolution=merge-duplicates",
+        body: { partie_id: partieId, compte_id: compteId, contenu: contenu, maj_le: new Date().toISOString() }
+      });
+    },
+    lireFichesPartie: function (partieId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_partie_fiches_lobby?select=*&partie_id=eq." + partieId, { token: m.access_token })
+        .then(function (l) { return l || []; })
+        .catch(function () { return []; });
+    },
+
     /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
@@ -4904,7 +4925,8 @@ function VueNoyau40k({
   pack,
   onRetour,
   role,
-  onJournal
+  onJournal,
+  table
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack : fiche, adversaire, arsenal… */
@@ -4920,7 +4942,34 @@ function VueNoyau40k({
   /* — création d'unité : l'unité éveillée remplace Signa-3 partout — */
   const [enCreationPE, setEnCreationPE] = useState(false);
   const [persoCree, setPersoCree] = useState(null);
+  /* — V43 : l'écran MJ des fiches de la table — */
+  const [fichesMjOuvert, setFichesMjOuvert] = useState(false);
   const evId = useRef(1);
+
+  /* V43 — ADOPTION : en partie, ma fiche vit dans la Tombe. Au montage,
+     si une fiche m'attendait (créée à une session précédente), elle
+     RÉSIDE ici : l'unité renaît, avec ses PV au moment du départ.
+     On n'adopte QUE si aucune création locale n'a déjà eu lieu. */
+  useEffect(() => {
+    if (!table || !table.fiches || persoCree) return;
+    const ma = table.fiches.find(f => f.compte_id === table.monCompteId);
+    if (ma && ma.contenu && ma.contenu.perso) {
+      setPersoCree(ma.contenu.perso);
+      setPvSigna(typeof ma.contenu.pv === "number" ? ma.contenu.pv : ma.contenu.perso.pvMax);
+    }
+  }, [table && table.partieId]); /* eslint-disable-line */
+
+  /* V43 — GRAVURE LIVE : chaque battement de l'unité part dans la
+     Tombe (upsert silencieux — la poussée temps réel l'annonce à la
+     table). Le MJ voit les PV de tout le monde en direct. */
+  useEffect(() => {
+    if (!table || !table.partieId || !table.onFiche || !persoCree) return;
+    table.onFiche({
+      perso: persoCree,
+      pv: pvSigna
+    });
+  }, [persoCree, pvSigna]); /* eslint-disable-line */
+
   const heure = () => new Date().toLocaleTimeString("fr-FR", {
     hour12: false
   });
@@ -5074,7 +5123,15 @@ function VueNoyau40k({
     role: role,
     onRetour: onRetour,
     onLivre: () => setEnLivre(true)
-  }), /*#__PURE__*/React.createElement("div", {
+  }), role === "mj" && table && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setFichesMjOuvert(true),
+    className: "w-full py-2.5 rounded-lg text-sm font-bold mb-5",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + T.accent + "66",
+      color: T.accent
+    }
+  }, "\uD83D\uDCDC FICHES DE LA TABLE"), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreationPE ? /*#__PURE__*/React.createElement("div", {
     className: "md:col-span-2"
@@ -5349,7 +5406,138 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "Surcharges du mod appliqu\xE9es : ", C.surcharges.join(" · ")))));
+  }, "Surcharges du mod appliqu\xE9es : ", C.surcharges.join(" · ")))), fichesMjOuvert && table && /*#__PURE__*/React.createElement(EcranMjFiches, {
+    table: table,
+    theme: T,
+    onFermer: () => setFichesMjOuvert(false)
+  }));
+}
+
+/* ══════════ V43 — L'écran MJ : les fiches de la table ══════════
+   Le MJ ouvre l'archive de toute la table : chaque joueur, sa fiche
+   gravée dans la Tombe (l'unité éveillée, ses PV en direct via la
+   poussée temps réel). Sans fiche : « pas encore de fiche ». */
+function EcranMjFiches({
+  table,
+  theme,
+  onFermer
+}) {
+  const T = theme;
+  const joueurs = table.joueurs || [];
+  const fiches = table.fiches || [];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "#000000cc"
+    },
+    onClick: onFermer
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid " + T.accent + "55"
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-lg",
+    style: {
+      color: T.accent
+    }
+  }, "\uD83D\uDCDC Les fiches de la table"), /*#__PURE__*/React.createElement("button", {
+    onClick: onFermer,
+    className: "px-3 py-1.5 rounded-lg text-sm font-bold",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#a1a1aa"
+    }
+  }, "\u2715 Fermer")), joueurs.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "text-sm py-6 text-center",
+    style: {
+      color: "#71717a"
+    }
+  }, "Personne \xE0 la table \u2014 attendez les inscriptions."), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-3"
+  }, joueurs.map(j => {
+    const f = fiches.find(x => x.compte_id === j.compte_id);
+    const p = f && f.contenu && f.contenu.perso;
+    const pv = f && f.contenu ? f.contenu.pv : null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: j.compte_id,
+      className: "rounded-xl p-4",
+      style: {
+        background: "#ffffff08",
+        border: "1px solid " + T.accent + "22"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-baseline justify-between mb-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-bold",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, j.pseudo, j.role === "mj" ? " · MJ" : ""), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, p ? `${p.chassis} · code ${p.code}` : "en attente")), p ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "text-sm font-bold mb-1",
+      style: {
+        color: T.accent
+      }
+    }, p.nom), /*#__PURE__*/React.createElement(PvBarre, {
+      pv: typeof pv === "number" ? pv : p.pvMax,
+      pvMax: p.pvMax,
+      accent: T.accent
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "text-right text-xs mt-1",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, typeof pv === "number" ? pv : p.pvMax, " / ", p.pvMax, " PV"), /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-3 gap-2 mt-3 text-center text-sm"
+    }, [["CC", p.st.cc], ["CT", p.st.ct], ["F", p.st.f], ["E", p.st.e], ["Sv", p.st.sv], ["Cd", p.st.cd]].concat(p.st.a ? [["A", p.st.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+      key: k,
+      className: "rounded py-1.5",
+      style: {
+        background: "#ffffff0d",
+        color: "#e8e4d8"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
+      className: "mt-2 rounded py-1.5 text-center text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, p.armeDef.nom), " \xB7 ", p.armeDef.tir ? "tir" : "mêlée", " \xB7 ", p.armeDef.portee, " \xB7 A ", p.armeDef.att, " \xB7 F ", p.armeDef.f, " \xB7 PA ", p.armeDef.pa, " \xB7 D ", p.armeDef.d), p.apt && /*#__PURE__*/React.createElement("div", {
+      className: "mt-2 rounded p-2 text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, "Aptitude de ch\xE2ssis \u2014 "), p.apt)) : /*#__PURE__*/React.createElement("div", {
+      className: "text-sm py-2",
+      style: {
+        color: "#71717a"
+      }
+    }, "Pas encore de fiche \u2014 l'unit\xE9 de ", j.pseudo, " n'est pas \xE9veill\xE9e."));
+  }))));
 }
 
 /* ══════════ Le journal d100 (append-only, comme le noyau-40k) ══════════ */
@@ -6807,6 +6995,7 @@ function App() {
     setPackActif(null);
     setPartie(null);
     setPartieJoueurs([]);
+    setFichesPartie([]);
     setPartiesOuvertes([]);
     setMesPartiesCours([]);
     setPackPartie(null);
@@ -6894,9 +7083,10 @@ function App() {
   const rechargerPartie = idExplicite => {
     const id = idExplicite || partieIdRef.current;
     if (!CLOUD || !session || !id) return Promise.resolve();
-    return Promise.all([CLOUD.lirePartie(id).catch(() => null), CLOUD.lirePartieJoueurs(id).catch(() => [])]).then(([p, js]) => {
+    return Promise.all([CLOUD.lirePartie(id).catch(() => null), CLOUD.lirePartieJoueurs(id).catch(() => []), CLOUD.lireFichesPartie(id).catch(() => []) /* V43 : les fiches de la table */]).then(([p, js, fs]) => {
       if (p) setPartie(p);
       setPartieJoueurs(js || []);
+      setFichesPartie(fs || []);
     });
   };
 
@@ -6907,6 +7097,20 @@ function App() {
     if (!CLOUD || !session || !pk) return;
     CLOUD.listerParties(pk.id).then(l => setPartiesOuvertes(l || [])).catch(() => {});
     CLOUD.mesParties(pk.id, session.compteId).then(l => setMesPartiesCours(l || [])).catch(() => {});
+  };
+
+  /* V43 : LES FICHES DE LA TABLE — le personnage du joueur vit dans la
+     Tombe. sauverFiche grave (upsert) l'état de l'unité : création, PV.
+     Les rechargements arrivent par la poussée temps réel. */
+  const [fichesPartie, setFichesPartie] = useState([]);
+  const sauverFiche = contenu => {
+    if (!CLOUD || !session || !partieIdRef.current) return;
+    CLOUD.sauverFichePartie(partieIdRef.current, session.compteId, contenu).catch(() => {});
+  };
+  const rechargerFiches = () => {
+    const id = partieIdRef.current;
+    if (!CLOUD || !id) return;
+    CLOUD.lireFichesPartie(id).then(l => setFichesPartie(l || [])).catch(() => {});
   };
   useEffect(() => {
     if (vue !== "partie" || !packPartie) return;
@@ -6948,6 +7152,7 @@ function App() {
           mj_pseudo: session.pseudo
         });
         setPartieJoueurs([]);
+        setFichesPartie([]);
         showToast("Aventure ouverte — partagez le code " + p.code);
       }
     }).catch(() => showToast("La Tombe n'a pas ouvert l'aventure — réessayez."));
@@ -6999,6 +7204,7 @@ function App() {
     }
     setPartie(null);
     setPartieJoueurs([]);
+    setFichesPartie([]);
   };
 
   /* L'auto-entrée : quand la partie (dont on est membre) passe en_cours
@@ -7105,7 +7311,10 @@ function App() {
       }, /* le lobby et la partie courante, poussés */
       {
         table: "archiviste_partie_joueurs"
-      } /* la table qui vit : arrivées et départs */],
+      }, /* la table qui vit : arrivées et départs */
+      {
+        table: "archiviste_partie_fiches"
+      } /* V43 : les fiches de la table — création, PV */],
       surChangement: donnee => {
         const evType = donnee && (donnee.type || donnee.eventType); /* payload réel : « type » (eventType ancien accepté) */
         const ligne = donnee && (donnee.record || donnee.new); /* payload réel : « record » (le « new » de la doc JS n'arrive jamais ici) */
@@ -7141,6 +7350,7 @@ function App() {
                 setVue("hub");
                 setPartie(null);
                 setPartieJoueurs([]);
+                setFichesPartie([]);
                 showToast("L'aventure est close par le MJ.");
               }
             }
@@ -7151,6 +7361,15 @@ function App() {
         if (donnee && donnee.table === "archiviste_partie_joueurs") {
           if (partieIdRef.current && ligne && ligne.partie_id === partieIdRef.current) {
             rechargerPartie(); /* la table de NOTRE partie vit */
+          }
+          return;
+        }
+        /* V43 — LES FICHES : une création d'unité, une blessure, un PV
+           gravé — la table entière le voit. On recharge TOUTES les
+           fiches de la partie (la vue lobby porte les pseudos). */
+        if (donnee && donnee.table === "archiviste_partie_fiches") {
+          if (partieIdRef.current && ligne && ligne.partie_id === partieIdRef.current) {
+            rechargerFiches();
           }
           return;
         }
@@ -7232,6 +7451,7 @@ function App() {
       }
       setPartie(null);
       setPartieJoueurs([]);
+      setFichesPartie([]);
       setPackPartie(p);
       setVue("partie");
       return;
@@ -7370,6 +7590,7 @@ function App() {
     onRetour: () => {
       setPartie(null);
       setPartieJoueurs([]);
+      setFichesPartie([]);
       setPackPartie(null);
       setVue("hub");
     }
@@ -7388,6 +7609,13 @@ function App() {
     }, /*#__PURE__*/React.createElement(Vue, {
       pack: packActif,
       role: role,
+      table: enPartie ? {
+        partieId: partie.id,
+        fiches: fichesPartie,
+        joueurs: partieJoueurs,
+        monCompteId: session && session.compteId,
+        onFiche: sauverFiche
+      } : null,
       onRetour: () => setVue("hub"),
       onJournal: journalVersConsole
     })), enPartie && /*#__PURE__*/React.createElement(BandeauConsolePartie, {

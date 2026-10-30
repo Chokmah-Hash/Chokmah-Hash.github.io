@@ -10,3 +10,5 @@
 .tracking-\[0\.2em\]{letter-spacing:0.2em}
 .tracking-\[0\.3em\]{letter-spacing:0.3em}
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── V43 : classe utilisée par le code mais absente du compilé Tailwind ── */
+.max-w-3xl{max-width:48rem}
