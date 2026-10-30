@@ -565,7 +565,8 @@ window.LARCHIVISTE_CLOUD = (function () {
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
   };
-})();
+})()
+;
 
   </script>
 
@@ -589,8 +590,11 @@ var CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
 const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
-   Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.22";
+   Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe).
+   V0.23 : LA CRÉATION SANS LANCEMENT — l'aventure naît dans MES AVENTURES,
+   la salle s'ouvre depuis la liste (⚙) ; et LE BANDEAU DE L'ARCHIVISTE
+   (titre + compte connecté) revient dans l'espace MJ/Joueur et la table. ── */
+const BUILD = "0.23";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3373,6 +3377,46 @@ function CompteJoueur({
   }, "Se d\xE9connecter")));
 }
 
+/* ══════════ V46b : LE BANDEAU DE L'ARCHIVISTE — Michael veut retrouver le
+   glyphe et le titre « L'ARCHIVISTE — CUSTODES MEMORIAE » dans CHAQUE
+   espace du launcher, avec l'icône du compte connecté à droite — le hub
+   comme l'espace MJ/Joueur, et jusqu'à la table. ══════════ */
+function BandeauArchiviste({
+  session,
+  onAvatar,
+  onLogout,
+  mobile,
+  ouvert,
+  setOuvert
+}) {
+  const avatar = session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null;
+  return /*#__PURE__*/React.createElement("header", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    title: "L'Icosa\xE8dre D20 \u2014 glyphe de L'Archiviste"
+  }, /*#__PURE__*/React.createElement(Icosaedre, {
+    size: 44,
+    color: "#e8e4d8"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-2xl font-bold text-white tracking-wide leading-tight"
+  }, "L'ARCHIVISTE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs tracking-widest",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "CUSTODES MEMORIAE"))), session && avatar && /*#__PURE__*/React.createElement(CompteJoueur, {
+    joueur: session,
+    avatar: avatar,
+    onAvatar: onAvatar,
+    mobile: mobile,
+    ouvert: ouvert,
+    onOuvert: () => setOuvert(o => !o),
+    onLogout: onLogout
+  }));
+}
+
 /* ══════════ La création de compte — pseudo + email + image, UUID gravé ══════════ */
 function EcranCreation({
   onCreer,
@@ -4237,7 +4281,10 @@ function EcranPartie({
   onLancer,
   onQuitter,
   onSupprimer,
-  onRetour
+  onRetour,
+  onAvatar,
+  onLogout,
+  mobile
 }) {
   const [nom, setNom] = useState("");
   const [code, setCode] = useState("");
@@ -4249,6 +4296,7 @@ function EcranPartie({
   const [enLivre, setEnLivre] = useState(false);
   const [enSuppression, setEnSuppression] = useState(false); // V46 : la sentence se prépare-t-elle ?
   const [motSuppr, setMotSuppr] = useState(""); // V46 : la consécration écrite « suppression »
+  const [compteOuvert, setCompteOuvert] = useState(false); // V46b : le menu du compte du bandeau
   const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
   const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
 
@@ -4274,12 +4322,21 @@ function EcranPartie({
       className: "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: onRetour,
-      className: "self-start text-xs font-bold mb-6",
+      className: "self-start text-xs font-bold mb-4",
       style: {
         color: "#71717a",
         cursor: "pointer"
       }
     }, "\u2190 retour au hub"), /*#__PURE__*/React.createElement("div", {
+      className: "mb-6"
+    }, /*#__PURE__*/React.createElement(BandeauArchiviste, {
+      session: session,
+      onAvatar: onAvatar,
+      onLogout: onLogout,
+      mobile: mobile,
+      ouvert: compteOuvert,
+      setOuvert: setCompteOuvert
+    })), /*#__PURE__*/React.createElement("div", {
       className: "rounded-xl p-6",
       style: {
         background: "#14161b",
@@ -4406,7 +4463,14 @@ function EcranPartie({
       color: "#71717a",
       cursor: "pointer"
     }
-  }, "\u2190 retour au hub"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "\u2190 retour au hub"), /*#__PURE__*/React.createElement(BandeauArchiviste, {
+    session: session,
+    onAvatar: onAvatar,
+    onLogout: onLogout,
+    mobile: mobile,
+    ouvert: compteOuvert,
+    setOuvert: setCompteOuvert
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs tracking-widest",
@@ -4429,7 +4493,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "connect\xE9 : ", session ? session.pseudo : "—", " \xB7 le cr\xE9ateur d'une aventure en devient le MJ")), /*#__PURE__*/React.createElement("div", {
+  }, "le cr\xE9ateur d'une aventure en devient le MJ")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-5",
     style: {
       borderBottom: "1px solid #27272a"
@@ -7564,14 +7628,12 @@ function App() {
   const creerAventure = nomAventure => {
     if (!CLOUD || !session || !packPartie) return Promise.resolve();
     return CLOUD.creerPartie(packPartie.id, (nomAventure || "").trim(), session.compteId).then(p => {
+      /* V46b : l'aventure NAIT sans lancer la salle — le MJ reste dans le
+         moteur d'aventure, la ligne apparaît dans MES AVENTURES, et le
+         lancement se fait depuis la liste (⚙ → OUVRIR LA SALLE). */
       if (p) {
-        setPartie({
-          ...p,
-          mj_pseudo: session.pseudo
-        });
-        setPartieJoueurs([]);
-        setFichesPartie([]);
-        showToast("Aventure ouverte — partagez le code " + p.code);
+        showToast("Aventure « " + p.nom + " » créée — ouvrez-la quand vous voulez dans AVENTURES (⚙ → OUVRIR LA SALLE).");
+        rechargerListes();
       }
     }).catch(() => showToast("La Tombe n'a pas ouvert l'aventure — réessayez."));
   };
@@ -8040,6 +8102,9 @@ function App() {
     onLancer: lancerAventure,
     onQuitter: quitterAventure,
     onSupprimer: supprimerAventure,
+    onAvatar: changerAvatar,
+    onLogout: seDeconnecter,
+    mobile: mobile,
     onRetour: () => {
       setPartie(null);
       setPartieJoueurs([]);

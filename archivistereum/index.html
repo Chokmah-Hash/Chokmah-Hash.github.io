@@ -101,6 +101,46 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     });
   }
 
+  /* ── V0.35b : LA SESSION NE MEURT PLUS EN SILENCE — l'access_token de
+     Supabase ne vit qu'une heure ; l'ancien client l'envoyait tel quel
+     jusqu'à ce que la Tombe refuse TOUT (« La Tombe a refusé. » sur la
+     Corbeille, le sceau, la console…). Le remède du launcher, greffé
+     ici : avant chaque appel, on lit l'expiration DANS le jeton (le
+     payload base64 du JWT) ; s'il expire dans moins d'une minute on
+     l'échange contre un neuf grâce au refresh_token gardé à la
+     connexion. Un seul échange à la fois (anti-tempête) ; si le
+     rafraîchissement échoue, la session s'éteint proprement — retour
+     à l'écran de connexion, plus de fantôme qui agit et échoue. ── */
+  function expirationJeton(m) {
+    try {
+      var p = String(m.access_token || "").split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      while (p.length % 4) { p += "="; }
+      var claims = JSON.parse(atob(p));
+      return (claims && claims.exp) ? claims.exp * 1000 : 0;
+    } catch (e) { return 0; }
+  }
+  var rajeunissementEnCours = null;
+  function rajeunir() {
+    var m = lire();
+    if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+    var expire = expirationJeton(m);
+    if (expire === 0 || expire > Date.now() + 60000) return Promise.resolve(m.access_token);
+    if (!m.refresh_token) { ecrire(null); return Promise.reject(new Error("Session éteinte — reconnectez-vous.")); }
+    if (rajeunissementEnCours) return rajeunissementEnCours;
+    rajeunissementEnCours = api("/auth/v1/token?grant_type=refresh_token", {
+      method: "POST", body: { refresh_token: m.refresh_token }
+    }).then(function (d) {
+      rajeunissementEnCours = null;
+      ecrire({ access_token: d.access_token, refresh_token: d.refresh_token, user_id: m.user_id });
+      return d.access_token;
+    }).catch(function (e) {
+      rajeunissementEnCours = null;
+      ecrire(null);
+      throw e;
+    });
+    return rajeunissementEnCours;
+  }
+
   /* ── Charger la salle : comptes + mémoires, selon ce que le RLS laisse voir ── */
   function chargerSalle(token, userId) {
     return api("/rest/v1/archiviste_comptes?select=*&order=cree_le.desc", { token: token })
@@ -247,13 +287,17 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     session: function () {
       var m = lire();
       if (!m || !m.access_token || !m.user_id) return Promise.resolve(null);
-      return chargerSalle(m.access_token, m.user_id).catch(function () { ecrire(null); return null; });
+      return rajeunir().then(function (token) {
+        return chargerSalle(token, m.user_id);
+      }).catch(function () { ecrire(null); return null; });
     },
 
     recharger: function () {
       var m = lire();
       if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
-      return chargerSalle(m.access_token, m.user_id);
+      return rajeunir().then(function (token) {
+        return chargerSalle(token, m.user_id);
+      });
     },
 
     deconnexion: function () {
@@ -270,8 +314,10 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     majStatut: function (compteId, statut) {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
-        method: "PATCH", token: m.access_token, body: { statut: statut }
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+          method: "PATCH", token: token, body: { statut: statut }
+        });
       });
     },
 
@@ -281,9 +327,11 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     majMode: function (valeur) {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-      return api("/rest/v1/parametres", {
-        method: "POST", token: m.access_token, prefer: "resolution=merge-duplicates",
-        body: { cle: "mode_validation", valeur: valeur }
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/parametres", {
+          method: "POST", token: token, prefer: "resolution=merge-duplicates",
+          body: { cle: "mode_validation", valeur: valeur }
+        });
       });
     },
 
@@ -296,9 +344,11 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     envoyerConsole: function (contenu, type, donnees, partieId) {
       var m = lire();
       if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
-      return api("/rest/v1/archiviste_console", {
-        method: "POST", token: m.access_token,
-        body: { compte_id: m.user_id, contenu: contenu, type: type || "message", donnees: donnees || {}, partie_id: partieId || null }
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/archiviste_console", {
+          method: "POST", token: token,
+          body: { compte_id: m.user_id, contenu: contenu, type: type || "message", donnees: donnees || {}, partie_id: partieId || null }
+        });
       });
     },
 
@@ -309,9 +359,10 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     lireConsole: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", { token: m.access_token })
-        .then(function (l) { return (l || []).slice().reverse(); })
-        .catch(function () { return []; });
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", { token: token })
+          .then(function (l) { return (l || []).slice().reverse(); });
+      }).catch(function () { return []; });
     },
 
     /* V0.32 : LES PARTIES — toutes les tables qui vivent, ouvertes au
@@ -321,9 +372,42 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     lireParties: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_parties_lobby?select=*&order=cree_le.desc", { token: m.access_token })
-        .then(function (l) { return l || []; })
-        .catch(function () { return []; });
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/archiviste_parties_lobby?select=*&order=cree_le.desc", { token: token })
+          .then(function (l) { return l || []; });
+      }).catch(function () { return []; });
+    },
+
+    /* V46 : LA CORBEILLE DES PARTIES — le MJ efface, l'institution garde.
+       restaurer rend la partie aux écrans ; purger efface UNE partie À
+       JAMAIS (les FK cascades emportent joueurs, fiches, console) ; vider
+       purge toute la Corbeille d'un coup. */
+    restaurerPartie: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/rpc/archiviste_restaurer_partie", {
+          method: "POST", token: token, body: { p_id: id }
+        });
+      });
+    },
+    purgerPartie: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/rpc/archiviste_purger_partie", {
+          method: "POST", token: token, body: { p_id: id }
+        });
+      });
+    },
+    viderCorbeille: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/rpc/archiviste_vider_corbeille", {
+          method: "POST", token: token, body: {}
+        });
+      });
     },
 
     /* Graver un compte joueur de la main de l'Archiviste : l'inscription part
@@ -359,15 +443,17 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     supprimerCompte: function (compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-      return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
-        method: "DELETE", token: m.access_token, prefer: "return=representation"
-      }).then(function (supprimes) {
-        if (!supprimes || !supprimes.length) {
-          throw new Error("Le serveur a refusé la sentence.");
-        }
-        return api("/rest/v1/archiviste_memoire?compte_id=eq." + compteId, {
-          method: "DELETE", token: m.access_token
-        }).catch(function () {});
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+          method: "DELETE", token: token, prefer: "return=representation"
+        }).then(function (supprimes) {
+          if (!supprimes || !supprimes.length) {
+            throw new Error("Le serveur a refusé la sentence.");
+          }
+          return api("/rest/v1/archiviste_memoire?compte_id=eq." + compteId, {
+            method: "DELETE", token: token
+          }).catch(function () {});
+        });
       });
     },
 
@@ -377,17 +463,20 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     lancerDes: function (nb, faces, note, partieId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
-      return api("/rest/v1/rpc/lancer_des", {
-        method: "POST", token: m.access_token,
-        body: { nb: nb, faces: faces, note: note || null, p_partie: partieId || null }
-      });
+      return rajeunir().then(function (token) {
+        return api("/rest/v1/rpc/lancer_des", {
+          method: "POST", token: token,
+          body: { nb: nb, faces: faces, note: note || null, p_partie: partieId || null }
+        });
+      }).catch(function () {});
     },
 
     /* Le canal temps réel : la Tombe pousse ses changements aux écrans
        branchés — la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
   };
-})();
+})()
+;
 
   </script>
 
@@ -417,8 +506,11 @@ const {
    V0.34 : l'institution ÉCRIT — les gravures partent dans le canal de
    la partie choisie, dés compris (le RPC lance pour la table).
    V0.35 : LA CORBEILLE DES PARTIES — le MJ efface, l'institution garde :
-   restauration, purge d'une ligne, ou vidage entier, scellés par le mot. ── */
-const BUILD = "0.35";
+   restauration, purge d'une ligne, ou vidage entier, scellés par le mot.
+   V0.36 : LA SESSION RAJEUNIE — l'access_token (1 h de vie) s'échange
+   tout seul contre un neuf via le refresh_token ; plus jamais « La Tombe
+   a refusé. » à cause d'un jeton éteint en silence. ── */
+const BUILD = "0.36";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -492,6 +584,60 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           return data;
         });
       });
+    }
+
+    /* ── V0.35b : LA SESSION NE MEURT PLUS EN SILENCE — l'access_token de
+       Supabase ne vit qu'une heure ; l'ancien client l'envoyait tel quel
+       jusqu'à ce que la Tombe refuse TOUT (« La Tombe a refusé. » sur la
+       Corbeille, le sceau, la console…). Le remède du launcher, greffé
+       ici : avant chaque appel, on lit l'expiration DANS le jeton (le
+       payload base64 du JWT) ; s'il expire dans moins d'une minute on
+       l'échange contre un neuf grâce au refresh_token gardé à la
+       connexion. Un seul échange à la fois (anti-tempête) ; si le
+       rafraîchissement échoue, la session s'éteint proprement — retour
+       à l'écran de connexion, plus de fantôme qui agit et échoue. ── */
+    function expirationJeton(m) {
+      try {
+        var p = String(m.access_token || "").split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        while (p.length % 4) {
+          p += "=";
+        }
+        var claims = JSON.parse(atob(p));
+        return claims && claims.exp ? claims.exp * 1000 : 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+    var rajeunissementEnCours = null;
+    function rajeunir() {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+      var expire = expirationJeton(m);
+      if (expire === 0 || expire > Date.now() + 60000) return Promise.resolve(m.access_token);
+      if (!m.refresh_token) {
+        ecrire(null);
+        return Promise.reject(new Error("Session éteinte — reconnectez-vous."));
+      }
+      if (rajeunissementEnCours) return rajeunissementEnCours;
+      rajeunissementEnCours = api("/auth/v1/token?grant_type=refresh_token", {
+        method: "POST",
+        body: {
+          refresh_token: m.refresh_token
+        }
+      }).then(function (d) {
+        rajeunissementEnCours = null;
+        ecrire({
+          access_token: d.access_token,
+          refresh_token: d.refresh_token,
+          user_id: m.user_id
+        });
+        return d.access_token;
+      }).catch(function (e) {
+        rajeunissementEnCours = null;
+        ecrire(null);
+        throw e;
+      });
+      return rajeunissementEnCours;
     }
 
     /* ── Charger la salle : comptes + mémoires, selon ce que le RLS laisse voir ── */
@@ -717,7 +863,9 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       session: function () {
         var m = lire();
         if (!m || !m.access_token || !m.user_id) return Promise.resolve(null);
-        return chargerSalle(m.access_token, m.user_id).catch(function () {
+        return rajeunir().then(function (token) {
+          return chargerSalle(token, m.user_id);
+        }).catch(function () {
           ecrire(null);
           return null;
         });
@@ -725,7 +873,9 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       recharger: function () {
         var m = lire();
         if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
-        return chargerSalle(m.access_token, m.user_id);
+        return rajeunir().then(function (token) {
+          return chargerSalle(token, m.user_id);
+        });
       },
       deconnexion: function () {
         var m = lire();
@@ -743,12 +893,14 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       majStatut: function (compteId, statut) {
         var m = lire();
         if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
-          method: "PATCH",
-          token: m.access_token,
-          body: {
-            statut: statut
-          }
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
+            method: "PATCH",
+            token: token,
+            body: {
+              statut: statut
+            }
+          });
         });
       },
       /* Le mode de validation des inscriptions : « admin » (sceau manuel),
@@ -757,14 +909,16 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       majMode: function (valeur) {
         var m = lire();
         if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/parametres", {
-          method: "POST",
-          token: m.access_token,
-          prefer: "resolution=merge-duplicates",
-          body: {
-            cle: "mode_validation",
-            valeur: valeur
-          }
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/parametres", {
+            method: "POST",
+            token: token,
+            prefer: "resolution=merge-duplicates",
+            body: {
+              cle: "mode_validation",
+              valeur: valeur
+            }
+          });
         });
       },
       /* La Console Globale : l'institution parle aux joueurs (canal unique
@@ -776,16 +930,18 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       envoyerConsole: function (contenu, type, donnees, partieId) {
         var m = lire();
         if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/archiviste_console", {
-          method: "POST",
-          token: m.access_token,
-          body: {
-            compte_id: m.user_id,
-            contenu: contenu,
-            type: type || "message",
-            donnees: donnees || {},
-            partie_id: partieId || null
-          }
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/archiviste_console", {
+            method: "POST",
+            token: token,
+            body: {
+              compte_id: m.user_id,
+              contenu: contenu,
+              type: type || "message",
+              donnees: donnees || {},
+              partie_id: partieId || null
+            }
+          });
         });
       },
       /* Le fil de la Console : relu à l'entrée dans la salle — le journal
@@ -795,10 +951,12 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       lireConsole: function () {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve([]);
-        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", {
-          token: m.access_token
-        }).then(function (l) {
-          return (l || []).slice().reverse();
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", {
+            token: token
+          }).then(function (l) {
+            return (l || []).slice().reverse();
+          });
         }).catch(function () {
           return [];
         });
@@ -810,10 +968,12 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       lireParties: function () {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve([]);
-        return api("/rest/v1/archiviste_parties_lobby?select=*&order=cree_le.desc", {
-          token: m.access_token
-        }).then(function (l) {
-          return l || [];
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/archiviste_parties_lobby?select=*&order=cree_le.desc", {
+            token: token
+          }).then(function (l) {
+            return l || [];
+          });
         }).catch(function () {
           return [];
         });
@@ -825,32 +985,38 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       restaurerPartie: function (id) {
         var m = lire();
         if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/rpc/archiviste_restaurer_partie", {
-          method: "POST",
-          token: m.access_token,
-          body: {
-            p_id: id
-          }
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/rpc/archiviste_restaurer_partie", {
+            method: "POST",
+            token: token,
+            body: {
+              p_id: id
+            }
+          });
         });
       },
       purgerPartie: function (id) {
         var m = lire();
         if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/rpc/archiviste_purger_partie", {
-          method: "POST",
-          token: m.access_token,
-          body: {
-            p_id: id
-          }
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/rpc/archiviste_purger_partie", {
+            method: "POST",
+            token: token,
+            body: {
+              p_id: id
+            }
+          });
         });
       },
       viderCorbeille: function () {
         var m = lire();
         if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/rpc/archiviste_vider_corbeille", {
-          method: "POST",
-          token: m.access_token,
-          body: {}
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/rpc/archiviste_vider_corbeille", {
+            method: "POST",
+            token: token,
+            body: {}
+          });
         });
       },
       /* Graver un compte joueur de la main de l'Archiviste : l'inscription part
@@ -906,18 +1072,20 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       supprimerCompte: function (compteId) {
         var m = lire();
         if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
-        return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
-          method: "DELETE",
-          token: m.access_token,
-          prefer: "return=representation"
-        }).then(function (supprimes) {
-          if (!supprimes || !supprimes.length) {
-            throw new Error("Le serveur a refusé la sentence.");
-          }
-          return api("/rest/v1/archiviste_memoire?compte_id=eq." + compteId, {
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteId, {
             method: "DELETE",
-            token: m.access_token
-          }).catch(function () {});
+            token: token,
+            prefer: "return=representation"
+          }).then(function (supprimes) {
+            if (!supprimes || !supprimes.length) {
+              throw new Error("Le serveur a refusé la sentence.");
+            }
+            return api("/rest/v1/archiviste_memoire?compte_id=eq." + compteId, {
+              method: "DELETE",
+              token: token
+            }).catch(function () {});
+          });
         });
       },
       /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
@@ -926,16 +1094,18 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       lancerDes: function (nb, faces, note, partieId) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve();
-        return api("/rest/v1/rpc/lancer_des", {
-          method: "POST",
-          token: m.access_token,
-          body: {
-            nb: nb,
-            faces: faces,
-            note: note || null,
-            p_partie: partieId || null
-          }
-        });
+        return rajeunir().then(function (token) {
+          return api("/rest/v1/rpc/lancer_des", {
+            method: "POST",
+            token: token,
+            body: {
+              nb: nb,
+              faces: faces,
+              note: note || null,
+              p_partie: partieId || null
+            }
+          });
+        }).catch(function () {});
       },
       /* Le canal temps réel : la Tombe pousse ses changements aux écrans
          branchés — la synchro devient de la poussée, pas du polling. */
