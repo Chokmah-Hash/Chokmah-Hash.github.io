@@ -274,6 +274,29 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
       });
     },
 
+    /* La Console Globale : l'institution parle aux joueurs (canal unique
+       des événements de jeu, idée de Michael). Le message est GRAVÉ dans
+       la Tombe — le trigger console_verite le signe du pseudo et du rôle
+       admin de la ligne compte, personne ne se déguise. */
+    envoyerConsole: function (contenu) {
+      var m = lire();
+      if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
+      return api("/rest/v1/archiviste_console", {
+        method: "POST", token: m.access_token,
+        body: { compte_id: m.user_id, contenu: contenu }
+      });
+    },
+
+    /* Le fil de la Console : relu à l'entrée dans la salle — le journal
+       commence où l'on arrive (les 60 derniers messages). */
+    lireConsole: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", { token: m.access_token })
+        .then(function (l) { return (l || []).slice().reverse(); })
+        .catch(function () { return []; });
+    },
+
     /* Graver un compte joueur de la main de l'Archiviste : l'inscription part
        chez Supabase Auth, la ligne compte s'écrit avec la clé du nouveau venu
        (le garde du serveur force rôle joueur + statut selon le mode), puis on
