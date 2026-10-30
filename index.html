@@ -167,6 +167,17 @@ window.LARCHIVISTE_CLOUD = (function () {
     var surEtat = opts.surEtat || function () {};
     var presenceCle = opts.presenceKey || null; /* s'annoncer sur le canal des présents */
     var surPresence = opts.surPresence || null; /* écouter qui entre et qui sort */
+    /* V47 : le track porte compte_id + pseudo + jeu — la ronde des présents
+       dit QUI est en ligne et OÙ il se tient (null = au hub). */
+    var presenceInfo = typeof opts.presenceInfo === "function" ? opts.presenceInfo : null;
+    var pister = function (payload) {
+      if (!ws || ws.readyState !== 1 || !presenceCle) return;
+      ws.send(JSON.stringify({
+        topic: "realtime:tombe", event: "presence",
+        payload: { type: "presence", event: "track", payload: payload || { compte_id: presenceCle } },
+        ref: "piste"
+      }));
+    };
     if (typeof WebSocket === "undefined") { surEtat("coupure"); return { fermer: function () {} }; }
     var m0 = lire();
     if (!m0 || !m0.access_token) { surEtat("coupure"); return { fermer: function () {} }; }
@@ -218,12 +229,7 @@ window.LARCHIVISTE_CLOUD = (function () {
              ne diffuse que les états trackés (protocole Supabase v1 :
              event "presence", payload {type:"presence", event:"track"}).
              Le serveur traite les pushes dans l'ordre : join puis track. */
-          ws.send(JSON.stringify({
-            topic: "realtime:tombe",
-            event: "presence",
-            payload: { type: "presence", event: "track", payload: { compte_id: presenceCle } },
-            ref: "piste"
-          }));
+          pister(presenceInfo ? presenceInfo() : { compte_id: presenceCle });
         }
         surEtat("branche");
       };
@@ -233,9 +239,10 @@ window.LARCHIVISTE_CLOUD = (function () {
         if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
           surChangement(msg.payload.data);
         }
-        /* La ronde des présents : état initial puis entrées/sorties */
+        /* La ronde des présents : état initial puis entrées/sorties —
+           V47 : l'événement part avec le payload (state ou diff). */
         if (surPresence && (msg.event === "presence_state" || msg.event === "presence_diff")) {
-          surPresence(msg.payload || {});
+          surPresence(msg.payload || {}, msg.event);
         }
       };
       ws.onclose = retomber;
@@ -255,7 +262,10 @@ window.LARCHIVISTE_CLOUD = (function () {
         if (coeur) clearInterval(coeur);
         if (ws) { try { ws.close(); } catch (e) {} }
         ws = null;
-      }
+      },
+      /* V47 : re-pister sans re-joindre — quand on entre dans un pack ou
+         qu'on le quitte, les présents voient notre nouvelle place. */
+      annoncer: function (payload) { pister(payload); }
     };
   }
 
@@ -417,31 +427,44 @@ window.LARCHIVISTE_CLOUD = (function () {
 
     /* Le lobby : les aventures OUVERTES du jeu — via la VUE lobby (le
        pseudo du MJ et le nombre de joueurs sont servis par la Tombe,
-       les comptes ne se lisent pas entre eux). */
+       les comptes ne se lisent pas entre eux). V47 : ne montrent que les
+       salles que le MJ a OUVERTES et PUBLIQUES — les privées vivent par
+       le mot de passe, les fermées n'existent pour personne. */
     listerParties: function (jeu) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
       return api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
+        + "&jeu=eq." + encodeURIComponent(jeu)
+        + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&visibilite=eq.publique&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
         .catch(function () { return []; });
     },
 
     /* Mes aventures EN COURS (MJ ou joueur) — pour REPRENDRE après un
-       reload : la partie survit à l'appareil, elle vit dans la Tombe. */
+       reload : la partie survit à l'appareil, elle vit dans la Tombe.
+       V47 : les salles d'attente que le MJ TIENT (ouverte + salle
+       ouverte) vivent ici aussi — on reprend la table sans attendre le
+       lancement. REPRENDRE reste grisée si la salle est fermée. */
     mesParties: function (jeu, compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      var qP = api("/rest/v1/archiviste_parties_lobby?select=*"
+      var qC = api("/rest/v1/archiviste_parties_lobby?select=*"
         + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&supprime_le=is.null&order=lance_le.asc", { token: m.access_token })
+        .catch(function () { return []; });
+      var qO = api("/rest/v1/archiviste_parties_lobby?select=*"
+        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&supprime_le=is.null&order=salle_ouverte_le.desc", { token: m.access_token })
         .catch(function () { return []; });
       var qJ = api("/rest/v1/archiviste_partie_joueurs?select=partie_id&compte_id=eq." + compteId,
         { token: m.access_token }).catch(function () { return []; });
-      return Promise.all([qP, qJ]).then(function (r) {
+      return Promise.all([qC, qO, qJ]).then(function (r) {
         var ids = {};
-        (r[1] || []).forEach(function (pj) { ids[pj.partie_id] = true; });
-        return (r[0] || []).filter(function (p) {
-          return p.mj_compte_id === compteId || ids[p.id];
+        (r[2] || []).forEach(function (pj) { ids[pj.partie_id] = true; });
+        var vus = {}, liste = [];
+        (r[0] || []).concat(r[1] || []).forEach(function (p) {
+          if (vus[p.id]) return;
+          vus[p.id] = true;
+          if (p.mj_compte_id === compteId || ids[p.id]) liste.push(p);
         });
+        return liste;
       });
     },
 
@@ -485,7 +508,10 @@ window.LARCHIVISTE_CLOUD = (function () {
         .catch(function () { return []; });
     },
 
-    /* Rejoindre par bouton (id connu) ou par code d'invitation */
+    /* Rejoindre par bouton (id connu — salle publique ouverte) ; V47 :
+       par MOT DE PASSE (salle privée) — la Tombe vérifie le sceau
+       (hash sha256, jamais le mot de passe en clair), grave la table
+       et rend la salle. L'ancien CODE à six caractères s'efface. */
     rejoindrePartie: function (partieId, compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
@@ -495,23 +521,41 @@ window.LARCHIVISTE_CLOUD = (function () {
       }).then(function (l) { return (l && l[0]) || null; })
         .catch(function (e) { throw e; });
     },
-    rejoindreParCode: function (code, compteId) {
+    rejoindrePrivee: function (jeu, mdp) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
-      return api("/rest/v1/archiviste_parties?select=*&code=eq." + encodeURIComponent((code || "").trim().toUpperCase())
-        + "&statut=eq.ouverte", { token: m.access_token })
-        .then(function (l) {
-          var p = l && l[0];
-          if (!p) throw new Error("Code inconnu — aucune aventure ouverte ne le porte.");
-          /* V42b : son propre code = sa propre salle — on s'y rend en MJ,
-             SANS s'inscrire à sa propre table (le dédoublement « deux MJ »
-             venait de là : même compte, deux fenêtres, un insert chacune). */
-          if (p.mj_compte_id === compteId) return p;
-          return api("/rest/v1/archiviste_partie_joueurs", {
-            method: "POST", token: m.access_token,
-            body: { partie_id: p.id, compte_id: compteId }
-          }).then(function () { return p; });
-        });
+      return api("/rest/v1/rpc/archiviste_rejoindre_privee", {
+        method: "POST", token: m.access_token,
+        body: { p_jeu: jeu, p_mdp: (mdp || "").trim() }
+      });
+    },
+
+    /* V47 — LA SALLE VIVANTE : le MJ l'ouvre PUBLIQUE ou PRIVÉE (mot de
+       passe ≥ 3 caractères, hashé par la Tombe), la referme en partant,
+       la rouvre en reprenant une partie lancée. */
+    ouvrirSalle: function (id, visibilite, mdp) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors ligne."));
+      return api("/rest/v1/rpc/archiviste_ouvrir_salle", {
+        method: "POST", token: m.access_token,
+        body: { p_id: id, p_visibilite: visibilite, p_mdp: visibilite === "privee" ? (mdp || "").trim() : null }
+      });
+    },
+    fermerSalle: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_parties?id=eq." + id, {
+        method: "PATCH", token: m.access_token,
+        body: { salle_ouverte_le: null, mdp_hash: null }
+      });
+    },
+    rouvrirSalle: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_parties?id=eq." + id, {
+        method: "PATCH", token: m.access_token,
+        body: { salle_ouverte_le: new Date().toISOString() }
+      });
     },
 
     /* Sortir d'une aventure (soi-même) ; annuler = le MJ ferme */
@@ -522,13 +566,14 @@ window.LARCHIVISTE_CLOUD = (function () {
         { method: "DELETE", token: m.access_token });
     },
 
-    /* Le MJ pilote : lancer l'aventure (ouverte → en_cours) ou la fermer */
+    /* Le MJ pilote : lancer l'aventure (ouverte → en_cours, la salle reste
+       tenue) ou la fermer (la salle s'éteint avec elle). */
     lancerPartie: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
         method: "PATCH", token: m.access_token,
-        body: { statut: "en_cours", lance_le: new Date().toISOString() }
+        body: { statut: "en_cours", lance_le: new Date().toISOString(), salle_ouverte_le: new Date().toISOString() }
       });
     },
     fermerPartie: function (id) {
@@ -536,7 +581,7 @@ window.LARCHIVISTE_CLOUD = (function () {
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
         method: "PATCH", token: m.access_token,
-        body: { statut: "close", fermee_le: new Date().toISOString() }
+        body: { statut: "close", fermee_le: new Date().toISOString(), salle_ouverte_le: null, mdp_hash: null }
       });
     },
 
@@ -565,10 +610,7 @@ window.LARCHIVISTE_CLOUD = (function () {
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
   };
-})()
-;
-
-  </script>
+})();</script>
 
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
   <script>
@@ -593,8 +635,13 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe).
    V0.23 : LA CRÉATION SANS LANCEMENT — l'aventure naît dans MES AVENTURES,
    la salle s'ouvre depuis la liste (⚙) ; et LE BANDEAU DE L'ARCHIVISTE
-   (titre + compte connecté) revient dans l'espace MJ/Joueur et la table. ── */
-const BUILD = "0.23";
+   (titre + compte connecté) revient dans l'espace MJ/Joueur et la table.
+   V0.24 : LA SALLE VIVANTE — une aventure créée est SALLE FERMÉE ; le MJ
+   l'ouvre PUBLIQUE (lobby de tous) ou PRIVÉE (mot de passe, le code à 6
+   caractères s'efface) ; REPRENDRE est grisé tant que la salle est fermée,
+   le MJ qui s'en va la referme ; et le lobby montre les CONNECTÉS (la
+   présence temps réel, qui est prêt à joindre). ── */
+const BUILD = "0.24";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4274,9 +4321,12 @@ function EcranPartie({
   partiesOuvertes,
   mesPartiesCours,
   mesAventures,
+  presents,
+  mdpSalle,
   onCreer,
   onRejoindre,
-  onRejoindreCode,
+  onRejoindreMdp,
+  onOuvrirSalle,
   onReprendre,
   onLancer,
   onQuitter,
@@ -4287,11 +4337,15 @@ function EcranPartie({
   mobile
 }) {
   const [nom, setNom] = useState("");
-  const [code, setCode] = useState("");
+  const [mdp, setMdp] = useState(""); // V47 : le mot de passe d'une salle privée
   const [enCreer, setEnCreer] = useState(false);
   const [enRejoindre, setEnRejoindre] = useState(false);
+  const [enMdp, setEnMdp] = useState(false); // V47 : l'entrée par mot de passe part-elle ?
   const [onglet, setOnglet] = useState("lobby");
   const [enCreation, setEnCreation] = useState(false);
+  const [enOuverture, setEnOuverture] = useState(false); // V47 : la modale OUVRIR LA SALLE
+  const [visChoix, setVisChoix] = useState("publique"); // V47 : publique ou privée
+  const [mdpChoix, setMdpChoix] = useState(""); // V47 : le mot de passe choisi
   const [detail, setDetail] = useState(null);
   const [enLivre, setEnLivre] = useState(false);
   const [enSuppression, setEnSuppression] = useState(false); // V46 : la sentence se prépare-t-elle ?
@@ -4299,6 +4353,7 @@ function EcranPartie({
   const [compteOuvert, setCompteOuvert] = useState(false); // V46b : le menu du compte du bandeau
   const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
   const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
+  const salleOuverte = p => !!p.salle_ouverte_le;
 
   /* La salle d'attente : on a rejoint (ou créé) — le code s'affiche
      grand, la liste vit au temps réel, le MJ tranche. */
@@ -4357,24 +4412,39 @@ function EcranPartie({
       style: {
         color: "#52525b"
       }
-    }, "ouverte par ", estMj ? "vous" : "le MJ", " \xB7 ", partie.statut === "ouverte" ? "salle d'attente" : partie.statut === "en_cours" ? "en cours" : "close"), partie.statut === "ouverte" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, "ouverte par ", estMj ? "vous" : "le MJ", " \xB7 ", partie.statut === "ouverte" ? "salle d'attente" : partie.statut === "en_cours" ? "en cours" : "close", partie.visibilite === "publique" ? " · publique" : " · privée"), partie.statut === "ouverte" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "rounded-lg p-4 mb-5 text-center",
       style: {
         background: "#0c0d10",
         border: "1px dashed #3f3f46"
       }
-    }, /*#__PURE__*/React.createElement("div", {
+    }, partie.visibilite === "publique" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "text-xs mb-1",
       style: {
         color: "#71717a"
       }
-    }, "CODE D'INVITATION \u2014 \xE0 partager aux joueurs"), /*#__PURE__*/React.createElement("div", {
-      className: "text-3xl font-bold tracking-[0.3em]",
+    }, "SALLE PUBLIQUE \u2014 elle vit dans \xAB AVENTURES OUVERTES \xBB du lobby de tous"), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-bold tracking-widest",
+      style: {
+        color: "#a8adb8"
+      }
+    }, "ouverte \xE0 tous")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mb-1",
+      style: {
+        color: "#71717a"
+      }
+    }, "SALLE PRIV\xC9E \u2014 vos joueurs entrent avec le mot de passe"), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-bold tracking-widest",
       style: {
         color: "#a8adb8",
         fontFamily: "ui-monospace,monospace"
       }
-    }, partie.code)), /*#__PURE__*/React.createElement("div", {
+    }, estMj ? mdpSalle || "votre mot de passe" : "• • • • •"), !estMj && /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mt-1",
+      style: {
+        color: "#52525b"
+      }
+    }, "vous y \xEAtes \u2014 le MJ lance l'aventure quand la table est pleine"))), /*#__PURE__*/React.createElement("div", {
       className: "mb-2 text-xs font-bold tracking-widest",
       style: {
         color: "#a8adb8"
@@ -4522,18 +4592,25 @@ function EcranPartie({
       border: "1px solid #27272a"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-3",
+    className: "text-xs font-bold tracking-widest mb-2",
     style: {
       color: "#a8adb8"
     }
-  }, "REJOINDRE PAR CODE"), /*#__PURE__*/React.createElement("div", {
+  }, "REJOINDRE PAR MOT DE PASSE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#52525b"
+    }
+  }, "Le MJ d'une salle priv\xE9e vous a confi\xE9 un mot de passe ? Entrez-le ici."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("input", {
-    value: code,
-    onChange: e => setCode(e.target.value.toUpperCase()),
-    maxLength: 6,
-    placeholder: "CODE (6 caract\xE8res)",
-    className: "flex-1 px-3 py-2 rounded-lg text-sm tracking-[0.2em]",
+    value: mdp,
+    onChange: e => setMdp(e.target.value),
+    maxLength: 24,
+    type: "password",
+    autoComplete: "off",
+    placeholder: "MOT DE PASSE DE LA SALLE",
+    className: "flex-1 px-3 py-2 rounded-lg text-sm",
     style: {
       background: "#0c0d10",
       border: "1px solid #3f3f46",
@@ -4543,18 +4620,58 @@ function EcranPartie({
     }
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setEnRejoindre(true);
-      onRejoindreCode(code).finally(() => setEnRejoindre(false));
+      setEnMdp(true);
+      onRejoindreMdp(mdp).finally(() => setEnMdp(false));
     },
-    disabled: enRejoindre || code.trim().length < 6,
+    disabled: enMdp || mdp.trim().length < 3,
     className: "px-4 py-2 rounded-lg font-bold text-sm",
     style: {
-      background: code.trim().length >= 6 ? "#a8adb814" : "transparent",
+      background: mdp.trim().length >= 3 ? "#a8adb814" : "transparent",
       color: "#a8adb8",
       border: "1px solid #27272a",
-      cursor: code.trim().length >= 6 ? "pointer" : "default"
+      cursor: mdp.trim().length >= 3 ? "pointer" : "default"
     }
   }, "REJOINDRE"))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "CONNECT\xC9S ", (presents || []).length > 0 ? "(" + (presents || []).length + ")" : ""), (presents || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-2",
+    style: {
+      color: "#52525b"
+    }
+  }, "Personne d'autre en ligne \u2014 la Tombe est silencieuse.") : /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, (presents || []).map(j => /*#__PURE__*/React.createElement("div", {
+    key: j.compte_id,
+    className: "flex items-center gap-2 px-2 py-1 rounded-lg",
+    style: {
+      background: "#a8adb810",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "rounded-full",
+    style: {
+      width: 6,
+      height: 6,
+      background: "#2ee6c9",
+      display: "inline-block"
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold"
+  }, j.pseudo, j.compte_id === (session && session.compteId) ? " (vous)" : ""), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, j.jeu === pack.id ? "— dans ce pack" : "— au hub"))))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -4592,12 +4709,7 @@ function EcranPartie({
       style: {
         color: "#52525b"
       }
-    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 code ", /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontFamily: "ui-monospace,monospace",
-        color: "#a8adb8"
-      }
-    }, p.code), " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "")), laMienne ? /*#__PURE__*/React.createElement("button", {
+    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 salle publique \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "")), laMienne ? /*#__PURE__*/React.createElement("button", {
       onClick: () => onReprendre(p),
       className: "px-3 py-1.5 rounded-lg text-xs font-bold",
       style: {
@@ -4651,14 +4763,18 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, p.mj_compte_id === (session && session.compteId) ? "vous êtes le MJ" : "MJ " + (p.mj_pseudo || "?"))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => onReprendre(p),
+  }, p.mj_compte_id === (session && session.compteId) ? "vous êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 ", salleOuverte(p) ? p.statut === "en_cours" ? "en cours — salle ouverte" : "salle d'attente" : "salle fermée — le MJ ne tient pas la salle")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (salleOuverte(p)) onReprendre(p);
+    },
+    disabled: !salleOuverte(p),
     className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
     style: {
       background: "#f0b24a",
-      cursor: "pointer"
+      opacity: salleOuverte(p) ? 1 : 0.3,
+      cursor: salleOuverte(p) ? "pointer" : "default"
     }
-  }, "\u25B6 REPRENDRE")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+  }, salleOuverte(p) ? "▶ REPRENDRE" : "SALLE FERMÉE")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -4718,12 +4834,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "code ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontFamily: "ui-monospace,monospace",
-      color: "#a8adb8"
-    }
-  }, p.code), " \xB7 ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
+  }, "cr\xE9\xE9e le ", new Date(p.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", salleOuverte(p) ? "salle OUVERTE (" + (p.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée")), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "px-1.5 py-0.5 rounded text-xs font-bold",
@@ -4763,24 +4874,33 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "MJ ", detail.mj_pseudo || "vous", " \xB7 code ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontFamily: "ui-monospace,monospace",
-      color: "#a8adb8"
-    }
-  }, detail.code), " \xB7 ", detail.statut === "ouverte" ? "salle d'attente" : detail.statut === "en_cours" ? "en cours" : "close"), detail.statut === "close" ? /*#__PURE__*/React.createElement("div", {
+  }, "MJ ", detail.mj_pseudo || "vous", " \xB7 ", detail.statut === "ouverte" ? "salle d'attente" : detail.statut === "en_cours" ? "en cours" : "close", " ", "\xB7 ", salleOuverte(detail) ? "salle OUVERTE (" + (detail.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée"), detail.statut === "close" ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs italic mb-3",
     style: {
       color: "#71717a"
     }
-  }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") : /*#__PURE__*/React.createElement("button", {
+  }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") : detail.statut === "en_cours" || salleOuverte(detail) ? /*#__PURE__*/React.createElement("button", {
     onClick: () => onReprendre(detail),
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black mb-3",
     style: {
       background: detail.statut === "en_cours" ? "#f0b24a" : "#a8adb8",
       cursor: "pointer"
     }
-  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "OUVRIR LA SALLE"), !enSuppression ? /*#__PURE__*/React.createElement("button", {
+  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "▶ REPRENDRE LA SALLE") :
+  /*#__PURE__*/
+  /* V47 : OUVRIR LA SALLE — publique (lobby de tous) ou privée (mot de passe) */
+  React.createElement("button", {
+    onClick: () => {
+      setVisChoix("publique");
+      setMdpChoix("");
+      setEnOuverture(true);
+    },
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black mb-3",
+    style: {
+      background: "#f0b24a",
+      cursor: "pointer"
+    }
+  }, "OUVRIR LA SALLE"), !enSuppression ? /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnSuppression(true);
       setMotSuppr("");
@@ -4884,7 +5004,89 @@ function EcranPartie({
       background: "#a8adb8",
       cursor: "pointer"
     }
-  }, "\uD83D\uDCD6 OUVRIR LE MANUEL")), enCreation && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCD6 OUVRIR LE MANUEL")), enOuverture && detail && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "#000000b3"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl p-6 w-full max-w-md",
+    style: {
+      background: "#14161b",
+      border: "1px solid #f0b24a44"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "OUVRIR LA SALLE \u2014 ", detail.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm mb-4",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Une salle publique vit dans le lobby de tous ; une salle priv\xE9e s'ouvre par le mot de passe que vous confierez \xE0 vos joueurs."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mb-4"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVisChoix("publique"),
+    className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: visChoix === "publique" ? "#f0b24a22" : "transparent",
+      color: visChoix === "publique" ? "#f0b24a" : "#71717a",
+      border: "1px solid " + (visChoix === "publique" ? "#f0b24a44" : "#27272a"),
+      cursor: "pointer"
+    }
+  }, "PUBLIQUE \u2014 visible de tous"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVisChoix("privee"),
+    className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: visChoix === "privee" ? "#f0b24a22" : "transparent",
+      color: visChoix === "privee" ? "#f0b24a" : "#71717a",
+      border: "1px solid " + (visChoix === "privee" ? "#f0b24a44" : "#27272a"),
+      cursor: "pointer"
+    }
+  }, "PRIV\xC9E \u2014 mot de passe")), visChoix === "privee" && /*#__PURE__*/React.createElement("input", {
+    value: mdpChoix,
+    onChange: e => setMdpChoix(e.target.value),
+    maxLength: 24,
+    type: "text",
+    autoComplete: "off",
+    placeholder: "Mot de passe (3 caract\xE8res minimum)",
+    className: "w-full px-3 py-2 rounded-lg text-sm mb-4",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 justify-end"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEnOuverture(false),
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "ANNULER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnCreer(true);
+      onOuvrirSalle(detail, visChoix, mdpChoix).finally(() => {
+        setEnCreer(false);
+        setEnOuverture(false);
+      });
+    },
+    disabled: enCreer || visChoix === "privee" && mdpChoix.trim().length < 3,
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      opacity: visChoix === "publique" || mdpChoix.trim().length >= 3 ? 1 : 0.4,
+      cursor: visChoix === "publique" || mdpChoix.trim().length >= 3 ? "pointer" : "default"
+    }
+  }, "OUVRIR")))), enCreation && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-center justify-center p-4",
     style: {
       background: "#000000b3"
@@ -7529,6 +7731,9 @@ function App() {
   const [partieJoueurs, setPartieJoueurs] = useState([]); /* la table, en temps réel */
   const [partiesOuvertes, setPartiesOuvertes] = useState([]); /* le lobby du pack */
   const [mesPartiesCours, setMesPartiesCours] = useState([]); /* reprendre après reload */
+  const [presents, setPresents] = useState({}); /* V47 : la ronde des présents (compte_id → {pseudo, jeu}) */
+  const [mdpSalle, setMdpSalle] = useState(null); /* V47 : le mot de passe de la salle qu'on vient d'ouvrir (affiché au MJ) */
+  const canalPresenceRef = useRef(null); /* V47 : pour re-pister quand on change de pack */
   const [packPartie, setPackPartie] = useState(null); /* le pack multijoueur en cours de partie */
   const [consolePartieOuverte, setConsolePartieOuverte] = useState(false); /* bandeau dans le pack */
   const partieIdRef = useRef(null);
@@ -7651,19 +7856,42 @@ function App() {
       return rechargerPartie(p.id);
     }).catch(() => showToast("Impossible de rejoindre — l'aventure est peut-être déjà lancée."));
   };
-  const rejoindreAventureCode = code => {
+  /* V47 — OUVRIR LA SALLE : le MJ tranche, publique ou privée. La Tombe
+     grave et rend la salle ; le MJ y entre. Le mot de passe reste en
+     mémoire de session : il s'affiche à lui seul dans la salle. */
+  const ouvrirSalleAventure = (p, visibilite, mdpSaisi) => {
     if (!CLOUD || !session) return Promise.resolve();
-    return CLOUD.rejoindreParCode(code, session.compteId).then(p => {
+    return CLOUD.ouvrirSalle(p.id, visibilite, mdpSaisi).then(ligne => {
+      setMdpSalle(visibilite === "privee" ? (mdpSaisi || "").trim() : null);
+      showToast("Salle ouverte — " + (visibilite === "publique" ? "elle vit dans « AVENTURES OUVERTES » du lobby de tous." : "vos joueurs entrent avec le mot de passe que vous avez choisi."));
+      setPartie(ligne || p);
+      return rechargerPartie(p.id);
+    }).catch(e => showToast(e && e.message || "La Tombe refuse d'ouvrir la salle — réessayez."));
+  };
+  const rejoindreAventureMdp = mdpSaisi => {
+    if (!CLOUD || !session || !packPartie) return Promise.resolve();
+    return CLOUD.rejoindrePrivee(packPartie.id, mdpSaisi).then(p => {
+      if (!p) {
+        showToast("Aucune salle privée ne porte ce mot de passe.");
+        return;
+      }
       if (p.mj_compte_id === session.compteId) {
-        showToast("Ce code est celui de VOTRE aventure — vous en êtes le MJ.");
+        showToast("Ce mot de passe est celui de VOTRE salle — vous en êtes le MJ.");
       } else {
         showToast("Vous rejoignez « " + p.nom + " »");
       }
       setPartie(p);
       return rechargerPartie(p.id);
-    }).catch(e => showToast(e && e.message || "Code inconnu — vérifiez les six caractères."));
+    }).catch(e => showToast(e && e.message || "Aucune salle privée ne porte ce mot de passe."));
   };
   const reprendreAventure = p => {
+    if (!CLOUD || !session) return Promise.resolve();
+    /* V47 : le MJ qui REPREND une partie lancée RÉOUVRE la salle — les
+       joueurs peuvent le suivre. Le joueur, lui, ne reprend QUE si la
+       salle est ouverte (le bouton est grisé sinon — la vue décide). */
+    if (p.mj_compte_id === session.compteId && p.statut === "en_cours" && !p.salle_ouverte_le) {
+      CLOUD.rouvrirSalle(p.id).then(() => rechargerPartie(p.id)).catch(() => {});
+    }
     setPartie(p);
     return rechargerPartie(p.id);
   };
@@ -7787,6 +8015,42 @@ function App() {
     const canal = CLOUD.tempsReel({
       presenceKey: session.compteId,
       /* le pouls : présent tant que la socket vit */
+      presenceInfo: () => ({
+        /* V47 : la ronde dit qui est en ligne et où il se tient */
+        compte_id: session.compteId,
+        pseudo: session.pseudo,
+        jeu: packPartieRef.current && packPartieRef.current.id || null
+      }),
+      surPresence: (p, ev) => {
+        /* V47 : LA RONDE DES PRÉSENTS — l'état initial remplace tout ; les
+           diffs ne fondent que les entrées et sorties. Les fantômes sans
+           pseudo (sessions d'une autre ère) restent invisibles. */
+        if (!p || typeof p !== "object") return;
+        if (ev === "presence_state") {
+          const liste = {};
+          Object.keys(p).forEach(cle => {
+            const m = p[cle] && p[cle].metas && p[cle].metas[0] || null;
+            if (m && m.pseudo) liste[cle] = m;
+          });
+          setPresents(liste);
+          return;
+        }
+        if (ev === "presence_diff") {
+          setPresents(prev => {
+            const suivant = {
+              ...prev
+            };
+            Object.keys(p.joins || {}).forEach(cle => {
+              const m = p.joins[cle] && p.joins[cle].metas && p.joins[cle].metas[0] || null;
+              if (m && m.pseudo) suivant[cle] = m;else delete suivant[cle];
+            });
+            Object.keys(p.leaves || {}).forEach(cle => {
+              delete suivant[cle];
+            });
+            return suivant;
+          });
+        }
+      },
       tables: [{
         table: "archiviste_comptes",
         filtre: "compte_id=eq." + session.compteId
@@ -7843,6 +8107,18 @@ function App() {
               }
               /* fusion : la ligne poussée est brute (sans mj_pseudo) — on
                  garde le pseudo du MJ déjà connu de la vue lobby */
+              /* V47 : la salle est REFERMÉE (le MJ s'en est allé) — les
+                 joueurs présents dans la salle d'attente sortent sans
+                 demander pardon ; plus personne ne reprend une salle
+                 que personne ne tient. */
+              if (!ligne.salle_ouverte_le && ligne.statut === "ouverte" && vueRef.current === "partie") {
+                setPartie(null);
+                setPartieJoueurs([]);
+                setFichesPartie([]);
+                showToast("La salle est refermée — le MJ ne la tient plus.");
+                rechargerListes();
+                return;
+              }
               setPartie(prev => ({
                 ...(prev || {}),
                 ...ligne,
@@ -7882,12 +8158,14 @@ function App() {
         if (etat === "branche") relance(); /* on a peut-être raté des poussées pendant la coupure */
       }
     });
+    canalPresenceRef.current = canal; /* V47 : pour re-pister au changement de pack */
     const auRetour = () => {
       if (document.visibilityState === "visible") verifierSession();
     };
     document.addEventListener("visibilitychange", auRetour);
     return () => {
       canal.fermer();
+      canalPresenceRef.current = null;
       document.removeEventListener("visibilitychange", auRetour);
       if (attente) clearTimeout(attente);
     };
@@ -7896,6 +8174,19 @@ function App() {
                                                   connexion) — « session.compteId » nu = écran noir. Avec « session »
                                                   entier en dépendance, l'effet bouclait (fermer → leave → rejoindre →
                                                   track) et le point clignotait rouge/vert au registre. */
+
+  /* V47 : quand on entre dans le pack d'une aventure (ou qu'on le quitte),
+     on RE-PISTE — les présents voient notre nouvelle place sans attendre. */
+  useEffect(() => {
+    if (!CLOUD || !session) return;
+    if (canalPresenceRef.current && canalPresenceRef.current.annoncer) {
+      canalPresenceRef.current.annoncer({
+        compte_id: session.compteId,
+        pseudo: session.pseudo,
+        jeu: packPartie && packPartie.id || null
+      });
+    }
+  }, [packPartie ? packPartie.id : null]); /* le pack seul — pas session (bouclerait) */
 
   /* La pulsation de SECOURS : seulement quand le canal temps réel est coupé. */
   useEffect(() => {
@@ -8095,9 +8386,12 @@ function App() {
     partiesOuvertes: partiesOuvertes,
     mesPartiesCours: mesPartiesCours,
     mesAventures: mesAventuresListe,
+    presents: Object.values(presents),
+    mdpSalle: mdpSalle,
     onCreer: creerAventure,
     onRejoindre: rejoindreAventure,
-    onRejoindreCode: rejoindreAventureCode,
+    onRejoindreMdp: rejoindreAventureMdp,
+    onOuvrirSalle: ouvrirSalleAventure,
     onReprendre: reprendreAventure,
     onLancer: lancerAventure,
     onQuitter: quitterAventure,
@@ -8106,6 +8400,12 @@ function App() {
     onLogout: seDeconnecter,
     mobile: mobile,
     onRetour: () => {
+      /* V47 : le MJ qui quitte la salle d'attente la REFERME — plus
+         personne ne peut entrer tant qu'il ne l'ouvre pas de nouveau. */
+      if (partie && session && partie.mj_compte_id === session.compteId && partie.statut === "ouverte" && partie.salle_ouverte_le) {
+        CLOUD.fermerSalle(partie.id).catch(() => {});
+        showToast("Salle fermée — elle a quitté le lobby de tous.");
+      }
       setPartie(null);
       setPartieJoueurs([]);
       setFichesPartie([]);
@@ -8136,7 +8436,12 @@ function App() {
         monCompteId: session && session.compteId,
         onFiche: sauverFiche
       } : null,
-      onRetour: () => setVue("hub"),
+      onRetour: () => {
+        if (enPartie && partie && session && partie.mj_compte_id === session.compteId && partie.salle_ouverte_le) {
+          CLOUD.fermerSalle(partie.id).catch(() => {});
+        }
+        setVue("hub");
+      },
       onJournal: journalVersConsole
     })), enPartie && /*#__PURE__*/React.createElement(BandeauConsolePartie, {
       ouverte: consolePartieOuverte,
