@@ -480,6 +480,10 @@ window.LARCHIVISTE_CLOUD = (function () {
         .then(function (l) {
           var p = l && l[0];
           if (!p) throw new Error("Code inconnu — aucune aventure ouverte ne le porte.");
+          /* V42b : son propre code = sa propre salle — on s'y rend en MJ,
+             SANS s'inscrire à sa propre table (le dédoublement « deux MJ »
+             venait de là : même compte, deux fenêtres, un insert chacune). */
+          if (p.mj_compte_id === compteId) return p;
           return api("/rest/v1/archiviste_partie_joueurs", {
             method: "POST", token: m.access_token,
             body: { partie_id: p.id, compte_id: compteId }
@@ -4358,43 +4362,55 @@ function EcranPartie({
     }
   }, "Aucune aventure ouverte \u2014 ouvrez la premi\xE8re.") : /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col"
-  }, partiesOuvertes.map(p => /*#__PURE__*/React.createElement("div", {
-    key: p.id,
-    className: "flex items-center gap-3 py-2.5",
-    style: {
-      borderBottom: "1px solid #ffffff08"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 min-w-0"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold truncate",
-    style: {
-      color: "#e8e4d8"
-    }
-  }, p.nom), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#52525b"
-    }
-  }, "MJ ", p.mj_pseudo || "?", " \xB7 code ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontFamily: "ui-monospace,monospace",
-      color: "#a8adb8"
-    }
-  }, p.code), " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setEnRejoindre(true);
-      onRejoindre(p).finally(() => setEnRejoindre(false));
-    },
-    disabled: enRejoindre,
-    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
-    style: {
-      background: "#a8adb814",
-      color: "#a8adb8",
-      border: "1px solid #27272a",
-      cursor: "pointer"
-    }
-  }, "REJOINDRE"))))), mesPartiesCours.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, partiesOuvertes.map(p => {
+    const laMienne = session && p.mj_compte_id === session.compteId;
+    return /*#__PURE__*/React.createElement("div", {
+      key: p.id,
+      className: "flex items-center gap-3 py-2.5",
+      style: {
+        borderBottom: "1px solid #ffffff08"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 min-w-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-sm font-bold truncate",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, p.nom), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#52525b"
+      }
+    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 code ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: "ui-monospace,monospace",
+        color: "#a8adb8"
+      }
+    }, p.code), " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "")), laMienne ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => onReprendre(p),
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      style: {
+        background: "#f0b24a22",
+        color: "#f0b24a",
+        border: "1px solid #f0b24a44",
+        cursor: "pointer"
+      }
+    }, "OUVRIR") : /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setEnRejoindre(true);
+        onRejoindre(p).finally(() => setEnRejoindre(false));
+      },
+      disabled: enRejoindre,
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      style: {
+        background: "#a8adb814",
+        color: "#a8adb8",
+        border: "1px solid #27272a",
+        cursor: "pointer"
+      }
+    }, "REJOINDRE"));
+  }))), mesPartiesCours.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -4438,7 +4454,9 @@ function EcranPartie({
 /* ══════════ Le bandeau de la Console de partie (dans le pack) ══════════
    En partie, la Console vit AU-DESSUS du pack : repliée, elle ne montre
    qu'un bouton fin avec le dernier message ; ouverte, le même panneau
-   ConsoleGlobale sert le canal de la partie. */
+   ConsoleGlobale sert le canal de la partie. V42b : l'ancrage est en
+   STYLE INLINE — le CSS compilé ne connaissait pas .bottom-0/.left-0/
+   .z-40 et le bandeau partait se cacher sous la ligne de flottaison. */
 function BandeauConsolePartie({
   ouverte,
   onToggle,
@@ -4449,12 +4467,20 @@ function BandeauConsolePartie({
 }) {
   const dernier = fil[fil.length - 1];
   return /*#__PURE__*/React.createElement("div", {
-    className: "fixed bottom-0 left-0 right-0 z-40",
     style: {
+      position: "fixed",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 40,
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5"
+    style: {
+      maxWidth: "56rem",
+      margin: "0 auto",
+      padding: "0 20px"
+    }
   }, ouverte && /*#__PURE__*/React.createElement("div", {
     className: "mb-1",
     style: {
@@ -4470,18 +4496,25 @@ function BandeauConsolePartie({
     onClick: onToggle,
     className: "w-full px-4 py-2 flex items-center gap-2 rounded-t-xl text-xs font-bold tracking-wider",
     style: {
-      background: "#14161bee",
-      border: "1px solid #27272a",
+      background: "#1d2027",
+      border: "1px solid #a8adb866",
       borderBottom: "none",
-      color: "#a8adb8",
-      cursor: "pointer"
+      color: "#e8e4d8",
+      cursor: "pointer",
+      boxShadow: "0 -4px 12px #00000066"
     }
   }, /*#__PURE__*/React.createElement("span", null, ouverte ? "▼" : "▲"), /*#__PURE__*/React.createElement("span", {
     className: "shrink-0"
-  }, "\uD83D\uDCAC CONSOLE DE PARTIE (", fil.length, ")"), dernier && /*#__PURE__*/React.createElement("span", {
+  }, "\uD83D\uDCAC CONSOLE DE PARTIE"), /*#__PURE__*/React.createElement("span", {
+    className: "px-1.5 rounded",
+    style: {
+      background: "#f0b24a22",
+      color: "#f0b24a"
+    }
+  }, fil.length), dernier && /*#__PURE__*/React.createElement("span", {
     className: "flex-1 text-left truncate font-normal",
     style: {
-      color: "#71717a"
+      color: "#a1a1aa"
     }
   }, "\xB7 ", dernier.pseudo, " : ", dernier.contenu))));
 }
@@ -6854,9 +6887,12 @@ function App() {
                                                             que le canal : jamais « session » nu en dépendance d'effet */
 
   /* Recharger la partie courante et sa table (utilisée au montage et à
-     chaque poussée parties/joueurs : la Tombe reste la seule vérité). */
-  const rechargerPartie = () => {
-    const id = partieIdRef.current;
+     chaque poussée parties/joueurs : la Tombe reste la seule vérité).
+     V42b : l'id peut être EXPLICITE — la ref n'est mise à jour qu'au
+     rendu SUIVANT ; les joins lisaient une ref encore vide et la table
+     restait muette (l'écho temps réel sauvait la mise par chance). */
+  const rechargerPartie = idExplicite => {
+    const id = idExplicite || partieIdRef.current;
     if (!CLOUD || !session || !id) return Promise.resolve();
     return Promise.all([CLOUD.lirePartie(id).catch(() => null), CLOUD.lirePartieJoueurs(id).catch(() => [])]).then(([p, js]) => {
       if (p) setPartie(p);
@@ -6918,22 +6954,33 @@ function App() {
   };
   const rejoindreAventure = p => {
     if (!CLOUD || !session) return Promise.resolve();
+    /* V42b : le MJ ne rejoint pas sa propre aventure — il en est déjà le
+       MJ ; deux fenêtres du même compte ne peuvent plus s'y dédoubler. */
+    if (p.mj_compte_id === session.compteId) {
+      showToast("C'est votre aventure — vous en êtes déjà le MJ.");
+      setPartie(p);
+      return rechargerPartie(p.id);
+    }
     return CLOUD.rejoindrePartie(p.id, session.compteId).then(() => {
       setPartie(p);
-      return rechargerPartie();
+      return rechargerPartie(p.id);
     }).catch(() => showToast("Impossible de rejoindre — l'aventure est peut-être déjà lancée."));
   };
   const rejoindreAventureCode = code => {
     if (!CLOUD || !session) return Promise.resolve();
     return CLOUD.rejoindreParCode(code, session.compteId).then(p => {
+      if (p.mj_compte_id === session.compteId) {
+        showToast("Ce code est celui de VOTRE aventure — vous en êtes le MJ.");
+      } else {
+        showToast("Vous rejoignez « " + p.nom + " »");
+      }
       setPartie(p);
-      showToast("Vous rejoignez « " + p.nom + " »");
-      return rechargerPartie();
+      return rechargerPartie(p.id);
     }).catch(e => showToast(e && e.message || "Code inconnu — vérifiez les six caractères."));
   };
   const reprendreAventure = p => {
     setPartie(p);
-    if (CLOUD) CLOUD.lirePartieJoueurs(p.id).then(js => setPartieJoueurs(js || [])).catch(() => setPartieJoueurs([]));
+    return rechargerPartie(p.id);
   };
   const lancerAventure = p => {
     if (!CLOUD) return;
