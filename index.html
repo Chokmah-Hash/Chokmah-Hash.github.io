@@ -354,6 +354,30 @@ window.LARCHIVISTE_CLOUD = (function () {
       });
     },
 
+    /* La Console Globale : le canal des événements de jeu (MJ et joueurs
+       s'y parlent). Chaque message est GRAVÉ dans la Tombe — prémice du
+       journal — et pousse en temps réel chez tous. Le serveur signe
+       lui-même le pseudo et le rôle (trigger console_verite) : personne
+       ne peut se déguiser. */
+    envoyerConsole: function (compteId, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_console", {
+        method: "POST", token: m.access_token,
+        body: { compte_id: compteId, contenu: contenu }
+      });
+    },
+
+    /* Le fil de la Console, relu à la connexion : le journal commence
+       où l'on arrive — les 60 derniers messages font le bord. */
+    lireConsole: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", { token: m.access_token })
+        .then(function (l) { return (l || []).slice().reverse(); })
+        .catch(function () { return []; });
+    },
+
     /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
