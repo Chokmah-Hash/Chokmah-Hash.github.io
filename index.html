@@ -445,6 +445,17 @@ window.LARCHIVISTE_CLOUD = (function () {
       });
     },
 
+    /* Toutes les aventures créées par ce compte (tout statut) — registre MJ */
+    mesAventures: function (jeu, compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_parties_lobby?select=*"
+        + "&jeu=eq." + encodeURIComponent(jeu)
+        + "&mj_compte_id=eq." + compteId
+        + "&order=cree_le.desc", { token: m.access_token })
+        .catch(function () { return []; });
+    },
+
     /* Lire une partie et ses joueurs (la vue lobby porte mj_pseudo —
        les lignes de table seules ne le portent pas) */
     lirePartie: function (id) {
@@ -567,7 +578,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.20";
+const BUILD = "0.21";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3823,6 +3834,91 @@ function ChoixRole({
   }, "Annuler")));
 }
 
+/* ══════════ Le choix du MODE DE JEU au lancement d'un pack multijoueur ══════════
+   MODE MJ : lobby + registre de ses aventures (créer, lancer, reprendre).
+   MODE JOUEUR : lobby + registre de ses personnages + règles du pack.
+   Le rôle réel en partie reste dérivé : le créateur d'une aventure en est le MJ. */
+function ChoixModePartie({
+  pack,
+  onChoisi,
+  onAnnuler
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "#000000b3"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl p-6 w-full max-w-md text-center",
+    style: {
+      background: "#14161b",
+      border: "1px solid #f0b24a44",
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "LANCER \u2014 ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-lg mb-1",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Sous quel mode entrer ?"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-5",
+    style: {
+      color: "#71717a"
+    }
+  }, "Le mode organise l'\xE9cran de partie \u2014 il ne fige rien : le cr\xE9ateur d'une aventure en reste le Ma\xEEtre du Jeu."), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => onChoisi("mj"),
+    className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
+    style: {
+      background: "#f0b24a14",
+      border: "1px solid #f0b24a66"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-3xl"
+  }, "\uD83C\uDFAD"), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold",
+    style: {
+      color: "#f0b24a"
+    }
+  }, "MODE MJ"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Lobby + vos aventures : cr\xE9ez, lancez, dirigez")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onChoisi("joueur"),
+    className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
+    style: {
+      background: "#2ee6c914",
+      border: "1px solid #2ee6c955"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-3xl"
+  }, "\uD83D\uDEE1\uFE0F"), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold",
+    style: {
+      color: "#2ee6c9"
+    }
+  }, "MODE JOUEUR"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Lobby + vos personnages + les r\xE8gles"))), /*#__PURE__*/React.createElement("button", {
+    onClick: onAnnuler,
+    className: "mt-5 text-xs font-bold",
+    style: {
+      color: "#71717a"
+    }
+  }, "Annuler")));
+}
+
 /* ══════════ Le Hub (magasin + bibliothèque = favoris) ══════════ */
 function Vignette({
   pack,
@@ -4116,10 +4212,12 @@ function ConsoleGlobale({
 function EcranPartie({
   pack,
   session,
+  mode,
   partie,
   partieJoueurs,
   partiesOuvertes,
   mesPartiesCours,
+  mesAventures,
   onCreer,
   onRejoindre,
   onRejoindreCode,
@@ -4132,6 +4230,10 @@ function EcranPartie({
   const [code, setCode] = useState("");
   const [enCreer, setEnCreer] = useState(false);
   const [enRejoindre, setEnRejoindre] = useState(false);
+  const [onglet, setOnglet] = useState("lobby");
+  const [enCreation, setEnCreation] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [enLivre, setEnLivre] = useState(false);
   const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
   const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
 
@@ -4257,8 +4359,23 @@ function EcranPartie({
     }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : ""))));
   }
 
-  /* Le lobby : ouvrir une aventure, la rejoindre par code, ou en
-     reprendre une en cours — trois portes vers la même table. */
+  /* V46 — l'écran de partie à onglets. Le mode choisi au LANCER ordonne
+     l'écran : le MJ gère le registre de ses aventures, le joueur garde
+     ses personnages et lit les règles. Le lobby reste la porte commune.
+     Le rôle réel en table reste dérivé : le créateur d'une aventure en
+     est le Maître du Jeu, quel que soit le mode affiché. */
+  const modeU = mode === "joueur" ? "joueur" : mode === "mj" ? "mj" : null;
+  const onglets = modeU === "joueur" ? [["lobby", "LOBBY"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]] : modeU === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]];
+  const mesAv = mesAventures || [];
+
+  /* L'onglet RÈGLES ouvre le manuel en plein écran — le lecteur a son
+     propre entête, on lui rend la main quand il se referme. */
+  if (onglet === "regles" && enLivre) {
+    return /*#__PURE__*/React.createElement(LecteurDocuments, {
+      pack: pack,
+      onFermer: () => setEnLivre(false)
+    });
+  }
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen flex flex-col text-zinc-200",
     style: {
@@ -4275,11 +4392,19 @@ function EcranPartie({
       cursor: "pointer"
     }
   }, "\u2190 retour au hub"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs tracking-widest mb-1",
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs tracking-widest",
     style: {
       color: "#71717a"
     }
-  }, pack.nom), /*#__PURE__*/React.createElement("div", {
+  }, pack.nom), /*#__PURE__*/React.createElement("span", {
+    className: "px-1.5 py-0.5 rounded text-xs font-bold",
+    style: {
+      background: modeU === "joueur" ? "#2ee6c914" : "#f0b24a14",
+      color: modeU === "joueur" ? "#2ee6c9" : "#f0b24a"
+    }
+  }, modeU === "joueur" ? "MODE JOUEUR" : "MODE MJ")), /*#__PURE__*/React.createElement("div", {
     className: "text-2xl font-bold",
     style: {
       color: "#e8e4d8"
@@ -4290,43 +4415,28 @@ function EcranPartie({
       color: "#52525b"
     }
   }, "connect\xE9 : ", session ? session.pseudo : "—", " \xB7 le cr\xE9ateur d'une aventure en devient le MJ")), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-5",
+    className: "flex gap-5",
     style: {
-      background: "#14161b",
-      border: "1px solid #27272a"
+      borderBottom: "1px solid #27272a"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-3",
-    style: {
-      color: "#a8adb8"
-    }
-  }, "OUVRIR UNE AVENTURE"), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2"
-  }, /*#__PURE__*/React.createElement("input", {
-    value: nom,
-    onChange: e => setNom(e.target.value),
-    maxLength: 60,
-    placeholder: "Nom de l'aventure (ex : L'\xC9veil sans M\xE9moire)",
-    className: "flex-1 px-3 py-2 rounded-lg text-sm",
-    style: {
-      background: "#0c0d10",
-      border: "1px solid #3f3f46",
-      color: "#e8e4d8",
-      outline: "none"
-    }
-  }), /*#__PURE__*/React.createElement("button", {
+  }, onglets.map(o => /*#__PURE__*/React.createElement("button", {
+    key: o[0],
     onClick: () => {
-      setEnCreer(true);
-      onCreer(nom).finally(() => setEnCreer(false));
+      setOnglet(o[0]);
+      setDetail(null);
     },
-    disabled: enCreer || !nom.trim(),
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    className: "pb-2 text-xs font-bold tracking-widest",
     style: {
-      background: nom.trim() ? "#a8adb8" : "#a8adb822",
-      color: nom.trim() ? "#0c0d10" : "#71717a",
-      cursor: nom.trim() ? "pointer" : "default"
+      color: onglet === o[0] ? "#f0b24a" : "#71717a",
+      borderBottom: "2px solid " + (onglet === o[0] ? "#f0b24a" : "transparent"),
+      marginBottom: "-1px",
+      background: "none",
+      borderTop: "none",
+      borderLeft: "none",
+      borderRight: "none",
+      cursor: "pointer"
     }
-  }, "CR\xC9ER"))), /*#__PURE__*/React.createElement("div", {
+  }, o[1]))), onglet === "lobby" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -4381,7 +4491,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "Aucune aventure ouverte \u2014 ouvrez la premi\xE8re.") : /*#__PURE__*/React.createElement("div", {
+  }, "Aucune aventure ouverte pour l'instant.") : /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col"
   }, partiesOuvertes.map(p => {
     const laMienne = session && p.mj_compte_id === session.compteId;
@@ -4469,7 +4579,228 @@ function EcranPartie({
       background: "#f0b24a",
       cursor: "pointer"
     }
-  }, "\u25B6 REPRENDRE")))))));
+  }, "\u25B6 REPRENDRE")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "MES AVENTURES (", mesAv.length, ")"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setNom("");
+      setEnCreation(true);
+    },
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: "#f0b24a",
+      cursor: "pointer"
+    }
+  }, "+ CR\xC9ER")), mesAv.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-2",
+    style: {
+      color: "#52525b"
+    }
+  }, "Aucune aventure \u2014 cr\xE9ez la premi\xE8re avec \xAB + CR\xC9ER \xBB.") : /*#__PURE__*/React.createElement("table", {
+    className: "w-full text-sm"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "text-left px-1 py-2"
+  }, "AVENTURE"), /*#__PURE__*/React.createElement("th", {
+    className: "text-left px-1 py-2"
+  }, "STATUT"), /*#__PURE__*/React.createElement("th", {
+    className: "text-right px-1 py-2"
+  }, "JOUEURS"), /*#__PURE__*/React.createElement("th", {
+    className: "text-right px-1 py-2 w-10"
+  }))), /*#__PURE__*/React.createElement("tbody", null, mesAv.map(p => /*#__PURE__*/React.createElement("tr", {
+    key: p.id,
+    style: {
+      borderTop: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold truncate",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, "code ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "ui-monospace,monospace",
+      color: "#a8adb8"
+    }
+  }, p.code), " \xB7 ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "px-1.5 py-0.5 rounded text-xs font-bold",
+    style: {
+      color: p.statut === "ouverte" ? "#2ee6c9" : p.statut === "en_cours" ? "#f0b24a" : "#71717a",
+      background: p.statut === "ouverte" ? "#2ee6c914" : p.statut === "en_cours" ? "#f0b24a14" : "#a8adb814"
+    }
+  }, p.statut === "ouverte" ? "OUVERTE" : p.statut === "en_cours" ? "EN COURS" : "CLOSE")), /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5 text-right text-xs",
+    style: {
+      color: "#a8adb8"
+    }
+  }, nbJoueurs(p)), /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5 text-right"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setDetail(detail && detail.id === p.id ? null : p),
+    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "\u2699")))))), detail && /*#__PURE__*/React.createElement("div", {
+    className: "mt-4 rounded-lg p-4",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-1",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, detail.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#52525b"
+    }
+  }, "MJ ", detail.mj_pseudo || "vous", " \xB7 code ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "ui-monospace,monospace",
+      color: "#a8adb8"
+    }
+  }, detail.code), " \xB7 ", detail.statut === "ouverte" ? "salle d'attente" : detail.statut === "en_cours" ? "en cours" : "close"), detail.statut === "close" ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs italic",
+    style: {
+      color: "#71717a"
+    }
+  }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") : /*#__PURE__*/React.createElement("button", {
+    onClick: () => onReprendre(detail),
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: detail.statut === "en_cours" ? "#f0b24a" : "#a8adb8",
+      cursor: "pointer"
+    }
+  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "OUVRIR LA SALLE"))), onglet === "personnages" && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "MES PERSONNAGES"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Le registre des personnages s'ouvre bient\xF4t \u2014 vous y cr\xE9erez et y garderez vos unit\xE9s, pr\xEAtes \xE0 rejoindre n'importe quelle aventure.")), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "LES R\xC8GLES \u2014 ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm mb-4",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Le manuel du pack : cr\xE9ation de personnage, combat, codes et tables."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEnLivre(true),
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#a8adb8",
+      cursor: "pointer"
+    }
+  }, "\uD83D\uDCD6 OUVRIR LE MANUEL")), enCreation && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "#000000b3"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl p-6 w-full max-w-md",
+    style: {
+      background: "#14161b",
+      border: "1px solid #f0b24a44"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "NOUVELLE AVENTURE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm mb-4",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Donnez un nom \xE0 l'aventure \u2014 vous en serez le Ma\xEEtre du Jeu."), /*#__PURE__*/React.createElement("input", {
+    value: nom,
+    onChange: e => setNom(e.target.value),
+    maxLength: 60,
+    placeholder: "Nom de l'aventure (ex : L'\xC9veil sans M\xE9moire)",
+    className: "w-full px-3 py-2 rounded-lg text-sm mb-4",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 justify-end"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEnCreation(false),
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "ANNULER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnCreer(true);
+      onCreer(nom).finally(() => {
+        setEnCreer(false);
+        setEnCreation(false);
+      });
+    },
+    disabled: enCreer || !nom.trim(),
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      opacity: nom.trim() ? 1 : 0.4,
+      cursor: nom.trim() ? "pointer" : "default"
+    }
+  }, "CR\xC9ER"))))));
 }
 
 /* ══════════ Le bandeau de la Console de partie (dans le pack) ══════════
@@ -6959,6 +7290,9 @@ function App() {
   const [totalEtapes, setTotalEtapes] = useState(7);
   const [rolesPacks, setRolesPacks] = useState({}); // packId → rôle du DERNIER lancement ("mj" | "joueur")
   const [rolePour, setRolePour] = useState(null); // pack en attente du choix de rôle, au lancement
+  const [modePour, setModePour] = useState(null); // V46 : pack multijoueur en attente du choix MODE MJ/JOUEUR
+  const [modePartie, setModePartie] = useState(null); // V46 : le mode choisi pour l'écran de partie courant
+  const [mesAventuresListe, setMesAventuresListe] = useState([]); // V46 : registre MJ — toutes mes aventures, tout statut
 
   /* Les comptes — réels : Supabase Auth (le serveur grave l'UUID et le tag).
      Tous les comptes sont joueurs ; le rôle (MJ ou joueur) se choisit pack
@@ -6992,6 +7326,9 @@ function App() {
     setRolesPacks({});
     setEnInstallation(null);
     setRolePour(null);
+    setModePour(null);
+    setModePartie(null);
+    setMesAventuresListe([]);
     setPackActif(null);
     setPartie(null);
     setPartieJoueurs([]);
@@ -7097,6 +7434,7 @@ function App() {
     if (!CLOUD || !session || !pk) return;
     CLOUD.listerParties(pk.id).then(l => setPartiesOuvertes(l || [])).catch(() => {});
     CLOUD.mesParties(pk.id, session.compteId).then(l => setMesPartiesCours(l || [])).catch(() => {});
+    CLOUD.mesAventures(pk.id, session.compteId).then(l => setMesAventuresListe(l || [])).catch(() => {}); /* V46 registre MJ */
   };
 
   /* V43 : LES FICHES DE LA TABLE — le personnage du joueur vit dans la
@@ -7449,14 +7787,24 @@ function App() {
         showToast("Connectez-vous pour ouvrir ou rejoindre une aventure.");
         return;
       }
-      setPartie(null);
-      setPartieJoueurs([]);
-      setFichesPartie([]);
-      setPackPartie(p);
-      setVue("partie");
+      setModePour(p); /* V46 : le mode (MJ/joueur) se choisit à chaque lancement */
       return;
     }
     setRolePour(p);
+  };
+
+  /* V46 : le mode entre dans l'écran de partie — MJ gère ses aventures,
+     joueur garde ses personnages et les règles. Le rôle réel en table
+     reste dérivé : le créateur d'une aventure en est le MJ. */
+  const choisirModePartie = mode => {
+    const p = modePour;
+    setModePour(null);
+    setPartie(null);
+    setPartieJoueurs([]);
+    setFichesPartie([]);
+    setModePartie(mode);
+    setPackPartie(p);
+    setVue("partie");
   };
   const choisirRole = role => {
     const p = rolePour;
@@ -7577,10 +7925,12 @@ function App() {
   }, "\u27C1 \u2026")))), vue === "partie" && packPartie && session && /*#__PURE__*/React.createElement(EcranPartie, {
     pack: packPartie,
     session: session,
+    mode: modePartie,
     partie: partie,
     partieJoueurs: partieJoueurs,
     partiesOuvertes: partiesOuvertes,
     mesPartiesCours: mesPartiesCours,
+    mesAventures: mesAventuresListe,
     onCreer: creerAventure,
     onRejoindre: rejoindreAventure,
     onRejoindreCode: rejoindreAventureCode,
@@ -7591,6 +7941,8 @@ function App() {
       setPartie(null);
       setPartieJoueurs([]);
       setFichesPartie([]);
+      setModePartie(null);
+      setMesAventuresListe([]);
       setPackPartie(null);
       setVue("hub");
     }
@@ -7630,6 +7982,10 @@ function App() {
     pack: rolePour,
     onChoisi: choisirRole,
     onAnnuler: () => setRolePour(null)
+  }), modePour && /*#__PURE__*/React.createElement(ChoixModePartie, {
+    pack: modePour,
+    onChoisi: choisirModePartie,
+    onAnnuler: () => setModePour(null)
   }), toast && /*#__PURE__*/React.createElement("div", {
     className: "fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-xl text-sm font-bold text-black shadow-2xl z-50",
     style: {

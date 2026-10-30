@@ -12,3 +12,7 @@
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ── V43 : classe utilisée par le code mais absente du compilé Tailwind ── */
 .max-w-3xl{max-width:48rem}
+
+/* ── V46 : registre des aventures (écran MJ) — classes portées par le compile 0.21 ── */
+.justify-end{justify-content:flex-end}
+.w-10{width:2.5rem}
