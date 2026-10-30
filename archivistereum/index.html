@@ -346,7 +346,7 @@ const {
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.30";
+const BUILD = "0.31";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -674,6 +674,35 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
             cle: "mode_validation",
             valeur: valeur
           }
+        });
+      },
+      /* La Console Globale : l'institution parle aux joueurs (canal unique
+         des événements de jeu, idée de Michael). Le message est GRAVÉ dans
+         la Tombe — le trigger console_verite le signe du pseudo et du rôle
+         admin de la ligne compte, personne ne se déguise. */
+      envoyerConsole: function (contenu) {
+        var m = lire();
+        if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
+        return api("/rest/v1/archiviste_console", {
+          method: "POST",
+          token: m.access_token,
+          body: {
+            compte_id: m.user_id,
+            contenu: contenu
+          }
+        });
+      },
+      /* Le fil de la Console : relu à l'entrée dans la salle — le journal
+         commence où l'on arrive (les 60 derniers messages). */
+      lireConsole: function () {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve([]);
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", {
+          token: m.access_token
+        }).then(function (l) {
+          return (l || []).slice().reverse();
+        }).catch(function () {
+          return [];
         });
       },
       /* Graver un compte joueur de la main de l'Archiviste : l'inscription part
@@ -1026,7 +1055,10 @@ function Salle({
   onMode,
   onCreer,
   onSupprimer,
-  presents
+  presents,
+  consoleFil,
+  onConsoleEnvoyer,
+  consoleEnvoi
 }) {
   const {
     comptes,
@@ -1040,6 +1072,7 @@ function Salle({
   const [supprEnCours, setSupprEnCours] = useState(false);
   const [supprErreur, setSupprErreur] = useState(null);
   const [creation, setCreation] = useState(false); // le cadre de gravure, si ouvert
+  const [consoleTexte, setConsoleTexte] = useState(""); // la parole de l'institution
   const [nPseudo, setNPseudo] = useState("");
   const [nEmail, setNEmail] = useState("");
   const [nMdp, setNMdp] = useState("");
@@ -1177,7 +1210,7 @@ function Salle({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -1191,7 +1224,11 @@ function Salle({
     style: {
       opacity: 0.7
     }
-  }, " (", visibles.length, ")") : null))), onglet === "stat" && /*#__PURE__*/React.createElement("div", {
+  }, " (", visibles.length, ")") : null, id === "console" && consoleFil.length ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      opacity: 0.7
+    }
+  }, " (", consoleFil.length, ")") : null))), onglet === "stat" && /*#__PURE__*/React.createElement("div", {
     className: "mb-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 md:grid-cols-5 gap-3"
@@ -1455,7 +1492,98 @@ function Salle({
       color: "#71717a",
       border: "1px solid #27272a"
     }
-  }, "\u2699 Le r\xE9glage serveur doit suivre ce commutateur dans Supabase (Authentication \u2192 Sign In / Up) : \xAB Confirm email \xBB D\xC9SACTIV\xC9 pour le sceau de l'admin, ACTIV\xC9 pour le lien par email.", modeValidation === "email" ? " Mode actuel : chaque inscription reçoit un lien de confirmation." : " Mode actuel : les comptes naissent « en attente » — le registre attend votre sceau.")), detail && /*#__PURE__*/React.createElement("div", {
+  }, "\u2699 Le r\xE9glage serveur doit suivre ce commutateur dans Supabase (Authentication \u2192 Sign In / Up) : \xAB Confirm email \xBB D\xC9SACTIV\xC9 pour le sceau de l'admin, ACTIV\xC9 pour le lien par email.", modeValidation === "email" ? " Mode actuel : chaque inscription reçoit un lien de confirmation." : " Mode actuel : les comptes naissent « en attente » — le registre attend votre sceau.")), onglet === "console" && /*#__PURE__*/React.createElement("div", {
+    className: "mb-8"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold tracking-widest mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "CONSOLE GLOBALE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-4",
+    style: {
+      color: "#71717a"
+    }
+  }, "Le canal unique du MJ et des joueurs \u2014 chaque message est grav\xE9 dans la Tombe et pousse en temps r\xE9el chez tous. Messages libres en V1."), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl overflow-hidden",
+    style: {
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxHeight: "320px",
+      overflowY: "auto"
+    }
+  }, consoleFil.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-6 text-center",
+    style: {
+      color: "#52525b"
+    }
+  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), consoleFil.map(e => /*#__PURE__*/React.createElement("div", {
+    key: e.id,
+    className: "flex items-baseline gap-3 px-4 py-2",
+    style: {
+      background: "#14161b",
+      borderBottom: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    }
+  }, new Date(e.cree_le).toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold shrink-0",
+    style: {
+      color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
+    }
+  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm flex-1",
+    style: {
+      color: "#a1a1aa",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu)))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center p-3",
+    style: {
+      background: "#14161b",
+      borderTop: "1px solid #f0b24a22"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: consoleTexte,
+    onChange: e => setConsoleTexte(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter" && consoleTexte.trim()) {
+        onConsoleEnvoyer(consoleTexte);
+        setConsoleTexte("");
+      }
+    },
+    className: "flex-1 px-3 py-2 rounded-lg text-sm",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    },
+    placeholder: "La parole de l'institution (280 caract\xE8res max)",
+    maxLength: 280
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (consoleTexte.trim()) {
+        onConsoleEnvoyer(consoleTexte);
+        setConsoleTexte("");
+      }
+    },
+    disabled: consoleEnvoi || !consoleTexte.trim(),
+    className: "px-4 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: consoleTexte.trim() ? "#f0b24a" : "#f0b24a22",
+      color: consoleTexte.trim() ? "#0c0d10" : "#71717a",
+      cursor: consoleTexte.trim() ? "pointer" : "default"
+    }
+  }, consoleEnvoi ? "…" : "GRAVER")))), detail && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-center justify-center p-4",
     style: {
       background: "#0c0d10cc"
@@ -1757,6 +1885,25 @@ function App() {
   const [session, setSession] = useState(null);
   const [donnees, setDonnees] = useState(null);
 
+  /* ── La Console Globale : le fil des événements de jeu (idée de Michael) ──
+     L'institution y parle aux joueurs — messages libres en V1, les dés et le
+     tour se typeront par-dessus. Gravé en base, poussé en temps réel. */
+  const [consoleFil, setConsoleFil] = useState([]);
+  const [consoleEnvoi, setConsoleEnvoi] = useState(false);
+  useEffect(() => {
+    if (phase !== "salle" || !CLOUD) {
+      setConsoleFil([]);
+      return;
+    }
+    CLOUD.lireConsole().then(f => setConsoleFil(f || [])).catch(() => {});
+  }, [phase]);
+  const envoyerConsole = texte => {
+    const t = (texte || "").trim();
+    if (!t || !CLOUD) return;
+    setConsoleEnvoi(true);
+    CLOUD.envoyerConsole(t).catch(() => {}).then(() => setConsoleEnvoi(false));
+  };
+
   /* Restauration de session au chargement (mode en ligne) */
   useEffect(() => {
     if (!CLOUD) return;
@@ -1828,8 +1975,21 @@ function App() {
         table: "archiviste_memoire"
       }, {
         table: "parametres"
-      }],
-      surChangement: () => relance(),
+      }, {
+        table: "archiviste_console"
+      } /* le fil de la Console — poussé, pas rechargé */],
+      surChangement: donnee => {
+        /* Les messages de la Console arrivent DROIT au fil — la salle ne
+           se resynchronise pas pour un message de jeu. */
+        if (donnee && donnee.table === "archiviste_console" && donnee.eventType === "INSERT" && donnee.new) {
+          setConsoleFil(f => {
+            if (f.some(x => x.id === donnee.new.id)) return f; /* anti-écho */
+            return [...f, donnee.new].slice(-80);
+          });
+          return;
+        }
+        relance();
+      },
       surPresence: ronde => {
         /* état initial ({clé: …}) ou diff ({joins, leaves}) : on maintient la
            liste des compte_id en ligne (seuls les UUID comptent — l'institution
@@ -1963,7 +2123,10 @@ function App() {
       onMode: choisirMode,
       onCreer: creerJoueur,
       onSupprimer: supprimerJoueur,
-      presents: presents
+      presents: presents,
+      consoleFil: consoleFil,
+      onConsoleEnvoyer: envoyerConsole,
+      consoleEnvoi: consoleEnvoi
     });
   }
   if (phase === "refus") {
@@ -1986,7 +2149,8 @@ function App() {
 }
 var _attente = document.getElementById("attente");
 if (_attente) _attente.remove();
-ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));</script>
+ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
+</script>
 
   <script>
     /* PWA : service worker propre à la salle (portée /archivistereum/) */
