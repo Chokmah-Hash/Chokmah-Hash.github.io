@@ -359,34 +359,157 @@ window.LARCHIVISTE_CLOUD = (function () {
        journal — et pousse en temps réel chez tous. Le serveur signe
        lui-même le pseudo et le rôle (trigger console_verite) : personne
        ne peut se déguiser. */
-    envoyerConsole: function (compteId, contenu, type, donnees) {
+    envoyerConsole: function (compteId, contenu, type, donnees, partieId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_console", {
         method: "POST", token: m.access_token,
-        body: { compte_id: compteId, contenu: contenu, type: type || "message", donnees: donnees || {} }
+        body: {
+          compte_id: compteId, contenu: contenu, type: type || "message",
+          donnees: donnees || {}, partie_id: partieId || null
+        }
       });
     },
 
     /* Le fil de la Console, relu à la connexion : le journal commence
-       où l'on arrive — les 60 derniers messages font le bord. */
-    lireConsole: function () {
+       où l'on arrive — les 60 derniers messages font le bord. Le canal
+       est CONTEXTUEL : null = la Console Globale, un id de partie = le
+       canal privé de cette partie (membres et MJ seuls le lisent). */
+    lireConsole: function (partieId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", { token: m.access_token })
+      var filtre = partieId ? "partie_id=eq." + partieId : "partie_id=is.null";
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&"
+        + filtre + "&order=id.desc&limit=60", { token: m.access_token })
         .then(function (l) { return (l || []).slice().reverse(); })
         .catch(function () { return []; });
     },
 
     /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
        connaît le résultat avant de le graver, le client ne choisit plus
-       son jet ; il l'apprend par la poussée, comme les autres. */
-    lancerDes: function (nb, faces, note) {
+       son jet ; il l'apprend par la poussée, comme les autres. V4 : le
+       jet se grave dans le canal de la partie quand il y en a une. */
+    lancerDes: function (nb, faces, note, partieId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/rpc/lancer_des", {
         method: "POST", token: m.access_token,
-        body: { nb: nb, faces: faces, note: note || null }
+        /* le paramètre serveur s'appelle p_partie : jamais ambigu avec la colonne */
+        body: { nb: nb, faces: faces, note: note || null, p_partie: partieId || null }
+      });
+    },
+
+    /* ══ LA PARTIE (moteur générique) : une aventure partagée — un MJ
+       (le créateur), un code d'invitation, des joueurs qui se joignent.
+       Les mêmes fonctions serviront TOUT pack multijoueur : elles ne
+       connaissent que l'id du jeu, jamais son nom. ══ */
+
+    /* Ouvrir une aventure : le créateur en devient le MJ (policy : on ne
+       crée que SOI MJ d'une partie OUVERTE). */
+    creerPartie: function (jeu, nom, compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/archiviste_parties", {
+        method: "POST", token: m.access_token, prefer: "return=representation",
+        body: { jeu: jeu, nom: nom || "Aventure sans nom", mj_compte_id: compteId }
+      }).then(function (l) { return (l && l[0]) || null; });
+    },
+
+    /* Le lobby : les aventures OUVERTES du jeu — via la VUE lobby (le
+       pseudo du MJ et le nombre de joueurs sont servis par la Tombe,
+       les comptes ne se lisent pas entre eux). */
+    listerParties: function (jeu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_parties_lobby?select=*"
+        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&order=cree_le.asc", { token: m.access_token })
+        .catch(function () { return []; });
+    },
+
+    /* Mes aventures EN COURS (MJ ou joueur) — pour REPRENDRE après un
+       reload : la partie survit à l'appareil, elle vit dans la Tombe. */
+    mesParties: function (jeu, compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      var qP = api("/rest/v1/archiviste_parties_lobby?select=*"
+        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&order=lance_le.asc", { token: m.access_token })
+        .catch(function () { return []; });
+      var qJ = api("/rest/v1/archiviste_partie_joueurs?select=partie_id&compte_id=eq." + compteId,
+        { token: m.access_token }).catch(function () { return []; });
+      return Promise.all([qP, qJ]).then(function (r) {
+        var ids = {};
+        (r[1] || []).forEach(function (pj) { ids[pj.partie_id] = true; });
+        return (r[0] || []).filter(function (p) {
+          return p.mj_compte_id === compteId || ids[p.id];
+        });
+      });
+    },
+
+    /* Lire une partie et ses joueurs (la vue lobby porte mj_pseudo —
+       les lignes de table seules ne le portent pas) */
+    lirePartie: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/archiviste_parties_lobby?select=*&id=eq." + id, { token: m.access_token })
+        .then(function (l) { return (l && l[0]) || null; })
+        .catch(function () { return null; });
+    },
+    lirePartieJoueurs: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_partie_table?select=*"
+        + "&partie_id=eq." + id + "&order=rejoint_le.asc", { token: m.access_token })
+        .catch(function () { return []; });
+    },
+
+    /* Rejoindre par bouton (id connu) ou par code d'invitation */
+    rejoindrePartie: function (partieId, compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/archiviste_partie_joueurs", {
+        method: "POST", token: m.access_token, prefer: "return=representation",
+        body: { partie_id: partieId, compte_id: compteId }
+      }).then(function (l) { return (l && l[0]) || null; })
+        .catch(function (e) { throw e; });
+    },
+    rejoindreParCode: function (code, compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/archiviste_parties?select=*&code=eq." + encodeURIComponent((code || "").trim().toUpperCase())
+        + "&statut=eq.ouverte", { token: m.access_token })
+        .then(function (l) {
+          var p = l && l[0];
+          if (!p) throw new Error("Code inconnu — aucune aventure ouverte ne le porte.");
+          return api("/rest/v1/archiviste_partie_joueurs", {
+            method: "POST", token: m.access_token,
+            body: { partie_id: p.id, compte_id: compteId }
+          }).then(function () { return p; });
+        });
+    },
+
+    /* Sortir d'une aventure (soi-même) ; annuler = le MJ ferme */
+    quitterPartie: function (partieId, compteId) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_partie_joueurs?partie_id=eq." + partieId + "&compte_id=eq." + compteId,
+        { method: "DELETE", token: m.access_token });
+    },
+
+    /* Le MJ pilote : lancer l'aventure (ouverte → en_cours) ou la fermer */
+    lancerPartie: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_parties?id=eq." + id, {
+        method: "PATCH", token: m.access_token,
+        body: { statut: "en_cours", lance_le: new Date().toISOString() }
+      });
+    },
+    fermerPartie: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/archiviste_parties?id=eq." + id, {
+        method: "PATCH", token: m.access_token,
+        body: { statut: "close", fermee_le: new Date().toISOString() }
       });
     },
 
@@ -415,494 +538,6 @@ const {
    L'Archiviste ne garde jamais les mots de passe — ils partent
    directement chez Supabase Auth. */
 var CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
-if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
-  /* ════════════════════════════════════════════════════════════════════
-     LARCHIVISTE_CLOUD — le client nuage de L'Archiviste (Alpha Zéro)
-     Zéro dépendance : fetch + l'API REST de Supabase.
-     Principe cardinal : l'Archiviste ne garde JAMAIS les mots de passe —
-     chaque mot de passe part directement chez Supabase Auth, aucun hash
-     ne vit dans le code de l'app.
-     Il s'assigne lui-même à window.LARCHIVISTE_CLOUD : la page en ligne
-     et le canvas parlent à la MÊME Tombe — zéro simulation.
-     ════════════════════════════════════════════════════════════════════ */
-  window.LARCHIVISTE_CLOUD = function () {
-    "use strict";
-
-    var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
-    var CLE = "larchiviste_session_v1";
-    var compteCourant = null; // compte_id de la session en cours
-
-    /* ── Le garde-mième : le navigateur garde le token, jamais un mot de passe ── */
-    function lire() {
-      try {
-        return JSON.parse(localStorage.getItem(CLE) || "null");
-      } catch (e) {
-        return null;
-      }
-    }
-    function ecrire(m) {
-      try {
-        if (m) localStorage.setItem(CLE, JSON.stringify(m));else localStorage.removeItem(CLE);
-      } catch (e) {/* mode privé : on vivra sans restauration */}
-    }
-
-    /* ── L'API, avec les messages d'erreur en français de la Tombe ── */
-    function api(chemin, opts) {
-      opts = opts || {};
-      var headers = {
-        apikey: CLE_PUBLIQUE,
-        "Content-Type": "application/json"
-      };
-      if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
-      if (opts.prefer) headers["Prefer"] = opts.prefer;
-      return fetch(URL + chemin, {
-        cache: "no-store",
-        method: opts.method || "GET",
-        headers: headers,
-        body: opts.body ? JSON.stringify(opts.body) : undefined
-      }).then(function (res) {
-        return res.json().catch(function () {
-          return null;
-        }).then(function (data) {
-          if (!res.ok) {
-            var code = data && (data.error_code || data.code) || "";
-            var msgBrut = data && (data.msg || data.message) || "";
-            var msgs = {
-              invalid_credentials: "Email ou mot de passe incorrect.",
-              user_already_exists: "Un compte existe déjà sur cet email — connectez-vous.",
-              signups_disabled: "Les inscriptions sont fermées sur le serveur — l'administrateur doit les rouvrir.",
-              weak_password: "Mot de passe trop faible — 4 caractères minimum.",
-              over_email_rate_limit: "Trop d'emails envoyés par le serveur — patientez quelques minutes.",
-              email_not_confirmed: "Cet email n'est pas encore confirmé — ouvrez le message reçu, puis revenez.",
-              email_address_invalid: "Adresse email invalide — vérifiez son orthographe."
-            };
-            if (msgBrut.indexOf("inscriptions desactivees") >= 0) {
-              code = "signups_disabled";
-            }
-            var err = new Error(msgs[code] || msgBrut || "Serveur injoignable — vérifiez votre connexion.");
-            err.code = code;
-            err.statut = res.status;
-            throw err;
-          }
-          return data;
-        });
-      });
-    }
-
-    /* ── Profil de compte tel que le launcher l'attend ── */
-    function profilDepuis(user, compte) {
-      var meta = user && user.user_metadata || {};
-      return {
-        compteId: user.id,
-        pseudo: compte && compte.pseudo || meta.pseudo || "Joueur",
-        tag: compte && compte.tag || "JR-????",
-        email: user.email,
-        avatarId: compte && compte.avatar_ref || meta.avatar_ref || "crane",
-        statut: compte && compte.statut || "actif",
-        memoire: {}
-      };
-    }
-
-    /* ── Charge la ligne compte (auto-répare si absente) + le sac du compte ── */
-    function chargerTout(token, user, opts) {
-      var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", {
-        token: token
-      })).then(function (lignes) {
-        if (lignes && lignes.length) return lignes[0];
-        /* Self-heal : la ligne compte manque (signup interrompu ?) → on la recrée */
-        var meta = user.user_metadata || {};
-        return api("/rest/v1/archiviste_comptes", {
-          method: "POST",
-          token: token,
-          prefer: "return=representation",
-          body: {
-            compte_id: user.id,
-            pseudo: meta.pseudo || "Joueur",
-            email: user.email,
-            avatar_ref: meta.avatar_ref || "crane"
-          }
-        }).then(function (cree) {
-          return cree && cree[0];
-        });
-      });
-      return comptes.then(function (compte) {
-        compteCourant = user.id;
-        /* Horodatage de dernière connexion (best effort) — SAUF en simple
-           vérification (horodater: false) : le temps réel ne doit jamais
-           déclencher la Tombe, sinon la Tombe s'annonce à elle-même. */
-        if (!opts || opts.horodater !== false) {
-          api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
-            method: "PATCH",
-            token: token,
-            body: {
-              derniere_connexion: new Date().toISOString()
-            }
-          }).catch(function () {});
-        }
-        var profil = profilDepuis(user, compte);
-        return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, {
-          token: token
-        }).then(function (mem) {
-          profil.memoire = mem && mem[0] && mem[0].contenu || {};
-          return profil;
-        });
-      });
-    }
-
-    /* ══ TEMPS RÉEL — la poussée de la Tombe (Supabase Realtime) ══
-       La base PRÉVIENT : plus de pulsation, la vérité arrive en poussée.
-       WebSocket zéro dépendance, protocole Phoenix : jointure d'un canal
-       postgres_changes (filtre serveur : chaque joueur n'écoute QUE sa
-       ligne) + battement de cœur toutes les 25 s. La RLS s'applique AUSSI
-       au canal. En coupure, on rebranche seul ; l'app relit alors la
-       Tombe pour rattraper ce qui a poussé pendant l'absence. */
-    function tempsReel(opts) {
-      opts = opts || {};
-      var tables = opts.tables || [];
-      var surChangement = opts.surChangement || function () {};
-      var surEtat = opts.surEtat || function () {};
-      var presenceCle = opts.presenceKey || null; /* s'annoncer sur le canal des présents */
-      var surPresence = opts.surPresence || null; /* écouter qui entre et qui sort */
-      if (typeof WebSocket === "undefined") {
-        surEtat("coupure");
-        return {
-          fermer: function () {}
-        };
-      }
-      var m0 = lire();
-      if (!m0 || !m0.access_token) {
-        surEtat("coupure");
-        return {
-          fermer: function () {}
-        };
-      }
-      var ws = null,
-        coeur = null,
-        ferme = false,
-        essais = 0;
-      function brancher() {
-        if (ferme) return;
-        var jeton = (lire() || m0 || {}).access_token || "";
-        try {
-          ws = new WebSocket("wss://dnbnkdakmobufqcrqzpq.supabase.co/realtime/v1/websocket?apikey=" + CLE_PUBLIQUE + "&vsn=1.0.0");
-        } catch (e) {
-          retomber();
-          return;
-        }
-        ws.onopen = function () {
-          essais = 0;
-          if (coeur) clearInterval(coeur);
-          coeur = setInterval(function () {
-            if (ws && ws.readyState === 1) {
-              ws.send(JSON.stringify({
-                topic: "phoenix",
-                event: "heartbeat",
-                payload: {},
-                ref: "battement"
-              }));
-            }
-          }, 25000);
-          tables.forEach(function (t) {
-            var suivi = {
-              event: "*",
-              schema: "public",
-              table: t.table
-            };
-            if (t.filtre) suivi.filter = t.filtre;
-            ws.send(JSON.stringify({
-              topic: "realtime:public:" + t.table,
-              event: "phx_join",
-              payload: {
-                config: {
-                  broadcast: {
-                    self: false
-                  },
-                  presence: {
-                    key: ""
-                  },
-                  postgres_changes: [suivi]
-                },
-                access_token: jeton
-              },
-              ref: t.table
-            }));
-          });
-          /* La PRÉSENCE : tant que cette socket vit, le joueur est « en ligne ».
-             Fermer la fenêtre ferme la socket — le serveur le remarque seul,
-             aucune écriture en base, aucun code à la fermeture (impossible
-             de rester vert par accident). */
-          if (presenceCle) {
-            ws.send(JSON.stringify({
-              topic: "realtime:tombe",
-              event: "phx_join",
-              payload: {
-                config: {
-                  broadcast: {
-                    self: false
-                  },
-                  presence: {
-                    key: presenceCle
-                  },
-                  postgres_changes: []
-                },
-                access_token: jeton
-              },
-              ref: "presence"
-            }));
-            /* Le track : joindre ne suffit pas, il faut S'ANNONCER — la ronde
-               ne diffuse que les états trackés (protocole Supabase v1 :
-               event "presence", payload {type:"presence", event:"track"}).
-               Le serveur traite les pushes dans l'ordre : join puis track. */
-            ws.send(JSON.stringify({
-              topic: "realtime:tombe",
-              event: "presence",
-              payload: {
-                type: "presence",
-                event: "track",
-                payload: {
-                  compte_id: presenceCle
-                }
-              },
-              ref: "piste"
-            }));
-          }
-          surEtat("branche");
-        };
-        ws.onmessage = function (ev) {
-          var msg;
-          try {
-            msg = JSON.parse(ev.data);
-          } catch (e) {
-            return;
-          }
-          if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
-            surChangement(msg.payload.data);
-          }
-          /* La ronde des présents : état initial puis entrées/sorties */
-          if (surPresence && (msg.event === "presence_state" || msg.event === "presence_diff")) {
-            surPresence(msg.payload || {});
-          }
-        };
-        ws.onclose = retomber;
-        ws.onerror = function () {
-          try {
-            ws.close();
-          } catch (e) {}
-        };
-      }
-      function retomber() {
-        if (coeur) {
-          clearInterval(coeur);
-          coeur = null;
-        }
-        if (ferme) return;
-        surEtat("coupure");
-        setTimeout(brancher, Math.min(5000 + essais * 5000, 30000));
-        essais++;
-      }
-      brancher();
-      return {
-        fermer: function () {
-          ferme = true;
-          if (coeur) clearInterval(coeur);
-          if (ws) {
-            try {
-              ws.close();
-            } catch (e) {}
-          }
-          ws = null;
-        }
-      };
-    }
-    return {
-      /* Connexion email + mot de passe → profil + bibliothèque du compte */
-      connexion: function (email, mdp) {
-        return api("/auth/v1/token?grant_type=password", {
-          method: "POST",
-          body: {
-            email: email,
-            password: mdp
-          }
-        }).then(function (d) {
-          ecrire({
-            access_token: d.access_token,
-            refresh_token: d.refresh_token
-          });
-          return chargerTout(d.access_token, d.user);
-        });
-      },
-      /* Inscription : pseudo part dans user_metadata, le mot de passe chez Auth */
-      inscription: function (pseudo, email, mdp, avatarId) {
-        return api("/auth/v1/signup", {
-          method: "POST",
-          body: {
-            email: email,
-            password: mdp,
-            data: {
-              pseudo: pseudo,
-              avatar_ref: avatarId
-            }
-          }
-        }).then(function (d) {
-          var session = d.session || (d.access_token ? d : null);
-          if (session && session.access_token) {
-            ecrire({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token
-            });
-            return chargerTout(session.access_token, d.user || session.user);
-          }
-          /* Compte créé mais email non confirmé → pas de session */
-          var err = new Error("Un email de confirmation vous attend — ouvrez-le, puis revenez vous connecter.");
-          err.confirmation = true;
-          throw err;
-        });
-      },
-      /* Restauration de session au démarrage (token gardé par le navigateur) */
-      sessionActuelle: function (opts) {
-        var m = lire();
-        if (!m || !m.access_token) return Promise.resolve(null);
-        return api("/auth/v1/user", {
-          token: m.access_token
-        }).then(function (user) {
-          return chargerTout(m.access_token, user, opts);
-        }).catch(function () {
-          /* Token expiré → on tente le refresh avant d'abandonner */
-          if (!m.refresh_token) {
-            ecrire(null);
-            return null;
-          }
-          return api("/auth/v1/token?grant_type=refresh_token", {
-            method: "POST",
-            body: {
-              refresh_token: m.refresh_token
-            }
-          }).then(function (d) {
-            ecrire({
-              access_token: d.access_token,
-              refresh_token: d.refresh_token
-            });
-            return chargerTout(d.access_token, d.user, opts);
-          }).catch(function () {
-            ecrire(null);
-            return null;
-          });
-        });
-      },
-      /* Déconnexion serveur + nettoyage du garde-mième */
-      deconnexion: function () {
-        var m = lire();
-        ecrire(null);
-        compteCourant = null;
-        if (m && m.access_token) {
-          return api("/auth/v1/logout", {
-            method: "POST",
-            token: m.access_token
-          }).catch(function () {});
-        }
-        return Promise.resolve();
-      },
-      /* Mot de passe perdu : le lien part chez Supabase Auth */
-      perdu: function (email) {
-        return api("/auth/v1/recover", {
-          method: "POST",
-          body: {
-            email: email
-          }
-        });
-      },
-      /* Le sac du compte (installations, favoris, rôles) part dans le nuage */
-      sauveMemoire: function (compteId, contenu) {
-        var m = lire();
-        if (!m || !m.access_token) return Promise.resolve();
-        return api("/rest/v1/archiviste_memoire", {
-          method: "POST",
-          token: m.access_token,
-          prefer: "resolution=merge-duplicates",
-          body: {
-            compte_id: compteId,
-            contenu: contenu
-          }
-        });
-      },
-      /* L'état de la base tel que la Tombe l'annonce : le pied de page du
-         launcher dit ce qu'il charge (parametre « version_launcher ») —
-         même vérité que l'Archivisterium, partout où il tourne. */
-      lireParametres: function () {
-        var m = lire();
-        if (!m || !m.access_token) return Promise.resolve(null);
-        return api("/rest/v1/parametres?select=cle,valeur", {
-          token: m.access_token
-        }).catch(function () {
-          return null;
-        });
-      },
-      /* Mise à jour du compte (avatar, pseudo à venir…) */
-      sauveCompte: function (patch) {
-        var m = lire();
-        if (!m || !m.access_token || !compteCourant) return Promise.resolve();
-        var body = {};
-        if (patch && patch.avatarId !== undefined) body.avatar_ref = patch.avatarId;
-        return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteCourant, {
-          method: "PATCH",
-          token: m.access_token,
-          body: body
-        });
-      },
-      /* La Console Globale : le canal des événements de jeu (MJ et joueurs
-         s'y parlent). Chaque message est GRAVÉ dans la Tombe — prémice du
-         journal — et pousse en temps réel chez tous. Le serveur signe
-         lui-même le pseudo et le rôle (trigger console_verite) : personne
-         ne peut se déguiser. */
-      envoyerConsole: function (compteId, contenu, type, donnees) {
-        var m = lire();
-        if (!m || !m.access_token) return Promise.resolve();
-        return api("/rest/v1/archiviste_console", {
-          method: "POST",
-          token: m.access_token,
-          body: {
-            compte_id: compteId,
-            contenu: contenu,
-            type: type || "message",
-            donnees: donnees || {}
-          }
-        });
-      },
-      /* Le fil de la Console, relu à la connexion : le journal commence
-         où l'on arrive — les 60 derniers messages font le bord. */
-      lireConsole: function () {
-        var m = lire();
-        if (!m || !m.access_token) return Promise.resolve([]);
-        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", {
-          token: m.access_token
-        }).then(function (l) {
-          return (l || []).slice().reverse();
-        }).catch(function () {
-          return [];
-        });
-      },
-      /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
-         connaît le résultat avant de le graver, le client ne choisit plus
-         son jet ; il l'apprend par la poussée, comme les autres. */
-      lancerDes: function (nb, faces, note) {
-        var m = lire();
-        if (!m || !m.access_token) return Promise.resolve();
-        return api("/rest/v1/rpc/lancer_des", {
-          method: "POST",
-          token: m.access_token,
-          body: {
-            nb: nb,
-            faces: faces,
-            note: note || null
-          }
-        });
-      },
-      /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
-         la synchro devient de la poussée, pas du polling. */
-      tempsReel: tempsReel
-    };
-  }();
-}
 const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
@@ -922,6 +557,8 @@ const PACKS = [{
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Les Protocoles Éternels",
+  multijoueur: true,
+  /* V4 : se lance par LA PARTIE — lobby, code, MJ et joueurs */
   depend_de: [{
     id: "noyau-40k",
     format_min: 1
@@ -4445,6 +4082,410 @@ function ConsoleGlobale({
   }, "commandes : /de 3d6 \xB7 /tour Pr\xE9nom")));
 }
 
+/* ══════════ LA PARTIE : l'écran d'aventure partagée ══════════
+   Générique — c'est le MOTEUR qui parle ici, pas le pack : le même
+   écran ouvrira, rejoindra et lancera TOUTE aventure multijoueur.
+   Trois moments : ouvrir/rejoindre (le lobby), la salle d'attente
+   (le code, les joueurs, le lancement), puis l'entrée dans le pack —
+   qui se fait SEULE, poussée par la Tombe quand le MJ lance. */
+function EcranPartie({
+  pack,
+  session,
+  partie,
+  partieJoueurs,
+  partiesOuvertes,
+  mesPartiesCours,
+  onCreer,
+  onRejoindre,
+  onRejoindreCode,
+  onReprendre,
+  onLancer,
+  onQuitter,
+  onRetour
+}) {
+  const [nom, setNom] = useState("");
+  const [code, setCode] = useState("");
+  const [enCreer, setEnCreer] = useState(false);
+  const [enRejoindre, setEnRejoindre] = useState(false);
+  const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
+  const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
+
+  /* La salle d'attente : on a rejoint (ou créé) — le code s'affiche
+     grand, la liste vit au temps réel, le MJ tranche. */
+  if (partie) {
+    const joueursAvecMj = [{
+      compte_id: partie.mj_compte_id,
+      mj: true,
+      pseudo: partie.mj_pseudo || "?"
+    }, ...(partieJoueurs || []).map(j => ({
+      compte_id: j.compte_id,
+      mj: false,
+      pseudo: j.pseudo || "?"
+    }))];
+    return /*#__PURE__*/React.createElement("div", {
+      className: "min-h-screen flex flex-col text-zinc-200",
+      style: {
+        background: "#0c0d10",
+        fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onRetour,
+      className: "self-start text-xs font-bold mb-6",
+      style: {
+        color: "#71717a",
+        cursor: "pointer"
+      }
+    }, "\u2190 retour au hub"), /*#__PURE__*/React.createElement("div", {
+      className: "rounded-xl p-6",
+      style: {
+        background: "#14161b",
+        border: "1px solid #27272a"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs tracking-widest mb-1",
+      style: {
+        color: "#71717a"
+      }
+    }, pack.nom, " \u2014 aventure multijoueur"), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-bold mb-1",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, partie.nom), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mb-5",
+      style: {
+        color: "#52525b"
+      }
+    }, "ouverte par ", estMj ? "vous" : "le MJ", " \xB7 ", partie.statut === "ouverte" ? "salle d'attente" : partie.statut === "en_cours" ? "en cours" : "close"), partie.statut === "ouverte" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      className: "rounded-lg p-4 mb-5 text-center",
+      style: {
+        background: "#0c0d10",
+        border: "1px dashed #3f3f46"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mb-1",
+      style: {
+        color: "#71717a"
+      }
+    }, "CODE D'INVITATION \u2014 \xE0 partager aux joueurs"), /*#__PURE__*/React.createElement("div", {
+      className: "text-3xl font-bold tracking-[0.3em]",
+      style: {
+        color: "#a8adb8",
+        fontFamily: "ui-monospace,monospace"
+      }
+    }, partie.code)), /*#__PURE__*/React.createElement("div", {
+      className: "mb-2 text-xs font-bold tracking-widest",
+      style: {
+        color: "#a8adb8"
+      }
+    }, "\xC0 LA TABLE (", joueursAvecMj.length, ")"), /*#__PURE__*/React.createElement("div", {
+      className: "mb-6 flex flex-col"
+    }, joueursAvecMj.map(j => /*#__PURE__*/React.createElement("div", {
+      key: j.compte_id,
+      className: "flex items-center gap-2 py-1.5",
+      style: {
+        borderBottom: "1px solid #ffffff08"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xs"
+    }, j.mj ? "👑" : "⟁"), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-bold",
+      style: {
+        color: j.mj ? "#f0b24a" : "#c8c8ce"
+      }
+    }, j.pseudo), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs",
+      style: {
+        color: "#52525b"
+      }
+    }, j.mj ? "MJ" : "joueur")))), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap gap-2"
+    }, estMj ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => onLancer(partie),
+      disabled: enCreer,
+      className: "px-5 py-2 rounded-lg font-bold text-sm text-black",
+      style: {
+        background: "#f0b24a",
+        cursor: "pointer"
+      }
+    }, "\u25B6 LANCER L'AVENTURE") : /*#__PURE__*/React.createElement("div", {
+      className: "text-xs italic",
+      style: {
+        color: "#71717a"
+      }
+    }, "En attente que le MJ lance l'aventure\u2026"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => onQuitter(partie),
+      className: "px-4 py-2 rounded-lg font-bold text-sm",
+      style: {
+        background: "#a8adb814",
+        color: estMj ? "#e0524d" : "#a8adb8",
+        border: "1px solid #27272a",
+        cursor: "pointer"
+      }
+    }, estMj ? "ANNULER L'AVENTURE" : "QUITTER"))), partie.statut === "en_cours" && /*#__PURE__*/React.createElement("div", {
+      className: "text-sm",
+      style: {
+        color: "#71717a"
+      }
+    }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : ""))));
+  }
+
+  /* Le lobby : ouvrir une aventure, la rejoindre par code, ou en
+     reprendre une en cours — trois portes vers la même table. */
+  return /*#__PURE__*/React.createElement("div", {
+    className: "min-h-screen flex flex-col text-zinc-200",
+    style: {
+      background: "#0c0d10",
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col gap-5"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onRetour,
+    className: "self-start text-xs font-bold",
+    style: {
+      color: "#71717a",
+      cursor: "pointer"
+    }
+  }, "\u2190 retour au hub"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs tracking-widest mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, pack.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-2xl font-bold",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "L'AVENTURE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, "connect\xE9 : ", session ? session.pseudo : "—", " \xB7 le cr\xE9ateur d'une aventure en devient le MJ")), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "OUVRIR UNE AVENTURE"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: nom,
+    onChange: e => setNom(e.target.value),
+    maxLength: 60,
+    placeholder: "Nom de l'aventure (ex : L'\xC9veil sans M\xE9moire)",
+    className: "flex-1 px-3 py-2 rounded-lg text-sm",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnCreer(true);
+      onCreer(nom).finally(() => setEnCreer(false));
+    },
+    disabled: enCreer || !nom.trim(),
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: nom.trim() ? "#a8adb8" : "#a8adb822",
+      color: nom.trim() ? "#0c0d10" : "#71717a",
+      cursor: nom.trim() ? "pointer" : "default"
+    }
+  }, "CR\xC9ER"))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "REJOINDRE PAR CODE"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: code,
+    onChange: e => setCode(e.target.value.toUpperCase()),
+    maxLength: 6,
+    placeholder: "CODE (6 caract\xE8res)",
+    className: "flex-1 px-3 py-2 rounded-lg text-sm tracking-[0.2em]",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none",
+      fontFamily: "ui-monospace,monospace"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnRejoindre(true);
+      onRejoindreCode(code).finally(() => setEnRejoindre(false));
+    },
+    disabled: enRejoindre || code.trim().length < 6,
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: code.trim().length >= 6 ? "#a8adb814" : "transparent",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: code.trim().length >= 6 ? "pointer" : "default"
+    }
+  }, "REJOINDRE"))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "AVENTURES OUVERTES (", partiesOuvertes.length, ")"), partiesOuvertes.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-2",
+    style: {
+      color: "#52525b"
+    }
+  }, "Aucune aventure ouverte \u2014 ouvrez la premi\xE8re.") : /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col"
+  }, partiesOuvertes.map(p => /*#__PURE__*/React.createElement("div", {
+    key: p.id,
+    className: "flex items-center gap-3 py-2.5",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold truncate",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, "MJ ", p.mj_pseudo || "?", " \xB7 code ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "ui-monospace,monospace",
+      color: "#a8adb8"
+    }
+  }, p.code), " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnRejoindre(true);
+      onRejoindre(p).finally(() => setEnRejoindre(false));
+    },
+    disabled: enRejoindre,
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "REJOINDRE"))))), mesPartiesCours.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #f0b24a33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#f0b24a"
+    }
+  }, "VOS AVENTURES EN COURS (", mesPartiesCours.length, ")"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col"
+  }, mesPartiesCours.map(p => /*#__PURE__*/React.createElement("div", {
+    key: p.id,
+    className: "flex items-center gap-3 py-2.5",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold truncate",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, p.mj_compte_id === (session && session.compteId) ? "vous êtes le MJ" : "MJ " + (p.mj_pseudo || "?"))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onReprendre(p),
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: "#f0b24a",
+      cursor: "pointer"
+    }
+  }, "\u25B6 REPRENDRE")))))));
+}
+
+/* ══════════ Le bandeau de la Console de partie (dans le pack) ══════════
+   En partie, la Console vit AU-DESSUS du pack : repliée, elle ne montre
+   qu'un bouton fin avec le dernier message ; ouverte, le même panneau
+   ConsoleGlobale sert le canal de la partie. */
+function BandeauConsolePartie({
+  ouverte,
+  onToggle,
+  fil,
+  onEnvoyer,
+  joueur,
+  enEnvoi
+}) {
+  const dernier = fil[fil.length - 1];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed bottom-0 left-0 right-0 z-40",
+    style: {
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-4xl mx-auto px-5"
+  }, ouverte && /*#__PURE__*/React.createElement("div", {
+    className: "mb-1",
+    style: {
+      maxHeight: "45vh",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement(ConsoleGlobale, {
+    fil: fil,
+    onEnvoyer: onEnvoyer,
+    joueur: joueur,
+    enEnvoi: enEnvoi
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onToggle,
+    className: "w-full px-4 py-2 flex items-center gap-2 rounded-t-xl text-xs font-bold tracking-wider",
+    style: {
+      background: "#14161bee",
+      border: "1px solid #27272a",
+      borderBottom: "none",
+      color: "#a8adb8",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, ouverte ? "▼" : "▲"), /*#__PURE__*/React.createElement("span", {
+    className: "shrink-0"
+  }, "\uD83D\uDCAC CONSOLE DE PARTIE (", fil.length, ")"), dernier && /*#__PURE__*/React.createElement("span", {
+    className: "flex-1 text-left truncate font-normal",
+    style: {
+      color: "#71717a"
+    }
+  }, "\xB7 ", dernier.pseudo, " : ", dernier.contenu))));
+}
+
 /* ══════════ Le hub : le magasin et la bibliothèque ══════════ */
 function Hub({
   packs,
@@ -6731,6 +6772,11 @@ function App() {
     setEnInstallation(null);
     setRolePour(null);
     setPackActif(null);
+    setPartie(null);
+    setPartieJoueurs([]);
+    setPartiesOuvertes([]);
+    setMesPartiesCours([]);
+    setPackPartie(null);
     setVue("hub");
     showToast("Session fermée — le magasin reste ouvert");
   };
@@ -6771,43 +6817,164 @@ function App() {
     }).catch(() => {});
   }, [session]);
 
-  /* ── La Console Globale : le fil des événements de jeu ──
-     Rechargé à la connexion, poussé en temps réel à chaque gravure
-     (voir le module de synchro ci-dessous : la table archiviste_console
-     est jointe au canal, ses INSERT arrivent directement au fil — la
-     session, elle, ne se re-vérifie pas pour un message). */
+  /* ── LA PARTIE (V4) : l'aventure partagée du pack courant ──
+     La partie vit dans la Tombe : le MJ l'ouvre, les joueurs la
+     rejoignent (liste ou code), le MJ la lance — et l'entrée dans le
+     pack se fait par la POUSSÉE, le même chemin pour tous. Les refs
+     gardent la vérité vivante pour les closures du canal temps réel. */
+  const [partie, setPartie] = useState(null); /* la partie courante (ouverte ou en_cours) */
+  const [partieJoueurs, setPartieJoueurs] = useState([]); /* la table, en temps réel */
+  const [partiesOuvertes, setPartiesOuvertes] = useState([]); /* le lobby du pack */
+  const [mesPartiesCours, setMesPartiesCours] = useState([]); /* reprendre après reload */
+  const [packPartie, setPackPartie] = useState(null); /* le pack multijoueur en cours de partie */
+  const [consolePartieOuverte, setConsolePartieOuverte] = useState(false); /* bandeau dans le pack */
+  const partieIdRef = useRef(null);
+  const packPartieRef = useRef(null);
+  const vueRef = useRef("hub");
+  const contexteConsoleRef = useRef(null); /* null = canal global, id = canal de partie */
+  partieIdRef.current = partie ? partie.id : null;
+  packPartieRef.current = packPartie;
+  vueRef.current = vue;
+
+  /* ── La Console : le fil CONTEXTUEL ──
+     Dans le hub et les packs solo : le canal GLOBAL. Dans une partie
+     (vue pack avec partie en cours) : le canal PRIVÉ de la partie,
+     lu et gravé par ses membres seuls. Le contexte est tenu dans une
+     ref : les closures du canal temps réel la lisissent à chaque poussée. */
   const [consoleFil, setConsoleFil] = useState([]);
+  const contexteConsole = vue === "pack" && partie && partie.statut === "en_cours" ? partie.id : null;
+  contexteConsoleRef.current = contexteConsole;
   useEffect(() => {
     if (!CLOUD || !session) {
       setConsoleFil([]);
       return;
     }
-    CLOUD.lireConsole().then(f => setConsoleFil(f || [])).catch(() => {});
-  }, [session ? session.compteId : null]); /* compteId seul — même garde
-                                           que le canal : jamais « session » nu en dépendance d'effet */
+    CLOUD.lireConsole(contexteConsole).then(f => setConsoleFil(f || [])).catch(() => {});
+  }, [session ? session.compteId : null, contexteConsole]); /* compteId seul — même garde
+                                                            que le canal : jamais « session » nu en dépendance d'effet */
+
+  /* Recharger la partie courante et sa table (utilisée au montage et à
+     chaque poussée parties/joueurs : la Tombe reste la seule vérité). */
+  const rechargerPartie = () => {
+    const id = partieIdRef.current;
+    if (!CLOUD || !session || !id) return Promise.resolve();
+    return Promise.all([CLOUD.lirePartie(id).catch(() => null), CLOUD.lirePartieJoueurs(id).catch(() => [])]).then(([p, js]) => {
+      if (p) setPartie(p);
+      setPartieJoueurs(js || []);
+    });
+  };
+
+  /* Recharger le lobby du pack multijoueur courant (aventures ouvertes
+     + nos parties en cours) — au montage de l'écran et à chaque poussée. */
+  const rechargerListes = () => {
+    const pk = packPartieRef.current;
+    if (!CLOUD || !session || !pk) return;
+    CLOUD.listerParties(pk.id).then(l => setPartiesOuvertes(l || [])).catch(() => {});
+    CLOUD.mesParties(pk.id, session.compteId).then(l => setMesPartiesCours(l || [])).catch(() => {});
+  };
+  useEffect(() => {
+    if (vue !== "partie" || !packPartie) return;
+    rechargerListes();
+  }, [vue, packPartie, session ? session.compteId : null]);
 
   /* Parler dans la Console : le message part à la Tombe (elle le signe et
-     le pousse à tous, nous compris). L'écho temps réel l'ajoutera au fil —
-     l'optimiste n'est pas de mise, la gravure fait foi. */
+     le pousse à tous, nous compris), dans le canal du CONTEXTE. */
   const [consoleEnvoi, setConsoleEnvoi] = useState(false);
   const envoyerConsoleMessage = texte => {
     if (!CLOUD || !session) return;
+    const ctx = contexteConsoleRef.current;
     const ev = interpreterConsole(texte); /* /de 3d6 et /tour X deviennent typés */
     if (!ev.contenu && !ev.des) return;
     setConsoleEnvoi(true);
-    /* V3 : /de part à la Tombe — elle roule et grave elle-même */
-    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces).catch(() => showToast("La Tombe n'a pas gravé le dé — réessayez.")) : CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees).catch(() => showToast("La Console n'a pas gravé — réessayez."));
+    /* V3 : /de part à la Tombe — elle roule et grave elle-même ; V4 :
+       dans le canal de la partie quand il y en a une. */
+    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces, undefined, ctx).catch(() => showToast("La Tombe n'a pas gravé le dé — réessayez.")) : CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees, ctx).catch(() => showToast("La Console n'a pas gravé — réessayez."));
     envoi.then(() => setConsoleEnvoi(false));
   };
 
-  /* V3 : le journal de chaque moteur se grave aussi dans la Console Globale —
-     les jets du pack deviennent des événements partagés, vus de tous. */
+  /* V3 : le journal de chaque moteur se grave aussi dans la Console —
+     les jets du pack deviennent des événements partagés, vus de tous.
+     V4 : dans le canal de la partie quand il y en a une. */
   const journalVersConsole = (type, texte) => {
     if (!CLOUD || !session) return;
     CLOUD.envoyerConsole(session.compteId, texte, "journal", {
       evenement: type
-    }).catch(() => {});
+    }, contexteConsoleRef.current).catch(() => {});
   };
+
+  /* ── Les gestes de LA PARTIE : tous génériques, tous pour le moteur ── */
+  const creerAventure = nomAventure => {
+    if (!CLOUD || !session || !packPartie) return Promise.resolve();
+    return CLOUD.creerPartie(packPartie.id, (nomAventure || "").trim(), session.compteId).then(p => {
+      if (p) {
+        setPartie({
+          ...p,
+          mj_pseudo: session.pseudo
+        });
+        setPartieJoueurs([]);
+        showToast("Aventure ouverte — partagez le code " + p.code);
+      }
+    }).catch(() => showToast("La Tombe n'a pas ouvert l'aventure — réessayez."));
+  };
+  const rejoindreAventure = p => {
+    if (!CLOUD || !session) return Promise.resolve();
+    return CLOUD.rejoindrePartie(p.id, session.compteId).then(() => {
+      setPartie(p);
+      return rechargerPartie();
+    }).catch(() => showToast("Impossible de rejoindre — l'aventure est peut-être déjà lancée."));
+  };
+  const rejoindreAventureCode = code => {
+    if (!CLOUD || !session) return Promise.resolve();
+    return CLOUD.rejoindreParCode(code, session.compteId).then(p => {
+      setPartie(p);
+      showToast("Vous rejoignez « " + p.nom + " »");
+      return rechargerPartie();
+    }).catch(e => showToast(e && e.message || "Code inconnu — vérifiez les six caractères."));
+  };
+  const reprendreAventure = p => {
+    setPartie(p);
+    if (CLOUD) CLOUD.lirePartieJoueurs(p.id).then(js => setPartieJoueurs(js || [])).catch(() => setPartieJoueurs([]));
+  };
+  const lancerAventure = p => {
+    if (!CLOUD) return;
+    CLOUD.lancerPartie(p.id).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
+    /* RIEN d'autre ici : l'entrée se fait par la POUSSÉE, le même chemin
+       pour le MJ et les joueurs — un seul code, une seule vérité. */
+  };
+  const quitterAventure = p => {
+    if (!CLOUD || !session) return;
+    if (p.mj_compte_id === session.compteId) {
+      CLOUD.fermerPartie(p.id).catch(() => {});
+      showToast("Aventure close.");
+    } else {
+      CLOUD.quitterPartie(p.id, session.compteId).catch(() => {});
+      showToast("Vous quittez la table.");
+    }
+    setPartie(null);
+    setPartieJoueurs([]);
+  };
+
+  /* L'auto-entrée : quand la partie (dont on est membre) passe en_cours
+     et qu'on est sur l'écran partie — on ENTRE dans le pack, le rôle
+     dérivé de la table (MJ = le créateur, joueur = le reste). */
+  useEffect(() => {
+    if (vue !== "partie" || !partie || partie.statut !== "en_cours" || !packPartie || !session) return;
+    const estMj = partie.mj_compte_id === session.compteId;
+    const estMembre = estMj || partieJoueurs.some(j => j.compte_id === session.compteId);
+    if (!estMembre) return; /* spectateur d'une partie close à notre table */
+    const role = estMj ? "mj" : "joueur";
+    setRolesPacks(r => ({
+      ...r,
+      [packPartie.id]: role
+    }));
+    setPackActif(chargerPack(packPartie)); /* le manifeste devient un pack CHARGÉ */
+    setVue("chargement");
+    setEtapes([]);
+    const liste = etapesChargement(packPartie, role);
+    setTotalEtapes(liste.length);
+    liste.forEach((t, i) => setTimeout(() => setEtapes(e => [...e, t]), 320 * (i + 1)));
+    setTimeout(() => setVue("pack"), 320 * liste.length + 550);
+  }, [vue, partie, partieJoueurs, packPartie]);
 
   /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
      nuage dès qu'il change (débouncé) : l'état vit dans le compte, jamais
@@ -6885,18 +7052,59 @@ function App() {
         filtre: "compte_id=eq." + session.compteId
       }, {
         table: "archiviste_console"
-      } /* le fil de tous — aucune surveillance de session là-dessus */],
+      }, /* le fil de tous — aucune surveillance de session là-dessus */
+      {
+        table: "archiviste_parties"
+      }, /* le lobby et la partie courante, poussés */
+      {
+        table: "archiviste_partie_joueurs"
+      } /* la table qui vit : arrivées et départs */],
       surChangement: donnee => {
-        /* Les messages de la Console arrivent DROIT au fil (gravés en base,
-           poussés par la Tombe) — pas de re-vérification de session pour
-           un message, et jamais filtrer le fil : on ajoute, on ne rejoue pas. */
         const evType = donnee && (donnee.type || donnee.eventType); /* payload réel : « type » (eventType ancien accepté) */
         const ligne = donnee && (donnee.record || donnee.new); /* payload réel : « record » (le « new » de la doc JS n'arrive jamais ici) */
+        /* Les messages de la Console arrivent DROIT au fil — gravés en
+           base, poussés par la Tombe. On n'ajoute que le canal du
+           CONTEXTE (global au hub, la partie dans le pack) : les autres
+           canaux ne sont pas les nôtres. */
         if (donnee && donnee.table === "archiviste_console" && evType === "INSERT" && ligne) {
-          setConsoleFil(f => {
-            if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
-            return [...f, ligne].slice(-80);
-          });
+          if ((ligne.partie_id || null) === contexteConsoleRef.current) {
+            setConsoleFil(f => {
+              if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
+              return [...f, ligne].slice(-80);
+            });
+          }
+          return;
+        }
+        /* LA PARTIE : les poussées du lobby et de la table. */
+        if (donnee && donnee.table === "archiviste_parties" && ligne) {
+          if (evType === "INSERT") {
+            rechargerListes();
+            return;
+          } /* une aventure s'ouvre */
+          if (evType === "UPDATE") {
+            if (partieIdRef.current && ligne.id === partieIdRef.current) {
+              /* fusion : la ligne poussée est brute (sans mj_pseudo) — on
+                 garde le pseudo du MJ déjà connu de la vue lobby */
+              setPartie(prev => ({
+                ...(prev || {}),
+                ...ligne,
+                mj_pseudo: ligne.mj_pseudo || prev && prev.mj_pseudo
+              })); /* notre salle suit : ouverte → en_cours, ou close */
+              if (ligne.statut === "close") {
+                setVue("hub");
+                setPartie(null);
+                setPartieJoueurs([]);
+                showToast("L'aventure est close par le MJ.");
+              }
+            }
+            rechargerListes(); /* ouverte → en_cours : elle quitte le lobby */
+          }
+          return;
+        }
+        if (donnee && donnee.table === "archiviste_partie_joueurs") {
+          if (partieIdRef.current && ligne && ligne.partie_id === partieIdRef.current) {
+            rechargerPartie(); /* la table de NOTRE partie vit */
+          }
           return;
         }
         relance();
@@ -6965,10 +7173,24 @@ function App() {
     }, 1500);
   };
 
-  /* Lancer un pack depuis la Bibliothèque : d'abord le choix du rôle (MJ ou
-     joueur — c'est LÀ qu'on décide, pas à l'installation, pas dans le compte),
-     puis le chargement simulé avec le rôle de session appliqué. */
-  const lancerPack = p => setRolePour(p);
+  /* Lancer un pack : les packs SOLO gardent le choix du rôle au
+     lancement ; les packs MULTIJOUEUR passent par LA PARTIE — le lobby,
+     le code, le MJ qui lance, et l'entrée poussée (le rôle dérive de
+     la table, on ne le choisit plus à la main). */
+  const lancerPack = p => {
+    if (p.multijoueur) {
+      if (!session) {
+        showToast("Connectez-vous pour ouvrir ou rejoindre une aventure.");
+        return;
+      }
+      setPartie(null);
+      setPartieJoueurs([]);
+      setPackPartie(p);
+      setVue("partie");
+      return;
+    }
+    setRolePour(p);
+  };
   const choisirRole = role => {
     const p = rolePour;
     setRolePour(null);
@@ -7085,15 +7307,50 @@ function App() {
     style: {
       color: packActif.theme.accent
     }
-  }, "\u27C1 \u2026")))), vue === "pack" && packActif && (() => {
+  }, "\u27C1 \u2026")))), vue === "partie" && packPartie && session && /*#__PURE__*/React.createElement(EcranPartie, {
+    pack: packPartie,
+    session: session,
+    partie: partie,
+    partieJoueurs: partieJoueurs,
+    partiesOuvertes: partiesOuvertes,
+    mesPartiesCours: mesPartiesCours,
+    onCreer: creerAventure,
+    onRejoindre: rejoindreAventure,
+    onRejoindreCode: rejoindreAventureCode,
+    onReprendre: reprendreAventure,
+    onLancer: lancerAventure,
+    onQuitter: quitterAventure,
+    onRetour: () => {
+      setPartie(null);
+      setPartieJoueurs([]);
+      setPackPartie(null);
+      setVue("hub");
+    }
+  }), vue === "pack" && packActif && (() => {
     const dep = packActif.depend_de[0];
     const Vue = dep && VUES[dep.id] && packActif.noyau && packActif.contenu ? VUES[dep.id] : VueInconnue;
-    return /*#__PURE__*/React.createElement(Vue, {
+    /* En partie, le rôle ne se choisit plus : il DÉRIVE de la table —
+       le créateur est MJ, les autres joueurs. Le reste (solo) garde
+       le rôle du dernier lancement. */
+    const enPartie = !!(partie && partie.jeu === packActif.id && partie.statut === "en_cours");
+    const role = enPartie ? session && partie.mj_compte_id === session.compteId ? "mj" : "joueur" : rolesPacks[packActif.id];
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: enPartie ? {
+        paddingBottom: 44
+      } : undefined
+    }, /*#__PURE__*/React.createElement(Vue, {
       pack: packActif,
-      role: rolesPacks[packActif.id],
+      role: role,
       onRetour: () => setVue("hub"),
       onJournal: journalVersConsole
-    });
+    })), enPartie && /*#__PURE__*/React.createElement(BandeauConsolePartie, {
+      ouverte: consolePartieOuverte,
+      onToggle: () => setConsolePartieOuverte(o => !o),
+      fil: consoleFil,
+      onEnvoyer: envoyerConsoleMessage,
+      joueur: session,
+      enEnvoi: consoleEnvoi
+    }));
   })(), rolePour && /*#__PURE__*/React.createElement(ChoixRole, {
     pack: rolePour,
     onChoisi: choisirRole,
