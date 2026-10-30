@@ -823,7 +823,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.18";
+const BUILD = "0.19";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3077,36 +3077,16 @@ function etapesChargement(p, role) {
   return [`installation vérifiée — ${p.nom} présent dans la bibliothèque locale`, `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`, `dépendance résolue : ${p.depend_de.map(d => d.id + "@" + d.format_min).join(", ") || "aucune"} — primitive ${C.primitive}`, roleTxt, `surcharges appliquées : ${C.surcharges.join(" · ")}`, `thème « ${p.theme.nom} » appliqué — palette du pack`, "pack prêt."];
 }
 
-/* ── Les comptes (phase 2 simulée : email + mot de passe) ──
-   Tous les comptes sont JOUEURS — le rôle MJ/Joueur se choisit au lancement
-   du pack. Le compte_id est un UUID stable gravé à la création ; l'email est
-   l'identité serveur (unique, jamais affichée publiquement). Le mot de passe
-   ne vit JAMAIS ici : vérification déléguée au serveur (l'Archiviste ne garde
-   jamais les mots de passe). */
+/* ── Les comptes — Supabase Auth (email + mot de passe), réels ──
+   Tous les comptes sont JOUEURS — le rôle MJ/joueur se choisit au lancement
+   du pack. Le compte_id est un UUID stable gravé à la création par le serveur ;
+   l'email est l'identité serveur (unique, jamais affichée publiquement). Le mot
+   de passe ne vit JAMAIS ici : vérification déléguée à Supabase Auth
+   (l'Archiviste ne garde jamais les mots de passe). */
 /* ── Palette « Zinc d'Archiviste » — thème NEUTRE du chrome du launcher ──
    fond #0c0d10 · panneaux #14161b · bordures #27272a · accent zinc #a8adb8.
    Le launcher est une vitrine : les couleurs appartiennent aux packs.
    Teal #2ee6c9 = exclusive du pack PÉ · ambre #f0b24a = rôle MJ + Archivisterium. */
-const PROFILS_INIT = [{
-  compteId: "a3f2c9d1",
-  pseudo: "Maître de la Tombe",
-  tag: "JR-0001",
-  email: "maitre@larchiviste.jdr",
-  avatarId: "tombe"
-}, {
-  compteId: "7b91e044",
-  pseudo: "Signa Test",
-  tag: "JR-0002",
-  email: "signa@larchiviste.jdr",
-  avatarId: "de"
-}, {
-  compteId: "3fa7b1e9",
-  pseudo: "MadChat",
-  tag: "JR-0003",
-  email: "arf@arf.fr",
-  avatarId: "crane"
-}];
-
 /* La liste d'images de compte : dans le vrai launcher, choisie dans le profil.
    En alpha : des glyphes déclinés sur les palettes des packs. */
 const AVATARS = [{
@@ -3216,8 +3196,9 @@ function Cible({
   }));
 }
 
-/* ══════════ L'Archivisterium (ROOT) — l'admin gère packs, images, thèmes ══════════
-   En production : app séparée en parallèle de l'Archiviste, accès administrateur. */
+/* ══════════ L'Archivisterium (miroir) — vitrine du magasin côté launcher ══════════
+   L'Archivisterium RÉEL vit dans son app séparée (accès admin) ; ce miroir
+   n'est qu'une vitrine en lecture du magasin. */
 function RootConsole({
   packs,
   symbole,
@@ -3252,7 +3233,7 @@ function RootConsole({
     style: {
       color: "#71717a"
     }
-  }, "La salle d'administration de l'Archiviste \u2014 simulation (l'\xE9dition arrive en beta)")), /*#__PURE__*/React.createElement("button", {
+  }, "La salle d'administration de l'Archiviste \u2014 miroir en lecture")), /*#__PURE__*/React.createElement("button", {
     onClick: onFermer,
     className: "text-xl px-2",
     style: {
@@ -3419,7 +3400,7 @@ function RootConsole({
       color: "#71717a",
       borderTop: "1px solid #27272a"
     }
-  }, "En production : l'Archivisterium est une app s\xE9par\xE9e, acc\xE8s admin \u2014 elle g\xE8re les packs publi\xE9s au magasin, les images de compte et les th\xE8mes propos\xE9s aux packs. L'Archiviste, lui, ne fait que lire.")));
+  }, "L'Archivisterium est une app s\xE9par\xE9e, acc\xE8s admin \u2014 elle g\xE8re les packs publi\xE9s au magasin, les images de compte et les th\xE8mes propos\xE9s aux packs. Ce miroir, dans l'Archiviste, ne fait que lire.")));
 }
 
 /* ══════════ L'Icosaèdre vu par le sommet (pentagone) — modèle de Michael, conservé en bibliothèque ROOT ══════════
@@ -3505,7 +3486,7 @@ function Icosaedre({
   }))));
 }
 
-/* ══════════ Le compte joueur : avatar + session simulée ══════════ */
+/* ══════════ Le compte joueur : avatar + session réelles (Supabase) ══════════ */
 function Avatar({
   a,
   size = 40,
@@ -3589,7 +3570,7 @@ function CompteJoueur({
     style: {
       color: "#71717a"
     }
-  }, "compte #", joueur.compteId.slice(0, 8), " \xB7 ", joueur.tag, " \xB7 ", CLOUD ? "compte cloud" : "profil local", " \xB7 en ligne"))), /*#__PURE__*/React.createElement("div", {
+  }, "compte #", joueur.compteId.slice(0, 8), " \xB7 ", joueur.tag, " \xB7 compte cloud \xB7 en ligne"))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-2",
     style: {
       color: "#c8c8ce"
@@ -3638,11 +3619,7 @@ function EcranCreation({
   const creer = async () => {
     if (!pret || enCours) return;
     if (!CLOUD) {
-      onCreer({
-        pseudo: pseudo.trim(),
-        email: email.trim().toLowerCase(),
-        avatarId
-      });
+      setErreurCreation("Le nuage est injoignable — rechargez la page.");
       return;
     }
     setEnCours(true);
@@ -3676,7 +3653,7 @@ function EcranCreation({
     style: {
       color: "#71717a"
     }
-  }, "Un UUID de compte est g\xE9n\xE9r\xE9 \xE0 la cr\xE9ation \u2014 il restera stable pour toujours. En phase serveur, c'est ici que Supabase Auth prendra le relais pour le mot de passe."), /*#__PURE__*/React.createElement("div", {
+  }, "Un UUID de compte est g\xE9n\xE9r\xE9 par le serveur \xE0 la cr\xE9ation \u2014 il restera stable pour toujours."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-1",
     style: {
       color: "#c8c8ce"
@@ -3731,7 +3708,7 @@ function EcranCreation({
     style: {
       color: "#52525b"
     }
-  }, "En phase serveur, ce mot de passe part chez Supabase Auth \u2014 l'Archiviste ne le garde jamais ici."), /*#__PURE__*/React.createElement("div", {
+  }, "Ce mot de passe part chez Supabase Auth \u2014 l'Archiviste ne le garde jamais."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-2",
     style: {
       color: "#c8c8ce"
@@ -3784,13 +3761,11 @@ function EcranCreation({
   }, CLOUD ? "Le mot de passe part directement chez Supabase Auth — l'Archiviste ne le garde jamais ici." : "Simulation : le mot de passe n'est pas vérifié localement — il ne quitte pas ce champ (décor honnête).")));
 }
 
-/* ══════════ Connexion — écran phase 2 : email + mot de passe ══════════
-   Simulation honnête de ce que fera Supabase Auth : l'Archiviste ne garde
-   jamais les mots de passe — la vérification sera DÉLÉGUÉE au serveur.
-   En local, tout mot de passe ≥ 4 caractères « passe » (décor assumé).
-   « Mot de passe perdu » = lien magique par email (boîte simulée). */
+/* ══════════ Connexion — écran réel : email + mot de passe (Supabase Auth) ══════════
+   L'Archiviste ne garde jamais les mots de passe — la vérification est
+   DÉLÉGUÉE à Supabase Auth. « Mot de passe perdu » = lien magique par email
+   (réinitialisation gérée par Supabase). */
 function AuthModal({
-  profils,
   onLogin,
   onCreer,
   onFermer
@@ -3800,7 +3775,6 @@ function AuthModal({
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
   const [erreur, setErreur] = useState(null);
-  const [apresLien, setApresLien] = useState(false);
   const [enVerif, setEnVerif] = useState(false);
   const [perduEmail, setPerduEmail] = useState("");
   const champ = {
@@ -3814,23 +3788,18 @@ function AuthModal({
       setErreur("Email et mot de passe requis (4 caractères min.)");
       return;
     }
-    if (CLOUD) {
-      setEnVerif(true);
-      setErreur(null);
-      try {
-        onLogin(await CLOUD.connexion(email.trim().toLowerCase(), mdp));
-      } catch (e) {
-        setErreur(e && e.message ? e.message : "Serveur injoignable — vérifiez votre connexion.");
-      }
-      setEnVerif(false);
+    if (!CLOUD) {
+      setErreur("Le nuage est injoignable — rechargez la page.");
       return;
     }
-    const p = profils.find(x => x.email.toLowerCase() === email.trim().toLowerCase());
-    if (!p) {
-      setErreur("Aucun compte sur cet email — créez-en un ci-dessous");
-      return;
+    setEnVerif(true);
+    setErreur(null);
+    try {
+      onLogin(await CLOUD.connexion(email.trim().toLowerCase(), mdp));
+    } catch (e) {
+      setErreur(e && e.message ? e.message : "Serveur injoignable — vérifiez votre connexion.");
     }
-    onLogin(p);
+    setEnVerif(false);
   };
   const envoyerLien = async () => {
     if (!perduEmail.trim() || enVerif) return;
@@ -3879,13 +3848,7 @@ function AuthModal({
     style: {
       color: "#71717a"
     }
-  }, "Tous les comptes sont joueurs \u2014 le r\xF4le MJ se choisit au lancement d'un pack."), apresLien && /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-3 px-2 py-1.5 rounded",
-    style: {
-      background: "#a8adb814",
-      color: "#a8adb8"
-    }
-  }, "\u2713 Lien magique v\xE9rifi\xE9 \u2014 saisissez votre nouveau mot de passe."), /*#__PURE__*/React.createElement("div", {
+  }, "Tous les comptes sont joueurs \u2014 le r\xF4le MJ se choisit au lancement d'un pack."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-1",
     style: {
       color: "#c8c8ce"
@@ -3948,7 +3911,7 @@ function AuthModal({
     style: {
       color: "#52525b"
     }
-  }, CLOUD ? "Comptes vérifiés par Supabase Auth — l'Archiviste ne garde jamais les mots de passe." : "Démo : maitre@larchiviste.jdr · signa@larchiviste.jdr · arf@arf.fr — mot de passe : n'importe lequel (4+ caractères).")), mode === "perdu" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Comptes v\xE9rifi\xE9s par Supabase Auth \u2014 l'Archiviste ne garde jamais les mots de passe.")), mode === "perdu" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg",
@@ -4001,7 +3964,7 @@ function AuthModal({
     style: {
       color: "#71717a"
     }
-  }, CLOUD ? "📧 EMAIL ENVOYÉ" : "📧 SIMULATION DE BOÎTE MAIL"), CLOUD ? /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCE7 EMAIL ENVOY\xC9"), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 text-left mb-4",
     style: {
       background: "#ffffff08",
@@ -4018,39 +3981,12 @@ function AuthModal({
     style: {
       background: "#f0b24a"
     }
-  }, "\u2190 Retour \xE0 la connexion")) : /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 text-left mb-4",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid #27272a"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-1",
-    style: {
-      color: "#71717a"
-    }
-  }, "De : no-reply@larchiviste.jdr \u2014 \xAB R\xE9initialisation de votre mot de passe \xBB"), /*#__PURE__*/React.createElement("div", {
-    className: "text-sm",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, "Bonjour \u2014 cliquez sur ce lien pour choisir un nouveau mot de passe. Il expire dans 60 minutes."), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setEmail(perduEmail);
-      setMdp("");
-      setApresLien(true);
-      setMode("login");
-    },
-    className: "mt-3 px-4 py-2 rounded-lg font-bold text-sm text-black",
-    style: {
-      background: "#f0b24a"
-    }
-  }, "\uD83D\uDD17 Ouvrir le lien magique")), /*#__PURE__*/React.createElement("div", {
+  }, "\u2190 Retour \xE0 la connexion")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-center",
     style: {
       color: "#52525b"
     }
-  }, CLOUD ? "Lien envoyé et vérifié par Supabase Auth." : "En production : ce lien arrive par email, vérifié par Supabase Auth."))), enCreation && /*#__PURE__*/React.createElement(EcranCreation, {
+  }, "Lien envoy\xE9 et v\xE9rifi\xE9 par Supabase Auth."))), enCreation && /*#__PURE__*/React.createElement(EcranCreation, {
     onCreer: onCreer,
     onAnnuler: () => setEnCreation(false)
   }));
@@ -4245,7 +4181,6 @@ function Hub({
   onLogout,
   onLogin,
   onCreer,
-  profils,
   mobile,
   ecran,
   setEcran,
@@ -4353,7 +4288,6 @@ function Hub({
     symbole: symbole,
     onFermer: () => setRootOuvert(false)
   }), authOuvert && /*#__PURE__*/React.createElement(AuthModal, {
-    profils: profils,
     onLogin: p => {
       onLogin(p);
       setAuthOuvert(false);
@@ -4903,7 +4837,7 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "ennemi de test")), /*#__PURE__*/React.createElement(PvBarre, {
+  }, "adversaire d'entra\xEEnement")), /*#__PURE__*/React.createElement(PvBarre, {
     pv: pvOrk,
     pvMax: C.adversaire.pvMax,
     accent: "#f0b24a"
@@ -4921,7 +4855,7 @@ function VueNoyau40k({
       background: finCombat ? "#3f3f46" : T.or,
       color: finCombat ? "#e8e4d8" : "#0a120f"
     }
-  }, enCombat ? "↺ Nouvel engagement" : "⚔ Engager le combat (test)") : /*#__PURE__*/React.createElement("button", {
+  }, enCombat ? "↺ Nouvel engagement" : "⚔ Engager le combat") : /*#__PURE__*/React.createElement("button", {
     onClick: jouerRound,
     className: "py-2.5 rounded-lg font-bold text-black",
     style: {
@@ -6438,17 +6372,10 @@ function App() {
   const [rolesPacks, setRolesPacks] = useState({}); // packId → rôle du DERNIER lancement ("mj" | "joueur")
   const [rolePour, setRolePour] = useState(null); // pack en attente du choix de rôle, au lancement
 
-  /* Les comptes — phase 1 : profils locaux (UUID stable). Tous les comptes sont
-     joueurs ; le rôle (MJ ou joueur) se choisit pack par pack, au lancement.
-     Le vrai mot de passe arrivera avec le serveur (Supabase) ; l'Archiviste ne
-     garde jamais les mots de passe. */
-  const [profils, setProfils] = useState(PROFILS_INIT);
+  /* Les comptes — réels : Supabase Auth (le serveur grave l'UUID et le tag).
+     Tous les comptes sont joueurs ; le rôle (MJ ou joueur) se choisit pack
+     par pack, au lancement. L'Archiviste ne garde jamais les mots de passe. */
   const [session, setSession] = useState(null);
-
-  /* Sauvegarde simulée des choix PAR COMPTE : installations, favoris, rôles.
-     Phase locale : en mémoire de l'app (tant qu'elle tourne). Phase serveur :
-     ce sera exactement cette structure qui vivra dans la base du compte. */
-  const [memoireComptes, setMemoireComptes] = useState({});
   const seConnecter = p => {
     /* La double porte : un compte « en_attente » ne franchit pas le seuil —
        il attend le sceau de l'Archiviste (apposé dans l'Archivisterium,
@@ -6458,29 +6385,18 @@ function App() {
       setVue("attente");
       return;
     }
-    /* En mode CLOUD, la mémoire arrive DU NUAGE avec le profil (p.memoire) ;
-       en simulation, elle vit dans le sac du compte local. */
-    const memo = CLOUD && p.memoire || memoireComptes[p.compteId] || {};
+    /* En mode CLOUD, la mémoire arrive DU NUAGE avec le profil (p.memoire). */
+    const memo = CLOUD && p.memoire || {};
     setInstalles(memo.installes || []);
     setFavoris(memo.favoris || []);
     setRolesPacks(memo.rolesPacks || {});
     setSession(p);
-    showToast((memo.installes || []).length ? `Bienvenue, ${p.pseudo} — bibliothèque restaurée (${memo.installes.length} pack${memo.installes.length > 1 ? "s" : ""})` : `Bienvenue, ${p.pseudo} — ${CLOUD ? "compte connecté" : "profil local connecté"}`);
+    showToast((memo.installes || []).length ? `Bienvenue, ${p.pseudo} — bibliothèque restaurée (${memo.installes.length} pack${memo.installes.length > 1 ? "s" : ""})` : `Bienvenue, ${p.pseudo} — compte connecté`);
   };
   const seDeconnecter = () => {
-    /* On range les choix dans le sac du compte (installations, favoris, rôles),
-       puis on rafraîchit l'écran : le launcher repart vierge, mais rien n'est
-       perdu — la bibliothèque est restaurée à la reconnexion. */
-    if (session) {
-      setMemoireComptes(m => ({
-        ...m,
-        [session.compteId]: {
-          installes,
-          favoris,
-          rolesPacks
-        }
-      }));
-    }
+    /* La bibliothèque vit DANS LE NUAGE : déjà sauvegardée à chaque changement
+       (CLOUD.sauveMemoire). Le launcher repart vierge, mais rien n'est perdu —
+       la bibliothèque est restaurée à la reconnexion. */
     if (CLOUD) CLOUD.deconnexion().catch(() => {});
     setSession(null);
     setInstalles([]);
@@ -6493,30 +6409,15 @@ function App() {
     showToast("Session fermée — le magasin reste ouvert");
   };
   const creerProfil = profil => {
-    /* En mode CLOUD : le profil arrive du nuage — UUID serveur + tag JR-000n
-       attribué par la base. En simulation : UUID local gravé à la création. */
-    const p = profil.compteId ? profil : (() => {
-      const n = profils.length + 1;
-      return {
-        compteId: Math.floor(Math.random() * 4294967296).toString(16).padStart(8, "0"),
-        pseudo: profil.pseudo,
-        tag: "JR-" + String(n).padStart(4, "0"),
-        email: profil.email,
-        avatarId: profil.avatarId
-      };
-    })();
-    setProfils(l => [...l, p]);
-    seConnecter(p);
+    /* Le profil arrive DU NUAGE — UUID serveur + tag JR-000n attribué par
+       la base, via Supabase Auth (inscription). */
+    seConnecter(profil);
   };
   const changerAvatar = id => {
     setSession(s => s ? {
       ...s,
       avatarId: id
     } : s);
-    setProfils(l => l.map(p => session && p.compteId === session.compteId ? {
-      ...p,
-      avatarId: id
-    } : p));
     if (CLOUD && session) CLOUD.sauveCompte({
       avatarId: id
     }).catch(() => {});
@@ -6722,7 +6623,6 @@ function App() {
     onLogout: seDeconnecter,
     onLogin: seConnecter,
     onCreer: creerProfil,
-    profils: profils,
     mobile: mobile,
     ecran: ecran,
     setEcran: setEcran,
@@ -6821,9 +6721,8 @@ function App() {
     }
   }, toast));
 }
-var _attente = document.getElementById("attente");
-if (_attente) _attente.remove();
-ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));</script>
+ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
+</script>
 
   <script>
     /* Le service worker : l'Archiviste s'installe et sait se rouvrir hors ligne */
