@@ -813,6 +813,36 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           body: body
         });
       },
+      /* La Console Globale : le canal des événements de jeu (MJ et joueurs
+         s'y parlent). Chaque message est GRAVÉ dans la Tombe — prémice du
+         journal — et pousse en temps réel chez tous. Le serveur signe
+         lui-même le pseudo et le rôle (trigger console_verite) : personne
+         ne peut se déguiser. */
+      envoyerConsole: function (compteId, contenu) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve();
+        return api("/rest/v1/archiviste_console", {
+          method: "POST",
+          token: m.access_token,
+          body: {
+            compte_id: compteId,
+            contenu: contenu
+          }
+        });
+      },
+      /* Le fil de la Console, relu à la connexion : le journal commence
+         où l'on arrive — les 60 derniers messages font le bord. */
+      lireConsole: function () {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve([]);
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", {
+          token: m.access_token
+        }).then(function (l) {
+          return (l || []).slice().reverse();
+        }).catch(function () {
+          return [];
+        });
+      },
       /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
          la synchro devient de la poussée, pas du polling. */
       tempsReel: tempsReel
@@ -823,7 +853,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.19";
+const BUILD = "0.20";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4168,6 +4198,155 @@ function Vignette({
     className: "px-4 py-2 rounded-lg font-bold text-sm border border-zinc-600 text-zinc-400"
   }, "\xC0 venir")));
 }
+
+/* ══════════ La Console Globale : le canal des événements de jeu ══════════
+   L'idée de Michael : un canal unique où le MJ et les joueurs se parlent.
+   V1 : messages libres (les dés et le tour viendront se typer par-dessus,
+   on filtrera une fois que le canal fonctionne). Chaque message est GRAVÉ
+   dans la Tombe — prémice du journal — et pousse en temps réel chez tous.
+   Le bandeau vit en pied de page, discret, déroulant — zinc d'Archiviste,
+   l'ambre reste à l'institution et au MJ. */
+function ConsoleGlobale({
+  fil,
+  ouverte,
+  onToggle,
+  onEnvoyer,
+  joueur,
+  enEnvoi
+}) {
+  const [texte, setTexte] = useState("");
+  const dernier = fil.length ? fil[fil.length - 1] : null;
+  const envoyer = () => {
+    const t = texte.trim();
+    if (!t || !joueur) return;
+    onEnvoyer(t);
+    setTexte("");
+  };
+  const heure = iso => {
+    try {
+      return new Date(iso).toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (e) {
+      return "";
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "mb-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onToggle,
+    className: "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    },
+    title: "La Console Globale \u2014 le canal des \xE9v\xE9nements de jeu (messages libres en V1)"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: ouverte ? "#e8e4d8" : "#a8adb8"
+    }
+  }, "\u25B6 CONSOLE"), dernier ? /*#__PURE__*/React.createElement("span", {
+    className: "text-xs flex-1 truncate",
+    style: {
+      color: "#71717a"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: dernier.role === "admin" || dernier.role === "MJ" ? "#f0b24a" : "#a8adb8"
+    }
+  }, dernier.pseudo), " \xB7 ", dernier.contenu) : /*#__PURE__*/React.createElement("span", {
+    className: "text-xs flex-1",
+    style: {
+      color: "#52525b"
+    }
+  }, "le canal des \xE9v\xE9nements de jeu \u2014 silencieux pour l'instant"), fil.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, fil.length), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#a8adb8"
+    }
+  }, ouverte ? "▾" : "▴")), ouverte && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg mt-1",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2 overflow-y-auto",
+    style: {
+      maxHeight: "240px"
+    }
+  }, fil.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-3 text-center",
+    style: {
+      color: "#52525b"
+    }
+  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => /*#__PURE__*/React.createElement("div", {
+    key: e.id,
+    className: "flex items-baseline gap-2 py-1",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    }
+  }, heure(e.cree_le)), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold shrink-0",
+    style: {
+      color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
+    }
+  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu)))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 items-center px-2 py-2",
+    style: {
+      borderTop: "1px solid #27272a"
+    }
+  }, joueur ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+    value: texte,
+    onChange: e => setTexte(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter") envoyer();
+    },
+    className: "flex-1 px-2 py-1 rounded text-xs",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    },
+    placeholder: "Parler \xE0 la Console (280 caract\xE8res max)",
+    maxLength: 280
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: envoyer,
+    disabled: enEnvoi || !texte.trim(),
+    className: "px-3 py-1 rounded text-xs font-bold",
+    style: {
+      background: texte.trim() ? "#a8adb8" : "#a8adb822",
+      color: texte.trim() ? "#0c0d10" : "#71717a",
+      cursor: texte.trim() ? "pointer" : "default"
+    }
+  }, "\u21B5")) : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-1",
+    style: {
+      color: "#52525b"
+    }
+  }, "Connectez-vous pour parler dans la Console \u2014 le fil se lit d\xE9j\xE0."))));
+}
+
+/* ══════════ Le hub : le magasin et la bibliothèque ══════════ */
 function Hub({
   packs,
   favoris,
@@ -4187,7 +4366,12 @@ function Hub({
   installes,
   enInstallation,
   symbole,
-  versionBase
+  versionBase,
+  consoleFil,
+  consoleOuverte,
+  onConsoleToggle,
+  onConsoleEnvoyer,
+  consoleEnvoi
 }) {
   const [onglet, setOnglet] = useState("magasin");
   const [compteOuvert, setCompteOuvert] = useState(false);
@@ -4297,6 +4481,13 @@ function Hub({
       setAuthOuvert(false);
     },
     onFermer: () => setAuthOuvert(false)
+  }), /*#__PURE__*/React.createElement(ConsoleGlobale, {
+    fil: consoleFil,
+    ouverte: consoleOuverte,
+    onToggle: onConsoleToggle,
+    onEnvoyer: onConsoleEnvoyer,
+    joueur: joueur,
+    enEnvoi: consoleEnvoi
   }), /*#__PURE__*/React.createElement("footer", {
     className: "mt-auto text-center text-xs",
     style: {
@@ -6445,6 +6636,32 @@ function App() {
     }).catch(() => {});
   }, [session]);
 
+  /* ── La Console Globale : le fil des événements de jeu ──
+     Rechargé à la connexion, poussé en temps réel à chaque gravure
+     (voir le module de synchro ci-dessous : la table archiviste_console
+     est jointe au canal, ses INSERT arrivent directement au fil — la
+     session, elle, ne se re-vérifie pas pour un message). */
+  const [consoleFil, setConsoleFil] = useState([]);
+  const [consoleOuverte, setConsoleOuverte] = useState(false);
+  useEffect(() => {
+    if (!CLOUD || !session) {
+      setConsoleFil([]);
+      return;
+    }
+    CLOUD.lireConsole().then(f => setConsoleFil(f || [])).catch(() => {});
+  }, [session ? session.compteId : null]); /* compteId seul — même garde
+                                           que le canal : jamais « session » nu en dépendance d'effet */
+
+  /* Parler dans la Console : le message part à la Tombe (elle le signe et
+     le pousse à tous, nous compris). L'écho temps réel l'ajoutera au fil —
+     l'optimiste n'est pas de mise, la gravure fait foi. */
+  const [consoleEnvoi, setConsoleEnvoi] = useState(false);
+  const envoyerConsoleMessage = texte => {
+    if (!CLOUD || !session) return;
+    setConsoleEnvoi(true);
+    CLOUD.envoyerConsole(session.compteId, texte).catch(() => showToast("La Console n'a pas gravé — réessayez.")).then(() => setConsoleEnvoi(false));
+  };
+
   /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
      nuage dès qu'il change (débouncé) : l'état vit dans le compte, jamais
      dans l'appareil. */
@@ -6519,8 +6736,22 @@ function App() {
       }, {
         table: "archiviste_memoire",
         filtre: "compte_id=eq." + session.compteId
-      }],
-      surChangement: () => relance(),
+      }, {
+        table: "archiviste_console"
+      } /* le fil de tous — aucune surveillance de session là-dessus */],
+      surChangement: donnee => {
+        /* Les messages de la Console arrivent DROIT au fil (gravés en base,
+           poussés par la Tombe) — pas de re-vérification de session pour
+           un message, et jamais filtrer le fil : on ajoute, on ne rejoue pas. */
+        if (donnee && donnee.table === "archiviste_console" && donnee.eventType === "INSERT" && donnee.new) {
+          setConsoleFil(f => {
+            if (f.some(x => x.id === donnee.new.id)) return f; /* anti-écho */
+            return [...f, donnee.new].slice(-80);
+          });
+          return;
+        }
+        relance();
+      },
       surEtat: etat => {
         setEtatTempsReel(etat);
         if (etat === "branche") relance(); /* on a peut-être raté des poussées pendant la coupure */
@@ -6629,7 +6860,12 @@ function App() {
     installes: installes,
     enInstallation: enInstallation,
     symbole: symbole,
-    versionBase: versionBase
+    versionBase: versionBase,
+    consoleFil: consoleFil,
+    consoleOuverte: consoleOuverte,
+    onConsoleToggle: () => setConsoleOuverte(o => !o),
+    onConsoleEnvoyer: envoyerConsoleMessage,
+    consoleEnvoi: consoleEnvoi
   }), vue === "attente" && session && /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen flex items-center justify-center p-4",
     style: {
