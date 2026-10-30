@@ -291,12 +291,14 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
        des événements de jeu, idée de Michael). Le message est GRAVÉ dans
        la Tombe — le trigger console_verite le signe du pseudo et du rôle
        admin de la ligne compte, personne ne se déguise. */
-    envoyerConsole: function (contenu, type, donnees) {
+    /* V45 : le canal de destination — la parole de l'invention part
+       dans le canal GLOBAL, ou dans celui de la partie choisie. */
+    envoyerConsole: function (contenu, type, donnees, partieId) {
       var m = lire();
       if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
       return api("/rest/v1/archiviste_console", {
         method: "POST", token: m.access_token,
-        body: { compte_id: m.user_id, contenu: contenu, type: type || "message", donnees: donnees || {} }
+        body: { compte_id: m.user_id, contenu: contenu, type: type || "message", donnees: donnees || {}, partie_id: partieId || null }
       });
     },
 
@@ -372,12 +374,12 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
        connaît le résultat avant de le graver, le client ne choisit plus
        son jet ; il l'apprend par la poussée, comme les autres. */
-    lancerDes: function (nb, faces, note) {
+    lancerDes: function (nb, faces, note, partieId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/rpc/lancer_des", {
         method: "POST", token: m.access_token,
-        body: { nb: nb, faces: faces, note: note || null }
+        body: { nb: nb, faces: faces, note: note || null, p_partie: partieId || null }
       });
     },
 
@@ -411,8 +413,10 @@ const {
    V0.32 : onglet PARTIES + canaux de partie dans la Console — « rien
    n'est secret pour l'institution » (parole du Maître de la Tombe).
    V0.33 : troisième mode de validation — AUTOMATIQUE, le compte naît
-   actif sans email ni sceau (idée du Maître de la Tombe). ── */
-const BUILD = "0.33";
+   actif sans email ni sceau (idée du Maître de la Tombe).
+   V0.34 : l'institution ÉCRIT — les gravures partent dans le canal de
+   la partie choisie, dés compris (le RPC lance pour la table). ── */
+const BUILD = "0.34";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -765,7 +769,9 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
          des événements de jeu, idée de Michael). Le message est GRAVÉ dans
          la Tombe — le trigger console_verite le signe du pseudo et du rôle
          admin de la ligne compte, personne ne se déguise. */
-      envoyerConsole: function (contenu, type, donnees) {
+      /* V45 : le canal de destination — la parole de l'invention part
+         dans le canal GLOBAL, ou dans celui de la partie choisie. */
+      envoyerConsole: function (contenu, type, donnees, partieId) {
         var m = lire();
         if (!m || !m.access_token || !m.user_id) return Promise.reject(new Error("Hors salle."));
         return api("/rest/v1/archiviste_console", {
@@ -775,7 +781,8 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
             compte_id: m.user_id,
             contenu: contenu,
             type: type || "message",
-            donnees: donnees || {}
+            donnees: donnees || {},
+            partie_id: partieId || null
           }
         });
       },
@@ -879,7 +886,7 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
       /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
          connaît le résultat avant de le graver, le client ne choisit plus
          son jet ; il l'apprend par la poussée, comme les autres. */
-      lancerDes: function (nb, faces, note) {
+      lancerDes: function (nb, faces, note, partieId) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve();
         return api("/rest/v1/rpc/lancer_des", {
@@ -888,7 +895,8 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           body: {
             nb: nb,
             faces: faces,
-            note: note || null
+            note: note || null,
+            p_partie: partieId || null
           }
         });
       },
@@ -1837,10 +1845,16 @@ function Salle({
   }, e.contenu)))), canal && canal !== "global" ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs px-3 pt-3",
     style: {
+      color: "#f0b24a",
+      background: "#14161b"
+    }
+  }, "Vos gravures partent dans le canal de CETTE partie \u2014 la table les voit en direct.") : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs px-3 pt-3",
+    style: {
       color: "#71717a",
       background: "#14161b"
     }
-  }, "Vos gravures partent dans le canal global \u2014 l'institution lit les parties, elle n'\xE9crit pas encore dedans.") : null, /*#__PURE__*/React.createElement("div", {
+  }, "Vos gravures partent dans le canal global \u2014 choisissez une partie (vue TOUT ou onglet PARTIES) pour \xE9crire \xE0 sa table."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 items-center p-3",
     style: {
       background: "#14161b",
@@ -1851,7 +1865,7 @@ function Salle({
     onChange: e => setConsoleTexte(e.target.value),
     onKeyDown: e => {
       if (e.key === "Enter" && consoleTexte.trim()) {
-        onConsoleEnvoyer(consoleTexte);
+        onConsoleEnvoyer(consoleTexte, canal && canal !== "global" ? canal : null);
         setConsoleTexte("");
       }
     },
@@ -1867,7 +1881,7 @@ function Salle({
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       if (consoleTexte.trim()) {
-        onConsoleEnvoyer(consoleTexte);
+        onConsoleEnvoyer(consoleTexte, canal && canal !== "global" ? canal : null);
         setConsoleTexte("");
       }
     },
@@ -1885,7 +1899,7 @@ function Salle({
     }
   }, ["d3", "d6", "d20", "d100"].map(d => /*#__PURE__*/React.createElement("button", {
     key: d,
-    onClick: () => onConsoleEnvoyer("/de " + d),
+    onClick: () => onConsoleEnvoyer("/de " + d, canal && canal !== "global" ? canal : null),
     disabled: consoleEnvoi,
     className: "px-2 py-0.5 rounded text-xs font-bold",
     style: {
@@ -2250,13 +2264,17 @@ function App() {
     CLOUD.lireConsole().then(f => setConsoleFil(f || [])).catch(() => {});
     CLOUD.lireParties().then(l => setParties(l || [])).catch(() => {});
   }, [phase]);
-  const envoyerConsole = texte => {
+  /* V45 : envoyerConsole emporte le CANAL — null (ou "global") = le canal
+     de l'institution ; l'id d'une partie = son canal (message OU dé : le
+     RPC lance_des roule alors POUR la table). */
+  const envoyerConsole = (texte, partieId) => {
     const t = (texte || "").trim();
     if (!t || !CLOUD) return;
     const ev = interpreterConsole(t); /* /de 3d6 et /tour X deviennent typés */
+    const p = partieId || null;
     setConsoleEnvoi(true);
     /* V3 : /de part à la Tombe — elle roule et grave elle-même */
-    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces).catch(() => {}) : CLOUD.envoyerConsole(ev.contenu, ev.type, ev.donnees).catch(() => {});
+    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces, null, p).catch(() => {}) : CLOUD.envoyerConsole(ev.contenu, ev.type, ev.donnees, p).catch(() => {});
     envoi.then(() => setConsoleEnvoi(false));
   };
 
