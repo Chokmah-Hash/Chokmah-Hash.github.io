@@ -415,8 +415,10 @@ const {
    V0.33 : troisième mode de validation — AUTOMATIQUE, le compte naît
    actif sans email ni sceau (idée du Maître de la Tombe).
    V0.34 : l'institution ÉCRIT — les gravures partent dans le canal de
-   la partie choisie, dés compris (le RPC lance pour la table). ── */
-const BUILD = "0.34";
+   la partie choisie, dés compris (le RPC lance pour la table).
+   V0.35 : LA CORBEILLE DES PARTIES — le MJ efface, l'institution garde :
+   restauration, purge d'une ligne, ou vidage entier, scellés par le mot. ── */
+const BUILD = "0.35";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -816,6 +818,41 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           return [];
         });
       },
+      /* V46 : LA CORBEILLE DES PARTIES — le MJ efface, l'institution garde.
+         restaurer rend la partie aux écrans ; purger efface UNE partie À
+         JAMAIS (les FK cascades emportent joueurs, fiches, console) ; vider
+         purge toute la Corbeille d'un coup. */
+      restaurerPartie: function (id) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+        return api("/rest/v1/rpc/archiviste_restaurer_partie", {
+          method: "POST",
+          token: m.access_token,
+          body: {
+            p_id: id
+          }
+        });
+      },
+      purgerPartie: function (id) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+        return api("/rest/v1/rpc/archiviste_purger_partie", {
+          method: "POST",
+          token: m.access_token,
+          body: {
+            p_id: id
+          }
+        });
+      },
+      viderCorbeille: function () {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.reject(new Error("Hors salle."));
+        return api("/rest/v1/rpc/archiviste_vider_corbeille", {
+          method: "POST",
+          token: m.access_token,
+          body: {}
+        });
+      },
       /* Graver un compte joueur de la main de l'Archiviste : l'inscription part
          chez Supabase Auth, la ligne compte s'écrit avec la clé du nouveau venu
          (le garde du serveur force rôle joueur + statut selon le mode), puis on
@@ -1187,7 +1224,8 @@ function Salle({
   consoleFil,
   onConsoleEnvoyer,
   consoleEnvoi,
-  parties
+  parties,
+  onCorbeille
 }) {
   const {
     comptes,
@@ -1202,7 +1240,11 @@ function Salle({
   parties.forEach(p => {
     partiPar[p.id] = p;
   });
-  const partiesEnCours = parties.filter(p => p.statut === "en_cours");
+  /* V46 : les parties VIVANTES vs la CORBEILLE — le MJ efface, la vue
+     lobby (ouverte à l'admin) porte supprime_le ; la sentence sépare. */
+  const vivantes = parties.filter(p => !p.supprime_le);
+  const corbeille = parties.filter(p => p.supprime_le);
+  const partiesEnCours = vivantes.filter(p => p.statut === "en_cours");
   /* Le fil selon le canal choisi : tout, le global, ou une partie. */
   const filConsole = canal === null ? consoleFil : canal === "global" ? consoleFil.filter(e => !e.partie_id) : consoleFil.filter(e => e.partie_id === canal);
   const ORDRE_STATUT = {
@@ -1220,6 +1262,12 @@ function Salle({
   const [motSuppr, setMotSuppr] = useState(""); // la consécration écrite : « suppression »
   const [supprEnCours, setSupprEnCours] = useState(false);
   const [supprErreur, setSupprErreur] = useState(null);
+  /* V46 : la Corbeille des parties — purger UNE ligne (son id) ou TOUT
+     (le mot « tout ») exige la même consécration écrite. */
+  const [confPurge, setConfPurge] = useState(null);
+  const [motPurge, setMotPurge] = useState("");
+  const [corbEnCours, setCorbEnCours] = useState(false);
+  const [corbMsg, setCorbMsg] = useState(null);
   const [creation, setCreation] = useState(false); // le cadre de gravure, si ouvert
   const [consoleTexte, setConsoleTexte] = useState(""); // la parole de l'institution
   const [nPseudo, setNPseudo] = useState("");
@@ -1359,7 +1407,7 @@ function Salle({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["parties", "PARTIES"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["parties", "PARTIES"], ["corbeille", "CORBEILLE"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -1373,11 +1421,15 @@ function Salle({
     style: {
       opacity: 0.7
     }
-  }, " (", visibles.length, ")") : null, id === "parties" && partiesEnCours.length ? /*#__PURE__*/React.createElement("span", {
+  }, " (", visibles.length, ")") : null, id === "parties" && vivantes.length ? /*#__PURE__*/React.createElement("span", {
     style: {
       opacity: 0.7
     }
-  }, " (", partiesEnCours.length, ")") : null, id === "console" && consoleFil.length ? /*#__PURE__*/React.createElement("span", {
+  }, " (", vivantes.length, ")") : null, id === "corbeille" && corbeille.length ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      opacity: 0.7
+    }
+  }, " (", corbeille.length, ")") : null, id === "console" && consoleFil.length ? /*#__PURE__*/React.createElement("span", {
     style: {
       opacity: 0.7
     }
@@ -1661,17 +1713,17 @@ function Salle({
     style: {
       color: "#71717a"
     }
-  }, "Chaque aventure de la Tombe \u2014 ouverte au recrutement, lanc\xE9e \xE0 la table, ou close. Rien n'est secret pour l'institution."), parties.length ? /*#__PURE__*/React.createElement("div", {
+  }, "Chaque aventure de la Tombe \u2014 ouverte au recrutement, lanc\xE9e \xE0 la table, ou close. Rien n'est secret pour l'institution."), vivantes.length ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl overflow-hidden",
     style: {
       border: "1px solid #27272a"
     }
-  }, parties.slice().sort((a, b) => (ORDRE_STATUT[a.statut] !== undefined ? ORDRE_STATUT[a.statut] : 3) - (ORDRE_STATUT[b.statut] !== undefined ? ORDRE_STATUT[b.statut] : 3)).map((p, i) => /*#__PURE__*/React.createElement("div", {
+  }, vivantes.slice().sort((a, b) => (ORDRE_STATUT[a.statut] !== undefined ? ORDRE_STATUT[a.statut] : 3) - (ORDRE_STATUT[b.statut] !== undefined ? ORDRE_STATUT[b.statut] : 3)).map((p, i) => /*#__PURE__*/React.createElement("div", {
     key: p.id,
     className: "flex items-center gap-3 px-4 py-3 flex-wrap",
     style: {
       background: "#14161b",
-      borderBottom: i < parties.length - 1 ? "1px solid #27272a" : "none"
+      borderBottom: i < vivantes.length - 1 ? "1px solid #27272a" : "none"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-2.5 h-2.5 rounded-full shrink-0",
@@ -1718,7 +1770,206 @@ function Salle({
       border: "1px solid #27272a",
       color: "#71717a"
     }
-  }, "Aucune partie dans la Tombe pour l'instant.")), onglet === "console" && /*#__PURE__*/React.createElement("div", {
+  }, "Aucune partie dans la Tombe pour l'instant.")), onglet === "corbeille" && /*#__PURE__*/React.createElement("div", {
+    className: "mb-8"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold tracking-widest mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "LA CORBEILLE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-4",
+    style: {
+      color: "#71717a"
+    }
+  }, "Les aventures effac\xE9es par les Ma\xEEtres du Jeu reposent ici \u2014 invisibles des \xE9crans, intactes dans la Tombe. L'institution rend la pierre\u2026 ou la pulv\xE9rise \xE0 jamais."), corbMsg && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg px-3 py-2 mb-4 text-xs font-bold",
+    style: {
+      background: "#2ee6c910",
+      color: "#2ee6c9",
+      border: "1px solid #2ee6c944"
+    }
+  }, corbMsg), corbeille.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl overflow-hidden",
+    style: {
+      border: "1px solid #27272a"
+    }
+  }, corbeille.slice().sort((a, b) => new Date(b.supprime_le) - new Date(a.supprime_le)).map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: p.id,
+    className: "flex items-center gap-3 px-4 py-3 flex-wrap",
+    style: {
+      background: "#14161b",
+      borderBottom: i < corbeille.length - 1 ? "1px solid #27272a" : "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-2.5 h-2.5 rounded-full shrink-0",
+    style: {
+      background: "#52525b"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-sm min-w-0 truncate",
+    style: {
+      color: "#a8adb8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs px-1.5 rounded font-bold shrink-0",
+    style: {
+      background: "#a8adb810",
+      color: "#a8adb8"
+    }
+  }, "\uD83C\uDFAD ", p.code), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs flex-1 min-w-0 truncate",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "MJ ", p.mj_pseudo, " \xB7 ", p.nb_joueurs, " joueur(s) \xB7 effac\xE9e le ", p.supprime_le ? dateCourte(p.supprime_le) : "—"), confPurge === p.id ? /*#__PURE__*/React.createElement("div", {
+    className: "w-full",
+    style: {
+      borderTop: "1px solid #27272a",
+      paddingTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#fb7185"
+    }
+  }, "\xAB ", p.nom, " \xBB mourra \xC0 JAMAIS \u2014 joueurs, fiches, console : tout s'efface avec elle. \xC9crivez \xAB suppression \xBB pour sceller la sentence."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: motPurge,
+    onChange: e => setMotPurge(e.target.value),
+    placeholder: "suppression",
+    type: "text",
+    autoComplete: "off",
+    maxLength: 12,
+    className: "flex-1 rounded-lg px-3 py-2 text-sm",
+    style: champ
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setCorbEnCours(true);
+      onCorbeille.purger(p).then(() => {
+        setConfPurge(null);
+        setMotPurge("");
+        setCorbMsg("« " + p.nom + " » purgée — à jamais.");
+      }).catch(() => setCorbMsg("La Tombe a refusé.")).then(() => setCorbEnCours(false));
+    },
+    disabled: motPurge !== "suppression" || corbEnCours,
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#fb7185",
+      color: "#0c0d10",
+      opacity: motPurge !== "suppression" || corbEnCours ? 0.4 : 1
+    }
+  }, "\u2715 Purger"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setConfPurge(null);
+      setMotPurge("");
+    },
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a"
+    }
+  }, "Annuler"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setCorbEnCours(true);
+      onCorbeille.restaurer(p).then(() => {
+        setCorbMsg("« " + p.nom + " » rendue aux écrans — elle vit de nouveau.");
+      }).catch(() => setCorbMsg("La Tombe a refusé.")).then(() => setCorbEnCours(false));
+    },
+    disabled: corbEnCours,
+    className: "px-2 py-1 rounded-lg text-xs font-bold shrink-0",
+    style: {
+      background: "#2ee6c914",
+      color: "#2ee6c9",
+      border: "1px solid #2ee6c944",
+      cursor: "pointer"
+    }
+  }, "\u21BA RESTAURER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setConfPurge(p.id);
+      setMotPurge("");
+      setCorbMsg(null);
+    },
+    className: "px-2 py-1 rounded-lg text-xs font-bold shrink-0",
+    style: {
+      background: "#fb718510",
+      color: "#fb7185",
+      border: "1px solid #fb718544",
+      cursor: "pointer"
+    }
+  }, "\u2715 Purger"))))), /*#__PURE__*/React.createElement("div", {
+    className: "mt-4"
+  }, !confPurge || confPurge !== "tout" ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setConfPurge("tout");
+      setMotPurge("");
+      setCorbMsg(null);
+    },
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#fb718510",
+      color: "#fb7185",
+      border: "1px solid #fb718544",
+      cursor: "pointer"
+    }
+  }, "\u2620 VIDER LA CORBEILLE ENTI\xC8RE (", corbeille.length, ")") : /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg p-4",
+    style: {
+      background: "#14161b",
+      border: "1px solid #fb718544"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#fb7185"
+    }
+  }, "Les ", corbeille.length, " aventure", corbeille.length > 1 ? "s" : "", " de la Corbeille mourront \xC0 JAMAIS \u2014 joueurs, fiches, consoles. \xC9crivez \xAB suppression \xBB pour sceller la sentence."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: motPurge,
+    onChange: e => setMotPurge(e.target.value),
+    placeholder: "suppression",
+    type: "text",
+    autoComplete: "off",
+    maxLength: 12,
+    className: "flex-1 rounded-lg px-3 py-2 text-sm",
+    style: champ
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setCorbEnCours(true);
+      onCorbeille.vider().then(n => {
+        setConfPurge(null);
+        setMotPurge("");
+        setCorbMsg((n || 0) + " aventure(s) purgée(s) — la Corbeille est vide.");
+      }).catch(() => setCorbMsg("La Tombe a refusé.")).then(() => setCorbEnCours(false));
+    },
+    disabled: motPurge !== "suppression" || corbEnCours,
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#fb7185",
+      color: "#0c0d10",
+      opacity: motPurge !== "suppression" || corbEnCours ? 0.4 : 1
+    }
+  }, "\u2620 VIDER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setConfPurge(null);
+      setMotPurge("");
+    },
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a"
+    }
+  }, "Annuler"))))) : /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4 text-sm",
+    style: {
+      border: "1px solid #27272a",
+      color: "#71717a"
+    }
+  }, "La Corbeille est vide \u2014 aucune aventure effac\xE9e pour l'instant.")), onglet === "console" && /*#__PURE__*/React.createElement("div", {
     className: "mb-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold tracking-widest mb-2",
@@ -2490,6 +2741,27 @@ function App() {
     await CLOUD.supprimerCompte(compte.compte_id);
     await synchroniser();
   };
+
+  /* V46 : la Corbeille des parties — l'institution rend la pierre ou la
+     pulvérise ; la vérité repart de la Tombe après chaque sentence. */
+  const restaurerPartie = async p => {
+    await CLOUD.restaurerPartie(p.id);
+    await synchroniser();
+  };
+  const purgerPartie = async p => {
+    await CLOUD.purgerPartie(p.id);
+    await synchroniser();
+  };
+  const viderCorbeille = async () => {
+    const n = await CLOUD.viderCorbeille();
+    await synchroniser();
+    return typeof n === "number" ? n : null;
+  };
+  const onCorbeille = {
+    restaurer: restaurerPartie,
+    purger: purgerPartie,
+    vider: viderCorbeille
+  };
   const sortir = () => {
     CLOUD.deconnexion().catch(() => {});
     setSession(null);
@@ -2512,7 +2784,8 @@ function App() {
       consoleFil: consoleFil,
       onConsoleEnvoyer: envoyerConsole,
       consoleEnvoi: consoleEnvoi,
-      parties: parties
+      parties: parties,
+      onCorbeille: onCorbeille
     });
   }
   if (phase === "refus") {
