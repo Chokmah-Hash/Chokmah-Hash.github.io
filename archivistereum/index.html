@@ -300,12 +300,26 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     },
 
     /* Le fil de la Console : relu à l'entrée dans la salle — le journal
-       commence où l'on arrive (les 60 derniers messages). */
+       commence où l'on arrive (les 60 derniers messages). V0.32 : le fil
+       emporte le partie_id — l'institution voit TOUS les canaux (le global
+       et chaque partie : la policy de lecture s'ouvre à est_admin()). */
     lireConsole: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", { token: m.access_token })
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", { token: m.access_token })
         .then(function (l) { return (l || []).slice().reverse(); })
+        .catch(function () { return []; });
+    },
+
+    /* V0.32 : LES PARTIES — toutes les tables qui vivent, ouvertes au
+       recrutement, lancées ou closes. La vue lobby (security definer)
+       porte le pseudo du MJ et le compte de joueurs ; lisible par tout
+       identifié, l'admin n'a besoin de rien de plus. */
+    lireParties: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_parties_lobby?select=*&order=cree_le.desc", { token: m.access_token })
+        .then(function (l) { return l || []; })
         .catch(function () { return []; });
     },
 
@@ -392,8 +406,10 @@ const {
    construite, le script pipeline prime et l'embarqué s'efface).
    ════════════════════════════════════════════════════════════════════ */
 
-/* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build) ── */
-const BUILD = "0.31";
+/* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build).
+   V0.32 : onglet PARTIES + canaux de partie dans la Console — « rien
+   n'est secret pour l'institution » (parole du Maître de la Tombe). ── */
+const BUILD = "0.32";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -760,14 +776,31 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
         });
       },
       /* Le fil de la Console : relu à l'entrée dans la salle — le journal
-         commence où l'on arrive (les 60 derniers messages). */
+         commence où l'on arrive (les 60 derniers messages). V0.32 : le fil
+         emporte le partie_id — l'institution voit TOUS les canaux (le global
+         et chaque partie : la policy de lecture s'ouvre à est_admin()). */
       lireConsole: function () {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve([]);
-        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", {
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", {
           token: m.access_token
         }).then(function (l) {
           return (l || []).slice().reverse();
+        }).catch(function () {
+          return [];
+        });
+      },
+      /* V0.32 : LES PARTIES — toutes les tables qui vivent, ouvertes au
+         recrutement, lancées ou closes. La vue lobby (security definer)
+         porte le pseudo du MJ et le compte de joueurs ; lisible par tout
+         identifié, l'admin n'a besoin de rien de plus. */
+      lireParties: function () {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve([]);
+        return api("/rest/v1/archiviste_parties_lobby?select=*&order=cree_le.desc", {
+          token: m.access_token
+        }).then(function (l) {
+          return l || [];
         }).catch(function () {
           return [];
         });
@@ -1141,14 +1174,35 @@ function Salle({
   presents,
   consoleFil,
   onConsoleEnvoyer,
-  consoleEnvoi
+  consoleEnvoi,
+  parties
 }) {
   const {
     comptes,
     memoires,
     parametres
   } = donnees;
-  const [onglet, setOnglet] = useState("stat"); // stat | bibliotheque | comptes
+  const [onglet, setOnglet] = useState("stat"); // stat | bibliotheque | comptes | parties | console
+  /* V0.32 : le canal de la Console — null = TOUS (global + parties, badgés),
+     "global" = le canal de l'institution, ou l'id d'une partie. */
+  const [canal, setCanal] = useState(null);
+  const partiPar = {};
+  parties.forEach(p => {
+    partiPar[p.id] = p;
+  });
+  const partiesEnCours = parties.filter(p => p.statut === "en_cours");
+  /* Le fil selon le canal choisi : tout, le global, ou une partie. */
+  const filConsole = canal === null ? consoleFil : canal === "global" ? consoleFil.filter(e => !e.partie_id) : consoleFil.filter(e => e.partie_id === canal);
+  const ORDRE_STATUT = {
+    en_cours: 0,
+    ouverte: 1,
+    close: 2
+  };
+  const COULEUR_STATUT = {
+    ouverte: "#2ee6c9",
+    en_cours: "#f0b24a",
+    close: "#52525b"
+  };
   const [detail, setDetail] = useState(null); // la fiche ouverte, si ouverte
   const [confSuppr, setConfSuppr] = useState(false); // la sentence se prépare-t-elle ?
   const [motSuppr, setMotSuppr] = useState(""); // la consécration écrite : « suppression »
@@ -1293,7 +1347,7 @@ function Salle({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["parties", "PARTIES"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -1307,7 +1361,11 @@ function Salle({
     style: {
       opacity: 0.7
     }
-  }, " (", visibles.length, ")") : null, id === "console" && consoleFil.length ? /*#__PURE__*/React.createElement("span", {
+  }, " (", visibles.length, ")") : null, id === "parties" && partiesEnCours.length ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      opacity: 0.7
+    }
+  }, " (", partiesEnCours.length, ")") : null, id === "console" && consoleFil.length ? /*#__PURE__*/React.createElement("span", {
     style: {
       opacity: 0.7
     }
@@ -1575,19 +1633,105 @@ function Salle({
       color: "#71717a",
       border: "1px solid #27272a"
     }
-  }, "\u2699 Le r\xE9glage serveur doit suivre ce commutateur dans Supabase (Authentication \u2192 Sign In / Up) : \xAB Confirm email \xBB D\xC9SACTIV\xC9 pour le sceau de l'admin, ACTIV\xC9 pour le lien par email.", modeValidation === "email" ? " Mode actuel : chaque inscription reçoit un lien de confirmation." : " Mode actuel : les comptes naissent « en attente » — le registre attend votre sceau.")), onglet === "console" && /*#__PURE__*/React.createElement("div", {
+  }, "\u2699 Le r\xE9glage serveur doit suivre ce commutateur dans Supabase (Authentication \u2192 Sign In / Up) : \xAB Confirm email \xBB D\xC9SACTIV\xC9 pour le sceau de l'admin, ACTIV\xC9 pour le lien par email.", modeValidation === "email" ? " Mode actuel : chaque inscription reçoit un lien de confirmation." : " Mode actuel : les comptes naissent « en attente » — le registre attend votre sceau.")), onglet === "parties" && /*#__PURE__*/React.createElement("div", {
     className: "mb-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold tracking-widest mb-2",
     style: {
       color: "#a1a1aa"
     }
-  }, "CONSOLE GLOBALE"), /*#__PURE__*/React.createElement("div", {
+  }, "LES PARTIES"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#71717a"
     }
-  }, "Le canal unique du MJ et des joueurs \u2014 chaque message est grav\xE9 dans la Tombe et pousse en temps r\xE9el chez tous. Messages libres en V1."), /*#__PURE__*/React.createElement("div", {
+  }, "Chaque aventure de la Tombe \u2014 ouverte au recrutement, lanc\xE9e \xE0 la table, ou close. Rien n'est secret pour l'institution."), parties.length ? /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl overflow-hidden",
+    style: {
+      border: "1px solid #27272a"
+    }
+  }, parties.slice().sort((a, b) => (ORDRE_STATUT[a.statut] !== undefined ? ORDRE_STATUT[a.statut] : 3) - (ORDRE_STATUT[b.statut] !== undefined ? ORDRE_STATUT[b.statut] : 3)).map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: p.id,
+    className: "flex items-center gap-3 px-4 py-3 flex-wrap",
+    style: {
+      background: "#14161b",
+      borderBottom: i < parties.length - 1 ? "1px solid #27272a" : "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-2.5 h-2.5 rounded-full shrink-0",
+    style: {
+      background: COULEUR_STATUT[p.statut] || "#52525b"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-sm min-w-0 truncate",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs px-1.5 rounded font-bold shrink-0",
+    style: {
+      background: "#a8adb810",
+      color: "#a8adb8"
+    }
+  }, "\uD83C\uDFAD ", p.code), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs flex-1 min-w-0 truncate",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "MJ ", p.mj_pseudo, " \xB7 ", p.nb_joueurs, " joueur(s)"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-right shrink-0",
+    style: {
+      color: "#71717a"
+    }
+  }, p.statut === "en_cours" ? "lancée " + (p.lance_le ? dateCourte(p.lance_le) : "—") : p.statut === "close" ? "close — " + (p.cree_le ? dateCourte(p.cree_le) : "—") : "ouverte " + (p.cree_le ? dateCourte(p.cree_le) : "—")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setCanal(p.id);
+      setOnglet("console");
+    },
+    className: "px-2 py-1 rounded-lg text-xs font-bold shrink-0",
+    style: {
+      background: "#f0b24a14",
+      color: "#f0b24a",
+      border: "1px solid #f0b24a44",
+      cursor: "pointer"
+    },
+    title: "Ouvrir le canal de cette partie dans la Console"
+  }, "CONSOLE \u2192")))) : /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4 text-sm",
+    style: {
+      border: "1px solid #27272a",
+      color: "#71717a"
+    }
+  }, "Aucune partie dans la Tombe pour l'instant.")), onglet === "console" && /*#__PURE__*/React.createElement("div", {
+    className: "mb-8"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold tracking-widest mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, canal === "global" ? "CONSOLE — CANAL GLOBAL" : canal ? "CONSOLE DE PARTIE — " + ((partiPar[canal] || {}).nom || "PARTIE") + (partiPar[canal] ? " (" + partiPar[canal].code + ")" : "") : "CONSOLE — TOUS LES CANAUX"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-4",
+    style: {
+      color: "#71717a"
+    }
+  }, canal ? "Le fil filtré sur ce canal — chaque message est gravé dans la Tombe et pousse en temps réel." : "Tous les canaux de la Tombe — le global et chaque partie, mélangés et badgés. Rien n'est secret pour l'institution."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 flex-wrap items-center mb-4"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs mr-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "canal :"), [["tous", "TOUT"], ["global", "🌐 GLOBAL"]].concat(parties.slice(0, 12).map(p => [p.id, "🎭 " + p.code])).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setCanal(id === "tous" ? null : id),
+    className: "px-2 py-0.5 rounded text-xs font-bold",
+    style: {
+      background: (id === "tous" ? canal === null : canal === id) ? "#f0b24a18" : "transparent",
+      color: (id === "tous" ? canal === null : canal === id) ? "#f0b24a" : "#71717a",
+      border: "1px solid " + ((id === "tous" ? canal === null : canal === id) ? "#f0b24a44" : "#27272a"),
+      cursor: "pointer"
+    }
+  }, lbl))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl overflow-hidden",
     style: {
       border: "1px solid #27272a"
@@ -1597,12 +1741,12 @@ function Salle({
       maxHeight: "320px",
       overflowY: "auto"
     }
-  }, consoleFil.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, filConsole.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-6 text-center",
     style: {
       color: "#52525b"
     }
-  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), consoleFil.map(e => e.type === "tour" ? /*#__PURE__*/React.createElement("div", {
+  }, "Aucun message dans ce canal \u2014 la Console attend la premi\xE8re parole."), filConsole.map(e => e.type === "tour" ? /*#__PURE__*/React.createElement("div", {
     key: e.id,
     className: "flex items-center gap-3 px-4 py-2",
     style: {
@@ -1643,7 +1787,14 @@ function Salle({
     style: {
       color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
     }
-  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), e.type === "de" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), e.partie_id && canal === null ? /*#__PURE__*/React.createElement("span", {
+    className: "text-xs px-1.5 rounded font-bold shrink-0",
+    style: {
+      background: "#a8adb812",
+      color: "#a8adb8"
+    },
+    title: (partiPar[e.partie_id] || {}).nom || "partie"
+  }, "\uD83C\uDFAD ", (partiPar[e.partie_id] || {}).code || "?") : null, e.type === "de" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "text-sm"
   }, "\uD83C\uDFB2"), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-bold flex-1",
@@ -1675,7 +1826,13 @@ function Salle({
       color: "#a1a1aa",
       overflowWrap: "anywhere"
     }
-  }, e.contenu)))), /*#__PURE__*/React.createElement("div", {
+  }, e.contenu)))), canal && canal !== "global" ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs px-3 pt-3",
+    style: {
+      color: "#71717a",
+      background: "#14161b"
+    }
+  }, "Vos gravures partent dans le canal global \u2014 l'institution lit les parties, elle n'\xE9crit pas encore dedans.") : null, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 items-center p-3",
     style: {
       background: "#14161b",
@@ -2073,12 +2230,17 @@ function App() {
      tour se typeront par-dessus. Gravé en base, poussé en temps réel. */
   const [consoleFil, setConsoleFil] = useState([]);
   const [consoleEnvoi, setConsoleEnvoi] = useState(false);
+  /* V0.32 : les parties de la Tombe — l'institution voit toutes les tables.
+     Chargées comme le fil, resynchronisées à chaque poussée. */
+  const [parties, setParties] = useState([]);
   useEffect(() => {
     if (phase !== "salle" || !CLOUD) {
       setConsoleFil([]);
+      setParties([]);
       return;
     }
     CLOUD.lireConsole().then(f => setConsoleFil(f || [])).catch(() => {});
+    CLOUD.lireParties().then(l => setParties(l || [])).catch(() => {});
   }, [phase]);
   const envoyerConsole = texte => {
     const t = (texte || "").trim();
@@ -2123,6 +2285,8 @@ function App() {
       memoires: res.memoires,
       parametres: res.parametres
     });
+    /* V0.32 : les tables qui vivent suivent la même vérité que le registre. */
+    CLOUD.lireParties().then(l => setParties(l || [])).catch(() => {});
   };
 
   /* ════════ Le module de Synchronisation (Core) — TEMPS RÉEL ════════
@@ -2163,7 +2327,13 @@ function App() {
         table: "parametres"
       }, {
         table: "archiviste_console"
-      } /* le fil de la Console — poussé, pas rechargé */],
+      }, /* le fil de la Console — poussé, pas rechargé */
+      {
+        table: "archiviste_parties"
+      }, /* V0.32 : une partie lance/close/naît → resynchro */
+      {
+        table: "archiviste_partie_joueurs"
+      } /* un joueur rejoint ou sort → resynchro */],
       surChangement: donnee => {
         /* Les messages de la Console arrivent DROIT au fil — la salle ne
            se resynchronise pas pour un message de jeu. */
@@ -2314,7 +2484,8 @@ function App() {
       presents: presents,
       consoleFil: consoleFil,
       onConsoleEnvoyer: envoyerConsole,
-      consoleEnvoi: consoleEnvoi
+      consoleEnvoi: consoleEnvoi,
+      parties: parties
     });
   }
   if (phase === "refus") {
