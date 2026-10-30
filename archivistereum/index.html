@@ -2005,10 +2005,11 @@ function App() {
         /* Les messages de la Console arrivent DROIT au fil — la salle ne
            se resynchronise pas pour un message de jeu. */
         const evType = donnee && (donnee.type || donnee.eventType); /* payload réel : « type » (eventType ancien accepté) */
-        if (donnee && donnee.table === "archiviste_console" && evType === "INSERT" && donnee.new) {
+        const ligne = donnee && (donnee.record || donnee.new); /* payload réel : « record » (le « new » de la doc JS n'arrive jamais ici) */
+        if (donnee && donnee.table === "archiviste_console" && evType === "INSERT" && ligne) {
           setConsoleFil(f => {
-            if (f.some(x => x.id === donnee.new.id)) return f; /* anti-écho */
-            return [...f, donnee.new].slice(-80);
+            if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
+            return [...f, ligne].slice(-80);
           });
           return;
         }
