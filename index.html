@@ -359,12 +359,12 @@ window.LARCHIVISTE_CLOUD = (function () {
        journal — et pousse en temps réel chez tous. Le serveur signe
        lui-même le pseudo et le rôle (trigger console_verite) : personne
        ne peut se déguiser. */
-    envoyerConsole: function (compteId, contenu) {
+    envoyerConsole: function (compteId, contenu, type, donnees) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_console", {
         method: "POST", token: m.access_token,
-        body: { compte_id: compteId, contenu: contenu }
+        body: { compte_id: compteId, contenu: contenu, type: type || "message", donnees: donnees || {} }
       });
     },
 
@@ -373,7 +373,7 @@ window.LARCHIVISTE_CLOUD = (function () {
     lireConsole: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", { token: m.access_token })
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", { token: m.access_token })
         .then(function (l) { return (l || []).slice().reverse(); })
         .catch(function () { return []; });
     },
@@ -842,7 +842,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
          journal — et pousse en temps réel chez tous. Le serveur signe
          lui-même le pseudo et le rôle (trigger console_verite) : personne
          ne peut se déguiser. */
-      envoyerConsole: function (compteId, contenu) {
+      envoyerConsole: function (compteId, contenu, type, donnees) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve();
         return api("/rest/v1/archiviste_console", {
@@ -850,7 +850,9 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           token: m.access_token,
           body: {
             compte_id: compteId,
-            contenu: contenu
+            contenu: contenu,
+            type: type || "message",
+            donnees: donnees || {}
           }
         });
       },
@@ -859,7 +861,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
       lireConsole: function () {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve([]);
-        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,cree_le&order=id.desc&limit=60", {
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le&order=id.desc&limit=60", {
           token: m.access_token
         }).then(function (l) {
           return (l || []).slice().reverse();
@@ -4276,7 +4278,31 @@ function ConsoleGlobale({
     style: {
       color: "#52525b"
     }
-  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => /*#__PURE__*/React.createElement("div", {
+  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => e.type === "tour" ?
+  /*#__PURE__*/
+  /* Le bandeau du tour : l'annonce du MJ tranche sur le fil */
+  React.createElement("div", {
+    key: e.id,
+    className: "flex items-center gap-2 py-1.5",
+    style: {
+      borderBottom: "1px solid #f0b24a22"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    }
+  }, heure(e.cree_le)), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold flex-1 text-center",
+    style: {
+      color: "#f0b24a",
+      letterSpacing: "0.06em"
+    }
+  }, "\u25B8 AU TOUR DE ", e.contenu.toUpperCase(), " ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, "\u2014 par ", e.pseudo))) : /*#__PURE__*/React.createElement("div", {
     key: e.id,
     className: "flex items-baseline gap-2 py-1",
     style: {
@@ -4292,7 +4318,18 @@ function ConsoleGlobale({
     style: {
       color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
     }
-  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), /*#__PURE__*/React.createElement("span", {
+  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), e.type === "de" ?
+  /*#__PURE__*/
+  /* Le jet gravé : 🎲 + résultat en turquoise, lisible au premier coup d'œil */
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs"
+  }, "\uD83C\uDFB2"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: "#2ee6c9",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu)) : /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
       color: "#a1a1aa",
@@ -4334,7 +4371,29 @@ function ConsoleGlobale({
     style: {
       color: "#52525b"
     }
-  }, "Connectez-vous pour parler dans la Console \u2014 le fil se lit d\xE9j\xE0.")));
+  }, "Connectez-vous pour parler dans la Console \u2014 le fil se lit d\xE9j\xE0.")), joueur && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 flex-wrap items-center px-2 pb-2",
+    style: {
+      borderTop: "1px solid #27272a"
+    }
+  }, ["d3", "d6", "d20", "d100"].map(d => /*#__PURE__*/React.createElement("button", {
+    key: d,
+    onClick: () => onEnvoyer("/de " + d),
+    disabled: enEnvoi,
+    className: "px-2 py-0.5 rounded text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    },
+    title: "Lancer un " + d + " — le jet se grave dans le fil"
+  }, d)), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs pl-1",
+    style: {
+      color: "#52525b"
+    }
+  }, "commandes : /de 3d6 \xB7 /tour Pr\xE9nom")));
 }
 
 /* ══════════ Le hub : le magasin et la bibliothèque ══════════ */
@@ -6538,6 +6597,44 @@ function VueInconnue({
     }
   }, "\u2190 Retour au magasin")));
 }
+
+/* ── L'interprète de la Console : les commandes deviennent des événements typés ──
+   /de XdY : le jet gravé (ex. /de 3d6 → jets + total dans « donnees ») ;
+   /tour X : l'annonce du tour, rendue en bandeau ;
+   tout le reste : parole libre V1. Le dé roule ICI, côté client — la V2
+   est de confiance, le serveur signe le pseudo ; le dé serveur viendra
+   en V3 avec la vérification du rôle. */
+function interpreterConsole(texte) {
+  const t = (texte || "").trim();
+  const mDe = t.match(/^\/de\s+(\d{0,2})d(\d{1,3})$/i);
+  if (mDe) {
+    const n = Math.min(Math.max(parseInt(mDe[1] || "1", 10) || 1, 1), 12);
+    const faces = Math.min(Math.max(parseInt(mDe[2], 10) || 6, 2), 100);
+    const jets = [];
+    for (let i = 0; i < n; i++) jets.push(1 + Math.floor(Math.random() * faces));
+    const total = jets.reduce((a, b) => a + b, 0);
+    return {
+      contenu: n + "d" + faces + " : " + (n > 1 ? jets.join(" + ") + " = " : "") + total,
+      type: "de",
+      donnees: {
+        de: n + "d" + faces,
+        jets: jets,
+        total: total
+      }
+    };
+  }
+  const mTour = t.match(/^\/tour\s+(.{1,40})$/i);
+  if (mTour) return {
+    contenu: mTour[1].trim(),
+    type: "tour",
+    donnees: {}
+  };
+  return {
+    contenu: t,
+    type: "message",
+    donnees: {}
+  };
+}
 function App() {
   const [vue, setVue] = useState("hub");
   const [packActif, setPackActif] = useState(null);
@@ -6644,8 +6741,10 @@ function App() {
   const [consoleEnvoi, setConsoleEnvoi] = useState(false);
   const envoyerConsoleMessage = texte => {
     if (!CLOUD || !session) return;
+    const ev = interpreterConsole(texte); /* /de 3d6 et /tour X deviennent typés */
+    if (!ev.contenu) return;
     setConsoleEnvoi(true);
-    CLOUD.envoyerConsole(session.compteId, texte).catch(() => showToast("La Console n'a pas gravé — réessayez.")).then(() => setConsoleEnvoi(false));
+    CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees).catch(() => showToast("La Console n'a pas gravé — réessayez.")).then(() => setConsoleEnvoi(false));
   };
 
   /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
