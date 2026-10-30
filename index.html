@@ -422,7 +422,7 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
       return api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&order=cree_le.asc", { token: m.access_token })
+        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
         .catch(function () { return []; });
     },
 
@@ -432,7 +432,7 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
       var qP = api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&order=lance_le.asc", { token: m.access_token })
+        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&supprime_le=is.null&order=lance_le.asc", { token: m.access_token })
         .catch(function () { return []; });
       var qJ = api("/rest/v1/archiviste_partie_joueurs?select=partie_id&compte_id=eq." + compteId,
         { token: m.access_token }).catch(function () { return []; });
@@ -452,8 +452,20 @@ window.LARCHIVISTE_CLOUD = (function () {
       return api("/rest/v1/archiviste_parties_lobby?select=*"
         + "&jeu=eq." + encodeURIComponent(jeu)
         + "&mj_compte_id=eq." + compteId
+        + "&supprime_le=is.null"
         + "&order=cree_le.desc", { token: m.access_token })
         .catch(function () { return []; });
+    },
+
+    /* V46 : EFFACER une de SES aventures — soft-delete (la Tombe garde
+       tout : la partie part en Corbeille, visible de l'institution seule ;
+       elle disparaît des écrans des MJ et joueurs). */
+    supprimerPartie: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors ligne."));
+      return api("/rest/v1/rpc/archiviste_supprimer_partie", {
+        method: "POST", token: m.access_token, body: { p_id: id }
+      });
     },
 
     /* Lire une partie et ses joueurs (la vue lobby porte mj_pseudo —
@@ -578,7 +590,7 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe). ── */
-const BUILD = "0.21";
+const BUILD = "0.22";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4224,6 +4236,7 @@ function EcranPartie({
   onReprendre,
   onLancer,
   onQuitter,
+  onSupprimer,
   onRetour
 }) {
   const [nom, setNom] = useState("");
@@ -4234,6 +4247,8 @@ function EcranPartie({
   const [enCreation, setEnCreation] = useState(false);
   const [detail, setDetail] = useState(null);
   const [enLivre, setEnLivre] = useState(false);
+  const [enSuppression, setEnSuppression] = useState(false); // V46 : la sentence se prépare-t-elle ?
+  const [motSuppr, setMotSuppr] = useState(""); // V46 : la consécration écrite « suppression »
   const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
   const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
 
@@ -4690,18 +4705,83 @@ function EcranPartie({
       color: "#a8adb8"
     }
   }, detail.code), " \xB7 ", detail.statut === "ouverte" ? "salle d'attente" : detail.statut === "en_cours" ? "en cours" : "close"), detail.statut === "close" ? /*#__PURE__*/React.createElement("div", {
-    className: "text-xs italic",
+    className: "text-xs italic mb-3",
     style: {
       color: "#71717a"
     }
   }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") : /*#__PURE__*/React.createElement("button", {
     onClick: () => onReprendre(detail),
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black mb-3",
     style: {
       background: detail.statut === "en_cours" ? "#f0b24a" : "#a8adb8",
       cursor: "pointer"
     }
-  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "OUVRIR LA SALLE"))), onglet === "personnages" && /*#__PURE__*/React.createElement("div", {
+  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "OUVRIR LA SALLE"), !enSuppression ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnSuppression(true);
+      setMotSuppr("");
+    },
+    className: "w-full px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#fb718510",
+      color: "#fb7185",
+      border: "1px solid #fb718544",
+      cursor: "pointer"
+    }
+  }, "\u2715 SUPPRIMER CETTE AVENTURE") : /*#__PURE__*/React.createElement("div", {
+    className: "pt-3",
+    style: {
+      borderTop: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2 leading-relaxed",
+    style: {
+      color: "#fb7185"
+    }
+  }, "\xAB ", detail.nom, " \xBB dispara\xEEtra des \xE9crans \u2014 MJ et joueurs ne la verront plus. La Tombe la garde en Corbeille ; seule l'institution peut la rendre. \xC9crivez \xAB suppression \xBB pour sceller la sentence."), /*#__PURE__*/React.createElement("input", {
+    value: motSuppr,
+    onChange: e => setMotSuppr(e.target.value),
+    placeholder: "suppression",
+    type: "text",
+    autoComplete: "off",
+    maxLength: 12,
+    className: "w-full px-3 py-2 rounded-lg text-sm mb-2",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnSuppression(false);
+      setMotSuppr("");
+      setDetail(null);
+      onSupprimer(detail);
+    },
+    disabled: motSuppr !== "suppression",
+    className: "flex-1 px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#fb7185",
+      color: "#0c0d10",
+      opacity: motSuppr !== "suppression" ? 0.4 : 1,
+      cursor: motSuppr === "suppression" ? "pointer" : "default"
+    }
+  }, "\u2715 EFFACER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnSuppression(false);
+      setMotSuppr("");
+    },
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "Annuler"))))), onglet === "personnages" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -7531,6 +7611,16 @@ function App() {
     /* RIEN d'autre ici : l'entrée se fait par la POUSSÉE, le même chemin
        pour le MJ et les joueurs — un seul code, une seule vérité. */
   };
+  /* V46 : EFFACER une aventure — la Tombe la garde en Corbeille ; elle
+     disparaît de nos écrans (les listes se rechargent par la poussée
+     temps réel, on force une resynchro de sécurité). */
+  const supprimerAventure = p => {
+    if (!CLOUD || !session) return;
+    CLOUD.supprimerPartie(p.id).then(() => {
+      showToast("Aventure effacée — elle repose en Corbeille, visible de l'institution seule.");
+      rechargerListes();
+    }).catch(() => showToast("La Tombe a refusé la sentence."));
+  };
   const quitterAventure = p => {
     if (!CLOUD || !session) return;
     if (p.mj_compte_id === session.compteId) {
@@ -7677,6 +7767,18 @@ function App() {
           } /* une aventure s'ouvre */
           if (evType === "UPDATE") {
             if (partieIdRef.current && ligne.id === partieIdRef.current) {
+              /* V46 : la partie a été SUPPRIMÉE (par nous ou l'institution) —
+                 on quitte la table sans demander pardon. */
+              if (ligne.supprime_le) {
+                setVue("hub");
+                setPartie(null);
+                setPartieJoueurs([]);
+                setFichesPartie([]);
+                setPackPartie(null);
+                setModePartie(null);
+                showToast("Cette aventure a été effacée.");
+                return;
+              }
               /* fusion : la ligne poussée est brute (sans mj_pseudo) — on
                  garde le pseudo du MJ déjà connu de la vue lobby */
               setPartie(prev => ({
@@ -7937,6 +8039,7 @@ function App() {
     onReprendre: reprendreAventure,
     onLancer: lancerAventure,
     onQuitter: quitterAventure,
+    onSupprimer: supprimerAventure,
     onRetour: () => {
       setPartie(null);
       setPartieJoueurs([]);
