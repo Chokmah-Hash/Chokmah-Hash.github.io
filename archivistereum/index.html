@@ -187,6 +187,18 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
             },
             ref: "presence"
           }));
+          /* Le track : joindre ne suffit pas, il faut S'ANNONCER — la ronde
+             ne diffuse que les états trackés (protocole Supabase v1 :
+             event "presence", payload {type:"presence", event:"track"}).
+             Le serveur traite les pushes dans l'ordre : join puis track.
+             PERDU une fois du canvas : la greffe l'a écrasé en ligne et le
+             point rouge du registre est mort (suite 39, 2026-10-30) — plus jamais. */
+          ws.send(JSON.stringify({
+            topic: "realtime:tombe",
+            event: "presence",
+            payload: { type: "presence", event: "track", payload: { compte_id: presenceCle } },
+            ref: "piste"
+          }));
         }
         surEtat("branche");
       };
@@ -580,6 +592,24 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
                 access_token: jeton
               },
               ref: "presence"
+            }));
+            /* Le track : joindre ne suffit pas, il faut S'ANNONCER — la ronde
+               ne diffuse que les états trackés (protocole Supabase v1 :
+               event "presence", payload {type:"presence", event:"track"}).
+               Le serveur traite les pushes dans l'ordre : join puis track.
+               PERDU une fois du canvas : la greffe l'a écrasé en ligne et le
+               point rouge du registre est mort (suite 39, 2026-10-30) — plus jamais. */
+            ws.send(JSON.stringify({
+              topic: "realtime:tombe",
+              event: "presence",
+              payload: {
+                type: "presence",
+                event: "track",
+                payload: {
+                  compte_id: presenceCle
+                }
+              },
+              ref: "piste"
             }));
           }
           surEtat("branche");
