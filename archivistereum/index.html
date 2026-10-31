@@ -488,35 +488,13 @@ const {
   useRef,
   useEffect
 } = React;
-
-/* ════════════════════════════════════════════════════════════════════
-   L'ARCHIVISTERIUM — la salle d'administration de L'Archiviste.
-   Une PAGE À PART : elle vit à sa propre adresse, séparée du launcher,
-   et sa porte ne s'ouvre qu'aux comptes portant le rôle « admin ».
-   Plus de salle factice : le canvas et la page en ligne parlent à la
-   MÊME Tombe Supabase (client nuage embarqué ci-dessous ; sur la page
-   construite, le script pipeline prime et l'embarqué s'efface).
-   ════════════════════════════════════════════════════════════════════ */
-
-/* ── La version de build, alignée sur le launcher (0.xx, +0.01 par build).
-   V0.32 : onglet PARTIES + canaux de partie dans la Console — « rien
-   n'est secret pour l'institution » (parole du Maître de la Tombe).
-   V0.33 : troisième mode de validation — AUTOMATIQUE, le compte naît
-   actif sans email ni sceau (idée du Maître de la Tombe).
-   V0.34 : l'institution ÉCRIT — les gravures partent dans le canal de
-   la partie choisie, dés compris (le RPC lance pour la table).
-   V0.35 : LA CORBEILLE DES PARTIES — le MJ efface, l'institution garde :
-   restauration, purge d'une ligne, ou vidage entier, scellés par le mot.
-   V0.36 : LA SESSION RAJEUNIE — l'access_token (1 h de vie) s'échange
-   tout seul contre un neuf via le refresh_token ; plus jamais « La Tombe
-   a refusé. » à cause d'un jeton éteint en silence. ── */
-const BUILD = "0.36";
+const BUILD = "0.37";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
    aucun faux registre. Sur la page construite, le script pipeline a déjà posé
    window.ARCHIVISTERIUM_CLOUD : l'embarqué s'efface alors devant lui. ── */
-var CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+const CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
 if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
   /* ════════════════════════════════════════════════════════════════════
      ARCHIVISTERIUM_CLOUD — le client nuage de la salle d'administration.
@@ -2687,7 +2665,7 @@ function App() {
   }, [phase]);
   /* V45 : envoyerConsole emporte le CANAL — null (ou "global") = le canal
      de l'institution ; l'id d'une partie = son canal (message OU dé : le
-     RPC lance_des roule alors POUR la table). */
+     RPC lancer_des roule alors POUR la table). */
   const envoyerConsole = (texte, partieId) => {
     const t = (texte || "").trim();
     if (!t || !CLOUD) return;
@@ -2721,7 +2699,7 @@ function App() {
     };
   }, []);
 
-  /* ════════ Le module de Synchronisation (Core) ════════
+  /* ══════════ Le module de Synchronisation (Core) ══════════
      Le nuage local ne fait jamais foi : après chaque geste et à chaque
      poussée de la Tombe, la salle relit la vérité en base — aucune info
      fantôme ne survit à une synchronisation. */
@@ -2736,7 +2714,7 @@ function App() {
     CLOUD.lireParties().then(l => setParties(l || [])).catch(() => {});
   };
 
-  /* ════════ Le module de Synchronisation (Core) — TEMPS RÉEL ════════
+  /* ══════════ Le module de Synchronisation (Core) — TEMPS RÉEL ══════════
      La Tombe POUSSÉ ses changements (Supabase Realtime, WebSocket) :
      chaque gravure, sceau, sentence ou bascule de mode arrive à l'écran
      instantanément — plus aucune pulsation. En coupure de canal, une
@@ -2800,6 +2778,7 @@ function App() {
            liste des compte_id en ligne (seuls les UUID comptent — l'institution
            s'écoute elle-même mais ne s'affiche pas, elle est voilée). */
         const entrants = ronde.joins || ronde;
+        const sortants = ronde.leaves || {};
         Object.keys(entrants || {}).forEach(k => {
           if (!/^[0-9a-f-]{36}$/.test(k)) return;
           if (delaisRef.current[k]) {
@@ -2811,8 +2790,14 @@ function App() {
             setPresents([...presentsRef.current]);
           }
         });
-        Object.keys(ronde.leaves || {}).forEach(k => {
+        Object.keys(sortants).forEach(k => {
           if (!/^[0-9a-f-]{36}$/.test(k) || !presentsRef.current.has(k)) return;
+          /* V0.37 : LE RE-PISTE N'EST PAS UN DÉPART — un launcher dont la
+             socket se rebranche re-s'annonce : le serveur diffuse UN diff
+             avec joins ET leaves sur la même clé. Le joins ci-dessus l'a
+             déjà fait vivre ; le leave ici ne compte QUE si la clé n'est
+             pas revenue (leçon fondrePresents du launcher, V48.4). */
+          if (entrants[k]) return;
           if (delaisRef.current[k]) return; /* une grâce coule déjà */
           delaisRef.current[k] = setTimeout(() => {
             delete delaisRef.current[k];
@@ -2978,7 +2963,7 @@ function App() {
 }
 var _attente = document.getElementById("attente");
 if (_attente) _attente.remove();
-ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
+ReactDOM.createRoot(document.getElementById("racine")).render(React.createElement(App));
 </script>
 
   <script>

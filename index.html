@@ -646,7 +646,11 @@ window.LARCHIVISTE_CLOUD = (function () {
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
   <script>
 /*__APP__*/
-const { useState, useRef, useEffect } = React;
+const {
+  useState,
+  useRef,
+  useEffect
+} = React;
 const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── V48.4 — LA FUSION DE LA RONDE DES PRÉSENTS (pure) ──
@@ -706,13 +710,18 @@ const fondrePresents = (precedent, diff) => {
    que les joueurs qui ont lancé CE JDR (lobby ou table de jeu) ;
    quitter le jeu vide l'état de partie pour que la ronde re-piste,
    et les étiquettes de lieu s'effacent (tout le monde ici est du JDR).
-   V0.30 : LA DÉCONNEXION QUI NE PEIND PLUS LE NOIR — le setter
+   V0.30 : LA DÉCONNEXION QUI NE PEINT PLUS LE NOIR — le setter
    fantôme setMesPartiesCours (vestige de l'épure) jetait au milieu
    de seDeconnecter : session vidée, vue figée sur « partie », plus
    rien ne rendait → écran noir en quittant un JDR. Le hub se rend
    maintenant AVANT le nettoyage, et le pied « Powered by Vibe · N° »
-   vit aussi dans l'espace MJ/Joueur (PiedVibe partagé). ── */
-const BUILD = "0.30";
+   vit aussi dans l'espace MJ/Joueur (PiedVibe partagé).
+   V0.31 : LE PIED UNIVERSEL — dans la salle d'attente et le lobby
+   MJ/Joueur, le PiedVibe vivait DANS le conteneur interne (px-5 pt-8
+   pb-10) : le pb-10 le faisait flotter 40 px au-dessus du bas. Il vit
+   maintenant à la RACINE de l'écran, après le conteneur, collé au bas
+   exactement comme sur le hub et la porte — tout est uniforme. ── */
+const BUILD = "0.31";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4641,9 +4650,9 @@ function EcranPartie({
       style: {
         color: "#71717a"
       }
-    }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : "")), /*#__PURE__*/React.createElement(PiedVibe, {
+    }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : ""))), /*#__PURE__*/React.createElement(PiedVibe, {
       versionBase: versionBase
-    })));
+    }));
   }
 
   /* V46 — l'écran de partie à onglets. Le mode choisi au LANCER ordonne
@@ -5464,9 +5473,9 @@ function EcranPartie({
       opacity: nom.trim() ? 1 : 0.4,
       cursor: nom.trim() ? "pointer" : "default"
     }
-  }, "CR\xC9ER")))), /*#__PURE__*/React.createElement(PiedVibe, {
+  }, "CR\xC9ER"))))), /*#__PURE__*/React.createElement(PiedVibe, {
     versionBase: versionBase
-  })));
+  }));
 }
 
 /* ══════════ Le bandeau de la Console de partie (dans le pack) ══════════
