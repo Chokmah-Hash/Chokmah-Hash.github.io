@@ -575,13 +575,19 @@ window.LARCHIVISTE_CLOUD = (function () {
     },
 
     /* Le MJ pilote : lancer l'aventure (ouverte → en_cours, la salle reste
-       tenue) ou la fermer (la salle s'éteint avec elle). */
-    lancerPartie: function (id) {
+       tenue) ou la fermer (la salle s'éteint avec elle).
+       V48.9 — LA PORTE S'OUVRE EN PUBLIQUE : une partie lancée SANS salle
+       ouverte naissait visibilite='privee' + mdp_hash NULL (défaut de la
+       Tombe) : visible depuis V0.32 mais l'ENTRER refusait pour rien.
+       Lancer sans salle tenue ouvre maintenant la porte en publique —
+       rejoignable en plein jeu. (undefined est omis par JSON.stringify.) */
+    lancerPartie: function (id, ouvrirPublique) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
         method: "PATCH", token: m.access_token,
-        body: { statut: "en_cours", lance_le: new Date().toISOString(), salle_ouverte_le: new Date().toISOString() }
+        body: { statut: "en_cours", lance_le: new Date().toISOString(), salle_ouverte_le: new Date().toISOString(),
+                visibilite: ouvrirPublique ? "publique" : undefined, mdp_hash: ouvrirPublique ? null : undefined }
       });
     },
     fermerPartie: function (id) {
@@ -733,8 +739,13 @@ const fondrePresents = (precedent, diff) => {
    OUVERTES, le joueur ne voyait jamais ce que le MJ venait de lancer.
    listerParties serve maintenant les salles ouvertes PUIS les parties
    en_cours (publiques et privées, les plus fraîches d'abord), et la
-   ligne porte le badge « PARTIE EN COURS ». ── */
-const BUILD = "0.32";
+   ligne porte le badge « PARTIE EN COURS ».
+   V0.33 : LA PORTE S’OUVRE EN PUBLIQUE — une partie lancée sans salle
+   ouverte naissait « privee » sans mot de passe (défaut de la Tombe) :
+   visible depuis V0.32 mais l’ENTRER refusait pour rien. lancerPartie
+   ouvre maintenant la porte en publique quand la salle n’était pas
+   tenue — visible ET rejoignable en plein jeu. ── */
+const BUILD = "0.33";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3141,18 +3152,18 @@ function RootConsole({
     style: {
       color: "#f0b24a"
     }
-  }, "\u2699 L'ARCHIVISTERIUM"), /*#__PURE__*/React.createElement("div", {
+  }, "⚙ L'ARCHIVISTERIUM"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "La salle d'administration de l'Archiviste \u2014 miroir en lecture")), /*#__PURE__*/React.createElement("button", {
+  }, "La salle d'administration de l'Archiviste — miroir en lecture")), /*#__PURE__*/React.createElement("button", {
     onClick: onFermer,
     className: "text-xl px-2",
     style: {
       color: "#71717a"
     }
-  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold tracking-widest mb-2",
     style: {
       color: "#71717a"
@@ -3175,13 +3186,13 @@ function RootConsole({
     style: {
       color: "#71717a"
     }
-  }, "v", p.version, " \xB7 ", p.type, " \xB7 ", p.taille)), /*#__PURE__*/React.createElement("span", {
+  }, "v", p.version, " · ", p.type, " · ", p.taille)), /*#__PURE__*/React.createElement("span", {
     className: "text-xs px-2 py-0.5 rounded-full font-bold",
     style: {
       border: "1px solid " + (p.statut === "disponible" ? "#2ee6c966" : "#52525b"),
       color: p.statut === "disponible" ? "#2ee6c9" : "#71717a"
     }
-  }, p.statut === "disponible" ? "publié" : "à venir", " \xB7 ", p.visibilite)))), /*#__PURE__*/React.createElement("div", {
+  }, p.statut === "disponible" ? "publié" : "à venir", " · ", p.visibilite)))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold tracking-widest mb-2",
     style: {
       color: "#71717a"
@@ -3244,7 +3255,7 @@ function RootConsole({
         height: 40,
         color: "#e8e4d8"
       }
-    }, "\u27C1")
+    }, "⟁")
   }, {
     id: "sb",
     label: "Glyphe Stormbringer",
@@ -3256,7 +3267,7 @@ function RootConsole({
         height: 40,
         color: "#e8e4d8"
       }
-    }, "\u2694")
+    }, "⚔")
   }].map(s => /*#__PURE__*/React.createElement("div", {
     key: s.id,
     className: "flex flex-col items-center gap-1 rounded-xl p-2",
@@ -3280,7 +3291,7 @@ function RootConsole({
     style: {
       color: "#71717a"
     }
-  }, "TH\xC8MES DISPONIBLES"), /*#__PURE__*/React.createElement("div", {
+  }, "THÈMES DISPONIBLES"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2 mb-4"
   }, packs.map(p => /*#__PURE__*/React.createElement("div", {
     key: p.id,
@@ -3307,13 +3318,13 @@ function RootConsole({
     style: {
       color: "#c8c8ce"
     }
-  }, "th\xE8me ", p.nom)))), /*#__PURE__*/React.createElement("div", {
+  }, "thème ", p.nom)))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs pt-3",
     style: {
       color: "#71717a",
       borderTop: "1px solid #27272a"
     }
-  }, "L'Archivisterium est une app s\xE9par\xE9e, acc\xE8s admin \u2014 elle g\xE8re les packs publi\xE9s au magasin, les images de compte et les th\xE8mes propos\xE9s aux packs. Ce miroir, dans l'Archiviste, ne fait que lire.")));
+  }, "L'Archivisterium est une app séparée, accès admin — elle gère les packs publiés au magasin, les images de compte et les thèmes proposés aux packs. Ce miroir, dans l'Archiviste, ne fait que lire.")));
 }
 
 /* ══════════ L'Icosaèdre vu par le sommet (pentagone) — modèle de Michael, conservé en bibliothèque ROOT ══════════
@@ -3451,7 +3462,7 @@ function CompteJoueur({
     style: {
       fontSize: 8
     }
-  }, "\u25CF"), " en ligne"))), ouvert && /*#__PURE__*/React.createElement("div", {
+  }, "●"), " en ligne"))), ouvert && /*#__PURE__*/React.createElement("div", {
     className: "absolute right-0 mt-2 w-72 rounded-xl p-4 z-50 shadow-2xl",
     style: {
       background: "#14161b",
@@ -3483,12 +3494,12 @@ function CompteJoueur({
     style: {
       color: "#71717a"
     }
-  }, "compte #", joueur.compteId.slice(0, 8), " \xB7 ", joueur.tag, " \xB7 compte cloud \xB7 en ligne"))), /*#__PURE__*/React.createElement("div", {
+  }, "compte #", joueur.compteId.slice(0, 8), " · ", joueur.tag, " · compte cloud · en ligne"))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-2",
     style: {
       color: "#c8c8ce"
     }
-  }, "Image de compte \u2014 choisie dans la liste :"), /*#__PURE__*/React.createElement("div", {
+  }, "Image de compte — choisie dans la liste :"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
   }, AVATARS.map(a => /*#__PURE__*/React.createElement("button", {
     key: a.id,
@@ -3507,14 +3518,14 @@ function CompteJoueur({
     style: {
       color: "#71717a"
     }
-  }, "Dans le vrai launcher : le joueur choisit une petite image dans une liste du profil \u2014 elle s'affiche \xE0 c\xF4t\xE9 de son nom sur PC, seule sur mobile."), /*#__PURE__*/React.createElement("button", {
+  }, "Dans le vrai launcher : le joueur choisit une petite image dans une liste du profil — elle s'affiche à côté de son nom sur PC, seule sur mobile."), /*#__PURE__*/React.createElement("button", {
     onClick: onLogout,
     className: "w-full mt-4 py-1.5 rounded-lg font-bold text-xs",
     style: {
       border: "1px solid #71717a55",
       color: "#c8c8ce"
     }
-  }, "Se d\xE9connecter")));
+  }, "Se déconnecter")));
 }
 
 /* ══════════ V46b : LE BANDEAU DE L'ARCHIVISTE — Michael veut retrouver le
@@ -3535,7 +3546,7 @@ function BandeauArchiviste({
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("div", {
-    title: "L'Icosa\xE8dre D20 \u2014 glyphe de L'Archiviste"
+    title: "L'Icosaèdre D20 — glyphe de L'Archiviste"
   }, /*#__PURE__*/React.createElement(Icosaedre, {
     size: 44,
     color: "#e8e4d8"
@@ -3601,12 +3612,12 @@ function EcranCreation({
     style: {
       color: "#e8e4d8"
     }
-  }, "\uFF0B Cr\xE9er un compte"), /*#__PURE__*/React.createElement("div", {
+  }, "＋ Créer un compte"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#71717a"
     }
-  }, "Un UUID de compte est g\xE9n\xE9r\xE9 par le serveur \xE0 la cr\xE9ation \u2014 il restera stable pour toujours."), /*#__PURE__*/React.createElement("div", {
+  }, "Un UUID de compte est généré par le serveur à la création — il restera stable pour toujours."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-1",
     style: {
       color: "#c8c8ce"
@@ -3614,7 +3625,7 @@ function EcranCreation({
   }, "Pseudo :"), /*#__PURE__*/React.createElement("input", {
     value: pseudo,
     onChange: e => setPseudo(e.target.value),
-    placeholder: "Ex. : V\xE9t\xE9ran de la Tombe",
+    placeholder: "Ex. : Vétéran de la Tombe",
     className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
     style: {
       background: "#0c0d10",
@@ -3647,7 +3658,7 @@ function EcranCreation({
   }, "Mot de passe :"), /*#__PURE__*/React.createElement("input", {
     value: mdp,
     onChange: e => setMdp(e.target.value),
-    placeholder: "4 caract\xE8res minimum",
+    placeholder: "4 caractères minimum",
     type: "password",
     className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
     style: {
@@ -3661,7 +3672,7 @@ function EcranCreation({
     style: {
       color: "#52525b"
     }
-  }, "Ce mot de passe part chez Supabase Auth \u2014 l'Archiviste ne le garde jamais."), /*#__PURE__*/React.createElement("div", {
+  }, "Ce mot de passe part chez Supabase Auth — l'Archiviste ne le garde jamais."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-2",
     style: {
       color: "#c8c8ce"
@@ -3685,7 +3696,7 @@ function EcranCreation({
     style: {
       color: "#71717a"
     }
-  }, "Tous les comptes sont joueurs \u2014 le r\xF4le MJ se choisit plus tard, au lancement du pack."), /*#__PURE__*/React.createElement("div", {
+  }, "Tous les comptes sont joueurs — le rôle MJ se choisit plus tard, au lancement du pack."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onAnnuler,
@@ -3796,12 +3807,12 @@ function AuthModal({
     style: {
       color: "#71717a"
     }
-  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#71717a"
     }
-  }, "Tous les comptes sont joueurs \u2014 le r\xF4le MJ se choisit au lancement d'un pack."), /*#__PURE__*/React.createElement("div", {
+  }, "Tous les comptes sont joueurs — le rôle MJ se choisit au lancement d'un pack."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-1",
     style: {
       color: "#c8c8ce"
@@ -3827,7 +3838,7 @@ function AuthModal({
       setMdp(e.target.value);
       setErreur(null);
     },
-    placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+    placeholder: "••••••••",
     type: "password",
     className: "w-full rounded-lg px-3 py-2 mb-2 text-sm",
     style: champ
@@ -3859,12 +3870,12 @@ function AuthModal({
     style: {
       color: "#a8adb8"
     }
-  }, "\uFF0B Cr\xE9er un compte")), /*#__PURE__*/React.createElement("div", {
+  }, "＋ Créer un compte")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-4 text-center",
     style: {
       color: "#52525b"
     }
-  }, "Comptes v\xE9rifi\xE9s par Supabase Auth \u2014 l'Archiviste ne garde jamais les mots de passe.")), mode === "perdu" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Comptes vérifiés par Supabase Auth — l'Archiviste ne garde jamais les mots de passe.")), mode === "perdu" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg",
@@ -3877,12 +3888,12 @@ function AuthModal({
     style: {
       color: "#71717a"
     }
-  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#71717a"
     }
-  }, "Un lien magique vous est envoy\xE9 par email \u2014 pas de question secr\xE8te sur votre ville natale."), /*#__PURE__*/React.createElement("div", {
+  }, "Un lien magique vous est envoyé par email — pas de question secrète sur votre ville natale."), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold mb-1",
     style: {
       color: "#c8c8ce"
@@ -3912,12 +3923,12 @@ function AuthModal({
     style: {
       color: "#71717a"
     }
-  }, "\u2190 Retour \xE0 la connexion")), mode === "envoye" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "← Retour à la connexion")), mode === "envoye" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold tracking-widest mb-2",
     style: {
       color: "#71717a"
     }
-  }, "\uD83D\uDCE7 EMAIL ENVOY\xC9"), /*#__PURE__*/React.createElement("div", {
+  }, "📧 EMAIL ENVOYÉ"), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 text-left mb-4",
     style: {
       background: "#ffffff08",
@@ -3928,18 +3939,18 @@ function AuthModal({
     style: {
       color: "#c8c8ce"
     }
-  }, "Un lien de r\xE9initialisation part vers ", /*#__PURE__*/React.createElement("b", null, perduEmail), " \u2014 v\xE9rifiez votre bo\xEEte (et vos spams), puis revenez choisir un nouveau mot de passe."), /*#__PURE__*/React.createElement("button", {
+  }, "Un lien de réinitialisation part vers ", /*#__PURE__*/React.createElement("b", null, perduEmail), " — vérifiez votre boîte (et vos spams), puis revenez choisir un nouveau mot de passe."), /*#__PURE__*/React.createElement("button", {
     onClick: () => setMode("login"),
     className: "mt-3 px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
       background: "#f0b24a"
     }
-  }, "\u2190 Retour \xE0 la connexion")), /*#__PURE__*/React.createElement("div", {
+  }, "← Retour à la connexion")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-center",
     style: {
       color: "#52525b"
     }
-  }, "Lien envoy\xE9 et v\xE9rifi\xE9 par Supabase Auth."))), enCreation && /*#__PURE__*/React.createElement(EcranCreation, {
+  }, "Lien envoyé et vérifié par Supabase Auth."))), enCreation && /*#__PURE__*/React.createElement(EcranCreation, {
     onCreer: onCreer,
     onAnnuler: () => setEnCreation(false)
   }));
@@ -3971,17 +3982,17 @@ function ChoixRole({
     style: {
       color: "#71717a"
     }
-  }, "LANCER \u2014 ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
+  }, "LANCER — ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg mb-1",
     style: {
       color: "#e8e4d8"
     }
-  }, "Simple joueur, ou Ma\xEEtre du Jeu ?"), /*#__PURE__*/React.createElement("div", {
+  }, "Simple joueur, ou Maître du Jeu ?"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-5",
     style: {
       color: "#71717a"
     }
-  }, "Tous les comptes sont joueurs \u2014 le r\xF4le se choisit ici, \xE0 chaque lancement du pack."), /*#__PURE__*/React.createElement("div", {
+  }, "Tous les comptes sont joueurs — le rôle se choisit ici, à chaque lancement du pack."), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onChoisi("mj"),
@@ -3992,17 +4003,17 @@ function ChoixRole({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-3xl"
-  }, "\uD83C\uDFAD"), /*#__PURE__*/React.createElement("div", {
+  }, "🎭"), /*#__PURE__*/React.createElement("div", {
     className: "font-bold",
     style: {
       color: "#f0b24a"
     }
-  }, "MA\xCETRE DU JEU"), /*#__PURE__*/React.createElement("div", {
+  }, "MAÎTRE DU JEU"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#a1a1aa"
     }
-  }, "dirige la s\xE9ance \u2014 zone MJ (ambre)")), /*#__PURE__*/React.createElement("button", {
+  }, "dirige la séance — zone MJ (ambre)")), /*#__PURE__*/React.createElement("button", {
     onClick: () => onChoisi("joueur"),
     className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
     style: {
@@ -4011,7 +4022,7 @@ function ChoixRole({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-3xl"
-  }, "\uD83D\uDEE1\uFE0F"), /*#__PURE__*/React.createElement("div", {
+  }, "🛡️"), /*#__PURE__*/React.createElement("div", {
     className: "font-bold",
     style: {
       color: "#2ee6c9"
@@ -4056,7 +4067,7 @@ function ChoixModePartie({
     style: {
       color: "#71717a"
     }
-  }, "LANCER \u2014 ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
+  }, "LANCER — ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg mb-1",
     style: {
       color: "#e8e4d8"
@@ -4066,7 +4077,7 @@ function ChoixModePartie({
     style: {
       color: "#71717a"
     }
-  }, "Le mode organise l'\xE9cran de partie \u2014 il ne fige rien : le cr\xE9ateur d'une aventure en reste le Ma\xEEtre du Jeu."), /*#__PURE__*/React.createElement("div", {
+  }, "Le mode organise l'écran de partie — il ne fige rien : le créateur d'une aventure en reste le Maître du Jeu."), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onChoisi("mj"),
@@ -4077,7 +4088,7 @@ function ChoixModePartie({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-3xl"
-  }, "\uD83C\uDFAD"), /*#__PURE__*/React.createElement("div", {
+  }, "🎭"), /*#__PURE__*/React.createElement("div", {
     className: "font-bold",
     style: {
       color: "#f0b24a"
@@ -4087,7 +4098,7 @@ function ChoixModePartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "Lobby + vos aventures : cr\xE9ez, lancez, dirigez")), /*#__PURE__*/React.createElement("button", {
+  }, "Lobby + vos aventures : créez, lancez, dirigez")), /*#__PURE__*/React.createElement("button", {
     onClick: () => onChoisi("joueur"),
     className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
     style: {
@@ -4096,7 +4107,7 @@ function ChoixModePartie({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-3xl"
-  }, "\uD83D\uDEE1\uFE0F"), /*#__PURE__*/React.createElement("div", {
+  }, "🛡️"), /*#__PURE__*/React.createElement("div", {
     className: "font-bold",
     style: {
       color: "#2ee6c9"
@@ -4106,7 +4117,7 @@ function ChoixModePartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "Lobby + vos personnages + les r\xE8gles"))), /*#__PURE__*/React.createElement("button", {
+  }, "Lobby + vos personnages + les règles"))), /*#__PURE__*/React.createElement("button", {
     onClick: onAnnuler,
     className: "mt-5 text-xs font-bold",
     style: {
@@ -4154,7 +4165,7 @@ function Vignette({
     style: {
       color: "#a1a1aa"
     }
-  }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => `${d.id}@${d.format_min}`).join(", ")))), /*#__PURE__*/React.createElement("button", {
+  }, pack.type, " · dépend de ", pack.depend_de.map(d => `${d.id}@${d.format_min}`).join(", ")))), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       onFavori(pack.id);
       showToast(favori ? "Retiré des favoris" : "Ajouté à la bibliothèque ★");
@@ -4176,7 +4187,7 @@ function Vignette({
     style: {
       color: "#71717a"
     }
-  }, /*#__PURE__*/React.createElement("span", null, "v", pack.version, pack.visibilite === "prive" && " · privé", " \xB7 ", pack.taille)), contexte === "bibliotheque" ?
+  }, /*#__PURE__*/React.createElement("span", null, "v", pack.version, pack.visibilite === "prive" && " · privé", " · ", pack.taille)), contexte === "bibliotheque" ?
   /*#__PURE__*/
   /* V48.3 — L'ÉPURE : lancer, ou désinstaller — les données du
      compte (personnages, aventures) restent dans la Tombe. */
@@ -4191,27 +4202,27 @@ function Vignette({
       border: "1px solid #27272a",
       cursor: "pointer"
     },
-    title: "Retire le pack de la biblioth\xE8que \u2014 vos personnages et aventures restent dans la Tombe"
-  }, "\u2715 D\xE9sinstaller"), /*#__PURE__*/React.createElement("button", {
+    title: "Retire le pack de la bibliothèque — vos personnages et aventures restent dans la Tombe"
+  }, "✕ Désinstaller"), /*#__PURE__*/React.createElement("button", {
     onClick: () => onLancer(pack),
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
       background: pack.theme.accent
     }
-  }, "\u25B6 Lancer")) : !connecte ? /*#__PURE__*/React.createElement("span", {
+  }, "▶ Lancer")) : !connecte ? /*#__PURE__*/React.createElement("span", {
     className: "text-xs font-bold",
     style: {
       color: "#52525b"
     },
     title: "Connectez-vous pour installer"
-  }, "\uD83D\uDD12 connexion requise") : dispo ? installe ? /*#__PURE__*/React.createElement("button", {
+  }, "🔒 connexion requise") : dispo ? installe ? /*#__PURE__*/React.createElement("button", {
     disabled: true,
     className: "px-4 py-2 rounded-lg font-bold text-sm border border-zinc-700 text-zinc-500",
     style: {
       background: "#ffffff08",
       cursor: "not-allowed"
     }
-  }, "\u2713 D\xE9j\xE0 install\xE9") : /*#__PURE__*/React.createElement("button", {
+  }, "✓ Déjà installé") : /*#__PURE__*/React.createElement("button", {
     onClick: () => onInstaller(pack),
     disabled: enInstallation,
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black" + (enInstallation ? " animate-pulse" : ""),
@@ -4221,7 +4232,7 @@ function Vignette({
   }, enInstallation ? "Installation…" : "⬇ Installer") : /*#__PURE__*/React.createElement("button", {
     onClick: () => showToast(`${pack.nom} — pack non packagé. À venir !`),
     className: "px-4 py-2 rounded-lg font-bold text-sm border border-zinc-600 text-zinc-400"
-  }, "\xC0 venir")));
+  }, "À venir")));
 }
 /* ══════════ La Console Globale : le canal des événements de jeu ══════════
    L'idée de Michael : un canal unique où le MJ et les joueurs se parlent.
@@ -4276,7 +4287,7 @@ function ConsoleGlobale({
     style: {
       color: "#52525b"
     }
-  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => e.type === "tour" ?
+  }, "Aucun message — la Console attend la première parole."), fil.map(e => e.type === "tour" ?
   /*#__PURE__*/
   /* Le bandeau du tour : l'annonce du MJ tranche sur le fil */
   React.createElement("div", {
@@ -4296,11 +4307,11 @@ function ConsoleGlobale({
       color: "#f0b24a",
       letterSpacing: "0.06em"
     }
-  }, "\u25B8 AU TOUR DE ", e.contenu.toUpperCase(), " ", /*#__PURE__*/React.createElement("span", {
+  }, "▸ AU TOUR DE ", e.contenu.toUpperCase(), " ", /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#71717a"
     }
-  }, "\u2014 par ", e.pseudo))) : /*#__PURE__*/React.createElement("div", {
+  }, "— par ", e.pseudo))) : /*#__PURE__*/React.createElement("div", {
     key: e.id,
     className: "flex items-baseline gap-2 py-1",
     style: {
@@ -4321,7 +4332,7 @@ function ConsoleGlobale({
   /* Le jet gravé : 🎲 + résultat en turquoise, lisible au premier coup d'œil */
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "text-xs"
-  }, "\uD83C\uDFB2"), /*#__PURE__*/React.createElement("span", {
+  }, "🎲"), /*#__PURE__*/React.createElement("span", {
     className: "text-xs font-bold",
     style: {
       color: "#2ee6c9",
@@ -4332,8 +4343,8 @@ function ConsoleGlobale({
     style: {
       color: "#52525b"
     },
-    title: "Roul\xE9 et sign\xE9 par la Tombe"
-  }, "\uD83C\uDFDB")) : e.type === "journal" ?
+    title: "Roulé et signé par la Tombe"
+  }, "🏛")) : e.type === "journal" ?
   /*#__PURE__*/
   /* L'événement de moteur : le journal du pack, partagé au canal */
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
@@ -4374,7 +4385,7 @@ function ConsoleGlobale({
       color: "#e8e4d8",
       outline: "none"
     },
-    placeholder: "Parler \xE0 la Console (280 caract\xE8res max)",
+    placeholder: "Parler à la Console (280 caractères max)",
     maxLength: 280
   }), /*#__PURE__*/React.createElement("button", {
     onClick: envoyer,
@@ -4385,12 +4396,12 @@ function ConsoleGlobale({
       color: texte.trim() ? "#0c0d10" : "#71717a",
       cursor: texte.trim() ? "pointer" : "default"
     }
-  }, "\u21B5")) : /*#__PURE__*/React.createElement("div", {
+  }, "↵")) : /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-1",
     style: {
       color: "#52525b"
     }
-  }, "Connectez-vous pour parler dans la Console \u2014 le fil se lit d\xE9j\xE0.")), joueur && /*#__PURE__*/React.createElement("div", {
+  }, "Connectez-vous pour parler dans la Console — le fil se lit déjà.")), joueur && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 flex-wrap items-center px-2 pb-2",
     style: {
       borderTop: "1px solid #27272a"
@@ -4412,7 +4423,7 @@ function ConsoleGlobale({
     style: {
       color: "#52525b"
     }
-  }, "commandes : /de 3d6 \xB7 /tour Pr\xE9nom")));
+  }, "commandes : /de 3d6 · /tour Prénom")));
 }
 
 /* ══════════ LA PARTIE : l'écran d'aventure partagée ══════════
@@ -4452,7 +4463,7 @@ function PiedVibe({
     style: {
       color: "#a8adb8"
     }
-  }, "Vibe"), " \xB7 N\xB0 ", versionBase || BUILD, versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : "");
+  }, "Vibe"), " · N° ", versionBase || BUILD, versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : "");
 }
 
 /* ══════════ L'écran de partie à onglets (MJ / joueur) ══════════ */
@@ -4556,7 +4567,7 @@ function EcranPartie({
       style: {
         color: "#71717a"
       }
-    }, pack.nom, " \u2014 aventure multijoueur"), /*#__PURE__*/React.createElement("div", {
+    }, pack.nom, " — aventure multijoueur"), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center justify-between gap-3"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-2xl font-bold mb-1",
@@ -4572,12 +4583,12 @@ function EcranPartie({
         border: "1px solid #27272a",
         cursor: "pointer"
       }
-    }, "\u2302 HUB")), /*#__PURE__*/React.createElement("div", {
+    }, "⌂ HUB")), /*#__PURE__*/React.createElement("div", {
       className: "text-xs mb-5",
       style: {
         color: "#52525b"
       }
-    }, "ouverte par ", estMj ? "vous" : "le MJ", " \xB7 ", partie.statut === "ouverte" ? "salle d'attente" : partie.statut === "en_cours" ? "en cours" : "close", partie.visibilite === "publique" ? " · publique" : " · privée"), partie.statut === "ouverte" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, "ouverte par ", estMj ? "vous" : "le MJ", " · ", partie.statut === "ouverte" ? "salle d'attente" : partie.statut === "en_cours" ? "en cours" : "close", partie.visibilite === "publique" ? " · publique" : " · privée"), partie.statut === "ouverte" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "rounded-lg p-4 mb-5 text-center",
       style: {
         background: "#0c0d10",
@@ -4588,17 +4599,17 @@ function EcranPartie({
       style: {
         color: "#71717a"
       }
-    }, "SALLE PUBLIQUE \u2014 elle vit dans \xAB AVENTURES OUVERTES \xBB du lobby de tous"), /*#__PURE__*/React.createElement("div", {
+    }, "SALLE PUBLIQUE — elle vit dans « AVENTURES OUVERTES » du lobby de tous"), /*#__PURE__*/React.createElement("div", {
       className: "text-2xl font-bold tracking-widest",
       style: {
         color: "#a8adb8"
       }
-    }, "ouverte \xE0 tous")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, "ouverte à tous")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "text-xs mb-1",
       style: {
         color: "#71717a"
       }
-    }, "SALLE PRIV\xC9E \u2014 vos joueurs entrent avec le mot de passe"), /*#__PURE__*/React.createElement("div", {
+    }, "SALLE PRIVÉE — vos joueurs entrent avec le mot de passe"), /*#__PURE__*/React.createElement("div", {
       className: "text-2xl font-bold tracking-widest",
       style: {
         color: "#a8adb8",
@@ -4609,12 +4620,12 @@ function EcranPartie({
       style: {
         color: "#52525b"
       }
-    }, "vous y \xEAtes \u2014 le MJ lance l'aventure quand la table est pleine"))), /*#__PURE__*/React.createElement("div", {
+    }, "vous y êtes — le MJ lance l'aventure quand la table est pleine"))), /*#__PURE__*/React.createElement("div", {
       className: "mb-2 text-xs font-bold tracking-widest",
       style: {
         color: "#a8adb8"
       }
-    }, "\xC0 LA TABLE (", joueursAvecMj.length, ")"), /*#__PURE__*/React.createElement("div", {
+    }, "À LA TABLE (", joueursAvecMj.length, ")"), /*#__PURE__*/React.createElement("div", {
       className: "mb-6 flex flex-col"
     }, joueursAvecMj.map(j => /*#__PURE__*/React.createElement("div", {
       key: j.compte_id,
@@ -4644,12 +4655,12 @@ function EcranPartie({
         background: "#f0b24a",
         cursor: "pointer"
       }
-    }, "\u25B6 LANCER L'AVENTURE") : /*#__PURE__*/React.createElement("div", {
+    }, "▶ LANCER L'AVENTURE") : /*#__PURE__*/React.createElement("div", {
       className: "text-xs italic",
       style: {
         color: "#71717a"
       }
-    }, "En attente que le MJ lance l'aventure\u2026"), /*#__PURE__*/React.createElement("button", {
+    }, "En attente que le MJ lance l'aventure…"), /*#__PURE__*/React.createElement("button", {
       onClick: () => onQuitter(partie),
       className: "px-4 py-2 rounded-lg font-bold text-sm",
       style: {
@@ -4663,7 +4674,7 @@ function EcranPartie({
       style: {
         color: "#71717a"
       }
-    }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : ""))), /*#__PURE__*/React.createElement(PiedVibe, {
+    }, "L'aventure est lancée — l'entrée se fait d'elle-même…", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : ""))), /*#__PURE__*/React.createElement(PiedVibe, {
       versionBase: versionBase
     }));
   }
@@ -4726,7 +4737,7 @@ function EcranPartie({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, "\u2302 HUB")), /*#__PURE__*/React.createElement("div", {
+  }, "⌂ HUB")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-5",
     style: {
       borderBottom: "1px solid #27272a"
@@ -4787,7 +4798,7 @@ function EcranPartie({
       style: {
         color: "#52525b"
       }
-    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 ", p.visibilite === "privee" ? "🔒 salle privée" : "salle publique", " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "", p.statut === "en_cours" ? " · " : "", p.statut === "en_cours" && /*#__PURE__*/React.createElement("span", {
+    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "· ", p.visibilite === "privee" ? "🔒 salle privée" : "salle publique", " · ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "", p.statut === "en_cours" ? " · " : "", p.statut === "en_cours" && /*#__PURE__*/React.createElement("span", {
       style: {
         color: "#f0b24a",
         fontWeight: "bold"
@@ -4869,7 +4880,7 @@ function EcranPartie({
     style: {
       color: "#a8adb8"
     }
-  }, "CONNECT\xC9S (", duPack.length, ")"), duPack.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "CONNECTÉS (", duPack.length, ")"), duPack.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-2",
     style: {
       color: "#52525b"
@@ -4916,12 +4927,12 @@ function EcranPartie({
       background: "#f0b24a",
       cursor: "pointer"
     }
-  }, "+ CR\xC9ER")), mesAv.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "+ CRÉER")), mesAv.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-2",
     style: {
       color: "#52525b"
     }
-  }, "Aucune aventure \u2014 cr\xE9ez la premi\xE8re avec \xAB + CR\xC9ER \xBB.") : /*#__PURE__*/React.createElement("table", {
+  }, "Aucune aventure — créez la première avec « + CRÉER ».") : /*#__PURE__*/React.createElement("table", {
     className: "w-full text-sm"
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     className: "text-xs",
@@ -4953,7 +4964,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "cr\xE9\xE9e le ", new Date(p.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", salleOuverte(p) ? "salle OUVERTE (" + (p.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée")), /*#__PURE__*/React.createElement("td", {
+  }, "créée le ", new Date(p.cree_le).toLocaleDateString("fr-FR"), " · ", salleOuverte(p) ? "salle OUVERTE (" + (p.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée")), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "px-1.5 py-0.5 rounded text-xs font-bold",
@@ -4977,7 +4988,7 @@ function EcranPartie({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, "\u2699")))))), detail && /*#__PURE__*/React.createElement("div", {
+  }, "⚙")))))), detail && /*#__PURE__*/React.createElement("div", {
     className: "mt-4 rounded-lg p-4",
     style: {
       background: "#0c0d10",
@@ -4993,12 +5004,12 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "MJ ", detail.mj_pseudo || "vous", " \xB7 ", detail.statut === "ouverte" ? "salle d'attente" : detail.statut === "en_cours" ? "en cours" : "close", " ", "\xB7 ", salleOuverte(detail) ? "salle OUVERTE (" + (detail.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée"), detail.statut === "close" ? /*#__PURE__*/React.createElement("div", {
+  }, "MJ ", detail.mj_pseudo || "vous", " · ", detail.statut === "ouverte" ? "salle d'attente" : detail.statut === "en_cours" ? "en cours" : "close", " ", "· ", salleOuverte(detail) ? "salle OUVERTE (" + (detail.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée"), detail.statut === "close" ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs italic mb-3",
     style: {
       color: "#71717a"
     }
-  }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") : detail.statut === "en_cours" || salleOuverte(detail) ? /*#__PURE__*/React.createElement("button", {
+  }, "Aventure close — la séance est terminée.") : detail.statut === "en_cours" || salleOuverte(detail) ? /*#__PURE__*/React.createElement("button", {
     onClick: () => onReprendre(detail),
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black mb-3",
     style: {
@@ -5031,7 +5042,7 @@ function EcranPartie({
       border: "1px solid #fb718544",
       cursor: "pointer"
     }
-  }, "\u2715 SUPPRIMER CETTE AVENTURE") : /*#__PURE__*/React.createElement("div", {
+  }, "✕ SUPPRIMER CETTE AVENTURE") : /*#__PURE__*/React.createElement("div", {
     className: "pt-3",
     style: {
       borderTop: "1px solid #27272a"
@@ -5041,7 +5052,7 @@ function EcranPartie({
     style: {
       color: "#fb7185"
     }
-  }, "\xAB ", detail.nom, " \xBB dispara\xEEtra des \xE9crans \u2014 MJ et joueurs ne la verront plus. La Tombe la garde en Corbeille ; seule l'institution peut la rendre. \xC9crivez \xAB suppression \xBB pour sceller la sentence."), /*#__PURE__*/React.createElement("input", {
+  }, "« ", detail.nom, " » disparaîtra des écrans — MJ et joueurs ne la verront plus. La Tombe la garde en Corbeille ; seule l'institution peut la rendre. Écrivez « suppression » pour sceller la sentence."), /*#__PURE__*/React.createElement("input", {
     value: motSuppr,
     onChange: e => setMotSuppr(e.target.value),
     placeholder: "suppression",
@@ -5072,7 +5083,7 @@ function EcranPartie({
       opacity: motSuppr !== "suppression" ? 0.4 : 1,
       cursor: motSuppr === "suppression" ? "pointer" : "default"
     }
-  }, "\u2715 EFFACER"), /*#__PURE__*/React.createElement("button", {
+  }, "✕ EFFACER"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnSuppression(false);
       setMotSuppr("");
@@ -5097,7 +5108,7 @@ function EcranPartie({
     style: {
       color: "#a8adb8"
     }
-  }, "MES PERSONNAGES \u2014 ", pack.nom.toUpperCase(), " (", persos.length, ")"), /*#__PURE__*/React.createElement("button", {
+  }, "MES PERSONNAGES — ", pack.nom.toUpperCase(), " (", persos.length, ")"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnCreationPerso(true);
       setDetailPerso(null);
@@ -5107,7 +5118,7 @@ function EcranPartie({
       background: "#f0b24a",
       cursor: "pointer"
     }
-  }, "+ CR\xC9ER")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
+  }, "+ CRÉER")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
     className: "mb-4"
   }, /*#__PURE__*/React.createElement(EcranCreationPerso, {
     contenu: pack.contenu,
@@ -5144,12 +5155,12 @@ function EcranPartie({
       color: "#71717a",
       cursor: "pointer"
     }
-  }, "\u2190 retour au registre")), /*#__PURE__*/React.createElement("div", {
+  }, "← retour au registre")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-3",
     style: {
       color: "#52525b"
     }
-  }, "cr\xE9\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "créé le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " · ", resumePerso(cDetail)), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
   }, [["CC", stDetail.cc], ["CT", stDetail.ct], ["F", stDetail.f], ["E", stDetail.e], ["Sv", stDetail.sv], ["Cd", stDetail.cd]].concat(stDetail.a ? [["A", stDetail.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -5168,7 +5179,7 @@ function EcranPartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "PV ", cDetail.pvMax, " \xB7 Rfx +", cDetail.rfx, " \xB7 ", cDetail.armeDef ? cDetail.armeDef.nom : "arme inconnue"), cDetail.apt && /*#__PURE__*/React.createElement("div", {
+  }, "PV ", cDetail.pvMax, " · Rfx +", cDetail.rfx, " · ", cDetail.armeDef ? cDetail.armeDef.nom : "arme inconnue"), cDetail.apt && /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-2 rounded p-2",
     style: {
       background: "#ffffff08",
@@ -5178,7 +5189,7 @@ function EcranPartie({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), cDetail.apt), cDetail.comps && /*#__PURE__*/React.createElement("div", {
+  }, "Aptitude de châssis — "), cDetail.apt), cDetail.comps && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1 mb-2"
   }, cDetail.comps.map(c => /*#__PURE__*/React.createElement("span", {
     key: c,
@@ -5211,7 +5222,7 @@ function EcranPartie({
     style: {
       color: "#71717a"
     }
-  }, "Fiche de forme inconnue \u2014 la Tombe la garde telle quelle."), !enSuppressionPerso ? /*#__PURE__*/React.createElement("button", {
+  }, "Fiche de forme inconnue — la Tombe la garde telle quelle."), !enSuppressionPerso ? /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnSuppressionPerso(true);
       setMotSupprPerso("");
@@ -5223,7 +5234,7 @@ function EcranPartie({
       border: "1px solid #fb718544",
       cursor: "pointer"
     }
-  }, "\u2715 SUPPRIMER CE PERSONNAGE") : /*#__PURE__*/React.createElement("div", {
+  }, "✕ SUPPRIMER CE PERSONNAGE") : /*#__PURE__*/React.createElement("div", {
     className: "pt-3",
     style: {
       borderTop: "1px solid #27272a"
@@ -5233,7 +5244,7 @@ function EcranPartie({
     style: {
       color: "#fb7185"
     }
-  }, "\xAB ", detailPerso.nom, " \xBB quittera le registre. La Tombe garde sa trace \u2014 \xE9crivez \xAB suppression \xBB pour consacrer la sentence."), /*#__PURE__*/React.createElement("div", {
+  }, "« ", detailPerso.nom, " » quittera le registre. La Tombe garde sa trace — écrivez « suppression » pour consacrer la sentence."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("input", {
     value: motSupprPerso,
@@ -5277,12 +5288,12 @@ function EcranPartie({
       cursor: "pointer",
       opacity: motSupprPerso === "suppression" ? 1 : 0.5
     }
-  }, "\u2715 EFFACER"))) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "✕ EFFACER"))) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-sm",
     style: {
       color: "#a1a1aa"
     }
-  }, "Aucun personnage pour ", pack.nom, ". Cr\xE9ez votre premier personnage avec \xAB + CR\xC9ER \xBB \u2014 il rejoindra le registre, pr\xEAt \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
+  }, "Aucun personnage pour ", pack.nom, ". Créez votre premier personnage avec « + CRÉER » — il rejoindra le registre, prêt à entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
     className: "w-full text-sm"
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     className: "text-xs",
@@ -5310,7 +5321,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, resumePerso(p.contenu), " \xB7 cr\xE9\xE9 le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
+  }, resumePerso(p.contenu), " · créé le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5 text-right"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
@@ -5326,7 +5337,7 @@ function EcranPartie({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, "\u2699"))))))), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
+  }, "⚙"))))))), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -5337,19 +5348,19 @@ function EcranPartie({
     style: {
       color: "#a8adb8"
     }
-  }, "LES R\xC8GLES \u2014 ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
+  }, "LES RÈGLES — ", pack.nom.toUpperCase()), /*#__PURE__*/React.createElement("div", {
     className: "text-sm mb-4",
     style: {
       color: "#a1a1aa"
     }
-  }, "Le manuel du pack : cr\xE9ation de personnage, combat, codes et tables."), /*#__PURE__*/React.createElement("button", {
+  }, "Le manuel du pack : création de personnage, combat, codes et tables."), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEnLivre(true),
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
       background: "#a8adb8",
       cursor: "pointer"
     }
-  }, "\uD83D\uDCD6 OUVRIR LE MANUEL")), enOuverture && detail && /*#__PURE__*/React.createElement("div", {
+  }, "📖 OUVRIR LE MANUEL")), enOuverture && detail && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-center justify-center p-4",
     style: {
       background: "#000000b3"
@@ -5365,12 +5376,12 @@ function EcranPartie({
     style: {
       color: "#71717a"
     }
-  }, "OUVRIR LA SALLE \u2014 ", detail.nom), /*#__PURE__*/React.createElement("div", {
+  }, "OUVRIR LA SALLE — ", detail.nom), /*#__PURE__*/React.createElement("div", {
     className: "text-sm mb-4",
     style: {
       color: "#a1a1aa"
     }
-  }, "Une salle publique vit dans le lobby de tous ; une salle priv\xE9e s'ouvre par le mot de passe que vous confierez \xE0 vos joueurs."), /*#__PURE__*/React.createElement("div", {
+  }, "Une salle publique vit dans le lobby de tous ; une salle privée s'ouvre par le mot de passe que vous confierez à vos joueurs."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mb-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setVisChoix("publique"),
@@ -5381,7 +5392,7 @@ function EcranPartie({
       border: "1px solid " + (visChoix === "publique" ? "#f0b24a44" : "#27272a"),
       cursor: "pointer"
     }
-  }, "PUBLIQUE \u2014 visible de tous"), /*#__PURE__*/React.createElement("button", {
+  }, "PUBLIQUE — visible de tous"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVisChoix("privee"),
     className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
     style: {
@@ -5390,13 +5401,13 @@ function EcranPartie({
       border: "1px solid " + (visChoix === "privee" ? "#f0b24a44" : "#27272a"),
       cursor: "pointer"
     }
-  }, "PRIV\xC9E \u2014 mot de passe")), visChoix === "privee" && /*#__PURE__*/React.createElement("input", {
+  }, "PRIVÉE — mot de passe")), visChoix === "privee" && /*#__PURE__*/React.createElement("input", {
     value: mdpChoix,
     onChange: e => setMdpChoix(e.target.value),
     maxLength: 24,
     type: "text",
     autoComplete: "off",
-    placeholder: "Mot de passe (3 caract\xE8res minimum)",
+    placeholder: "Mot de passe (3 caractères minimum)",
     className: "w-full px-3 py-2 rounded-lg text-sm mb-4",
     style: {
       background: "#0c0d10",
@@ -5452,11 +5463,11 @@ function EcranPartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "Donnez un nom \xE0 l'aventure \u2014 vous en serez le Ma\xEEtre du Jeu."), /*#__PURE__*/React.createElement("input", {
+  }, "Donnez un nom à l'aventure — vous en serez le Maître du Jeu."), /*#__PURE__*/React.createElement("input", {
     value: nom,
     onChange: e => setNom(e.target.value),
     maxLength: 60,
-    placeholder: "Nom de l'aventure (ex : L'\xC9veil sans M\xE9moire)",
+    placeholder: "Nom de l'aventure (ex : L'Éveil sans Mémoire)",
     className: "w-full px-3 py-2 rounded-lg text-sm mb-4",
     style: {
       background: "#0c0d10",
@@ -5491,7 +5502,7 @@ function EcranPartie({
       opacity: nom.trim() ? 1 : 0.4,
       cursor: nom.trim() ? "pointer" : "default"
     }
-  }, "CR\xC9ER"))))), /*#__PURE__*/React.createElement(PiedVibe, {
+  }, "CRÉER"))))), /*#__PURE__*/React.createElement(PiedVibe, {
     versionBase: versionBase
   }));
 }
@@ -5550,7 +5561,7 @@ function BandeauConsolePartie({
     }
   }, /*#__PURE__*/React.createElement("span", null, ouverte ? "▼" : "▲"), /*#__PURE__*/React.createElement("span", {
     className: "shrink-0"
-  }, "\uD83D\uDCAC CONSOLE DE PARTIE"), /*#__PURE__*/React.createElement("span", {
+  }, "💬 CONSOLE DE PARTIE"), /*#__PURE__*/React.createElement("span", {
     className: "px-1.5 rounded",
     style: {
       background: "#f0b24a22",
@@ -5561,7 +5572,7 @@ function BandeauConsolePartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "\xB7 ", dernier.pseudo, " : ", dernier.contenu))));
+  }, "· ", dernier.pseudo, " : ", dernier.contenu))));
 }
 
 /* ══════════ Le hub : le magasin et la bibliothèque ══════════ */
@@ -5609,7 +5620,7 @@ function Hub({
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("div", {
-    title: "L'Icosa\xE8dre D20 \u2014 glyphe de L'Archiviste"
+    title: "L'Icosaèdre D20 — glyphe de L'Archiviste"
   }, /*#__PURE__*/React.createElement(Icosaedre, {
     size: 44,
     color: "#e8e4d8"
@@ -5674,7 +5685,7 @@ function Hub({
     style: {
       color: "#71717a"
     }
-  }, "Vide \u2014 installez un pack depuis le magasin (\u2B07 Installer), puis lancez-le ici.") : /*#__PURE__*/React.createElement("div", {
+  }, "Vide — installez un pack depuis le magasin (⬇ Installer), puis lancez-le ici.") : /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4"
   }, packsInstalles.map(p => /*#__PURE__*/React.createElement(Vignette, {
     key: p.id,
@@ -5746,14 +5757,14 @@ function PackEntete({
       border: "1px solid " + T.accent + "66",
       color: T.accent
     }
-  }, "\u2190 Hub"), /*#__PURE__*/React.createElement("button", {
+  }, "← Hub"), /*#__PURE__*/React.createElement("button", {
     onClick: onLivre,
     className: "px-3 py-1.5 rounded-lg text-sm font-bold",
     style: {
       border: "1px solid " + T.or + "66",
       color: T.or
     }
-  }, "\uD83D\uDCD6 R\xE8gles")), /*#__PURE__*/React.createElement("div", {
+  }, "📖 Règles")), /*#__PURE__*/React.createElement("div", {
     className: "text-center"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xl font-bold flex items-center justify-center gap-2",
@@ -5771,7 +5782,7 @@ function PackEntete({
     style: {
       color: "#71717a"
     }
-  }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => d.id + "@" + d.format_min).join(", "), " \xB7 v", pack.version, " \xB7 priv\xE9")), /*#__PURE__*/React.createElement("div", {
+  }, pack.type, " · dépend de ", pack.depend_de.map(d => d.id + "@" + d.format_min).join(", "), " · v", pack.version, " · privé")), /*#__PURE__*/React.createElement("div", {
     style: {
       color: T.or
     }
@@ -5804,7 +5815,7 @@ function BlocDoc({
     style: {
       color: T.accent
     }
-  }, "\u25B8"), it)));
+  }, "▸"), it)));
   if (bloc.type === "table") return /*#__PURE__*/React.createElement("div", {
     className: "overflow-x-auto"
   }, /*#__PURE__*/React.createElement("table", {
@@ -5861,19 +5872,19 @@ function LecteurDocuments({
       border: "1px solid " + T.accent + "66",
       color: T.accent
     }
-  }, "\u2190 Retour \xE0 la table"), /*#__PURE__*/React.createElement("div", {
+  }, "← Retour à la table"), /*#__PURE__*/React.createElement("div", {
     className: "text-center"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xl font-bold",
     style: {
       color: "#e8e4d8"
     }
-  }, "\uD83D\uDCD6 ", doc ? doc.titre : "—"), /*#__PURE__*/React.createElement("div", {
+  }, "📖 ", doc ? doc.titre : "—"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "couche \xAB documents \xBB du pack \u2014 lue par le lecteur universel")), /*#__PURE__*/React.createElement("div", {
+  }, "couche « documents » du pack — lue par le lecteur universel")), /*#__PURE__*/React.createElement("div", {
     style: {
       color: T.or
     }
@@ -6152,7 +6163,7 @@ function VueNoyau40k({
       border: "1px solid " + T.accent + "66",
       color: T.accent
     }
-  }, "\uD83D\uDCDC FICHES DE LA TABLE"), /*#__PURE__*/React.createElement("div", {
+  }, "📜 FICHES DE LA TABLE"), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreationPE ? /*#__PURE__*/React.createElement("div", {
     className: "md:col-span-2"
@@ -6210,7 +6221,7 @@ function VueNoyau40k({
     }
   }, "Rfx +", perso.rfx, " ", /*#__PURE__*/React.createElement("span", {
     className: "text-xs"
-  }, "\u2014 surcharge du mod P\xC9")), persoCree ? /*#__PURE__*/React.createElement("div", {
+  }, "— surcharge du mod PÉ")), persoCree ? /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -6220,11 +6231,11 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, perso.armeDef.nom), " \xB7 ", perso.armeDef.tir ? "tir" : "mêlée", " \xB7 ", perso.armeDef.portee, " \xB7 A ", perso.armeDef.att, " \xB7 ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", perso.armeDef.f, " \xB7 PA ", perso.armeDef.pa, " \xB7 D ", perso.armeDef.d, /*#__PURE__*/React.createElement("span", {
+  }, perso.armeDef.nom), " · ", perso.armeDef.tir ? "tir" : "mêlée", " · ", perso.armeDef.portee, " · A ", perso.armeDef.att, " · ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " · F ", perso.armeDef.f, " · PA ", perso.armeDef.pa, " · D ", perso.armeDef.d, /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#71717a"
     }
-  }, " \xB7 ", perso.armeDef.regle)) : /*#__PURE__*/React.createElement("div", {
+  }, " · ", perso.armeDef.regle)) : /*#__PURE__*/React.createElement("div", {
     className: "mt-3 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -6234,7 +6245,7 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, C.armes[perso.arme].nom), " \xB7 ", C.armes[perso.arme].type, " \xB7 ", C.armes[perso.arme].portee, " \xB7 A ", C.armes[perso.arme].attaques, " \xB7 ", C.armes[perso.arme].bs_ws, " \xB7 F ", C.armes[perso.arme].f, " \xB7 PA ", C.armes[perso.arme].pa, " \xB7 D ", C.armes[perso.arme].degats), perso.apt && /*#__PURE__*/React.createElement("div", {
+  }, C.armes[perso.arme].nom), " · ", C.armes[perso.arme].type, " · ", C.armes[perso.arme].portee, " · A ", C.armes[perso.arme].attaques, " · ", C.armes[perso.arme].bs_ws, " · F ", C.armes[perso.arme].f, " · PA ", C.armes[perso.arme].pa, " · D ", C.armes[perso.arme].degats), perso.apt && /*#__PURE__*/React.createElement("div", {
     className: "mt-2 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -6244,7 +6255,7 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.comps && /*#__PURE__*/React.createElement("div", {
+  }, "Aptitude de châssis — "), perso.apt), perso.comps && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, perso.comps.map(c => /*#__PURE__*/React.createElement("span", {
     key: c,
@@ -6283,12 +6294,12 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, " \u2014 ", resumePerso(p.contenu)))), /*#__PURE__*/React.createElement("div", {
+  }, " — ", resumePerso(p.contenu)))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-1",
     style: {
       color: "#71717a"
     }
-  }, "Votre unit\xE9 entre avec ses PV au complet ; ou cr\xE9ez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
+  }, "Votre unité entre avec ses PV au complet ; ou créez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEnCreationPE(true),
     className: "w-full py-2 rounded-lg text-sm font-bold mt-2",
     style: {
@@ -6314,7 +6325,7 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "adversaire d'entra\xEEnement")), /*#__PURE__*/React.createElement(PvBarre, {
+  }, "adversaire d'entraînement")), /*#__PURE__*/React.createElement(PvBarre, {
     pv: pvOrk,
     pvMax: C.adversaire.pvMax,
     accent: "#f0b24a"
@@ -6338,7 +6349,7 @@ function VueNoyau40k({
     style: {
       background: T.accent
     }
-  }, "\u2694 Jouer le round ", round + 1), finCombat && /*#__PURE__*/React.createElement("div", {
+  }, "⚔ Jouer le round ", round + 1), finCombat && /*#__PURE__*/React.createElement("div", {
     className: "text-center text-sm py-2 rounded",
     style: {
       background: "#ffffff0d",
@@ -6349,7 +6360,7 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "S\xE9quence du noyau : toucher \u2192 blesser (F vs E) \u2192 sauvegarde (PA) \u2192 d\xE9g\xE2ts"))))), /*#__PURE__*/React.createElement("div", {
+  }, "Séquence du noyau : toucher → blesser (F vs E) → sauvegarde (PA) → dégâts"))))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 mb-5",
     style: {
       background: "#ffffff08",
@@ -6360,7 +6371,7 @@ function VueNoyau40k({
     style: {
       color: T.accent
     }
-  }, "\uD83C\uDFB2 Jet libre \xE9tiquet\xE9"), /*#__PURE__*/React.createElement("div", {
+  }, "🎲 Jet libre étiqueté"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center gap-3"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-sm",
@@ -6403,7 +6414,7 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "1D6 \u2265 cible \xB7 6 naturel r\xE9ussit toujours \xB7 1 naturel \xE9choue"))), /*#__PURE__*/React.createElement("div", {
+  }, "1D6 ≥ cible · 6 naturel réussit toujours · 1 naturel échoue"))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -6416,7 +6427,7 @@ function VueNoyau40k({
     style: {
       color: T.or
     }
-  }, "\uD83D\uDCDC Journal du personnage \u2014 append-only"), /*#__PURE__*/React.createElement("button", {
+  }, "📜 Journal du personnage — append-only"), /*#__PURE__*/React.createElement("button", {
     onClick: corrigerDernier,
     className: "text-xs px-3 py-1 rounded font-bold",
     style: {
@@ -6424,14 +6435,14 @@ function VueNoyau40k({
       color: "#fb7185"
     },
     disabled: journal.length === 0
-  }, "\u270E Annuler le dernier (par \xE9crit)")), /*#__PURE__*/React.createElement("div", {
+  }, "✎ Annuler le dernier (par écrit)")), /*#__PURE__*/React.createElement("div", {
     className: "max-h-80 overflow-y-auto flex flex-col gap-1.5 pr-1"
   }, journalInverse.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-sm py-3 text-center",
     style: {
       color: "#71717a"
     }
-  }, "Le fil est vide \u2014 chaque action s'y gravera, sans retour en arri\xE8re."), journalInverse.map(e => {
+  }, "Le fil est vide — chaque action s'y gravera, sans retour en arrière."), journalInverse.map(e => {
     const fam = e.type.split(".")[0];
     return /*#__PURE__*/React.createElement("div", {
       key: e.id,
@@ -6462,7 +6473,7 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "Surcharges du mod appliqu\xE9es : ", C.surcharges.join(" · ")))), fichesMjOuvert && table && /*#__PURE__*/React.createElement(EcranMjFiches, {
+  }, "Surcharges du mod appliquées : ", C.surcharges.join(" · ")))), fichesMjOuvert && table && /*#__PURE__*/React.createElement(EcranMjFiches, {
     table: table,
     theme: T,
     onFermer: () => setFichesMjOuvert(false)
@@ -6501,7 +6512,7 @@ function EcranMjFiches({
     style: {
       color: T.accent
     }
-  }, "\uD83D\uDCDC Les fiches de la table"), /*#__PURE__*/React.createElement("button", {
+  }, "📜 Les fiches de la table"), /*#__PURE__*/React.createElement("button", {
     onClick: onFermer,
     className: "px-3 py-1.5 rounded-lg text-sm font-bold",
     style: {
@@ -6509,12 +6520,12 @@ function EcranMjFiches({
       border: "1px solid #3f3f46",
       color: "#a1a1aa"
     }
-  }, "\u2715 Fermer")), joueurs.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "✕ Fermer")), joueurs.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-sm py-6 text-center",
     style: {
       color: "#71717a"
     }
-  }, "Personne \xE0 la table \u2014 attendez les inscriptions."), /*#__PURE__*/React.createElement("div", {
+  }, "Personne à la table — attendez les inscriptions."), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-3"
   }, joueurs.map(j => {
     const f = fiches.find(x => x.compte_id === j.compte_id);
@@ -6577,7 +6588,7 @@ function EcranMjFiches({
       style: {
         color: "#e8e4d8"
       }
-    }, p.armeDef.nom), " \xB7 ", p.armeDef.tir ? "tir" : "mêlée", " \xB7 ", p.armeDef.portee, " \xB7 A ", p.armeDef.att, " \xB7 F ", p.armeDef.f, " \xB7 PA ", p.armeDef.pa, " \xB7 D ", p.armeDef.d), p.apt && /*#__PURE__*/React.createElement("div", {
+    }, p.armeDef.nom), " · ", p.armeDef.tir ? "tir" : "mêlée", " · ", p.armeDef.portee, " · A ", p.armeDef.att, " · F ", p.armeDef.f, " · PA ", p.armeDef.pa, " · D ", p.armeDef.d), p.apt && /*#__PURE__*/React.createElement("div", {
       className: "mt-2 rounded p-2 text-xs",
       style: {
         background: "#ffffff08",
@@ -6587,12 +6598,12 @@ function EcranMjFiches({
       style: {
         color: "#e8e4d8"
       }
-    }, "Aptitude de ch\xE2ssis \u2014 "), p.apt)) : /*#__PURE__*/React.createElement("div", {
+    }, "Aptitude de châssis — "), p.apt)) : /*#__PURE__*/React.createElement("div", {
       className: "text-sm py-2",
       style: {
         color: "#71717a"
       }
-    }, "Pas encore de fiche \u2014 l'unit\xE9 de ", j.pseudo, " n'est pas \xE9veill\xE9e."));
+    }, "Pas encore de fiche — l'unité de ", j.pseudo, " n'est pas éveillée."));
   }))));
 }
 
@@ -6691,7 +6702,7 @@ function JournalBloc({
     style: {
       color: or
     }
-  }, "\uD83D\uDCDC Journal du personnage \u2014 append-only"), /*#__PURE__*/React.createElement("button", {
+  }, "📜 Journal du personnage — append-only"), /*#__PURE__*/React.createElement("button", {
     onClick: corriger,
     className: "text-xs px-3 py-1 rounded font-bold",
     style: {
@@ -6699,14 +6710,14 @@ function JournalBloc({
       color: "#fb7185"
     },
     disabled: journal.length === 0
-  }, "\u270E Annuler le dernier (par \xE9crit)")), /*#__PURE__*/React.createElement("div", {
+  }, "✎ Annuler le dernier (par écrit)")), /*#__PURE__*/React.createElement("div", {
     className: "max-h-80 overflow-y-auto flex flex-col gap-1.5 pr-1"
   }, journalInverse.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-sm py-3 text-center",
     style: {
       color: "#71717a"
     }
-  }, "Le fil est vide \u2014 chaque action s'y gravera, sans retour en arri\xE8re."), journalInverse.map(e => {
+  }, "Le fil est vide — chaque action s'y gravera, sans retour en arrière."), journalInverse.map(e => {
     const fam = e.type.split(".")[0];
     return /*#__PURE__*/React.createElement("div", {
       key: e.id,
@@ -6737,7 +6748,7 @@ function JournalBloc({
     style: {
       color: "#71717a"
     }
-  }, "Surcharges du mod appliqu\xE9es : ", surcharges));
+  }, "Surcharges du mod appliquées : ", surcharges));
 }
 
 /* ══════════ Bloodlust : création d'un porteur (livre p. 81-88) ══════════ */
@@ -6798,7 +6809,7 @@ function EcranCreationPorteur({
     style: {
       color: accent
     }
-  }, "\uD83E\uDDEC Cr\xE9er un porteur"), /*#__PURE__*/React.createElement("div", {
+  }, "🧬 Créer un porteur"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
@@ -6808,10 +6819,10 @@ function EcranCreationPorteur({
     style: {
       color: "#a1a1aa"
     }
-  }, "Peuple \u2192 nom \u2192 d\xE9sirs \u2192 comp\xE9tences. PV = EN\xD72, contr\xF4le = VO\xD75. Modificateurs par valeur de carac (image p. 87-88) ignor\xE9s dans l'alpha."), /*#__PURE__*/React.createElement("input", {
+  }, "Peuple → nom → désirs → compétences. PV = EN×2, contrôle = VO×5. Modificateurs par valeur de carac (image p. 87-88) ignorés dans l'alpha."), /*#__PURE__*/React.createElement("input", {
     value: nom,
     onChange: e => setNom(e.target.value),
-    placeholder: "Nom du porteur\u2026",
+    placeholder: "Nom du porteur…",
     className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
     style: {
       background: "#0c0d10",
@@ -6838,12 +6849,12 @@ function EcranCreationPorteur({
     style: {
       color: "#a1a1aa"
     }
-  }, "FO ", p.caracs.FO, " \xB7 EN ", p.caracs.EN, " \xB7 Ag ", p.caracs.Ag, " \xB7 RA ", p.caracs.RA, " \xB7 PE ", p.caracs.PE, " \xB7 VO ", p.caracs.VO)))), peuple && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "FO ", p.caracs.FO, " · EN ", p.caracs.EN, " · Ag ", p.caracs.Ag, " · RA ", p.caracs.RA, " · PE ", p.caracs.PE, " · VO ", p.caracs.VO)))), peuple && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-4 mb-1.5",
     style: {
       color: "#71717a"
     }
-  }, "D\xE9sirs du peuple ", peuple.nom, " (livre p. 88) \u2014 un PJ ajuste chaque d\xE9sir de \xB11 \xE0 \xB12"), nomsDesirs.map((d, i) => {
+  }, "Désirs du peuple ", peuple.nom, " (livre p. 88) — un PJ ajuste chaque désir de ±1 à ±2"), nomsDesirs.map((d, i) => {
     const base = contenu.desirsPeuples[peuple.nom][i];
     return /*#__PURE__*/React.createElement("div", {
       key: d,
@@ -6917,7 +6928,7 @@ function EcranCreationPorteur({
       color: "#c8c8ce",
       border: "1px solid #3f3f46"
     }
-  }, "\u2212"), /*#__PURE__*/React.createElement("span", {
+  }, "−"), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-bold w-12 text-right",
     style: {
       color: "#e8e4d8"
@@ -6938,13 +6949,13 @@ function EcranCreationPorteur({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "PV = EN\xD72 ", /*#__PURE__*/React.createElement("b", null, peuple.caracs.EN * 2)), /*#__PURE__*/React.createElement("div", {
+  }, "PV = EN×2 ", /*#__PURE__*/React.createElement("b", null, peuple.caracs.EN * 2)), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 rounded-lg py-1.5",
     style: {
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "Contr\xF4le = VO\xD75 ", /*#__PURE__*/React.createElement("b", null, peuple.caracs.VO * 5, " %")))), /*#__PURE__*/React.createElement("div", {
+  }, "Contrôle = VO×5 ", /*#__PURE__*/React.createElement("b", null, peuple.caracs.VO * 5, " %")))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onAnnule,
@@ -6954,7 +6965,7 @@ function EcranCreationPorteur({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "\u2715 Annuler"), /*#__PURE__*/React.createElement("button", {
+  }, "✕ Annuler"), /*#__PURE__*/React.createElement("button", {
     onClick: valider,
     disabled: !peutValider,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
@@ -7013,20 +7024,20 @@ function EcranCreationAventurier({
     style: {
       color: accent
     }
-  }, "\u2694 Cr\xE9er un aventurier"), /*#__PURE__*/React.createElement("div", {
+  }, "⚔ Créer un aventurier"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "7 caracs \xE0 3D6 \xB7 total \u2264 52")), /*#__PURE__*/React.createElement("div", {
+  }, "7 caracs à 3D6 · total ≤ 52")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#a1a1aa"
     }
-  }, "Nom \u2192 les d\xE9s de naissance. SAN de d\xE9part = POU\xD75. Si le total d\xE9passe 52, le livre permet de tout relancer."), /*#__PURE__*/React.createElement("input", {
+  }, "Nom → les dés de naissance. SAN de départ = POU×5. Si le total dépasse 52, le livre permet de tout relancer."), /*#__PURE__*/React.createElement("input", {
     value: nom,
     onChange: e => setNom(e.target.value),
-    placeholder: "Nom de l'aventurier\u2026",
+    placeholder: "Nom de l'aventurier…",
     className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
     style: {
       background: "#0c0d10",
@@ -7091,7 +7102,7 @@ function EcranCreationAventurier({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "SAN = POU\xD75 ", /*#__PURE__*/React.createElement("b", null, caracs.POU * 5)), /*#__PURE__*/React.createElement("div", {
+  }, "SAN = POU×5 ", /*#__PURE__*/React.createElement("b", null, caracs.POU * 5)), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 rounded-lg py-1.5",
     style: {
       background: "#ffffff0d",
@@ -7102,7 +7113,7 @@ function EcranCreationAventurier({
     style: {
       color: "#71717a"
     }
-  }, "Tentative n\xB0 ", essais, " \xB7 comp\xE9tences du ch. 4 non extraites \u2014 l'aventurier n\xE9 ici joue ses caracs (brute, \xD72, \xD73, \xD75)")), /*#__PURE__*/React.createElement("div", {
+  }, "Tentative n° ", essais, " · compétences du ch. 4 non extraites — l'aventurier né ici joue ses caracs (brute, ×2, ×3, ×5)")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onAnnule,
@@ -7112,7 +7123,7 @@ function EcranCreationAventurier({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "\u2715 Annuler"), /*#__PURE__*/React.createElement("button", {
+  }, "✕ Annuler"), /*#__PURE__*/React.createElement("button", {
     onClick: valider,
     disabled: !peutValider,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
@@ -7175,20 +7186,20 @@ function EcranCreationUnite({
     style: {
       color: accent
     }
-  }, "\u2699 Cr\xE9er une unit\xE9"), /*#__PURE__*/React.createElement("div", {
+  }, "⚙ Créer une unité"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "10 ch\xE2ssis \xB7 6 codes de fabrique")), /*#__PURE__*/React.createElement("div", {
+  }, "10 châssis · 6 codes de fabrique")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#a1a1aa"
     }
-  }, "Nom \u2192 ch\xE2ssis \u2192 code de fabrique \u2192 arme. PV et Rfx viennent du ch\xE2ssis (PV = W\xD73). Modules, wargear et protocoles : hors alpha \u2014 les places M\xE9moire/Calcul sont grav\xE9es pour la suite."), /*#__PURE__*/React.createElement("input", {
+  }, "Nom → châssis → code de fabrique → arme. PV et Rfx viennent du châssis (PV = W×3). Modules, wargear et protocoles : hors alpha — les places Mémoire/Calcul sont gravées pour la suite."), /*#__PURE__*/React.createElement("input", {
     value: nom,
     onChange: e => setNom(e.target.value),
-    placeholder: "D\xE9signation de l'unit\xE9\u2026",
+    placeholder: "Désignation de l'unité…",
     className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
     style: {
       background: "#0c0d10",
@@ -7215,17 +7226,17 @@ function EcranCreationUnite({
     style: {
       color: "#a1a1aa"
     }
-  }, "CC ", c.cc, " \xB7 CT ", c.ct, " \xB7 F ", c.f, " \xB7 E ", c.e, " \xB7 PV ", c.pv, " \xB7 A ", c.a, " \xB7 Sv ", c.sv, " \xB7 Rfx ", c.rfx), /*#__PURE__*/React.createElement("div", {
+  }, "CC ", c.cc, " · CT ", c.ct, " · F ", c.f, " · E ", c.e, " · PV ", c.pv, " · A ", c.a, " · Sv ", c.sv, " · Rfx ", c.rfx), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-0.5",
     style: {
       color: "#71717a"
     }
-  }, "M\xE9moire ", c.mem, " \xB7 Calcul ", c.cal)))), ch && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Mémoire ", c.mem, " · Calcul ", c.cal)))), ch && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-4 mb-1.5",
     style: {
       color: "#71717a"
     }
-  }, "Code de fabrique de la lign\xE9e"), /*#__PURE__*/React.createElement("div", {
+  }, "Code de fabrique de la lignée"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1.5"
   }, contenu.codes.map(c => /*#__PURE__*/React.createElement("button", {
     key: c,
@@ -7241,7 +7252,7 @@ function EcranCreationUnite({
     style: {
       color: "#71717a"
     }
-  }, "Arme de d\xE9part \u2014 arsenal neutre (choix libre dans l'alpha)"), /*#__PURE__*/React.createElement("select", {
+  }, "Arme de départ — arsenal neutre (choix libre dans l'alpha)"), /*#__PURE__*/React.createElement("select", {
     value: armeId,
     onChange: e => setArmeId(e.target.value),
     className: "w-full rounded px-2 py-1.5 text-sm",
@@ -7253,7 +7264,7 @@ function EcranCreationUnite({
   }, contenu.arsenal.map(a => /*#__PURE__*/React.createElement("option", {
     key: a.id,
     value: a.id
-  }, a.nom, " \xB7 ", a.tir ? "tir" : "mêlée", " \xB7 ", a.portee, " \xB7 A ", a.att, " \xB7 F ", a.f, " \xB7 PA ", a.pa, " \xB7 D ", a.d, " \xB7 T", a.taille))), /*#__PURE__*/React.createElement("div", {
+  }, a.nom, " · ", a.tir ? "tir" : "mêlée", " · ", a.portee, " · A ", a.att, " · F ", a.f, " · PA ", a.pa, " · D ", a.d, " · T", a.taille))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-1",
     style: {
       color: "#71717a"
@@ -7278,7 +7289,7 @@ function EcranCreationUnite({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "M\xE9moire ", /*#__PURE__*/React.createElement("b", null, ch.mem), " \xB7 Calcul ", /*#__PURE__*/React.createElement("b", null, ch.cal))), /*#__PURE__*/React.createElement("div", {
+  }, "Mémoire ", /*#__PURE__*/React.createElement("b", null, ch.mem), " · Calcul ", /*#__PURE__*/React.createElement("b", null, ch.cal))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-2 rounded p-2",
     style: {
       background: "#ffffff08",
@@ -7288,7 +7299,7 @@ function EcranCreationUnite({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), ch.apt), /*#__PURE__*/React.createElement("div", {
+  }, "Aptitude de châssis — "), ch.apt), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, ch.cp.map(c => /*#__PURE__*/React.createElement("span", {
     key: c,
@@ -7307,7 +7318,7 @@ function EcranCreationUnite({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "\u2715 Annuler"), /*#__PURE__*/React.createElement("button", {
+  }, "✕ Annuler"), /*#__PURE__*/React.createElement("button", {
     onClick: valider,
     disabled: !peutValider,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
@@ -7595,7 +7606,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "Sant\xE9 Mentale \u2014 POU\xD75 (", perso.sanMax, ")"), /*#__PURE__*/React.createElement(BarrePct, {
+  }, "Santé Mentale — POU×5 (", perso.sanMax, ")"), /*#__PURE__*/React.createElement(BarrePct, {
     valeur: san,
     max: perso.sanMax,
     accent: T.accent,
@@ -7605,7 +7616,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "D\xE9sirs du peuple ", perso.peuple, " (livre p. 88 \u2014 un PJ ajuste de \xB11 \xE0 \xB12 par d\xE9sir)"), Object.entries(perso.desirs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+  }, "Désirs du peuple ", perso.peuple, " (livre p. 88 — un PJ ajuste de ±1 à ±2 par désir)"), Object.entries(perso.desirs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
     className: "mb-1.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -7659,7 +7670,7 @@ function VueNoyauD100({
       background: "#ffffff08",
       color: "#c8c8ce"
     }
-  }, "Lutte de POU : ", C.lutte.base, " % \xB1 ", C.lutte.pas, " % par point d'\xE9cart \u2014 POU ", c.POU, " vs ", C.demon.pou, " \u2192", " ", C.lutte.base - C.lutte.pas * (C.demon.pou - c.POU), " % contre ", C.lutte.base + C.lutte.pas * (C.demon.pou - c.POU), " %"), /*#__PURE__*/React.createElement("div", {
+  }, "Lutte de POU : ", C.lutte.base, " % ± ", C.lutte.pas, " % par point d'écart — POU ", c.POU, " vs ", C.demon.pou, " →", " ", C.lutte.base - C.lutte.pas * (C.demon.pou - c.POU), " % contre ", C.lutte.base + C.lutte.pas * (C.demon.pou - c.POU), " %"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: lutterPOU,
@@ -7667,7 +7678,7 @@ function VueNoyauD100({
     style: {
       background: T.accent
     }
-  }, "\u26A1 Lutter un round (test)"), perso.sanMax ? /*#__PURE__*/React.createElement("button", {
+  }, "⚡ Lutter un round (test)"), perso.sanMax ? /*#__PURE__*/React.createElement("button", {
     onClick: reposerSAN,
     className: "py-2 rounded-lg text-sm font-bold",
     style: {
@@ -7675,7 +7686,7 @@ function VueNoyauD100({
       color: T.accent,
       background: "transparent"
     }
-  }, "Repos \u2014 restaurer la SAN") : null, lutteFinie && /*#__PURE__*/React.createElement("div", {
+  }, "Repos — restaurer la SAN") : null, lutteFinie && /*#__PURE__*/React.createElement("div", {
     className: "text-center text-sm py-2 rounded",
     style: {
       background: "#ffffff0d",
@@ -7686,7 +7697,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "Les deux r\xE9ussissent ou \xE9chouent : la lutte se prolonge (relancez)"))) : null, C.forge ? /*#__PURE__*/React.createElement("div", {
+  }, "Les deux réussissent ou échouent : la lutte se prolonge (relancez)"))) : null, C.forge ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
@@ -7704,7 +7715,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, C.forge.nature, " \xB7 base ", C.forge.base, " pts")), /*#__PURE__*/React.createElement("div", {
+  }, C.forge.nature, " · base ", C.forge.base, " pts")), /*#__PURE__*/React.createElement("div", {
     className: "mb-3"
   }, /*#__PURE__*/React.createElement(BarrePct, {
     valeur: Math.min(pts, C.forge.budget),
@@ -7717,7 +7728,7 @@ function VueNoyauD100({
       color: "#71717a",
       background: "#ffffff08"
     }
-  }, "L'\xE2me dort encore dans le m\xE9tal \u2014 tirez le d% sur une table, puis choisissez l'ordre des chiffres") : /*#__PURE__*/React.createElement("div", {
+  }, "L'âme dort encore dans le métal — tirez le d% sur une table, puis choisissez l'ordre des chiffres") : /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-1.5 mb-3"
   }, acquis.map(p => /*#__PURE__*/React.createElement("div", {
     key: p.tableId + "-" + p.cle,
@@ -7752,7 +7763,7 @@ function VueNoyauD100({
     style: {
       color: "#c8c8ce"
     }
-  }, C.tablesForge.find(x => x.id === forge.tableId).nom, " \u2014 chiffres tir\xE9s :", " ", /*#__PURE__*/React.createElement("b", {
+  }, C.tablesForge.find(x => x.id === forge.tableId).nom, " — chiffres tirés :", " ", /*#__PURE__*/React.createElement("b", {
     style: {
       color: T.or
     }
@@ -7760,7 +7771,7 @@ function VueNoyauD100({
     style: {
       color: T.or
     }
-  }, forge.b), " \u2014 quel ordre ?"), /*#__PURE__*/React.createElement("div", {
+  }, forge.b), " — quel ordre ?"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 justify-center"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => choisirOrdreForge("a"),
@@ -7785,7 +7796,7 @@ function VueNoyauD100({
     style: {
       color: "#c8c8ce"
     }
-  }, "\xAB Au choix du joueur \xBB \u2014 ", C.tablesForge.find(x => x.id === choixLibre.tableId).nom, " : d\xE9signez le pouvoir"), /*#__PURE__*/React.createElement("select", {
+  }, "« Au choix du joueur » — ", C.tablesForge.find(x => x.id === choixLibre.tableId).nom, " : désignez le pouvoir"), /*#__PURE__*/React.createElement("select", {
     onChange: e => {
       const t = C.tablesForge.find(x => x.id === choixLibre.tableId);
       const p = t.table.find(x => String(x.de[0]) === e.target.value);
@@ -7801,10 +7812,10 @@ function VueNoyauD100({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, "\u2014 choisir un pouvoir \u2014"), C.tablesForge.find(x => x.id === choixLibre.tableId).table.filter(p => p.prix !== null).map(p => /*#__PURE__*/React.createElement("option", {
+  }, "— choisir un pouvoir —"), C.tablesForge.find(x => x.id === choixLibre.tableId).table.filter(p => p.prix !== null).map(p => /*#__PURE__*/React.createElement("option", {
     key: p.de[0],
     value: p.de[0]
-  }, p.de[1] === p.de[0] ? fmtD100(p.de[0]) : fmtD100(p.de[0]) + "-" + fmtD100(p.de[1]), " \xB7 ", p.nom, " \xB7 ", p.prix[0] > 0 ? "+" : "", p.prix[0])))) : /*#__PURE__*/React.createElement("div", {
+  }, p.de[1] === p.de[0] ? fmtD100(p.de[0]) : fmtD100(p.de[0]) + "-" + fmtD100(p.de[1]), " · ", p.nom, " · ", p.prix[0] > 0 ? "+" : "", p.prix[0])))) : /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-2"
   }, C.tablesForge.map(t => {
     const n = jetsTable[t.id] || 0;
@@ -7819,7 +7830,7 @@ function VueNoyauD100({
         color: bloque ? "#a1a1aa" : "#0c0d10",
         cursor: bloque ? "not-allowed" : "pointer"
       }
-    }, "\uD83C\uDFB2 ", t.nom.replace("Pouvoirs ", ""), t.max !== null && /*#__PURE__*/React.createElement("span", {
+    }, "🎲 ", t.nom.replace("Pouvoirs ", ""), t.max !== null && /*#__PURE__*/React.createElement("span", {
       className: "text-xs font-normal ml-1"
     }, "(", n, "/", t.max, ")"));
   })), armeEveillee && /*#__PURE__*/React.createElement("div", {
@@ -7828,14 +7839,14 @@ function VueNoyauD100({
       background: "#ffffff0d",
       color: T.or
     }
-  }, "\u2694 ", C.forge.nom, " est \xE9veill\xE9e \u2014 la forge est close (nouveaux pouvoirs en jeu, par l'XP)"), C.controle ? /*#__PURE__*/React.createElement("button", {
+  }, "⚔ ", C.forge.nom, " est éveillée — la forge est close (nouveaux pouvoirs en jeu, par l'XP)"), C.controle ? /*#__PURE__*/React.createElement("button", {
     onClick: testerControle,
     className: "py-2 rounded-lg text-sm font-bold",
     style: {
       border: "1px solid " + T.accent + "66",
       color: T.accent
     }
-  }, "Test de contr\xF4le \u2014 ", C.controle.carac, "\xD7", C.controle.mult, " (test)") : null, C.forgeAide && /*#__PURE__*/React.createElement("div", {
+  }, "Test de contrôle — ", C.controle.carac, "×", C.controle.mult, " (test)") : null, C.forgeAide && /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-center",
     style: {
       color: "#71717a"
@@ -7851,14 +7862,14 @@ function VueNoyauD100({
     style: {
       color: T.accent
     }
-  }, "\uD83C\uDFB2 Jet libre \xE9tiquet\xE9"), /*#__PURE__*/React.createElement("div", {
+  }, "🎲 Jet libre étiqueté"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center gap-3"
   }, C.paliers ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
     className: "text-sm",
     style: {
       color: "#c8c8ce"
     }
-  }, "Comp\xE9tence", " ", /*#__PURE__*/React.createElement("select", {
+  }, "Compétence", " ", /*#__PURE__*/React.createElement("select", {
     value: compIdx,
     onChange: e => setCompIdx(Number(e.target.value)),
     className: "ml-1 rounded px-2 py-1",
@@ -7870,7 +7881,7 @@ function VueNoyauD100({
   }, comps.map((k, i) => /*#__PURE__*/React.createElement("option", {
     key: k,
     value: i
-  }, k, " \u2014 ", perso.competences[k], " %")))), /*#__PURE__*/React.createElement("div", {
+  }, k, " — ", perso.competences[k], " %")))), /*#__PURE__*/React.createElement("div", {
     className: "flex rounded overflow-hidden",
     style: {
       border: "1px solid #3f3f46"
@@ -7911,7 +7922,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "1D100 \u2264 seuil \xB7 plancher 5 % \xB7 \xAB 00 \xBB \xE9chec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement(JournalBloc, {
+  }, "1D100 ≤ seuil · plancher 5 % · « 00 » échec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement(JournalBloc, {
     journal: journal,
     corriger: corrigerDernier,
     accent: T.accent,
@@ -7954,12 +7965,12 @@ function VueInconnue({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-3xl mb-3"
-  }, "\u26A0"), /*#__PURE__*/React.createElement("div", {
+  }, "⚠"), /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg mb-2",
     style: {
       color: "#e8e4d8"
     }
-  }, pack.nom, " \u2014 pack refus\xE9"), /*#__PURE__*/React.createElement("div", {
+  }, pack.nom, " — pack refusé"), /*#__PURE__*/React.createElement("div", {
     className: "text-sm mb-4",
     style: {
       color: "#c8c8ce"
@@ -7970,7 +7981,7 @@ function VueInconnue({
     style: {
       background: T.accent
     }
-  }, "\u2190 Retour au magasin")));
+  }, "← Retour au magasin")));
 }
 
 /* ── L'interprète de la Console : les commandes deviennent des événements typés ──
@@ -8300,7 +8311,8 @@ function App() {
   };
   const lancerAventure = p => {
     if (!CLOUD) return;
-    CLOUD.lancerPartie(p.id).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
+    /* V48.9 — si la salle n'était PAS ouverte, la porte naît publique. */
+    CLOUD.lancerPartie(p.id, !p.salle_ouverte_le).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
     /* RIEN d'autre ici : l'entrée se fait par la POUSSÉE, le même chemin
        pour le MJ et les joueurs — un seul code, une seule vérité. */
   };
@@ -8525,7 +8537,7 @@ function App() {
                 showToast("L'aventure est close par le MJ.");
               }
             }
-            rechargerListes(); /* ouverte → en_cours : elle quitte le lobby */
+            rechargerListes(); /* V48.9 elle RESTE au lobby — tenue, rejoignable */
           }
           return;
         }
@@ -8734,13 +8746,13 @@ function App() {
     style: {
       color: "#71717a"
     }
-  }, "Bienvenue, ", session.pseudo, " \u2014 votre inscription est bien grav\xE9e dans la Tombe, mais l'Archiviste doit apposer sa validation avant que les archives ne s'ouvrent. Revenez plus tard."), /*#__PURE__*/React.createElement("button", {
+  }, "Bienvenue, ", session.pseudo, " — votre inscription est bien gravée dans la Tombe, mais l'Archiviste doit apposer sa validation avant que les archives ne s'ouvrent. Revenez plus tard."), /*#__PURE__*/React.createElement("button", {
     onClick: seDeconnecter,
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
       background: "#a8adb8"
     }
-  }, "Se d\xE9connecter"))), vue === "chargement" && packActif && /*#__PURE__*/React.createElement("div", {
+  }, "Se déconnecter"))), vue === "chargement" && packActif && /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen flex items-center justify-center",
     style: {
       background: packActif.theme.fond,
@@ -8762,24 +8774,24 @@ function App() {
     style: {
       color: "#e8e4d8"
     }
-  }, "Chargement de ", packActif.nom, "\u2026"), /*#__PURE__*/React.createElement("div", {
+  }, "Chargement de ", packActif.nom, "…"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "pack install\xE9 \u2014 chargement local, aucune connexion requise"))), /*#__PURE__*/React.createElement("div", {
+  }, "pack installé — chargement local, aucune connexion requise"))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2 text-sm"
   }, etapes.map((e, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       color: "#c8c8ce"
     }
-  }, "\u2713 ", e)), etapes.length < totalEtapes && /*#__PURE__*/React.createElement("div", {
+  }, "✓ ", e)), etapes.length < totalEtapes && /*#__PURE__*/React.createElement("div", {
     className: "animate-pulse",
     style: {
       color: packActif.theme.accent
     }
-  }, "\u27C1 \u2026")))), vue === "partie" && packPartie && session && /*#__PURE__*/React.createElement(EcranPartie, {
+  }, "⟁ …")))), vue === "partie" && packPartie && session && /*#__PURE__*/React.createElement(EcranPartie, {
     pack: packPartie,
     session: session,
     mode: modePartie,
