@@ -705,8 +705,14 @@ const fondrePresents = (precedent, diff) => {
    V0.29 : LE CONNECTÉS DU JDR — le cadre du lobby d'un JDR ne montre
    que les joueurs qui ont lancé CE JDR (lobby ou table de jeu) ;
    quitter le jeu vide l'état de partie pour que la ronde re-piste,
-   et les étiquettes de lieu s'effacent (tout le monde ici est du JDR). ── */
-const BUILD = "0.29";
+   et les étiquettes de lieu s'effacent (tout le monde ici est du JDR).
+   V0.30 : LA DÉCONNEXION QUI NE PEIND PLUS LE NOIR — le setter
+   fantôme setMesPartiesCours (vestige de l'épure) jetait au milieu
+   de seDeconnecter : session vidée, vue figée sur « partie », plus
+   rien ne rendait → écran noir en quittant un JDR. Le hub se rend
+   maintenant AVANT le nettoyage, et le pied « Powered by Vibe · N° »
+   vit aussi dans l'espace MJ/Joueur (PiedVibe partagé). ── */
+const BUILD = "0.30";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4403,6 +4409,31 @@ const resumePerso = p => {
   if (p.caracs) return Object.keys(p.caracs).map(k => k + " " + p.caracs[k]).join(" · ");
   return p.origine || p.peuple || "";
 };
+
+/* ══════════ V48.6 — LE PIED VIBE : « Powered by Vibe · N° 0.XX »
+   Le pied du hub vit aussi dans l'espace MJ/Joueur d'un JDR : l'état
+   de la base (parametre « version_launcher ») reste la vérité affichée,
+   tout écart du code s'affiche entre parenthèses. ── */
+function PiedVibe({
+  versionBase
+}) {
+  return /*#__PURE__*/React.createElement("footer", {
+    className: "mt-auto text-center text-xs",
+    style: {
+      color: "#52525b",
+      padding: "5px 0"
+    }
+  }, "Powered by ", /*#__PURE__*/React.createElement("a", {
+    href: "https://chat.mistral.ai",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "Vibe"), " \xB7 N\xB0 ", versionBase || BUILD, versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : "");
+}
+
+/* ══════════ L'écran de partie à onglets (MJ / joueur) ══════════ */
 function EcranPartie({
   pack,
   session,
@@ -4414,6 +4445,7 @@ function EcranPartie({
   presents,
   mdpSalle,
   mesPersonnages,
+  versionBase,
   onCreerPersonnage,
   onSupprimerPersonnage,
   onCreer,
@@ -4609,7 +4641,9 @@ function EcranPartie({
       style: {
         color: "#71717a"
       }
-    }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : ""))));
+    }, "L'aventure est lanc\xE9e \u2014 l'entr\xE9e se fait d'elle-m\xEAme\u2026", partie.mj_compte_id !== (session && session.compteId) && !(partieJoueurs || []).some(j => j.compte_id === (session && session.compteId)) ? " (vous n'êtes pas à cette table.)" : "")), /*#__PURE__*/React.createElement(PiedVibe, {
+      versionBase: versionBase
+    })));
   }
 
   /* V46 — l'écran de partie à onglets. Le mode choisi au LANCER ordonne
@@ -5430,7 +5464,9 @@ function EcranPartie({
       opacity: nom.trim() ? 1 : 0.4,
       cursor: nom.trim() ? "pointer" : "default"
     }
-  }, "CR\xC9ER"))))));
+  }, "CR\xC9ER")))), /*#__PURE__*/React.createElement(PiedVibe, {
+    versionBase: versionBase
+  })));
 }
 
 /* ══════════ Le bandeau de la Console de partie (dans le pack) ══════════
@@ -5636,20 +5672,9 @@ function Hub({
       setAuthOuvert(false);
     },
     onFermer: () => setAuthOuvert(false)
-  }), /*#__PURE__*/React.createElement("footer", {
-    className: "mt-auto text-center text-xs",
-    style: {
-      color: "#52525b",
-      padding: "5px 0"
-    }
-  }, "Powered by ", /*#__PURE__*/React.createElement("a", {
-    href: "https://chat.mistral.ai",
-    target: "_blank",
-    rel: "noopener noreferrer",
-    style: {
-      color: "#a8adb8"
-    }
-  }, "Vibe"), " \xB7 N\xB0 ", versionBase || BUILD, versionBase && versionBase !== BUILD ? " (code " + BUILD + ")" : "")));
+  }), /*#__PURE__*/React.createElement(PiedVibe, {
+    versionBase: versionBase
+  })));
 }
 
 /* ══════════ Le pack PÉ chargé (light light) ══════════ */
@@ -7991,8 +8016,14 @@ function App() {
   const seDeconnecter = () => {
     /* La bibliothèque vit DANS LE NUAGE : déjà sauvegardée à chaque changement
        (CLOUD.sauveMemoire). Le launcher repart vierge, mais rien n'est perdu —
-       la bibliothèque est restaurée à la reconnexion. */
+       la bibliothèque est restaurée à la reconnexion.
+       V48.6 : LE HUB D'ABORD. Un setter fantôme (setMesPartiesCours — vestige
+       de l'épure V48.3, jamais déclaré) jetait au milieu du nettoyage :
+       session vidée mais vue figée sur « partie » — plus AUCUNE branche ne
+       rendait → ÉCRAN NOIR en quittant un JDR. Le retour au hub se fait
+       AVANT le nettoyage : un raté futur ne peut plus peindre le vide. */
     if (CLOUD) CLOUD.deconnexion().catch(() => {});
+    setVue("hub");
     setSession(null);
     setInstalles([]);
     setFavoris([]);
@@ -8008,9 +8039,7 @@ function App() {
     setFichesPartie([]);
     setMesPersonnages([]);
     setPartiesOuvertes([]);
-    setMesPartiesCours([]);
     setPackPartie(null);
-    setVue("hub");
     showToast("Session fermée — le magasin reste ouvert");
   };
   const creerProfil = profil => {
@@ -8734,6 +8763,7 @@ function App() {
     presents: Object.values(presents),
     mdpSalle: mdpSalle,
     mesPersonnages: mesPersonnages,
+    versionBase: versionBase,
     onCreerPersonnage: creerPersonnageRegistre,
     onSupprimerPersonnage: supprimerPersonnageRegistre,
     onCreer: creerAventure,
