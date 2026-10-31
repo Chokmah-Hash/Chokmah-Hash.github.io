@@ -701,8 +701,12 @@ const fondrePresents = (precedent, diff) => {
    part en joins ET leaves pour la même clé : la sortie ne compte que si
    la clé n'est pas revenue dans le même diff, sinon le joueur
    s'évanouissait de CONNECTÉS à chaque déplacement ; et le lieu dit
-   maintenant « dans ce pack / au hub / dans un autre JDR ». ── */
-const BUILD = "0.28";
+   maintenant « dans ce pack / au hub / dans un autre JDR ».
+   V0.29 : LE CONNECTÉS DU JDR — le cadre du lobby d'un JDR ne montre
+   que les joueurs qui ont lancé CE JDR (lobby ou table de jeu) ;
+   quitter le jeu vide l'état de partie pour que la ronde re-piste,
+   et les étiquettes de lieu s'effacent (tout le monde ici est du JDR). ── */
+const BUILD = "0.29";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4616,6 +4620,10 @@ function EcranPartie({
   const modeU = mode === "joueur" ? "joueur" : mode === "mj" ? "mj" : null;
   const onglets = modeU === "joueur" ? [["lobby", "LOBBY"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]] : modeU === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]];
   const mesAv = mesAventures || [];
+  /* V48.5 — LE CONNECTÉS DU JDR : dans le lobby d'un JDR, la ronde ne
+     montre que les joueurs qui ont lancé CE JDR (son écran de partie ou
+     la table de jeu). Le hub n'y a plus sa place, ni les autres JDR. */
+  const duPack = (presents || []).filter(j => j && j.jeu === pack.id);
 
   /* L'onglet RÈGLES ouvre le manuel en plein écran — le lecteur a son
      propre entête, on lui rend la main quand il se referme. */
@@ -4800,14 +4808,14 @@ function EcranPartie({
     style: {
       color: "#a8adb8"
     }
-  }, "CONNECT\xC9S ", (presents || []).length > 0 ? "(" + (presents || []).length + ")" : ""), (presents || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "CONNECT\xC9S (", duPack.length, ")"), duPack.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-2",
     style: {
       color: "#52525b"
     }
-  }, "Personne d'autre en ligne \u2014 la Tombe est silencieuse.") : /*#__PURE__*/React.createElement("div", {
+  }, "Personne dans ce JDR pour l'instant.") : /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, (presents || []).map(j => /*#__PURE__*/React.createElement("div", {
+  }, duPack.map(j => /*#__PURE__*/React.createElement("div", {
     key: j.compte_id,
     className: "flex items-center gap-2 px-2 py-1 rounded-lg",
     style: {
@@ -4824,12 +4832,7 @@ function EcranPartie({
     }
   }), /*#__PURE__*/React.createElement("span", {
     className: "text-xs font-bold"
-  }, j.pseudo, j.compte_id === (session && session.compteId) ? " (vous)" : ""), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#52525b"
-    }
-  }, j.jeu ? j.jeu === pack.id ? "— dans ce pack" : "— dans un autre JDR" : "— au hub")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+  }, j.pseudo, j.compte_id === (session && session.compteId) ? " (vous)" : "")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -8785,7 +8788,12 @@ function App() {
       onRetour: () => {
         if (enPartie && partie && session && partie.mj_compte_id === session.compteId && partie.salle_ouverte_le) {
           CLOUD.fermerSalle(partie.id).catch(() => {});
-        }
+        } /* V48.5 : quitter le jeu vide aussi l'état de partie — la ronde re-piste (jeu → null) et le joueur quitte le CONNECTÉS du JDR au lieu d'y rester fantôme. */
+        setPartie(null);
+        setPartieJoueurs([]);
+        setFichesPartie([]);
+        setModePartie(null);
+        setPackPartie(null);
         setVue("hub");
       },
       onJournal: journalVersConsole
