@@ -660,8 +660,12 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
    V0.25 : LE REGISTRE DES PERSONNAGES — chaque joueur garde ses unités dans
    la Tombe (tableau + écrou dans l'onglet PERSONNAGES, rattachées au pack),
    et à l'entrée en partie il choisit QUI entre dans la Tombe : une unité
-   du registre devient sa fiche de partie. ── */
-const BUILD = "0.25";
+   du registre devient sa fiche de partie.
+   V0.26 : TERMINOLOGIE COMMUNE — la mécanique de création parle le même
+   langage dans tous les packs (+ CRÉER, « créé le », boutons « Créer … ») ;
+   et le pack de l'écran de partie est CHARGÉ (contenu résolu) — sans quoi
+   + CRÉER ne résolvait aucun écran de création. ── */
+const BUILD = "0.26";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2708,8 +2712,8 @@ const CONTENU = {
     arsenal: PE_ARMES,
     creation: "unite",
     textes: {
-      creer: "⚙ Éveiller une unité",
-      recreer: "↺ Éveiller une nouvelle unité"
+      creer: "⚙ Créer une unité",
+      recreer: "↺ Créer une nouvelle unité"
     },
     journalCreation: p => `Éveil de ${p.nom} — ${p.chassis} · code ${p.code} · PV ${p.pvMax} (W×3) · Rfx +${p.rfx} · ${p.armeDef.nom}`,
     documents: [{
@@ -5034,7 +5038,7 @@ function EcranPartie({
       background: "#f0b24a",
       cursor: "pointer"
     }
-  }, "+ \xC9VEILLER")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
+  }, "+ CR\xC9ER")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
     className: "mb-4"
   }, /*#__PURE__*/React.createElement(EcranCreationPerso, {
     contenu: pack.contenu,
@@ -5076,7 +5080,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, "\xE9veill\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "cr\xE9\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
   }, [["CC", stDetail.cc], ["CT", stDetail.ct], ["F", stDetail.f], ["E", stDetail.e], ["Sv", stDetail.sv], ["Cd", stDetail.cd]].concat(stDetail.a ? [["A", stDetail.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -5209,7 +5213,7 @@ function EcranPartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "Aucun personnage pour ", pack.nom, ". \xC9veillez votre premi\xE8re unit\xE9 avec \xAB + \xC9VEILLER \xBB \u2014 elle rejoindra le registre, pr\xEAte \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
+  }, "Aucun personnage pour ", pack.nom, ". Cr\xE9ez votre premier personnage avec \xAB + CR\xC9ER \xBB \u2014 il rejoindra le registre, pr\xEAt \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
     className: "w-full text-sm"
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     className: "text-xs",
@@ -5237,7 +5241,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, resumePerso(p.contenu), " \xB7 \xE9veill\xE9 le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
+  }, resumePerso(p.contenu), " \xB7 cr\xE9\xE9 le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5 text-right"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
@@ -6227,7 +6231,7 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "Votre unit\xE9 entre avec ses PV au complet ; ou \xE9veillez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
+  }, "Votre unit\xE9 entre avec ses PV au complet ; ou cr\xE9ez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEnCreationPE(true),
     className: "w-full py-2 rounded-lg text-sm font-bold mt-2",
     style: {
@@ -6901,7 +6905,7 @@ function EcranCreationPorteur({
       background: peutValider ? accent : "#27272a",
       color: peutValider ? "#0c0d10" : "#71717a"
     }
-  }, peutValider ? `🧬 Faire naître ${nom.trim()}` : "🧬 Choisir un peuple et un nom")));
+  }, peutValider ? `🧬 Créer ${nom.trim()}` : "🧬 Choisir un peuple et un nom")));
 }
 
 /* ══════════ Stormbringer : création de l'aventurier (Livre du Joueur) ══════════
@@ -7059,7 +7063,7 @@ function EcranCreationAventurier({
       background: peutValider ? accent : "#27272a",
       color: peutValider ? "#0c0d10" : "#71717a"
     }
-  }, peutValider ? `⚔ Faire naître ${nom.trim()}` : "⚔ Lancer les dés et choisir un nom")));
+  }, peutValider ? `⚔ Créer ${nom.trim()}` : "⚔ Lancer les dés et choisir un nom")));
 }
 
 /* ══════════ PÉ : éveil d'une unité (manuel joueur — noms neutres) ══════════
@@ -7114,7 +7118,7 @@ function EcranCreationUnite({
     style: {
       color: accent
     }
-  }, "\u2699 \xC9veil d'une unit\xE9"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2699 Cr\xE9er une unit\xE9"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
@@ -7254,7 +7258,7 @@ function EcranCreationUnite({
       background: peutValider ? accent : "#27272a",
       color: peutValider ? "#0a120f" : "#71717a"
     }
-  }, peutValider ? `⟁ Éveiller ${nom.trim()}` : "⟁ Châssis, code et nom requis")));
+  }, peutValider ? `⟁ Créer ${nom.trim()}` : "⟁ Châssis, code et nom requis")));
 }
 
 /* ════════ La vue du noyau-d100 — UNIVERSELLE : modules déclarés par le sac ════════
@@ -8598,7 +8602,10 @@ function App() {
     setPartieJoueurs([]);
     setFichesPartie([]);
     setModePartie(mode);
-    setPackPartie(p);
+    /* V48.2 — le pack de l'écran de partie doit être CHARGÉ (contenu + noyau),
+       pas le manifeste brut : sinon l'onglet PERSONNAGES ne résout pas son
+       écran de création (pack.contenu.creation = undefined) ni le livre. */
+    setPackPartie(chargerPack(p));
     setVue("partie");
   };
   const choisirRole = role => {
