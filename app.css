@@ -16,3 +16,7 @@
 /* ── V46 : registre des aventures (écran MJ) — classes portées par le compile 0.21 ── */
 .justify-end{justify-content:flex-end}
 .w-10{width:2.5rem}
+
+/* ── V48.3 : l'épure — classes nouvelles du lobby (mot de passe dans la ligne) et de l'entête (⌂ HUB) ── */
+.ml-auto{margin-left:auto}
+.pb-2\.5{padding-bottom:0.625rem}
