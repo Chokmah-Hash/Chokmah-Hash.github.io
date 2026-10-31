@@ -488,7 +488,7 @@ const {
   useRef,
   useEffect
 } = React;
-const BUILD = "0.37";
+const BUILD = "0.38";
 
 /* ── La clé publique Supabase et le client nuage EMBARQUÉ : le canvas vit
    dans la même réalité que la page en ligne — même base, mêmes comptes,
@@ -2725,10 +2725,10 @@ function App() {
      tenus par la ronde du canal « tombe » (entrée et sortie instantanées,
      fermeture de fenêtre comprise — la socket qui se ferme les retire seule). */
   const [presents, setPresents] = useState([]);
-  /* La GRÂCE : un leave ne devient rouge qu'après 10 s de silence. Un launcher
-     qui se reconnecte (onglet, réseau, ancienne version qui boucle) revient
-     dans la fenêtre → grâce annulée → le point tient vert. La Tombe
-     n'enterre personne sans certitude. */
+  /* La GRÂCE : un leave ne devient rouge qu'après 45 s de silence. Un launcher
+     qui se reconnecte (onglet, réseau, vague de coupure serveur, ancienne
+     version qui boucle) revient dans la fenêtre → grâce annulée → le point
+     tient vert. La Tombe n'enterre personne sans certitude. */
   const presentsRef = useRef(new Set());
   const delaisRef = useRef({});
   useEffect(() => {
@@ -2774,12 +2774,26 @@ function App() {
         relance();
       },
       surPresence: ronde => {
-        /* état initial ({clé: …}) ou diff ({joins, leaves}) : on maintient la
-           liste des compte_id en ligne (seuls les UUID comptent — l'institution
-           s'écoute elle-même mais ne s'affiche pas, elle est voilée). */
-        const entrants = ronde.joins || ronde;
+        /* V0.38 : L'ÉTAT EST LA VÉRITÉ — presence_state (au branchement de
+           notre propre socket) REFAIT la liste entière : les fantômes partis
+           pendant une coupure de l'institution meurent, les vivants
+           reviennent. La grâce ne s'y applique pas : l'état EST le moment. */
+        if (ronde && !ronde.joins && !ronde.leaves) {
+          Object.keys(delaisRef.current).forEach(k => {
+            clearTimeout(delaisRef.current[k]);
+            delete delaisRef.current[k];
+          });
+          const vivants = new Set(Object.keys(ronde).filter(k => /^[0-9a-f-]{36}$/.test(k)));
+          presentsRef.current = vivants;
+          setPresents([...vivants]);
+          return;
+        }
+        /* diff ({joins, leaves}) : on maintient la liste des compte_id en
+           ligne (seuls les UUID comptent — l'institution s'écoute elle-même
+           mais ne s'affiche pas, elle est voilée). */
+        const entrants = ronde.joins || {};
         const sortants = ronde.leaves || {};
-        Object.keys(entrants || {}).forEach(k => {
+        Object.keys(entrants).forEach(k => {
           if (!/^[0-9a-f-]{36}$/.test(k)) return;
           if (delaisRef.current[k]) {
             clearTimeout(delaisRef.current[k]);
@@ -2799,11 +2813,16 @@ function App() {
              pas revenue (leçon fondrePresents du launcher, V48.4). */
           if (entrants[k]) return;
           if (delaisRef.current[k]) return; /* une grâce coule déjà */
+          /* V0.38 : QUARANTE-CINQ SECONDES DE GRÂCE — la Tombe coupe ses
+             sockets par vagues (la sonde l'a vu : trois clients repris en
+             rafale) ; le launcher rebranche en 5 à 30 s. Dix secondes
+             peignaient des départs imaginaires ; quarante-cinq couvrent
+             la vague entière, et la vérité de presence_state rattrape. */
           delaisRef.current[k] = setTimeout(() => {
             delete delaisRef.current[k];
             presentsRef.current.delete(k);
             setPresents([...presentsRef.current]);
-          }, 10000); /* dix secondes de grâce avant l'absence */
+          }, 45000); /* quarante-cinq secondes de grâce avant l'absence */
         });
       },
       surEtat: etat => {
