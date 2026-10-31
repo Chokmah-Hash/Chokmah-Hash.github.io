@@ -430,14 +430,21 @@ window.LARCHIVISTE_CLOUD = (function () {
        les comptes ne se lisent pas entre eux). V47 : ne montrent que les
        salles que le MJ a OUVERTES — publiques ET privées (V48.3 : les
        privées apparaissent dans AVENTURES OUVERTES, leur mot de passe se
-       demande dans la ligne), les fermées n'existent pour personne. */
+       demande dans la ligne), les fermées n'existent pour personne.
+       V48.8 : les parties LANCÉES (en_cours) y vivent AUSSI — le joueur
+       voit ce que le MJ vient de lancer, et peut arriver en cours. */
     listerParties: function (jeu) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_parties_lobby?select=*"
+      var qO = api("/rest/v1/archiviste_parties_lobby?select=*"
         + "&jeu=eq." + encodeURIComponent(jeu)
         + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&visibilite=in.(publique,privee)&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
         .catch(function () { return []; });
+      var qC = api("/rest/v1/archiviste_parties_lobby?select=*"
+        + "&jeu=eq." + encodeURIComponent(jeu)
+        + "&statut=eq.en_cours&visibilite=in.(publique,privee)&supprime_le=is.null&order=lance_le.desc", { token: m.access_token })
+        .catch(function () { return []; });
+      return Promise.all([qO, qC]).then(function (l) { return (l[0] || []).concat(l[1] || []); });
     },
 
     /* Mes aventures EN COURS (MJ ou joueur) — pour REPRENDRE après un
@@ -720,8 +727,14 @@ const fondrePresents = (precedent, diff) => {
    MJ/Joueur, le PiedVibe vivait DANS le conteneur interne (px-5 pt-8
    pb-10) : le pb-10 le faisait flotter 40 px au-dessus du bas. Il vit
    maintenant à la RACINE de l'écran, après le conteneur, collé au bas
-   exactement comme sur le hub et la porte — tout est uniforme. ── */
-const BUILD = "0.31";
+   exactement comme sur le hub et la porte — tout est uniforme.
+   V0.32 : LES PARTIES EN COURS VISIBLES — le lobby ne montrait que
+   les salles ouvertes : une partie LANCÉE disparaissait d'AVENTURES
+   OUVERTES, le joueur ne voyait jamais ce que le MJ venait de lancer.
+   listerParties serve maintenant les salles ouvertes PUIS les parties
+   en_cours (publiques et privées, les plus fraîches d'abord), et la
+   ligne porte le badge « PARTIE EN COURS ». ── */
+const BUILD = "0.32";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4774,7 +4787,12 @@ function EcranPartie({
       style: {
         color: "#52525b"
       }
-    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 ", p.visibilite === "privee" ? "🔒 salle privée" : "salle publique", " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "")), laMienne ? /*#__PURE__*/React.createElement("button", {
+    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 ", p.visibilite === "privee" ? "🔒 salle privée" : "salle publique", " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "", p.statut === "en_cours" ? " · " : "", p.statut === "en_cours" && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#f0b24a",
+        fontWeight: "bold"
+      }
+    }, "PARTIE EN COURS"))), laMienne ? /*#__PURE__*/React.createElement("button", {
       onClick: () => onReprendre(p),
       className: "px-3 py-1.5 rounded-lg text-xs font-bold",
       style: {
