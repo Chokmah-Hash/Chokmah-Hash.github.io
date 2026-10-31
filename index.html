@@ -606,6 +606,35 @@ window.LARCHIVISTE_CLOUD = (function () {
         .catch(function () { return []; });
     },
 
+    /* V48 — LE REGISTRE DES PERSONNAGES : chaque joueur garde ses unités
+       dans la Tombe, rattachées à son compte et AU PACK — prêtes à entrer
+       dans n'importe quelle aventure. Le contenu est libre (unité 40k,
+       aventurier d100…) ; la suppression est DOUCE (supprime_le) — la
+       Tombe n'efface jamais par écrit. */
+    listerPersonnages: function (jeu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_personnages?select=*&jeu=eq." + encodeURIComponent(jeu) + "&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
+        .then(function (l) { return l || []; })
+        .catch(function () { return []; });
+    },
+    creerPersonnage: function (jeu, compteId, nom, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("hors session"));
+      return api("/rest/v1/archiviste_personnages", {
+        method: "POST", token: m.access_token, prefer: "return=representation",
+        body: { compte_id: compteId, jeu: jeu, nom: nom, contenu: contenu, maj_le: new Date().toISOString() }
+      });
+    },
+    supprimerPersonnage: function (id) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("hors session"));
+      return api("/rest/v1/archiviste_personnages?id=eq." + id, {
+        method: "PATCH", token: m.access_token,
+        body: { supprime_le: new Date().toISOString() }
+      });
+    },
+
     /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
@@ -615,20 +644,7 @@ window.LARCHIVISTE_CLOUD = (function () {
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
   <script>
 /*__APP__*/
-const {
-  useState,
-  useRef,
-  useEffect
-} = React;
-
-/* ── La couche CLOUD — EMBARQUÉE ──
-   Plus de mode local : le canvas ET la page en ligne parlent à la MÊME
-   Tombe Supabase — comptes et sac du compte vivent dans le nuage.
-   Sur la page construite, le script pipeline a déjà posé
-   window.LARCHIVISTE_CLOUD : l'embarqué s'efface alors devant lui.
-   L'Archiviste ne garde jamais les mots de passe — ils partent
-   directement chez Supabase Auth. */
-var CLE_PUBLIQUE = "sb_publishable_U_ADFiAlPqWodkQFybynPg_5Mbctjov";
+const { useState, useRef, useEffect } = React;
 const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
@@ -640,8 +656,12 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
    l'ouvre PUBLIQUE (lobby de tous) ou PRIVÉE (mot de passe, le code à 6
    caractères s'efface) ; REPRENDRE est grisé tant que la salle est fermée,
    le MJ qui s'en va la referme ; et le lobby montre les CONNECTÉS (la
-   présence temps réel, qui est prêt à joindre). ── */
-const BUILD = "0.24";
+   présence temps réel, qui est prêt à joindre).
+   V0.25 : LE REGISTRE DES PERSONNAGES — chaque joueur garde ses unités dans
+   la Tombe (tableau + écrou dans l'onglet PERSONNAGES, rattachées au pack),
+   et à l'entrée en partie il choisit QUI entre dans la Tombe : une unité
+   du registre devient sa fiche de partie. ── */
+const BUILD = "0.25";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4312,6 +4332,16 @@ function ConsoleGlobale({
    Trois moments : ouvrir/rejoindre (le lobby), la salle d'attente
    (le code, les joueurs, le lancement), puis l'entrée dans le pack —
    qui se fait SEULE, poussée par la Tombe quand le MJ lance. */
+/* ══════════ V48 — LE REGISTRE DES PERSONNAGES : la ligne de résumé ══════════
+   Un personnage du registre tient dans une ligne, quelle que soit sa forme :
+   l'unité 40k parle châssis et code, l'aventurier d100 parle caracs,
+   les autres formes parlent leur origine. Générique par forme. */
+const resumePerso = p => {
+  if (!p) return "";
+  if (p.chassis) return p.chassis + " · code " + p.code;
+  if (p.caracs) return Object.keys(p.caracs).map(k => k + " " + p.caracs[k]).join(" · ");
+  return p.origine || p.peuple || "";
+};
 function EcranPartie({
   pack,
   session,
@@ -4323,6 +4353,9 @@ function EcranPartie({
   mesAventures,
   presents,
   mdpSalle,
+  mesPersonnages,
+  onCreerPersonnage,
+  onSupprimerPersonnage,
   onCreer,
   onRejoindre,
   onRejoindreMdp,
@@ -4351,6 +4384,19 @@ function EcranPartie({
   const [enSuppression, setEnSuppression] = useState(false); // V46 : la sentence se prépare-t-elle ?
   const [motSuppr, setMotSuppr] = useState(""); // V46 : la consécration écrite « suppression »
   const [compteOuvert, setCompteOuvert] = useState(false); // V46b : le menu du compte du bandeau
+  /* — V48 : LE REGISTRE DES PERSONNAGES — l'écrou, l'éveil, la sentence — */
+  const [enCreationPerso, setEnCreationPerso] = useState(false);
+  const [detailPerso, setDetailPerso] = useState(null);
+  const [enSuppressionPerso, setEnSuppressionPerso] = useState(false);
+  const [motSupprPerso, setMotSupprPerso] = useState("");
+  const persos = mesPersonnages || [];
+  const EcranCreationPerso = {
+    unite: EcranCreationUnite,
+    aventurier: EcranCreationAventurier,
+    porteur: EcranCreationPorteur
+  }[(pack.contenu || {}).creation];
+  const cDetail = detailPerso && detailPerso.contenu ? detailPerso.contenu : null;
+  const stDetail = cDetail && cDetail.st ? cDetail.st : null;
   const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
   const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
   const salleOuverte = p => !!p.salle_ouverte_le;
@@ -4972,16 +5018,242 @@ function EcranPartie({
       border: "1px solid #27272a"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-3",
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest",
     style: {
       color: "#a8adb8"
     }
-  }, "MES PERSONNAGES"), /*#__PURE__*/React.createElement("div", {
+  }, "MES PERSONNAGES \u2014 ", pack.nom.toUpperCase(), " (", persos.length, ")"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnCreationPerso(true);
+      setDetailPerso(null);
+    },
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: "#f0b24a",
+      cursor: "pointer"
+    }
+  }, "+ \xC9VEILLER")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
+    className: "mb-4"
+  }, /*#__PURE__*/React.createElement(EcranCreationPerso, {
+    contenu: pack.contenu,
+    accent: "#f0b24a",
+    onValide: p => {
+      setEnCreationPerso(false);
+      onCreerPersonnage && onCreerPersonnage(p);
+    },
+    onAnnule: () => setEnCreationPerso(false)
+  })) : detailPerso ?
+  /*#__PURE__*/
+  /* L'écrou : la fiche complète + la sentence */
+  React.createElement("div", {
+    className: "rounded-lg p-4",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline justify-between mb-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, detailPerso.nom), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setDetailPerso(null);
+      setEnSuppressionPerso(false);
+      setMotSupprPerso("");
+    },
+    className: "text-xs font-bold",
+    style: {
+      color: "#71717a",
+      cursor: "pointer"
+    }
+  }, "\u2190 retour au registre")), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#52525b"
+    }
+  }, "\xE9veill\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
+  }, [["CC", stDetail.cc], ["CT", stDetail.ct], ["F", stDetail.f], ["E", stDetail.e], ["Sv", stDetail.sv], ["Cd", stDetail.cd]].concat(stDetail.a ? [["A", stDetail.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "PV ", cDetail.pvMax, " \xB7 Rfx +", cDetail.rfx, " \xB7 ", cDetail.armeDef ? cDetail.armeDef.nom : "arme inconnue"), cDetail.apt && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2 rounded p-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Aptitude de ch\xE2ssis \u2014 "), cDetail.apt), cDetail.comps && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1 mb-2"
+  }, cDetail.comps.map(c => /*#__PURE__*/React.createElement("span", {
+    key: c,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: "#f0b24a22",
+      color: "#f0b24a"
+    }
+  }, c)))) : cDetail && cDetail.caracs ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
+  }, Object.entries(cDetail.caracs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "SAN ", cDetail.sanMax || (cDetail.caracs.POU || 0) * 5)) : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "Fiche de forme inconnue \u2014 la Tombe la garde telle quelle."), !enSuppressionPerso ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnSuppressionPerso(true);
+      setMotSupprPerso("");
+    },
+    className: "w-full px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#fb718510",
+      color: "#fb7185",
+      border: "1px solid #fb718544",
+      cursor: "pointer"
+    }
+  }, "\u2715 SUPPRIMER CE PERSONNAGE") : /*#__PURE__*/React.createElement("div", {
+    className: "pt-3",
+    style: {
+      borderTop: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2 leading-relaxed",
+    style: {
+      color: "#fb7185"
+    }
+  }, "\xAB ", detailPerso.nom, " \xBB quittera le registre. La Tombe garde sa trace \u2014 \xE9crivez \xAB suppression \xBB pour consacrer la sentence."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: motSupprPerso,
+    onChange: e => setMotSupprPerso(e.target.value),
+    placeholder: "suppression",
+    type: "text",
+    autoComplete: "off",
+    maxLength: 12,
+    className: "flex-1 rounded-lg px-3 py-2 text-sm",
+    style: {
+      background: "#14161b",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEnSuppressionPerso(false);
+      setMotSupprPerso("");
+    },
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "ANNULER")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      onSupprimerPersonnage && onSupprimerPersonnage(detailPerso);
+      setDetailPerso(null);
+      setEnSuppressionPerso(false);
+      setMotSupprPerso("");
+    },
+    disabled: motSupprPerso !== "suppression",
+    className: "w-full px-4 py-2 rounded-lg text-xs font-bold mt-2",
+    style: {
+      background: motSupprPerso === "suppression" ? "#fb7185" : "#fb718522",
+      color: motSupprPerso === "suppression" ? "#0c0d10" : "#71717a",
+      border: "1px solid #fb718544",
+      cursor: "pointer",
+      opacity: motSupprPerso === "suppression" ? 1 : 0.5
+    }
+  }, "\u2715 EFFACER"))) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-sm",
     style: {
       color: "#a1a1aa"
     }
-  }, "Le registre des personnages s'ouvre bient\xF4t \u2014 vous y cr\xE9erez et y garderez vos unit\xE9s, pr\xEAtes \xE0 rejoindre n'importe quelle aventure.")), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
+  }, "Aucun personnage pour ", pack.nom, ". \xC9veillez votre premi\xE8re unit\xE9 avec \xAB + \xC9VEILLER \xBB \u2014 elle rejoindra le registre, pr\xEAte \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
+    className: "w-full text-sm"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "text-left px-1 py-2"
+  }, "PERSONNAGE"), /*#__PURE__*/React.createElement("th", {
+    className: "text-right px-1 py-2 w-10"
+  }))), /*#__PURE__*/React.createElement("tbody", null, persos.map(p => /*#__PURE__*/React.createElement("tr", {
+    key: p.id,
+    style: {
+      borderTop: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#52525b"
+    }
+  }, resumePerso(p.contenu), " \xB7 \xE9veill\xE9 le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5 text-right"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setDetailPerso(p);
+      setEnCreationPerso(false);
+      setEnSuppressionPerso(false);
+      setMotSupprPerso("");
+    },
+    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "\u2699"))))))), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -5693,6 +5965,17 @@ function VueNoyau40k({
     logEvent("perso.creation", C.journalCreation(p));
   };
 
+  /* V48 — ADOPTION DU REGISTRE : l'unité choisie à la porte entre dans la
+     Tombe — elle devient la fiche de partie (la gravure live la sème, comme
+     pour toute création). PV au complet : les blessures d'une autre
+     aventure ne l'ont pas suivie, elles vivent dans la fiche de partie. */
+  const adopterDuRegistre = p => {
+    if (!p || !p.contenu) return;
+    setPersoCree(p.contenu);
+    setPvSigna(p.contenu.pvMax || C.perso.pvMax);
+    logEvent("perso.adoption", `${p.contenu.nom} entre dans la Tombe — ${resumePerso(p.contenu)} · PV au complet`);
+  };
+
   /* Le combat : la séquence du noyau, les surcharges du mod */
   const demarrerCombat = () => {
     setEnCombat(true);
@@ -5909,7 +6192,42 @@ function VueNoyau40k({
       background: T.accent + "22",
       color: T.accent
     }
-  }, c))), /*#__PURE__*/React.createElement("button", {
+  }, c))), table && !persoCree && (table.persos || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 rounded-lg p-3",
+    style: {
+      background: "#0c0d10",
+      border: "1px dashed " + T.accent + "66"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: T.accent
+    }
+  }, "QUI ENTRE DANS LA TOMBE ?"), table.persos.map(p => /*#__PURE__*/React.createElement("button", {
+    key: p.id,
+    onClick: () => adopterDuRegistre(p),
+    className: "w-full text-left rounded-lg px-3 py-2 mb-1.5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-bold text-sm",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, " \u2014 ", resumePerso(p.contenu)))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mt-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Votre unit\xE9 entre avec ses PV au complet ; ou \xE9veillez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEnCreationPE(true),
     className: "w-full py-2 rounded-lg text-sm font-bold mt-2",
     style: {
@@ -7679,6 +7997,7 @@ function App() {
     setPartie(null);
     setPartieJoueurs([]);
     setFichesPartie([]);
+    setMesPersonnages([]);
     setPartiesOuvertes([]);
     setMesPartiesCours([]);
     setPackPartie(null);
@@ -7784,12 +8103,33 @@ function App() {
     CLOUD.listerParties(pk.id).then(l => setPartiesOuvertes(l || [])).catch(() => {});
     CLOUD.mesParties(pk.id, session.compteId).then(l => setMesPartiesCours(l || [])).catch(() => {});
     CLOUD.mesAventures(pk.id, session.compteId).then(l => setMesAventuresListe(l || [])).catch(() => {}); /* V46 registre MJ */
+    CLOUD.listerPersonnages(pk.id).then(l => setMesPersonnages(l || [])).catch(() => {}); /* V48 registre du joueur */
   };
 
   /* V43 : LES FICHES DE LA TABLE — le personnage du joueur vit dans la
      Tombe. sauverFiche grave (upsert) l'état de l'unité : création, PV.
      Les rechargements arrivent par la poussée temps réel. */
   const [fichesPartie, setFichesPartie] = useState([]);
+  const [mesPersonnages, setMesPersonnages] = useState([]); // V48 : le registre du joueur pour CE pack
+
+  /* V48 — LE REGISTRE DES PERSONNAGES : éveiller depuis l'onglet PERSONNAGES
+     grave l'unité dans la Tombe (rattachée au compte ET au pack) ; la
+     sentence est douce — le personnage quitte le registre, la Tombe garde
+     sa trace. Les deux rechargent la liste. */
+  const creerPersonnageRegistre = p => {
+    if (!CLOUD || !session || !packPartie || !p) return;
+    CLOUD.creerPersonnage(packPartie.id, session.compteId, p.nom, p).then(() => {
+      showToast("« " + p.nom + " » rejoint le registre — prêt à entrer dans vos aventures.");
+      return rechargerListes();
+    }).catch(() => showToast("La Tombe a refusé — le personnage n'a pas rejoint le registre. Réessayez."));
+  };
+  const supprimerPersonnageRegistre = p => {
+    if (!CLOUD || !p) return;
+    CLOUD.supprimerPersonnage(p.id).then(() => {
+      showToast("« " + p.nom + " » quitte le registre — la Tombe garde sa trace.");
+      return rechargerListes();
+    }).catch(() => showToast("La Tombe a refusé — le personnage reste au registre."));
+  };
   const sauverFiche = contenu => {
     if (!CLOUD || !session || !partieIdRef.current) return;
     CLOUD.sauverFichePartie(partieIdRef.current, session.compteId, contenu).catch(() => {});
@@ -8388,6 +8728,9 @@ function App() {
     mesAventures: mesAventuresListe,
     presents: Object.values(presents),
     mdpSalle: mdpSalle,
+    mesPersonnages: mesPersonnages,
+    onCreerPersonnage: creerPersonnageRegistre,
+    onSupprimerPersonnage: supprimerPersonnageRegistre,
     onCreer: creerAventure,
     onRejoindre: rejoindreAventure,
     onRejoindreMdp: rejoindreAventureMdp,
@@ -8434,7 +8777,8 @@ function App() {
         fiches: fichesPartie,
         joueurs: partieJoueurs,
         monCompteId: session && session.compteId,
-        onFiche: sauverFiche
+        onFiche: sauverFiche,
+        persos: mesPersonnages
       } : null,
       onRetour: () => {
         if (enPartie && partie && session && partie.mj_compte_id === session.compteId && partie.salle_ouverte_le) {
@@ -8466,7 +8810,6 @@ function App() {
     }
   }, toast));
 }
-var _attente = document.getElementById("attente");
 if (_attente) _attente.remove();
 ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
 </script>
