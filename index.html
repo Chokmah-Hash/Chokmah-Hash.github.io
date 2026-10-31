@@ -47,27 +47,34 @@
   </script>
 
   <script>
-window.LARCHIVISTE_CLOUD = (function () {
+window.LARCHIVISTE_CLOUD = function () {
   "use strict";
+
   var URL = "https://dnbnkdakmobufqcrqzpq.supabase.co";
   var CLE = "larchiviste_session_v1";
   var compteCourant = null; // compte_id de la session en cours
 
   /* ── Le garde-mième : le navigateur garde le token, jamais un mot de passe ── */
   function lire() {
-    try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch (e) { return null; }
+    try {
+      return JSON.parse(localStorage.getItem(CLE) || "null");
+    } catch (e) {
+      return null;
+    }
   }
   function ecrire(m) {
     try {
-      if (m) localStorage.setItem(CLE, JSON.stringify(m));
-      else localStorage.removeItem(CLE);
-    } catch (e) { /* mode privé : on vivra sans restauration */ }
+      if (m) localStorage.setItem(CLE, JSON.stringify(m));else localStorage.removeItem(CLE);
+    } catch (e) {/* mode privé : on vivra sans restauration */}
   }
 
   /* ── L'API, avec les messages d'erreur en français de la Tombe ── */
   function api(chemin, opts) {
     opts = opts || {};
-    var headers = { apikey: CLE_PUBLIQUE, "Content-Type": "application/json" };
+    var headers = {
+      apikey: CLE_PUBLIQUE,
+      "Content-Type": "application/json"
+    };
     if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
     if (opts.prefer) headers["Prefer"] = opts.prefer;
     return fetch(URL + chemin, {
@@ -76,10 +83,12 @@ window.LARCHIVISTE_CLOUD = (function () {
       headers: headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined
     }).then(function (res) {
-      return res.json().catch(function () { return null; }).then(function (data) {
+      return res.json().catch(function () {
+        return null;
+      }).then(function (data) {
         if (!res.ok) {
-          var code = (data && (data.error_code || data.code)) || "";
-          var msgBrut = (data && (data.msg || data.message)) || "";
+          var code = data && (data.error_code || data.code) || "";
+          var msgBrut = data && (data.msg || data.message) || "";
           var msgs = {
             invalid_credentials: "Email ou mot de passe incorrect.",
             user_already_exists: "Un compte existe déjà sur cet email — connectez-vous.",
@@ -104,36 +113,40 @@ window.LARCHIVISTE_CLOUD = (function () {
 
   /* ── Profil de compte tel que le launcher l'attend ── */
   function profilDepuis(user, compte) {
-    var meta = (user && user.user_metadata) || {};
+    var meta = user && user.user_metadata || {};
     return {
       compteId: user.id,
-      pseudo: (compte && compte.pseudo) || meta.pseudo || "Joueur",
-      tag: (compte && compte.tag) || "JR-????",
+      pseudo: compte && compte.pseudo || meta.pseudo || "Joueur",
+      tag: compte && compte.tag || "JR-????",
       email: user.email,
-      avatarId: (compte && compte.avatar_ref) || meta.avatar_ref || "crane",
-      statut: (compte && compte.statut) || "actif",
+      avatarId: compte && compte.avatar_ref || meta.avatar_ref || "crane",
+      statut: compte && compte.statut || "actif",
       memoire: {}
     };
   }
 
   /* ── Charge la ligne compte (auto-répare si absente) + le sac du compte ── */
   function chargerTout(token, user, opts) {
-    var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", { token: token }))
-      .then(function (lignes) {
-        if (lignes && lignes.length) return lignes[0];
-        /* Self-heal : la ligne compte manque (signup interrompu ?) → on la recrée */
-        var meta = user.user_metadata || {};
-        return api("/rest/v1/archiviste_comptes", {
-          method: "POST", token: token, prefer: "return=representation",
-          body: {
-            compte_id: user.id,
-            pseudo: meta.pseudo || "Joueur",
-            email: user.email,
-            avatar_ref: meta.avatar_ref || "crane"
-          }
-        }).then(function (cree) { return cree && cree[0]; });
+    var comptes = Promise.resolve(api("/rest/v1/archiviste_comptes?select=*", {
+      token: token
+    })).then(function (lignes) {
+      if (lignes && lignes.length) return lignes[0];
+      /* Self-heal : la ligne compte manque (signup interrompu ?) → on la recrée */
+      var meta = user.user_metadata || {};
+      return api("/rest/v1/archiviste_comptes", {
+        method: "POST",
+        token: token,
+        prefer: "return=representation",
+        body: {
+          compte_id: user.id,
+          pseudo: meta.pseudo || "Joueur",
+          email: user.email,
+          avatar_ref: meta.avatar_ref || "crane"
+        }
+      }).then(function (cree) {
+        return cree && cree[0];
       });
-
+    });
     return comptes.then(function (compte) {
       compteCourant = user.id;
       /* Horodatage de dernière connexion (best effort) — SAUF en simple
@@ -141,15 +154,20 @@ window.LARCHIVISTE_CLOUD = (function () {
          déclencher la Tombe, sinon la Tombe s'annonce à elle-même. */
       if (!opts || opts.horodater !== false) {
         api("/rest/v1/archiviste_comptes?compte_id=eq." + user.id, {
-          method: "PATCH", token: token, body: { derniere_connexion: new Date().toISOString() }
+          method: "PATCH",
+          token: token,
+          body: {
+            derniere_connexion: new Date().toISOString()
+          }
         }).catch(function () {});
       }
       var profil = profilDepuis(user, compte);
-      return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, { token: token })
-        .then(function (mem) {
-          profil.memoire = (mem && mem[0] && mem[0].contenu) || {};
-          return profil;
-        });
+      return api("/rest/v1/archiviste_memoire?select=contenu&compte_id=eq." + user.id, {
+        token: token
+      }).then(function (mem) {
+        profil.memoire = mem && mem[0] && mem[0].contenu || {};
+        return profil;
+      });
     });
   }
 
@@ -173,39 +191,77 @@ window.LARCHIVISTE_CLOUD = (function () {
     var pister = function (payload) {
       if (!ws || ws.readyState !== 1 || !presenceCle) return;
       ws.send(JSON.stringify({
-        topic: "realtime:tombe", event: "presence",
-        payload: { type: "presence", event: "track", payload: payload || { compte_id: presenceCle } },
+        topic: "realtime:tombe",
+        event: "presence",
+        payload: {
+          type: "presence",
+          event: "track",
+          payload: payload || {
+            compte_id: presenceCle
+          }
+        },
         ref: "piste"
       }));
     };
-    if (typeof WebSocket === "undefined") { surEtat("coupure"); return { fermer: function () {} }; }
+    if (typeof WebSocket === "undefined") {
+      surEtat("coupure");
+      return {
+        fermer: function () {}
+      };
+    }
     var m0 = lire();
-    if (!m0 || !m0.access_token) { surEtat("coupure"); return { fermer: function () {} }; }
-
-    var ws = null, coeur = null, ferme = false, essais = 0;
-
+    if (!m0 || !m0.access_token) {
+      surEtat("coupure");
+      return {
+        fermer: function () {}
+      };
+    }
+    var ws = null,
+      coeur = null,
+      ferme = false,
+      essais = 0;
     function brancher() {
       if (ferme) return;
-      var jeton = ((lire() || m0) || {}).access_token || "";
+      var jeton = (lire() || m0 || {}).access_token || "";
       try {
         ws = new WebSocket("wss://dnbnkdakmobufqcrqzpq.supabase.co/realtime/v1/websocket?apikey=" + CLE_PUBLIQUE + "&vsn=1.0.0");
-      } catch (e) { retomber(); return; }
+      } catch (e) {
+        retomber();
+        return;
+      }
       ws.onopen = function () {
         essais = 0;
         if (coeur) clearInterval(coeur);
         coeur = setInterval(function () {
           if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({ topic: "phoenix", event: "heartbeat", payload: {}, ref: "battement" }));
+            ws.send(JSON.stringify({
+              topic: "phoenix",
+              event: "heartbeat",
+              payload: {},
+              ref: "battement"
+            }));
           }
         }, 25000);
         tables.forEach(function (t) {
-          var suivi = { event: "*", schema: "public", table: t.table };
+          var suivi = {
+            event: "*",
+            schema: "public",
+            table: t.table
+          };
           if (t.filtre) suivi.filter = t.filtre;
           ws.send(JSON.stringify({
             topic: "realtime:public:" + t.table,
             event: "phx_join",
             payload: {
-              config: { broadcast: { self: false }, presence: { key: "" }, postgres_changes: [suivi] },
+              config: {
+                broadcast: {
+                  self: false
+                },
+                presence: {
+                  key: ""
+                },
+                postgres_changes: [suivi]
+              },
               access_token: jeton
             },
             ref: t.table
@@ -220,7 +276,15 @@ window.LARCHIVISTE_CLOUD = (function () {
             topic: "realtime:tombe",
             event: "phx_join",
             payload: {
-              config: { broadcast: { self: false }, presence: { key: presenceCle }, postgres_changes: [] },
+              config: {
+                broadcast: {
+                  self: false
+                },
+                presence: {
+                  key: presenceCle
+                },
+                postgres_changes: []
+              },
               access_token: jeton
             },
             ref: "presence"
@@ -229,13 +293,19 @@ window.LARCHIVISTE_CLOUD = (function () {
              ne diffuse que les états trackés (protocole Supabase v1 :
              event "presence", payload {type:"presence", event:"track"}).
              Le serveur traite les pushes dans l'ordre : join puis track. */
-          pister(presenceInfo ? presenceInfo() : { compte_id: presenceCle });
+          pister(presenceInfo ? presenceInfo() : {
+            compte_id: presenceCle
+          });
         }
         surEtat("branche");
       };
       ws.onmessage = function (ev) {
         var msg;
-        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        try {
+          msg = JSON.parse(ev.data);
+        } catch (e) {
+          return;
+        }
         if (msg.event === "postgres_changes" && msg.payload && msg.payload.data) {
           surChangement(msg.payload.data);
         }
@@ -246,10 +316,17 @@ window.LARCHIVISTE_CLOUD = (function () {
         }
       };
       ws.onclose = retomber;
-      ws.onerror = function () { try { ws.close(); } catch (e) {} };
+      ws.onerror = function () {
+        try {
+          ws.close();
+        } catch (e) {}
+      };
     }
     function retomber() {
-      if (coeur) { clearInterval(coeur); coeur = null; }
+      if (coeur) {
+        clearInterval(coeur);
+        coeur = null;
+      }
       if (ferme) return;
       surEtat("coupure");
       setTimeout(brancher, Math.min(5000 + essais * 5000, 30000));
@@ -260,35 +337,56 @@ window.LARCHIVISTE_CLOUD = (function () {
       fermer: function () {
         ferme = true;
         if (coeur) clearInterval(coeur);
-        if (ws) { try { ws.close(); } catch (e) {} }
+        if (ws) {
+          try {
+            ws.close();
+          } catch (e) {}
+        }
         ws = null;
       },
       /* V47 : re-pister sans re-joindre — quand on entre dans un pack ou
          qu'on le quitte, les présents voient notre nouvelle place. */
-      annoncer: function (payload) { pister(payload); }
+      annoncer: function (payload) {
+        pister(payload);
+      }
     };
   }
-
   return {
     /* Connexion email + mot de passe → profil + bibliothèque du compte */
     connexion: function (email, mdp) {
       return api("/auth/v1/token?grant_type=password", {
-        method: "POST", body: { email: email, password: mdp }
+        method: "POST",
+        body: {
+          email: email,
+          password: mdp
+        }
       }).then(function (d) {
-        ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
+        ecrire({
+          access_token: d.access_token,
+          refresh_token: d.refresh_token
+        });
         return chargerTout(d.access_token, d.user);
       });
     },
-
     /* Inscription : pseudo part dans user_metadata, le mot de passe chez Auth */
     inscription: function (pseudo, email, mdp, avatarId) {
       return api("/auth/v1/signup", {
         method: "POST",
-        body: { email: email, password: mdp, data: { pseudo: pseudo, avatar_ref: avatarId } }
+        body: {
+          email: email,
+          password: mdp,
+          data: {
+            pseudo: pseudo,
+            avatar_ref: avatarId
+          }
+        }
       }).then(function (d) {
         var session = d.session || (d.access_token ? d : null);
         if (session && session.access_token) {
-          ecrire({ access_token: session.access_token, refresh_token: session.refresh_token });
+          ecrire({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+          });
           return chargerTout(session.access_token, d.user || session.user);
         }
         /* Compte créé mais email non confirmé → pas de session */
@@ -297,62 +395,85 @@ window.LARCHIVISTE_CLOUD = (function () {
         throw err;
       });
     },
-
     /* Restauration de session au démarrage (token gardé par le navigateur) */
     sessionActuelle: function (opts) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
-      return api("/auth/v1/user", { token: m.access_token })
-        .then(function (user) { return chargerTout(m.access_token, user, opts); })
-        .catch(function () {
-          /* Token expiré → on tente le refresh avant d'abandonner */
-          if (!m.refresh_token) { ecrire(null); return null; }
-          return api("/auth/v1/token?grant_type=refresh_token", {
-            method: "POST", body: { refresh_token: m.refresh_token }
-          }).then(function (d) {
-            ecrire({ access_token: d.access_token, refresh_token: d.refresh_token });
-            return chargerTout(d.access_token, d.user, opts);
-          }).catch(function () { ecrire(null); return null; });
+      return api("/auth/v1/user", {
+        token: m.access_token
+      }).then(function (user) {
+        return chargerTout(m.access_token, user, opts);
+      }).catch(function () {
+        /* Token expiré → on tente le refresh avant d'abandonner */
+        if (!m.refresh_token) {
+          ecrire(null);
+          return null;
+        }
+        return api("/auth/v1/token?grant_type=refresh_token", {
+          method: "POST",
+          body: {
+            refresh_token: m.refresh_token
+          }
+        }).then(function (d) {
+          ecrire({
+            access_token: d.access_token,
+            refresh_token: d.refresh_token
+          });
+          return chargerTout(d.access_token, d.user, opts);
+        }).catch(function () {
+          ecrire(null);
+          return null;
         });
+      });
     },
-
     /* Déconnexion serveur + nettoyage du garde-mième */
     deconnexion: function () {
       var m = lire();
       ecrire(null);
       compteCourant = null;
       if (m && m.access_token) {
-        return api("/auth/v1/logout", { method: "POST", token: m.access_token }).catch(function () {});
+        return api("/auth/v1/logout", {
+          method: "POST",
+          token: m.access_token
+        }).catch(function () {});
       }
       return Promise.resolve();
     },
-
     /* Mot de passe perdu : le lien part chez Supabase Auth */
     perdu: function (email) {
-      return api("/auth/v1/recover", { method: "POST", body: { email: email } });
+      return api("/auth/v1/recover", {
+        method: "POST",
+        body: {
+          email: email
+        }
+      });
     },
-
     /* Le sac du compte (installations, favoris, rôles) part dans le nuage */
     sauveMemoire: function (compteId, contenu) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_memoire", {
-        method: "POST", token: m.access_token,
+        method: "POST",
+        token: m.access_token,
         prefer: "resolution=merge-duplicates",
-        body: { compte_id: compteId, contenu: contenu }
+        body: {
+          compte_id: compteId,
+          contenu: contenu
+        }
       });
     },
-
     /* L'état de la base tel que la Tombe l'annonce : le pied de page du
        launcher dit ce qu'il charge (parametre « version_launcher ») —
        même vérité que l'Archivisterium, partout où il tourne. */
     lireParametres: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
-      return api("/rest/v1/parametres?select=cle,valeur", { token: m.access_token })
-        .catch(function () { return null; });
+      return api("/rest/v1/parametres?select=cle,valeur", {
+        token: m.access_token
+      }).catch(function () {
+        return null;
+      });
     },
-
     /* Mise à jour du compte (avatar, pseudo à venir…) */
     sauveCompte: function (patch) {
       var m = lire();
@@ -360,10 +481,11 @@ window.LARCHIVISTE_CLOUD = (function () {
       var body = {};
       if (patch && patch.avatarId !== undefined) body.avatar_ref = patch.avatarId;
       return api("/rest/v1/archiviste_comptes?compte_id=eq." + compteCourant, {
-        method: "PATCH", token: m.access_token, body: body
+        method: "PATCH",
+        token: m.access_token,
+        body: body
       });
     },
-
     /* La Console Globale : le canal des événements de jeu (MJ et joueurs
        s'y parlent). Chaque message est GRAVÉ dans la Tombe — prémice du
        journal — et pousse en temps réel chez tous. Le serveur signe
@@ -373,14 +495,17 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_console", {
-        method: "POST", token: m.access_token,
+        method: "POST",
+        token: m.access_token,
         body: {
-          compte_id: compteId, contenu: contenu, type: type || "message",
-          donnees: donnees || {}, partie_id: partieId || null
+          compte_id: compteId,
+          contenu: contenu,
+          type: type || "message",
+          donnees: donnees || {},
+          partie_id: partieId || null
         }
       });
     },
-
     /* Le fil de la Console, relu à la connexion : le journal commence
        où l'on arrive — les 60 derniers messages font le bord. Le canal
        est CONTEXTUEL : null = la Console Globale, un id de partie = le
@@ -389,12 +514,14 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
       var filtre = partieId ? "partie_id=eq." + partieId : "partie_id=is.null";
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&"
-        + filtre + "&order=id.desc&limit=60", { token: m.access_token })
-        .then(function (l) { return (l || []).slice().reverse(); })
-        .catch(function () { return []; });
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&" + filtre + "&order=id.desc&limit=60", {
+        token: m.access_token
+      }).then(function (l) {
+        return (l || []).slice().reverse();
+      }).catch(function () {
+        return [];
+      });
     },
-
     /* V3 : le dé roule DANS LA TOMBE (rpc lancer_des) — le serveur seul
        connaît le résultat avant de le graver, le client ne choisit plus
        son jet ; il l'apprend par la poussée, comme les autres. V4 : le
@@ -403,12 +530,17 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/rpc/lancer_des", {
-        method: "POST", token: m.access_token,
+        method: "POST",
+        token: m.access_token,
         /* le paramètre serveur s'appelle p_partie : jamais ambigu avec la colonne */
-        body: { nb: nb, faces: faces, note: note || null, p_partie: partieId || null }
+        body: {
+          nb: nb,
+          faces: faces,
+          note: note || null,
+          p_partie: partieId || null
+        }
       });
     },
-
     /* ══ LA PARTIE (moteur générique) : une aventure partagée — un MJ
        (le créateur), un code d'invitation, des joueurs qui se joignent.
        Les mêmes fonctions serviront TOUT pack multijoueur : elles ne
@@ -420,11 +552,18 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
       return api("/rest/v1/archiviste_parties", {
-        method: "POST", token: m.access_token, prefer: "return=representation",
-        body: { jeu: jeu, nom: nom || "Aventure sans nom", mj_compte_id: compteId }
-      }).then(function (l) { return (l && l[0]) || null; });
+        method: "POST",
+        token: m.access_token,
+        prefer: "return=representation",
+        body: {
+          jeu: jeu,
+          nom: nom || "Aventure sans nom",
+          mj_compte_id: compteId
+        }
+      }).then(function (l) {
+        return l && l[0] || null;
+      });
     },
-
     /* Le lobby : les aventures OUVERTES du jeu — via la VUE lobby (le
        pseudo du MJ et le nombre de joueurs sont servis par la Tombe,
        les comptes ne se lisent pas entre eux). V47 : ne montrent que les
@@ -436,17 +575,20 @@ window.LARCHIVISTE_CLOUD = (function () {
     listerParties: function (jeu) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      var qO = api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu)
-        + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&visibilite=in.(publique,privee)&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
-        .catch(function () { return []; });
-      var qC = api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu)
-        + "&statut=eq.en_cours&visibilite=in.(publique,privee)&supprime_le=is.null&order=lance_le.desc", { token: m.access_token })
-        .catch(function () { return []; });
-      return Promise.all([qO, qC]).then(function (l) { return (l[0] || []).concat(l[1] || []); });
+      var qO = api("/rest/v1/archiviste_parties_lobby?select=*" + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&visibilite=in.(publique,privee)&supprime_le=is.null&order=cree_le.asc", {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
+      var qC = api("/rest/v1/archiviste_parties_lobby?select=*" + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&visibilite=in.(publique,privee)&supprime_le=is.null&order=lance_le.desc", {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
+      return Promise.all([qO, qC]).then(function (l) {
+        return (l[0] || []).concat(l[1] || []);
+      });
     },
-
     /* Mes aventures EN COURS (MJ ou joueur) — pour REPRENDRE après un
        reload : la partie survit à l'appareil, elle vit dans la Tombe.
        V47 : les salles d'attente que le MJ TIENT (ouverte + salle
@@ -455,18 +597,28 @@ window.LARCHIVISTE_CLOUD = (function () {
     mesParties: function (jeu, compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      var qC = api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&supprime_le=is.null&order=lance_le.asc", { token: m.access_token })
-        .catch(function () { return []; });
-      var qO = api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&supprime_le=is.null&order=salle_ouverte_le.desc", { token: m.access_token })
-        .catch(function () { return []; });
-      var qJ = api("/rest/v1/archiviste_partie_joueurs?select=partie_id&compte_id=eq." + compteId,
-        { token: m.access_token }).catch(function () { return []; });
+      var qC = api("/rest/v1/archiviste_parties_lobby?select=*" + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.en_cours&supprime_le=is.null&order=lance_le.asc", {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
+      var qO = api("/rest/v1/archiviste_parties_lobby?select=*" + "&jeu=eq." + encodeURIComponent(jeu) + "&statut=eq.ouverte&salle_ouverte_le=not.is.null&supprime_le=is.null&order=salle_ouverte_le.desc", {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
+      var qJ = api("/rest/v1/archiviste_partie_joueurs?select=partie_id&compte_id=eq." + compteId, {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
       return Promise.all([qC, qO, qJ]).then(function (r) {
         var ids = {};
-        (r[2] || []).forEach(function (pj) { ids[pj.partie_id] = true; });
-        var vus = {}, liste = [];
+        (r[2] || []).forEach(function (pj) {
+          ids[pj.partie_id] = true;
+        });
+        var vus = {},
+          liste = [];
         (r[0] || []).concat(r[1] || []).forEach(function (p) {
           if (vus[p.id]) return;
           vus[p.id] = true;
@@ -475,19 +627,16 @@ window.LARCHIVISTE_CLOUD = (function () {
         return liste;
       });
     },
-
     /* Toutes les aventures créées par ce compte (tout statut) — registre MJ */
     mesAventures: function (jeu, compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_parties_lobby?select=*"
-        + "&jeu=eq." + encodeURIComponent(jeu)
-        + "&mj_compte_id=eq." + compteId
-        + "&supprime_le=is.null"
-        + "&order=cree_le.desc", { token: m.access_token })
-        .catch(function () { return []; });
+      return api("/rest/v1/archiviste_parties_lobby?select=*" + "&jeu=eq." + encodeURIComponent(jeu) + "&mj_compte_id=eq." + compteId + "&supprime_le=is.null" + "&order=cree_le.desc", {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
     },
-
     /* V46 : EFFACER une de SES aventures — soft-delete (la Tombe garde
        tout : la partie part en Corbeille, visible de l'institution seule ;
        elle disparaît des écrans des MJ et joueurs). */
@@ -495,27 +644,35 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("Hors ligne."));
       return api("/rest/v1/rpc/archiviste_supprimer_partie", {
-        method: "POST", token: m.access_token, body: { p_id: id }
+        method: "POST",
+        token: m.access_token,
+        body: {
+          p_id: id
+        }
       });
     },
-
     /* Lire une partie et ses joueurs (la vue lobby porte mj_pseudo —
        les lignes de table seules ne le portent pas) */
     lirePartie: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
-      return api("/rest/v1/archiviste_parties_lobby?select=*&id=eq." + id, { token: m.access_token })
-        .then(function (l) { return (l && l[0]) || null; })
-        .catch(function () { return null; });
+      return api("/rest/v1/archiviste_parties_lobby?select=*&id=eq." + id, {
+        token: m.access_token
+      }).then(function (l) {
+        return l && l[0] || null;
+      }).catch(function () {
+        return null;
+      });
     },
     lirePartieJoueurs: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_partie_table?select=*"
-        + "&partie_id=eq." + id + "&order=rejoint_le.asc", { token: m.access_token })
-        .catch(function () { return []; });
+      return api("/rest/v1/archiviste_partie_table?select=*" + "&partie_id=eq." + id + "&order=rejoint_le.asc", {
+        token: m.access_token
+      }).catch(function () {
+        return [];
+      });
     },
-
     /* Rejoindre par bouton (id connu — salle publique ouverte) ; V47 :
        par MOT DE PASSE (salle privée) — la Tombe vérifie le sceau
        (hash sha256, jamais le mot de passe en clair), grave la table
@@ -524,20 +681,31 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
       return api("/rest/v1/archiviste_partie_joueurs", {
-        method: "POST", token: m.access_token, prefer: "return=representation",
-        body: { partie_id: partieId, compte_id: compteId }
-      }).then(function (l) { return (l && l[0]) || null; })
-        .catch(function (e) { throw e; });
+        method: "POST",
+        token: m.access_token,
+        prefer: "return=representation",
+        body: {
+          partie_id: partieId,
+          compte_id: compteId
+        }
+      }).then(function (l) {
+        return l && l[0] || null;
+      }).catch(function (e) {
+        throw e;
+      });
     },
     rejoindrePrivee: function (jeu, mdp) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
       return api("/rest/v1/rpc/archiviste_rejoindre_privee", {
-        method: "POST", token: m.access_token,
-        body: { p_jeu: jeu, p_mdp: (mdp || "").trim() }
+        method: "POST",
+        token: m.access_token,
+        body: {
+          p_jeu: jeu,
+          p_mdp: (mdp || "").trim()
+        }
       });
     },
-
     /* V47 — LA SALLE VIVANTE : le MJ l'ouvre PUBLIQUE ou PRIVÉE (mot de
        passe ≥ 3 caractères, hashé par la Tombe), la referme en partant,
        la rouvre en reprenant une partie lancée. */
@@ -545,35 +713,64 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("Hors ligne."));
       return api("/rest/v1/rpc/archiviste_ouvrir_salle", {
-        method: "POST", token: m.access_token,
-        body: { p_id: id, p_visibilite: visibilite, p_mdp: visibilite === "privee" ? (mdp || "").trim() : null }
+        method: "POST",
+        token: m.access_token,
+        body: {
+          p_id: id,
+          p_visibilite: visibilite,
+          p_mdp: visibilite === "privee" ? (mdp || "").trim() : null
+        }
       });
     },
     fermerSalle: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
-        method: "PATCH", token: m.access_token,
-        body: { salle_ouverte_le: null, mdp_hash: null }
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          salle_ouverte_le: null,
+          mdp_hash: null
+        }
       });
     },
     rouvrirSalle: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
-        method: "PATCH", token: m.access_token,
-        body: { salle_ouverte_le: new Date().toISOString() }
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          salle_ouverte_le: new Date().toISOString()
+        }
       });
     },
-
+    /* V49 — LE SCELLE DE LA SALLE : le MJ cadenasse son aventure QUAND IL
+       VEUT, même en pleine partie — champ vide = porte libre (publique),
+       texte = la Tombe hash le mot de passe côté serveur (jamais en
+       clair) et la salle devient privée. La RPC ne touche NI au statut NI
+       à salle_ouverte_le : la partie continue de vivre. */
+    majMotDePasseSalle: function (id, mdp) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("Hors ligne."));
+      return api("/rest/v1/rpc/archiviste_maj_mdp_salle", {
+        method: "POST",
+        token: m.access_token,
+        body: {
+          p_id: id,
+          p_mdp: (mdp || "").trim() || null
+        }
+      });
+    },
     /* Sortir d'une aventure (soi-même) ; annuler = le MJ ferme */
     quitterPartie: function (partieId, compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
-      return api("/rest/v1/archiviste_partie_joueurs?partie_id=eq." + partieId + "&compte_id=eq." + compteId,
-        { method: "DELETE", token: m.access_token });
+      return api("/rest/v1/archiviste_partie_joueurs?partie_id=eq." + partieId + "&compte_id=eq." + compteId, {
+        method: "DELETE",
+        token: m.access_token
+      });
     },
-
     /* Le MJ pilote : lancer l'aventure (ouverte → en_cours, la salle reste
        tenue) ou la fermer (la salle s'éteint avec elle).
        V48.9 — LA PORTE S'OUVRE EN PUBLIQUE : une partie lancée SANS salle
@@ -585,20 +782,31 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
-        method: "PATCH", token: m.access_token,
-        body: { statut: "en_cours", lance_le: new Date().toISOString(), salle_ouverte_le: new Date().toISOString(),
-                visibilite: ouvrirPublique ? "publique" : undefined, mdp_hash: ouvrirPublique ? null : undefined }
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          statut: "en_cours",
+          lance_le: new Date().toISOString(),
+          salle_ouverte_le: new Date().toISOString(),
+          visibilite: ouvrirPublique ? "publique" : undefined,
+          mdp_hash: ouvrirPublique ? null : undefined
+        }
       });
     },
     fermerPartie: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
-        method: "PATCH", token: m.access_token,
-        body: { statut: "close", fermee_le: new Date().toISOString(), salle_ouverte_le: null, mdp_hash: null }
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          statut: "close",
+          fermee_le: new Date().toISOString(),
+          salle_ouverte_le: null,
+          mdp_hash: null
+        }
       });
     },
-
     /* V43 — LA FICHE AU CENTRE DE LA TABLE : le personnage du joueur vit
        dans la Tombe (une fiche par joueur et par partie, contenu libre).
        Upsert sur la pk (partie_id, compte_id) : recréer écrase, la fiche
@@ -608,18 +816,28 @@ window.LARCHIVISTE_CLOUD = (function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_partie_fiches", {
-        method: "POST", token: m.access_token, prefer: "resolution=merge-duplicates",
-        body: { partie_id: partieId, compte_id: compteId, contenu: contenu, maj_le: new Date().toISOString() }
+        method: "POST",
+        token: m.access_token,
+        prefer: "resolution=merge-duplicates",
+        body: {
+          partie_id: partieId,
+          compte_id: compteId,
+          contenu: contenu,
+          maj_le: new Date().toISOString()
+        }
       });
     },
     lireFichesPartie: function (partieId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_partie_fiches_lobby?select=*&partie_id=eq." + partieId, { token: m.access_token })
-        .then(function (l) { return l || []; })
-        .catch(function () { return []; });
+      return api("/rest/v1/archiviste_partie_fiches_lobby?select=*&partie_id=eq." + partieId, {
+        token: m.access_token
+      }).then(function (l) {
+        return l || [];
+      }).catch(function () {
+        return [];
+      });
     },
-
     /* V48 — LE REGISTRE DES PERSONNAGES : chaque joueur garde ses unités
        dans la Tombe, rattachées à son compte et AU PACK — prêtes à entrer
        dans n'importe quelle aventure. Le contenu est libre (unité 40k,
@@ -628,32 +846,46 @@ window.LARCHIVISTE_CLOUD = (function () {
     listerPersonnages: function (jeu) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_personnages?select=*&jeu=eq." + encodeURIComponent(jeu) + "&supprime_le=is.null&order=cree_le.asc", { token: m.access_token })
-        .then(function (l) { return l || []; })
-        .catch(function () { return []; });
+      return api("/rest/v1/archiviste_personnages?select=*&jeu=eq." + encodeURIComponent(jeu) + "&supprime_le=is.null&order=cree_le.asc", {
+        token: m.access_token
+      }).then(function (l) {
+        return l || [];
+      }).catch(function () {
+        return [];
+      });
     },
     creerPersonnage: function (jeu, compteId, nom, contenu) {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("hors session"));
       return api("/rest/v1/archiviste_personnages", {
-        method: "POST", token: m.access_token, prefer: "return=representation",
-        body: { compte_id: compteId, jeu: jeu, nom: nom, contenu: contenu, maj_le: new Date().toISOString() }
+        method: "POST",
+        token: m.access_token,
+        prefer: "return=representation",
+        body: {
+          compte_id: compteId,
+          jeu: jeu,
+          nom: nom,
+          contenu: contenu,
+          maj_le: new Date().toISOString()
+        }
       });
     },
     supprimerPersonnage: function (id) {
       var m = lire();
       if (!m || !m.access_token) return Promise.reject(new Error("hors session"));
       return api("/rest/v1/archiviste_personnages?id=eq." + id, {
-        method: "PATCH", token: m.access_token,
-        body: { supprime_le: new Date().toISOString() }
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          supprime_le: new Date().toISOString()
+        }
       });
     },
-
     /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
   };
-})();
+}();
 </script>
 
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
@@ -744,8 +976,15 @@ const fondrePresents = (precedent, diff) => {
    ouverte naissait « privee » sans mot de passe (défaut de la Tombe) :
    visible depuis V0.32 mais l’ENTRER refusait pour rien. lancerPartie
    ouvre maintenant la porte en publique quand la salle n’était pas
-   tenue — visible ET rejoignable en plein jeu. ── */
-const BUILD = "0.33";
+   tenue — visible ET rejoignable en plein jeu.
+   V0.34 : LE SCELLE DE LA SALLE — le joueur voyait « mot de passe de
+   la salle » mais le MJ n'avait nulle part le poser sur une aventure
+   lancée. L'écrou ouvre maintenant, à droite de REPRENDRE, un champ :
+   vide = porte libre (entrée directe), texte = cadenassée — le mot de
+   passe est hashé côté Tombe (RPC archiviste_maj_mdp_salle, jamais en
+   clair) et demandé au joueur avant d'entrer. Gravable à tout moment,
+   même en pleine partie ; vider + graver rouvre à tous. ── */
+const BUILD = "0.34";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4486,6 +4725,7 @@ function EcranPartie({
   onRejoindreMdp,
   onOuvrirSalle,
   onReprendre,
+  onGraverMdp,
   onLancer,
   onQuitter,
   onSupprimer,
@@ -4509,6 +4749,8 @@ function EcranPartie({
   const [enLivre, setEnLivre] = useState(false);
   const [enSuppression, setEnSuppression] = useState(false); // V46 : la sentence se prépare-t-elle ?
   const [motSuppr, setMotSuppr] = useState(""); // V46 : la consécration écrite « suppression »
+  const [mdpSaisi, setMdpSaisi] = useState(""); // V49 : le mot de passe gravé via l'écrou, à côté de REPRENDRE
+  const [enGravure, setEnGravure] = useState(false); // V49 : la Tombe grave — le scellé met un instant
   const [compteOuvert, setCompteOuvert] = useState(false); // V46b : le menu du compte du bandeau
   /* — V48 : LE REGISTRE DES PERSONNAGES — l'écrou, l'éveil, la sentence — */
   const [enCreationPerso, setEnCreationPerso] = useState(false);
@@ -4516,6 +4758,16 @@ function EcranPartie({
   const [enSuppressionPerso, setEnSuppressionPerso] = useState(false);
   const [motSupprPerso, setMotSupprPerso] = useState("");
   const persos = mesPersonnages || [];
+  /* V49 — GRAVER LE SCELLE : vide = porte libre (publique), texte = cadenassée
+     (privée). La ligne lobby revient de la RPC, le cadre se rafraîchit seul. */
+  const graverMotDePasse = () => {
+    if (!detail || !onGraverMdp) return;
+    setEnGravure(true);
+    onGraverMdp(detail, mdpSaisi).then(l => {
+      if (l) setDetail(l);
+      setMdpSaisi("");
+    }).catch(() => {}).finally(() => setEnGravure(false));
+  };
   const EcranCreationPerso = {
     unite: EcranCreationUnite,
     aventurier: EcranCreationAventurier,
@@ -5009,14 +5261,55 @@ function EcranPartie({
     style: {
       color: "#71717a"
     }
-  }, "Aventure close — la séance est terminée.") : detail.statut === "en_cours" || salleOuverte(detail) ? /*#__PURE__*/React.createElement("button", {
+  }, "Aventure close — la séance est terminée.") : detail.statut === "en_cours" || salleOuverte(detail) ?
+  /*#__PURE__*/
+  /* V49 — LE SCELLE À CÔTÉ DE REPRENDRE : champ vide = porte
+     libre, texte = mot de passe (hash côté Tombe). Le joueur
+     verra 🔒 ENTRER et devra le connaître. Déjà privée ?
+     Vider + ✓ GRAVER rouvre à tous. */
+  React.createElement("div", {
+    className: "flex gap-2 items-center flex-wrap mb-3"
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onReprendre(detail),
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black mb-3",
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
       background: detail.statut === "en_cours" ? "#f0b24a" : "#a8adb8",
       cursor: "pointer"
     }
-  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "▶ REPRENDRE LA SALLE") :
+  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "▶ REPRENDRE LA SALLE"), /*#__PURE__*/React.createElement("input", {
+    value: mdpSaisi,
+    onChange: e => setMdpSaisi(e.target.value),
+    type: "password",
+    maxLength: 24,
+    autoComplete: "off",
+    disabled: enGravure,
+    onKeyDown: e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        graverMotDePasse();
+      }
+    },
+    placeholder: detail.visibilite === "privee" ? "🔒 privée — vider + ✓ pour ouvrir" : "🔒 mot de passe de la salle (vide = libre)",
+    className: "px-3 py-2 rounded-lg text-sm flex-1",
+    style: {
+      minWidth: 180,
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: graverMotDePasse,
+    disabled: enGravure || mdpSaisi.trim().length < 3 && detail.visibilite !== "privee",
+    title: detail.visibilite === "privee" ? "Vider le champ et graver = porte libre à tous" : "Graver ce mot de passe — il sera demandé aux joueurs",
+    className: "px-3 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: mdpSaisi.trim().length > 0 ? "#f0b24a" : "#a8adb814",
+      color: mdpSaisi.trim().length > 0 ? "#0c0d10" : "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, enGravure ? "…" : "✓ GRAVER")) :
   /*#__PURE__*/
   /* V47 : OUVRIR LA SALLE — publique (lobby de tous) ou privée (mot de passe) */
   React.createElement("button", {
@@ -8282,6 +8575,17 @@ function App() {
       return rechargerPartie(p.id);
     }).catch(e => showToast(e && e.message || "La Tombe refuse d'ouvrir la salle — réessayez."));
   };
+  /* V49 — GRAVER LE MOT DE PASSE DE LA SALLE DEPUIS L'ÉCROU : vide = la
+     porte s'ouvre à tous, texte = cadenassée (hash côté Tombe). mdpSalle
+     suit pour que la salle d'attente montre au MJ son propre mot de passe. */
+  const graverMdpSalle = (p, mdpSaisi) => {
+    const cadenas = (mdpSaisi || "").trim().length > 0;
+    return CLOUD.majMotDePasseSalle(p.id, mdpSaisi).then(ligne => {
+      showToast(cadenas ? "« " + p.nom + " » est cadenassée — son mot de passe sera demandé aux joueurs." : "« " + p.nom + " » est ouverte à tous — plus de mot de passe.");
+      setMdpSalle(cadenas ? (mdpSaisi || "").trim() : null);
+      return rechargerListes().then(() => ligne);
+    }).catch(e => showToast(e && e.message || "La Tombe refuse de graver le scellé — réessayez."));
+  };
   const rejoindreAventureMdp = mdpSaisi => {
     if (!CLOUD || !session || !packPartie) return Promise.resolve();
     return CLOUD.rejoindrePrivee(packPartie.id, mdpSaisi).then(p => {
@@ -8810,6 +9114,7 @@ function App() {
     onRejoindreMdp: rejoindreAventureMdp,
     onOuvrirSalle: ouvrirSalleAventure,
     onReprendre: reprendreAventure,
+    onGraverMdp: graverMdpSalle,
     onLancer: lancerAventure,
     onQuitter: quitterAventure,
     onSupprimer: supprimerAventure,
