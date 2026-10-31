@@ -649,6 +649,31 @@ window.LARCHIVISTE_CLOUD = (function () {
 const { useState, useRef, useEffect } = React;
 const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
 
+/* ── V48.4 — LA FUSION DE LA RONDE DES PRÉSENTS (pure) ──
+   Un diff de présence du protocole Phoenix porte, pour une MÊME clé,
+   le neuf (joins : le méta re-pisté) ET le départ de l'ancien méta
+   (leaves) quand un joueur CHANGE DE PLACE (hub ↔ pack : l'app
+   re-piste sans re-joindre). La sortie ne compte donc que si la clé
+   n'est PAS revenue dans le même diff — sinon le delete écrasait le
+   join et le joueur s'évanouissait de CONNECTÉS à chaque déplacement.
+   Les fantômes sans pseudo (canal de l'institution) restent dehors. */
+const fondrePresents = (precedent, diff) => {
+  const suivant = {
+    ...(precedent || {})
+  };
+  const d = diff && typeof diff === "object" ? diff : {};
+  const arrives = d.joins || {};
+  Object.keys(arrives).forEach(cle => {
+    const m = arrives[cle] && arrives[cle].metas && arrives[cle].metas[0] || null;
+    if (m && m.pseudo) suivant[cle] = m;else delete suivant[cle];
+  });
+  const partis = d.leaves || {};
+  Object.keys(partis).forEach(cle => {
+    if (!(cle in arrives)) delete suivant[cle];
+  });
+  return suivant;
+};
+
 /* ── La version de build : sémantique, +0.01 par reconstruction du site.
    Passage en 1.0 quand tout sera en place (décision du Maître de la Tombe).
    V0.23 : LA CRÉATION SANS LANCEMENT — l'aventure naît dans MES AVENTURES,
@@ -671,8 +696,13 @@ const CLOUD = typeof window !== "undefined" && window.LARCHIVISTE_CLOUD || null;
    reste), la Bibliothèque sait désinstaller, le lobby se réduit à
    AVENTURES OUVERTES (salles privées comprises, mot de passe dans la
    ligne) puis CONNECTÉS, et l'entête ne dit plus que le nom du JDR, le
-   mode, et un discret ⌂ HUB. ── */
-const BUILD = "0.27";
+   mode, et un discret ⌂ HUB.
+   V0.28 : LA RONDE CORRIGÉE — un re-piste (le joueur change de place)
+   part en joins ET leaves pour la même clé : la sortie ne compte que si
+   la clé n'est pas revenue dans le même diff, sinon le joueur
+   s'évanouissait de CONNECTÉS à chaque déplacement ; et le lieu dit
+   maintenant « dans ce pack / au hub / dans un autre JDR ». ── */
+const BUILD = "0.28";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -4799,7 +4829,7 @@ function EcranPartie({
     style: {
       color: "#52525b"
     }
-  }, j.jeu === pack.id ? "— dans ce pack" : "— au hub")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+  }, j.jeu ? j.jeu === pack.id ? "— dans ce pack" : "— dans un autre JDR" : "— au hub")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -8350,19 +8380,9 @@ function App() {
           return;
         }
         if (ev === "presence_diff") {
-          setPresents(prev => {
-            const suivant = {
-              ...prev
-            };
-            Object.keys(p.joins || {}).forEach(cle => {
-              const m = p.joins[cle] && p.joins[cle].metas && p.joins[cle].metas[0] || null;
-              if (m && m.pseudo) suivant[cle] = m;else delete suivant[cle];
-            });
-            Object.keys(p.leaves || {}).forEach(cle => {
-              delete suivant[cle];
-            });
-            return suivant;
-          });
+          /* V48.4 : la fusion vit dans fondrePresents — pure, éprouvée au
+             harnais contre les VRAIS payloads de la Tombe. */
+          setPresents(prev => fondrePresents(prev, p));
         }
       },
       tables: [{
