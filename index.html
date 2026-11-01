@@ -368,28 +368,33 @@ window.LARCHIVISTE_CLOUD = (function () {
        s'y parlent). Chaque message est GRAVÉ dans la Tombe — prémice du
        journal — et pousse en temps réel chez tous. Le serveur signe
        lui-même le pseudo et le rôle (trigger console_verite) : personne
-       ne peut se déguiser. */
-    envoyerConsole: function (compteId, contenu, type, donnees, partieId) {
+       ne peut se déguiser. V0.37 : le canal à DEUX dimensions — le
+       GLOBAL (null/null), le SALON D'UN JDR (jeu, null), et le
+       canal privé d'une partie (null, partie_id). */
+    envoyerConsole: function (compteId, contenu, type, donnees, partieId, packId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_console", {
         method: "POST", token: m.access_token,
         body: {
           compte_id: compteId, contenu: contenu, type: type || "message",
-          donnees: donnees || {}, partie_id: partieId || null
+          donnees: donnees || {}, partie_id: partieId || null, jeu: packId || null
         }
       });
     },
 
     /* Le fil de la Console, relu à la connexion : le journal commence
        où l'on arrive — les 60 derniers messages font le bord. Le canal
-       est CONTEXTUEL : null = la Console Globale, un id de partie = le
-       canal privé de cette partie (membres et MJ seuls le lisent). */
-    lireConsole: function (partieId) {
+       est CONTEXTUEL : le Global (null/null), le salon d'un JDR
+       (jeu), ou le canal privé d'une partie (membres et MJ seuls
+       le lisent). */
+    lireConsole: function (partieId, packId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      var filtre = partieId ? "partie_id=eq." + partieId : "partie_id=is.null";
-      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&"
+      var filtre = partieId ? "partie_id=eq." + encodeURIComponent(partieId)
+        : packId ? "partie_id=is.null&jeu=eq." + encodeURIComponent(packId)
+        : "partie_id=is.null&jeu=is.null";
+      return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id,jeu&"
         + filtre + "&order=id.desc&limit=60", { token: m.access_token })
         .then(function (l) { return (l || []).slice().reverse(); })
         .catch(function () { return []; });
@@ -1142,8 +1147,10 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
          s'y parlent). Chaque message est GRAVÉ dans la Tombe — prémice du
          journal — et pousse en temps réel chez tous. Le serveur signe
          lui-même le pseudo et le rôle (trigger console_verite) : personne
-         ne peut se déguiser. */
-      envoyerConsole: function (compteId, contenu, type, donnees, partieId) {
+         ne peut se déguiser. V0.37 : le canal à DEUX dimensions — le
+         GLOBAL (null/null), le SALON D'UN JDR (jeu, null), et le
+         canal privé d'une partie (null, partie_id). */
+      envoyerConsole: function (compteId, contenu, type, donnees, partieId, packId) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve();
         return api("/rest/v1/archiviste_console", {
@@ -1154,19 +1161,21 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
             contenu: contenu,
             type: type || "message",
             donnees: donnees || {},
-            partie_id: partieId || null
+            partie_id: partieId || null,
+            jeu: packId || null
           }
         });
       },
       /* Le fil de la Console, relu à la connexion : le journal commence
          où l'on arrive — les 60 derniers messages font le bord. Le canal
-         est CONTEXTUEL : null = la Console Globale, un id de partie = le
-         canal privé de cette partie (membres et MJ seuls le lisent). */
-      lireConsole: function (partieId) {
+         est CONTEXTUEL : le Global (null/null), le salon d'un JDR
+         (jeu), ou le canal privé d'une partie (membres et MJ seuls
+         le lisent). */
+      lireConsole: function (partieId, packId) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve([]);
-        var filtre = partieId ? "partie_id=eq." + partieId : "partie_id=is.null";
-        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&" + filtre + "&order=id.desc&limit=60", {
+        var filtre = partieId ? "partie_id=eq." + encodeURIComponent(partieId) : packId ? "partie_id=is.null&jeu=eq." + encodeURIComponent(packId) : "partie_id=is.null&jeu=is.null";
+        return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id,jeu&" + filtre + "&order=id.desc&limit=60", {
           token: m.access_token
         }).then(function (l) {
           return (l || []).slice().reverse();
@@ -1636,8 +1645,17 @@ const fondrePresents = (precedent, diff) => {
    V0.36 : LA BARRE QUI PARLE LES COULEURS — le scrolling suit la
    doctrine des thèmes : le chrome défile en Zinc d'Archiviste, chaque
    pack repeint la barre à SA couleur dès qu'il prend l'écran, et
-   l'Archivistère garde son ambre d'œil du MJ (voir §SECTION:UI). ── */
-const BUILD = "0.36";
+   l'Archivistère garde son ambre d'œil du MJ (voir §SECTION:UI).
+   V0.37 : LE SALON ET LA TABLE VIVANTE — chaque JDR a SON salon de
+   lobby (canal console jeu, filtre Tous/Messages/Dés/Journal) ;
+   le joueur gagne l'onglet AVENTURES ; le MJ gagne RÈGLES à droite
+   d'AVENTURES ; MES AVENTURES montre EN LIGNE (lancée + salle
+   ouverte) ou HORS LIGNE ; la ligne gagne [▶ LANCER]/[■ FERMER] et
+   l'écrou ne garde que scellé + sentence ; le MJ qui quitte une
+   partie en cours ne casse RIEN (elle reste en ligne, REPRENDRE la
+   rend), FERMER seul referme l'aventure et rend les joueurs à la
+   porte. ── */
+const BUILD = "0.37";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3057,6 +3075,95 @@ function Vignette({
    dans la Tombe — prémice du journal — et pousse en temps réel chez tous.
    Vit en ONGLET du hub, comme à l'Archivisterium — zinc d'Archiviste,
    l'ambre reste à l'institution et au MJ. */
+/* ══════════ V0.37 — LA LIGNE DE CONSOLE : le rendu d'UN message, le
+   même partout — bandeau du tour, jet de dés signé 🏛, événement de
+   journal, ou simple parole. Le fil de tous et le salon d'un JDR
+   parlent ainsi la même langue. ══════════ */
+function LigneConsole({
+  e
+}) {
+  const heure = iso => {
+    try {
+      return new Date(iso).toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (err) {
+      return "";
+    }
+  };
+  if (e.type === "tour") {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 py-1.5",
+      style: {
+        borderBottom: "1px solid #f0b24a22"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xs shrink-0",
+      style: {
+        color: "#52525b"
+      }
+    }, heure(e.cree_le)), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-bold flex-1 text-center",
+      style: {
+        color: "#f0b24a",
+        letterSpacing: "0.06em"
+      }
+    }, "\u25B8 AU TOUR DE ", e.contenu.toUpperCase(), " ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#71717a"
+      }
+    }, "\u2014 par ", e.pseudo)));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline gap-2 py-1",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    }
+  }, heure(e.cree_le)), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold shrink-0",
+    style: {
+      color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
+    }
+  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), e.type === "de" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs"
+  }, "\uD83C\uDFB2"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: "#2ee6c9",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu), e.donnees && e.donnees.serveur && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs shrink-0",
+    style: {
+      color: "#52525b"
+    },
+    title: "Roul\xE9 et sign\xE9 par la Tombe"
+  }, "\uD83C\uDFDB")) : e.type === "journal" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs px-1 rounded font-bold shrink-0",
+    style: {
+      background: "#a8adb822",
+      color: "#a8adb8"
+    }
+  }, e.donnees && e.donnees.evenement || "journal"), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs italic",
+    style: {
+      color: "#71717a",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu)) : /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa",
+      overflowWrap: "anywhere"
+    }
+  }, e.contenu));
+}
 function ConsoleGlobale({
   fil,
   onEnvoyer,
@@ -3077,16 +3184,6 @@ function ConsoleGlobale({
     onEnvoyer(t);
     setTexte("");
   };
-  const heure = iso => {
-    try {
-      return new Date(iso).toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    } catch (e) {
-      return "";
-    }
-  };
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl flex flex-col",
     style: {
@@ -3103,85 +3200,10 @@ function ConsoleGlobale({
     style: {
       color: "#52525b"
     }
-  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => e.type === "tour" ?
-  /*#__PURE__*/
-  /* Le bandeau du tour : l'annonce du MJ tranche sur le fil */
-  React.createElement("div", {
+  }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => /*#__PURE__*/React.createElement(LigneConsole, {
     key: e.id,
-    className: "flex items-center gap-2 py-1.5",
-    style: {
-      borderBottom: "1px solid #f0b24a22"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs shrink-0",
-    style: {
-      color: "#52525b"
-    }
-  }, heure(e.cree_le)), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold flex-1 text-center",
-    style: {
-      color: "#f0b24a",
-      letterSpacing: "0.06em"
-    }
-  }, "\u25B8 AU TOUR DE ", e.contenu.toUpperCase(), " ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#71717a"
-    }
-  }, "\u2014 par ", e.pseudo))) : /*#__PURE__*/React.createElement("div", {
-    key: e.id,
-    className: "flex items-baseline gap-2 py-1",
-    style: {
-      borderBottom: "1px solid #ffffff08"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs shrink-0",
-    style: {
-      color: "#52525b"
-    }
-  }, heure(e.cree_le)), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold shrink-0",
-    style: {
-      color: e.role === "admin" || e.role === "MJ" ? "#f0b24a" : "#c8c8ce"
-    }
-  }, e.pseudo, e.role === "admin" || e.role === "MJ" ? " (MJ)" : ""), e.type === "de" ?
-  /*#__PURE__*/
-  /* Le jet gravé : 🎲 + résultat en turquoise, lisible au premier coup d'œil */
-  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs"
-  }, "\uD83C\uDFB2"), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold",
-    style: {
-      color: "#2ee6c9",
-      overflowWrap: "anywhere"
-    }
-  }, e.contenu), e.donnees && e.donnees.serveur && /*#__PURE__*/React.createElement("span", {
-    className: "text-xs shrink-0",
-    style: {
-      color: "#52525b"
-    },
-    title: "Roul\xE9 et sign\xE9 par la Tombe"
-  }, "\uD83C\uDFDB")) : e.type === "journal" ?
-  /*#__PURE__*/
-  /* L'événement de moteur : le journal du pack, partagé au canal */
-  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs px-1 rounded font-bold shrink-0",
-    style: {
-      background: "#a8adb822",
-      color: "#a8adb8"
-    }
-  }, e.donnees && e.donnees.evenement || "journal"), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs italic",
-    style: {
-      color: "#71717a",
-      overflowWrap: "anywhere"
-    }
-  }, e.contenu)) : /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#a1a1aa",
-      overflowWrap: "anywhere"
-    }
-  }, e.contenu))), /*#__PURE__*/React.createElement("div", {
+    e: e
+  })), /*#__PURE__*/React.createElement("div", {
     ref: pied
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 items-center px-2 py-2",
@@ -3242,6 +3264,113 @@ function ConsoleGlobale({
   }, "commandes : /de 3d6 \xB7 /tour Pr\xE9nom")));
 }
 
+/* ══════════ V0.37 — LE SALON D'UN JDR : le petit chat du lobby.
+   Chaque JDR a SON salon (canal jeu de la Console) — les joueurs
+   des Protocoles Éternels y parlent entre eux, sans le brouhaha du fil
+   global ni le secret du canal de partie. Le FILTRE tranche le fil :
+   Tout, les Messages (paroles et tours), les Dés, le Journal. Le
+   rendu des lignes est celui de LA Console (LigneConsole) — une seule
+   langue pour tous les fils. ══════════ */
+function ChatSalon({
+  titre,
+  fil,
+  onEnvoyer,
+  joueur,
+  enEnvoi
+}) {
+  const [texte, setTexte] = useState("");
+  const [filtre, setFiltre] = useState("tous");
+  const pied = useRef(null);
+  const FILTRES = [["tous", "TOUT"], ["messages", "MESSAGES"], ["des", "DÉS"], ["journal", "JOURNAL"]];
+  const filFiltre = (fil || []).filter(e => filtre === "tous" ? true : filtre === "messages" ? e.type === "message" || e.type === "tour" : filtre === "des" ? e.type === "de" : e.type === "journal");
+  useEffect(() => {
+    if (pied.current) pied.current.scrollIntoView({
+      block: "nearest"
+    });
+  }, [filFiltre.length]);
+  const envoyer = () => {
+    const t = texte.trim();
+    if (!t || !joueur) return;
+    onEnvoyer(t);
+    setTexte("");
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl flex flex-col",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 flex-wrap px-3 pt-3 pb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest",
+    style: {
+      color: "#a8adb8"
+    }
+  }, titre || "SALON"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 ml-auto"
+  }, FILTRES.map(f => /*#__PURE__*/React.createElement("button", {
+    key: f[0],
+    onClick: () => setFiltre(f[0]),
+    className: "px-2 py-0.5 rounded text-[10px] font-bold tracking-wider",
+    style: {
+      background: filtre === f[0] ? "#a8adb822" : "transparent",
+      color: filtre === f[0] ? "#e8e4d8" : "#71717a",
+      border: "1px solid " + (filtre === f[0] ? "#a8adb844" : "#27272a"),
+      cursor: "pointer"
+    }
+  }, f[1])))), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 pb-1 overflow-y-auto",
+    style: {
+      maxHeight: "38vh"
+    }
+  }, filFiltre.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-3 text-center",
+    style: {
+      color: "#52525b"
+    }
+  }, filtre === "tous" ? "Aucun message — le salon attend la première parole." : "Rien dans ce filtre — revenez sur « TOUT ».") : filFiltre.map(e => /*#__PURE__*/React.createElement(LigneConsole, {
+    key: e.id,
+    e: e
+  })), /*#__PURE__*/React.createElement("div", {
+    ref: pied
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 items-center px-2 py-2",
+    style: {
+      borderTop: "1px solid #27272a"
+    }
+  }, joueur ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+    value: texte,
+    onChange: e => setTexte(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter") envoyer();
+    },
+    className: "flex-1 px-2 py-1 rounded text-xs",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    },
+    placeholder: "Parler dans le salon de " + (titre || "ce JDR") + " (280 caractères max)",
+    maxLength: 280
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: envoyer,
+    disabled: enEnvoi || !texte.trim(),
+    className: "px-3 py-1 rounded text-xs font-bold",
+    style: {
+      background: texte.trim() ? "#a8adb8" : "#a8adb822",
+      color: texte.trim() ? "#0c0d10" : "#71717a",
+      cursor: texte.trim() ? "pointer" : "default"
+    }
+  }, "\u21B5")) : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-1",
+    style: {
+      color: "#52525b"
+    }
+  }, "Connectez-vous pour parler dans le salon \u2014 le fil se lit d\xE9j\xE0.")));
+}
+
 /* ══════════ LA PARTIE : l'écran d'aventure partagée ══════════
    Générique — c'est le MOTEUR qui parle ici, pas le pack : le même
    écran ouvrira, rejoindra et lancera TOUTE aventure multijoueur.
@@ -3295,6 +3424,9 @@ function EcranPartie({
   mdpSalle,
   mesPersonnages,
   versionBase,
+  filSalon,
+  onEnvoyerSalon,
+  salonEnvoi,
   onCreerPersonnage,
   onSupprimerPersonnage,
   onCreer,
@@ -3304,6 +3436,7 @@ function EcranPartie({
   onReprendre,
   onGraverMdp,
   onLancer,
+  onFermer,
   onQuitter,
   onSupprimer,
   onRetour,
@@ -3329,6 +3462,7 @@ function EcranPartie({
   const [mdpSaisi, setMdpSaisi] = useState(""); // V49 : le mot de passe gravé via l'écrou, à côté de REPRENDRE
   const [enGravure, setEnGravure] = useState(false); // V49 : la Tombe grave — le scellé met un instant
   const [compteOuvert, setCompteOuvert] = useState(false); // V46b : le menu du compte du bandeau
+  const [fermerPour, setFermerPour] = useState(null); // V0.37 : l'aventure dont le FERMER attend sa confirmation
   /* — V48 : LE REGISTRE DES PERSONNAGES — l'écrou, l'éveil, la sentence — */
   const [enCreationPerso, setEnCreationPerso] = useState(false);
   const [detailPerso, setDetailPerso] = useState(null);
@@ -3498,7 +3632,7 @@ function EcranPartie({
         border: "1px solid #27272a",
         cursor: "pointer"
       }
-    }, estMj ? "ANNULER L'AVENTURE" : "QUITTER"))), partie.statut === "en_cours" && /*#__PURE__*/React.createElement("div", {
+    }, estMj ? "REFERMER LA SALLE" : "QUITTER"))), partie.statut === "en_cours" && /*#__PURE__*/React.createElement("div", {
       className: "text-sm",
       style: {
         color: "#71717a"
@@ -3514,7 +3648,11 @@ function EcranPartie({
      Le rôle réel en table reste dérivé : le créateur d'une aventure en
      est le Maître du Jeu, quel que soit le mode affiché. */
   const modeU = mode === "joueur" ? "joueur" : mode === "mj" ? "mj" : null;
-  const onglets = modeU === "joueur" ? [["lobby", "LOBBY"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]] : modeU === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]];
+  /* V0.37 — LES ONGLETS REFICTLÉS : le joueur gagne AVENTURES (les
+     salles ouvertes de son JDR, prêtes à rejoindre) entre LOBBY et
+     PERSONNAGES ; le MJ gagne RÈGLES juste à droite d'AVENTURES —
+     solo comme multi, le MJ lit les règles aussi. */
+  const onglets = modeU === "joueur" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]] : modeU === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"], ["personnages", "PERSONNAGES"]];
   const mesAv = mesAventures || [];
   /* V48.5 — LE CONNECTÉS DU JDR : dans le lobby d'un JDR, la ronde ne
      montre que les joueurs qui ont lancé CE JDR (son écran de partie ou
@@ -3588,7 +3726,13 @@ function EcranPartie({
       borderRight: "none",
       cursor: "pointer"
     }
-  }, o[1]))), onglet === "lobby" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, o[1]))), onglet === "lobby" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ChatSalon, {
+    titre: "SALON — " + pack.nom,
+    fil: filSalon,
+    onEnvoyer: onEnvoyerSalon,
+    joueur: session,
+    enEnvoi: salonEnvoi
+  }), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -3599,7 +3743,42 @@ function EcranPartie({
     style: {
       color: "#a8adb8"
     }
-  }, "AVENTURES OUVERTES (", partiesOuvertes.length, ")"), partiesOuvertes.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "CONNECT\xC9S (", duPack.length, ")"), duPack.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-2",
+    style: {
+      color: "#52525b"
+    }
+  }, "Personne dans ce JDR pour l'instant.") : /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, duPack.map(j => /*#__PURE__*/React.createElement("div", {
+    key: j.compte_id,
+    className: "flex items-center gap-2 px-2 py-1 rounded-lg",
+    style: {
+      background: "#a8adb810",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "rounded-full",
+    style: {
+      width: 6,
+      height: 6,
+      background: "#2ee6c9",
+      display: "inline-block"
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold"
+  }, j.pseudo, j.compte_id === (session && session.compteId) ? " (vous)" : "")))))), onglet === "aventures" && modeU === "joueur" && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #27272a"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "AVENTURES \xC0 REJOINDRE (", partiesOuvertes.length, ")"), partiesOuvertes.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-2",
     style: {
       color: "#52525b"
@@ -3698,42 +3877,7 @@ function EcranPartie({
         cursor: mdpTexte.trim().length >= 3 ? "pointer" : "default"
       }
     }, "ENTRER")));
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-5",
-    style: {
-      background: "#14161b",
-      border: "1px solid #27272a"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-3",
-    style: {
-      color: "#a8adb8"
-    }
-  }, "CONNECT\xC9S (", duPack.length, ")"), duPack.length === 0 ? /*#__PURE__*/React.createElement("div", {
-    className: "text-xs py-2",
-    style: {
-      color: "#52525b"
-    }
-  }, "Personne dans ce JDR pour l'instant.") : /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2"
-  }, duPack.map(j => /*#__PURE__*/React.createElement("div", {
-    key: j.compte_id,
-    className: "flex items-center gap-2 px-2 py-1 rounded-lg",
-    style: {
-      background: "#a8adb810",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "rounded-full",
-    style: {
-      width: 6,
-      height: 6,
-      background: "#2ee6c9",
-      display: "inline-block"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold"
-  }, j.pseudo, j.compte_id === (session && session.compteId) ? " (vous)" : "")))))), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+  }))), onglet === "aventures" && modeU !== "joueur" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -3783,7 +3927,22 @@ function EcranPartie({
     }
   }, /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5"
-  }, /*#__PURE__*/React.createElement("div", {
+  }, p.statut === "en_cours" && p.salle_ouverte_le ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => onReprendre(p),
+    className: "text-sm font-bold text-left",
+    style: {
+      color: "#2ee6c9",
+      cursor: "pointer",
+      background: "none",
+      border: "none",
+      padding: 0
+    },
+    title: "Revenir \xE0 cette table \u2014 l'aventure est en ligne"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      borderBottom: "1px solid #2ee6c955"
+    }
+  }, p.nom)) : /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold truncate",
     style: {
       color: "#e8e4d8"
@@ -3795,28 +3954,86 @@ function EcranPartie({
     }
   }, "cr\xE9\xE9e le ", new Date(p.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", salleOuverte(p) ? "salle OUVERTE (" + (p.visibilite === "publique" ? "publique" : "privée") + ")" : "salle fermée")), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "px-1.5 py-0.5 rounded text-xs font-bold",
+  }, p.statut === "en_cours" && p.salle_ouverte_le ? /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs font-bold",
     style: {
-      color: p.statut === "ouverte" ? "#2ee6c9" : p.statut === "en_cours" ? "#f0b24a" : "#71717a",
-      background: p.statut === "ouverte" ? "#2ee6c914" : p.statut === "en_cours" ? "#f0b24a14" : "#a8adb814"
+      color: "#2ee6c9",
+      background: "#2ee6c914"
     }
-  }, p.statut === "ouverte" ? "OUVERTE" : p.statut === "en_cours" ? "EN COURS" : "CLOSE")), /*#__PURE__*/React.createElement("td", {
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "rounded-full",
+    style: {
+      width: 6,
+      height: 6,
+      background: "#2ee6c9",
+      display: "inline-block"
+    }
+  }), "EN LIGNE") : /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs font-bold",
+    style: {
+      color: "#71717a",
+      background: "#a8adb814"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "rounded-full",
+    style: {
+      width: 6,
+      height: 6,
+      background: "#52525b",
+      display: "inline-block"
+    }
+  }), "HORS LIGNE")), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5 text-right text-xs",
     style: {
       color: "#a8adb8"
     }
   }, nbJoueurs(p)), /*#__PURE__*/React.createElement("td", {
-    className: "px-1 py-2.5 text-right"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setDetail(detail && detail.id === p.id ? null : p),
+    className: "px-1 py-2.5 text-right whitespace-nowrap"
+  }, p.statut === "ouverte" ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => onLancer(p),
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: "#f0b24a",
+      cursor: "pointer"
+    },
+    title: "Lancer l'aventure \u2014 la porte s'ouvre aux joueurs"
+  }, "\u25B6 LANCER") : p.statut === "en_cours" ? fermerPour === p.id ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setFermerPour(null);
+      onFermer(p);
+    },
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: "#e0524d",
+      cursor: "pointer"
+    },
+    title: "Confirmer : les joueurs connect\xE9s sortent et ne peuvent plus rejoindre"
+  }, "\u2715 CONFIRMER") : /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setFermerPour(p.id);
+      setDetail(null);
+    },
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#e0524d14",
+      color: "#e0524d",
+      border: "1px solid #e0524d44",
+      cursor: "pointer"
+    },
+    title: "Fermer l'aventure \u2014 les joueurs connect\xE9s seront \xE9conduits"
+  }, "\u25A0 FERMER") : null, " ", /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setFermerPour(null);
+      setDetail(detail && detail.id === p.id ? null : p);
+    },
     className: "px-2 py-1 rounded-lg text-xs font-bold",
     style: {
       background: "#a8adb814",
       color: "#a8adb8",
       border: "1px solid #27272a",
       cursor: "pointer"
-    }
+    },
+    title: "Scell\xE9 de la salle (mot de passe) et sentence (suppression)"
   }, "\u2699")))))), detail && /*#__PURE__*/React.createElement("div", {
     className: "mt-4 rounded-lg p-4",
     style: {
@@ -3838,22 +4055,38 @@ function EcranPartie({
     style: {
       color: "#71717a"
     }
-  }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") : detail.statut === "en_cours" || salleOuverte(detail) ?
+  }, "Aventure close \u2014 la s\xE9ance est termin\xE9e.") :
   /*#__PURE__*/
-  /* V49 — LE SCELLE À CÔTÉ DE REPRENDRE : champ vide = porte
-     libre, texte = mot de passe (hash côté Tombe). Le joueur
-     verra 🔒 ENTRER et devra le connaître. Déjà privée ?
-     Vider + ✓ GRAVER rouvre à tous. */
+  /* V0.37 — L'ÉCROU : le scellé se grave dès la NAISSANCE de
+     l'aventure (cadenasser AVANT de lancer : [▶ LANCER] de la
+     ligne respectera le scellé et ouvrira la porte privée).
+     REPRENDRE revient à une partie lancée (il rouvre la salle
+     s'il l'a refermée en partant) ; OUVRIR LA SALLE ouvre la
+     salle d'attente SANS lancer. V49 : champ vide = porte
+     libre, texte = mot de passe (hash côté Tombe). */
   React.createElement("div", {
     className: "flex gap-2 items-center flex-wrap mb-3"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, (detail.statut === "en_cours" || salleOuverte(detail)) && /*#__PURE__*/React.createElement("button", {
     onClick: () => onReprendre(detail),
     className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
     style: {
       background: detail.statut === "en_cours" ? "#f0b24a" : "#a8adb8",
       cursor: "pointer"
     }
-  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "▶ REPRENDRE LA SALLE"), /*#__PURE__*/React.createElement("input", {
+  }, detail.statut === "en_cours" ? "▶ REPRENDRE" : "▶ REPRENDRE LA SALLE"), !salleOuverte(detail) && detail.statut === "ouverte" && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setVisChoix("publique");
+      setMdpChoix("");
+      setEnOuverture(true);
+    },
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "OUVRIR LA SALLE"), /*#__PURE__*/React.createElement("input", {
     value: mdpSaisi,
     onChange: e => setMdpSaisi(e.target.value),
     type: "password",
@@ -3886,21 +4119,7 @@ function EcranPartie({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, enGravure ? "…" : "✓ GRAVER")) :
-  /*#__PURE__*/
-  /* V47 : OUVRIR LA SALLE — publique (lobby de tous) ou privée (mot de passe) */
-  React.createElement("button", {
-    onClick: () => {
-      setVisChoix("publique");
-      setMdpChoix("");
-      setEnOuverture(true);
-    },
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black mb-3",
-    style: {
-      background: "#f0b24a",
-      cursor: "pointer"
-    }
-  }, "OUVRIR LA SALLE"), !enSuppression ? /*#__PURE__*/React.createElement("button", {
+  }, enGravure ? "…" : "✓ GRAVER")), !enSuppression ? /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnSuppression(true);
       setMotSuppr("");
@@ -7020,7 +7239,7 @@ function App() {
   const partieIdRef = useRef(null);
   const packPartieRef = useRef(null);
   const vueRef = useRef("hub");
-  const contexteConsoleRef = useRef(null); /* null = canal global, id = canal de partie */
+  const contexteConsoleRef = useRef(null); /* {partieId, packId} — le canal de la console : partie en cours, salon du JDR, ou global */
   partieIdRef.current = partie ? partie.id : null;
   packPartieRef.current = packPartie;
   vueRef.current = vue;
@@ -7046,16 +7265,31 @@ function App() {
      lu et gravé par ses membres seuls. Le contexte est tenu dans une
      ref : les closures du canal temps réel la lisissent à chaque poussée. */
   const [consoleFil, setConsoleFil] = useState([]);
-  const contexteConsole = vue === "pack" && partie && partie.statut === "en_cours" ? partie.id : null;
+  /* V0.37 — le canal à DEUX dimensions : la partie en cours d'abord
+     (priorité partout où on la tient : table comme lobby), sinon LE
+     SALON DU JDR quand on vit dans son espace MJ/Joueur, sinon le fil
+     global. Les primitives extraites servent de dépendances d'effet —
+     l'objet littéral changerait d'identité à chaque rendu. */
+  const enCanalPartie = !!(partie && partie.statut === "en_cours" && (vue === "pack" || vue === "partie"));
+  const contexteConsole = enCanalPartie ? {
+    partieId: partie.id,
+    packId: null
+  } : vue === "partie" && packPartie ? {
+    partieId: null,
+    packId: packPartie.id
+  } : {
+    partieId: null,
+    packId: null
+  };
   contexteConsoleRef.current = contexteConsole;
   useEffect(() => {
     if (!CLOUD || !session) {
       setConsoleFil([]);
       return;
     }
-    CLOUD.lireConsole(contexteConsole).then(f => setConsoleFil(f || [])).catch(() => {});
-  }, [session ? session.compteId : null, contexteConsole]); /* compteId seul — même garde
-                                                            que le canal : jamais « session » nu en dépendance d'effet */
+    CLOUD.lireConsole(contexteConsole.partieId, contexteConsole.packId).then(f => setConsoleFil(f || [])).catch(() => {});
+  }, [session ? session.compteId : null, contexteConsole.partieId, contexteConsole.packId]); /* compteId seul — même garde
+                                                                                             que le canal : jamais « session » nu en dépendance d'effet */
 
   /* Recharger la partie courante et sa table (utilisée au montage et à
      chaque poussée parties/joueurs : la Tombe reste la seule vérité).
@@ -7125,13 +7359,20 @@ function App() {
   const [consoleEnvoi, setConsoleEnvoi] = useState(false);
   const envoyerConsoleMessage = texte => {
     if (!CLOUD || !session) return;
-    const ctx = contexteConsoleRef.current;
+    const ctx = contexteConsoleRef.current || {};
     const ev = interpreterConsole(texte); /* /de 3d6 et /tour X deviennent typés */
     if (!ev.contenu && !ev.des) return;
+    /* V0.37 : les dés se roulent dans le canal de la PARTIE (la Tombe
+       grave p_partie) ou au hub (fil global) — jamais dans le salon
+       d'un JDR, qui n'est qu'un canal de paroles. */
+    if (ev.des && !ctx.partieId && ctx.packId) {
+      showToast("Les dés se roulent à la table — le salon est fait pour parler.");
+      return;
+    }
     setConsoleEnvoi(true);
     /* V3 : /de part à la Tombe — elle roule et grave elle-même ; V4 :
        dans le canal de la partie quand il y en a une. */
-    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces, undefined, ctx).catch(() => showToast("La Tombe n'a pas gravé le dé — réessayez.")) : CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees, ctx).catch(() => showToast("La Console n'a pas gravé — réessayez."));
+    const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces, undefined, ctx.partieId || null).catch(() => showToast("La Tombe n'a pas gravé le dé — réessayez.")) : CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees, ctx.partieId || null, ctx.packId || null).catch(() => showToast("La Console n'a pas gravé — réessayez."));
     envoi.then(() => setConsoleEnvoi(false));
   };
 
@@ -7140,9 +7381,10 @@ function App() {
      V4 : dans le canal de la partie quand il y en a une. */
   const journalVersConsole = (type, texte) => {
     if (!CLOUD || !session) return;
+    const ctx = contexteConsoleRef.current || {};
     CLOUD.envoyerConsole(session.compteId, texte, "journal", {
       evenement: type
-    }, contexteConsoleRef.current).catch(() => {});
+    }, ctx.partieId || null, ctx.packId || null).catch(() => {});
   };
 
   /* ── Les gestes de LA PARTIE : tous génériques, tous pour le moteur ── */
@@ -7224,10 +7466,20 @@ function App() {
   };
   const lancerAventure = p => {
     if (!CLOUD) return;
-    /* V48.9 — si la salle n'était PAS ouverte, la porte naît publique. */
-    CLOUD.lancerPartie(p.id, !p.salle_ouverte_le).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
+    /* V0.37 — [▶ LANCER] direct : la porte naît PUBLIQUE, sauf si la
+       salle est déjà tenue ou qu'un SCELLÉ PRIVÉ a été gravé par
+       l'écrou — LANCER respecte alors le cadenas et ouvre privée. */
+    CLOUD.lancerPartie(p.id, !(p.salle_ouverte_le || p.visibilite === "privee")).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
     /* RIEN d'autre ici : l'entrée se fait par la POUSSÉE, le même chemin
        pour le MJ et les joueurs — un seul code, une seule vérité. */
+  };
+  /* V0.37 — [■ FERMER] : LA SEULE SENTENCE qui referme l'aventure. Les
+     joueurs connectés sortent par la poussée temps réel (statut close :
+     toast + retour au hub), et plus personne ne peut la rejoindre —
+     elle quitte les AVENTURES À REJOINDRE. */
+  const fermerAventure = p => {
+    if (!CLOUD || !p) return;
+    CLOUD.fermerPartie(p.id).then(() => showToast("« " + p.nom + " » est close — les joueurs ont rendu la table.")).catch(() => showToast("La Tombe refuse de clore — réessayez."));
   };
   /* V46 : EFFACER une aventure — la Tombe la garde en Corbeille ; elle
      disparaît de nos écrans (les listes se rechargent par la poussée
@@ -7242,8 +7494,17 @@ function App() {
   const quitterAventure = p => {
     if (!CLOUD || !session) return;
     if (p.mj_compte_id === session.compteId) {
-      CLOUD.fermerPartie(p.id).catch(() => {});
-      showToast("Aventure close.");
+      /* V0.37 — QUITTER NE CASSE PLUS RIEN : la salle d'attente seule
+         se referme (l'aventure reste dans MES AVENTURES, relançable) ;
+         une partie EN COURS survit ENTIÈRE au départ du MJ — joueurs,
+         salle, EN LIGNE — il revient par ⚙ → REPRENDRE sans rien casser.
+         Seul [■ FERMER] referme l'aventure pour de bon. */
+      if (p.statut === "ouverte" && p.salle_ouverte_le) {
+        CLOUD.fermerSalle(p.id).catch(() => {});
+        showToast("Salle refermée — l'aventure reste dans MES AVENTURES (▶ LANCER).");
+      } else {
+        showToast("Vous quittez la table — l'aventure reste en ligne dans MES AVENTURES (⚙ → REPRENDRE).");
+      }
     } else {
       CLOUD.quitterPartie(p.id, session.compteId).catch(() => {});
       showToast("Vous quittez la table.");
@@ -7395,7 +7656,8 @@ function App() {
            CONTEXTE (global au hub, la partie dans le pack) : les autres
            canaux ne sont pas les nôtres. */
         if (donnee && donnee.table === "archiviste_console" && evType === "INSERT" && ligne) {
-          if ((ligne.partie_id || null) === contexteConsoleRef.current) {
+          const ctx = contexteConsoleRef.current || {};
+          if ((ligne.partie_id || null) === (ctx.partieId || null) && (ligne.jeu || null) === (ctx.packId || null)) {
             setConsoleFil(f => {
               if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
               return [...f, ligne].slice(-80);
@@ -7716,6 +7978,9 @@ function App() {
     mdpSalle: mdpSalle,
     mesPersonnages: mesPersonnages,
     versionBase: versionBase,
+    filSalon: consoleFil,
+    onEnvoyerSalon: envoyerConsoleMessage,
+    salonEnvoi: consoleEnvoi,
     onCreerPersonnage: creerPersonnageRegistre,
     onSupprimerPersonnage: supprimerPersonnageRegistre,
     onCreer: creerAventure,
@@ -7725,6 +7990,7 @@ function App() {
     onReprendre: reprendreAventure,
     onGraverMdp: graverMdpSalle,
     onLancer: lancerAventure,
+    onFermer: fermerAventure,
     onQuitter: quitterAventure,
     onSupprimer: supprimerAventure,
     onAvatar: changerAvatar,
@@ -7769,10 +8035,7 @@ function App() {
         persos: mesPersonnages
       } : null,
       onRetour: () => {
-        if (enPartie && partie && session && partie.mj_compte_id === session.compteId && partie.salle_ouverte_le) {
-          CLOUD.fermerSalle(partie.id).catch(() => {});
-        } /* V48.5 : quitter le jeu vide aussi l'état de partie — la ronde re-piste (jeu → null) et le joueur quitte le CONNECTÉS du JDR au lieu d'y rester fantôme. */
-        setPartie(null);
+        /* V0.37 : le MJ qui quitte la table ne referme PLUS la salle — l'aventure reste EN LIGNE, joueurs dedans, il revient par ⚙ → REPRENDRE sans rien casser. (V47 ne fermait que la salle d'attente, on n'y touche pas : ici on n'est qu'en partie lancée.) */ /* V48.5 : quitter le jeu vide aussi l'état de partie — la ronde re-piste (jeu → null) et le joueur quitte le CONNECTÉS du JDR au lieu d'y rester fantôme. */setPartie(null);
         setPartieJoueurs([]);
         setFichesPartie([]);
         setModePartie(null);
