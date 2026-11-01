@@ -1627,8 +1627,17 @@ const fondrePresents = (precedent, diff) => {
    vide = porte libre (entrée directe), texte = cadenassée — le mot de
    passe est hashé côté Tombe (RPC archiviste_maj_mdp_salle, jamais en
    clair) et demandé au joueur avant d'entrer. Gravable à tout moment,
-   même en pleine partie ; vider + graver rouvre à tous. ── */
-const BUILD = "0.35";
+   même en pleine partie ; vider + graver rouvre à tous.
+   V0.35 : LA TRAJECTOIRE PRAGMATIQUE — les sacs de données des packs
+   vivent désormais dans packs/<id>.json, chargés par fetch AVANT le
+   boot (window.LARCHIVISTE_PACKS) : la page n'embarque plus 44 Ko de
+   données qui se re-téléchargent à chaque reconstruction d'un seul
+   pack ; le SW v37 les précache pour le hors-ligne.
+   V0.36 : LA BARRE QUI PARLE LES COULEURS — le scrolling suit la
+   doctrine des thèmes : le chrome défile en Zinc d'Archiviste, chaque
+   pack repeint la barre à SA couleur dès qu'il prend l'écran, et
+   l'Archivistère garde son ambre d'œil du MJ (voir §SECTION:UI). ── */
+const BUILD = "0.36";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -1755,6 +1764,27 @@ function etapesChargement(p, role) {
    fond #0c0d10 · panneaux #14161b · bordures #27272a · accent zinc #a8adb8.
    Le launcher est une vitrine : les couleurs appartiennent aux packs.
    Teal #2ee6c9 = exclusive du pack PÉ · ambre #f0b24a = rôle MJ + Archivisterium. */
+
+/* ══════════ Le thème du scrolling — la barre parle la couleur de l'écran ══════════
+   Doctrine : le launcher est une vitrine. Le chrome défile en Zinc
+   d'Archiviste ; dès qu'un pack prend l'écran (chargement, partie, pack),
+   la barre se repeint à SA couleur — teal nécroderme, violet des Jeunes
+   Royaumes, rouge de Tanæphis — puis rend le zinc au hub. Trois variables
+   CSS portent la vérité sur <html>, repeintes par l'effet de App :
+   --scroll-pouce (le curseur) · --scroll-glace (le rail) · --scroll-or
+   (le curseur survolé, la teinte « or » du pack). Le style se pose UNE
+   fois au niveau script : il vit dans le canvas ET la page construite,
+   simulation comprise. navigateurs : scrollbar-color (standard,
+   Firefox + Chrome récents) + ::-webkit-scrollbar (les autres). */
+(function themeScroll() {
+  if (typeof document === "undefined" || !document.head || !document.createElement) return;
+  if (document.getElementById("theme-scroll")) return; /* la balise existe déjà : on ne double pas la pose */
+  var s = document.createElement("style");
+  s.id = "theme-scroll";
+  s.textContent = ":root{--scroll-pouce:#a8adb8;--scroll-glace:#1c1c22;--scroll-or:#e8e4d8}" + "html{scrollbar-width:thin;scrollbar-color:var(--scroll-pouce) var(--scroll-glace)}" + "::-webkit-scrollbar{width:10px;height:10px}" + "::-webkit-scrollbar-track{background:var(--scroll-glace)}" + "::-webkit-scrollbar-thumb{background:var(--scroll-pouce);border-radius:5px;border:2px solid var(--scroll-glace)}" + "::-webkit-scrollbar-thumb:hover{background:var(--scroll-or)}" + "::-webkit-scrollbar-corner{background:var(--scroll-glace)}";
+  document.head.appendChild(s);
+})();
+
 /* La liste d'images de compte : dans le vrai launcher, choisie dans le profil.
    En alpha : des glyphes déclinés sur les palettes des packs. */
 const AVATARS = [{
@@ -6994,6 +7024,21 @@ function App() {
   partieIdRef.current = partie ? partie.id : null;
   packPartieRef.current = packPartie;
   vueRef.current = vue;
+
+  /* ── La repeinte du scrolling : le pack qui prend l'écran colore la barre ──
+     Doctrine des thèmes : la vitrine est zinc, les packs portent leurs
+     teintes. Les vues « chargement / partie / pack » sont les écrans DU
+     pack actif — sa barre parle sa couleur, son rail son fond ; les autres
+     vues (hub, attente, connexion) rendent le Zinc d'Archiviste. Les trois
+     variables sont lues par le style posé en §SECTION:UI (theme-scroll). */
+  useEffect(() => {
+    const racine = typeof document !== "undefined" && document.documentElement || null;
+    if (!racine || !racine.style || !racine.style.setProperty) return;
+    const t = (vue === "chargement" || vue === "partie" || vue === "pack") && packActif ? packActif.theme : null;
+    racine.style.setProperty("--scroll-pouce", t ? t.accent : "#a8adb8");
+    racine.style.setProperty("--scroll-glace", t ? t.fond : "#1c1c22");
+    racine.style.setProperty("--scroll-or", t ? t.or : "#e8e4d8");
+  }, [vue, packActif]);
 
   /* ── La Console : le fil CONTEXTUEL ──
      Dans le hub et les packs solo : le canal GLOBAL. Dans une partie
