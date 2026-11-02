@@ -1737,8 +1737,14 @@ const fondrePresents = (precedent, diff) => {
    id desc, on ne les retourne PLUS ; le temps réel grave les
    nouveaux EN TÊTE du fil et la fenêtre glisse (80 lignes) côté
    queue ; le défilement automatique vers le bas meurt — le plus
-   récent vit en haut, visible sans toucher à la barre. ── */
-const BUILD = "0.43";
+   récent vit en haut, visible sans toucher à la barre.
+   V0.44 : LE HALO DU MODE — la vignette MODE MJ/MODE JOUEUR meurt ;
+   le mode se murmure dans l'aura de l'avatar du compte en haut à
+   droite : un cercle OR (l'ambre du MJ) encadre l'icône du Maître
+   du Jeu, un cercle BLEU (le turquoise du joueur) celle du joueur —
+   halo doux (lueur autour du cercle), en salle d'attente comme dans
+   l'écran de partie. Le hub reste neutre : pas de mode, pas d'aura. ── */
+const BUILD = "0.44";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2330,7 +2336,8 @@ function Icosaedre({
 function Avatar({
   a,
   size = 40,
-  selectionne = false
+  selectionne = false,
+  halo = null
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-full flex items-center justify-center shrink-0",
@@ -2338,7 +2345,8 @@ function Avatar({
       width: size,
       height: size,
       background: a.fond,
-      border: (selectionne ? 2.5 : 1.5) + "px solid " + (selectionne ? a.bord : "#3f3f46"),
+      border: (halo ? 2.5 : selectionne ? 2.5 : 1.5) + "px solid " + (halo || (selectionne ? a.bord : "#3f3f46")),
+      boxShadow: halo ? "0 0 10px " + halo + "66" : "none",
       fontSize: Math.round(size * 0.5),
       lineHeight: 1
     }
@@ -2351,7 +2359,8 @@ function CompteJoueur({
   mobile,
   ouvert,
   onOuvert,
-  onLogout
+  onLogout,
+  halo = null
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "relative"
@@ -2364,7 +2373,8 @@ function CompteJoueur({
     title: "Compte joueur"
   }, /*#__PURE__*/React.createElement(Avatar, {
     a: avatar,
-    size: 40
+    size: 40,
+    halo: halo
   }), !mobile && /*#__PURE__*/React.createElement("div", {
     className: "text-left leading-tight"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2454,7 +2464,8 @@ function BandeauArchiviste({
   onLogout,
   mobile,
   ouvert,
-  setOuvert
+  setOuvert,
+  halo = null
 }) {
   const avatar = session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null;
   return /*#__PURE__*/React.createElement("header", {
@@ -2480,7 +2491,8 @@ function BandeauArchiviste({
     mobile: mobile,
     ouvert: ouvert,
     onOuvert: () => setOuvert(o => !o),
-    onLogout: onLogout
+    onLogout: onLogout,
+    halo: halo
   }));
 }
 
@@ -3633,6 +3645,9 @@ function EcranPartie({
   const estMj = !!(partie && session && partie.mj_compte_id === session.compteId);
   const nbJoueurs = p => typeof p.nb_joueurs === "number" ? p.nb_joueurs : 0;
   const salleOuverte = p => !!p.salle_ouverte_le;
+  /* V0.44 — LE HALO DU MODE : le mode ne dit plus son nom en vignette,
+     il encercle l'avatar du compte — l'or du MJ, le bleu du joueur. */
+  const haloMode = mode === "joueur" ? "#2ee6c9" : mode === "mj" ? "#f0b24a" : null;
 
   /* La salle d'attente : on a rejoint (ou créé) — le code s'affiche
      grand, la liste vit au temps réel, le MJ tranche. */
@@ -3662,7 +3677,8 @@ function EcranPartie({
       onLogout: onLogout,
       mobile: mobile,
       ouvert: compteOuvert,
-      setOuvert: setCompteOuvert
+      setOuvert: setCompteOuvert,
+      halo: haloMode
     })), /*#__PURE__*/React.createElement("div", {
       className: "rounded-xl p-6",
       style: {
@@ -3837,7 +3853,8 @@ function EcranPartie({
     onLogout: onLogout,
     mobile: mobile,
     ouvert: compteOuvert,
-    setOuvert: setCompteOuvert
+    setOuvert: setCompteOuvert,
+    halo: haloMode
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3845,13 +3862,7 @@ function EcranPartie({
     style: {
       color: "#e8e4d8"
     }
-  }, pack.nom), /*#__PURE__*/React.createElement("span", {
-    className: "px-1.5 py-0.5 rounded text-xs font-bold",
-    style: {
-      background: modeU === "joueur" ? "#2ee6c914" : "#f0b24a14",
-      color: modeU === "joueur" ? "#2ee6c9" : "#f0b24a"
-    }
-  }, modeU === "joueur" ? "MODE JOUEUR" : "MODE MJ"), /*#__PURE__*/React.createElement("button", {
+  }, pack.nom), /*#__PURE__*/React.createElement("button", {
     onClick: onRetour,
     className: "ml-auto px-3 py-1.5 rounded-lg text-xs font-bold",
     style: {
