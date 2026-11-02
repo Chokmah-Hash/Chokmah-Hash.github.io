@@ -1743,8 +1743,14 @@ const fondrePresents = (precedent, diff) => {
    droite : un cercle OR (l'ambre du MJ) encadre l'icône du Maître
    du Jeu, un cercle BLEU (le turquoise du joueur) celle du joueur —
    halo doux (lueur autour du cercle), en salle d'attente comme dans
-   l'écran de partie. Le hub reste neutre : pas de mode, pas d'aura. ── */
-const BUILD = "0.44";
+   l'écran de partie. Le hub reste neutre : pas de mode, pas d'aura.
+   V0.45 : LA GRANDE VÉRIFICATION — le moteur passe au peigne fin : les
+   refs « pied » orphelines de V0.43 (le défilement auto mort n'a jamais
+   été retiré des fils) s'effacent des deux consoles ; le round-trip
+   des packs (canvas → forge → packs servis) est passé bit-exact ;
+   la crypte est purgée de ses scellés périmés. Aucun changement
+   visible : le nettoyage des coulisses. ── */
+const BUILD = "0.45";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3266,7 +3272,6 @@ function ConsoleGlobale({
   enEnvoi
 }) {
   const [texte, setTexte] = useState("");
-  const pied = useRef(null); /* V0.43 : le défilement auto meurt — le plus récent vit EN HAUT */
   const envoyer = () => {
     const t = texte.trim();
     if (!t || !joueur) return;
@@ -3292,9 +3297,7 @@ function ConsoleGlobale({
   }, "Aucun message \u2014 la Console attend la premi\xE8re parole."), fil.map(e => /*#__PURE__*/React.createElement(LigneConsole, {
     key: e.id,
     e: e
-  })), /*#__PURE__*/React.createElement("div", {
-    ref: pied
-  })), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 items-center px-2 py-2",
     style: {
       borderTop: "1px solid #27272a"
@@ -3376,7 +3379,6 @@ function ChatSalon({
 }) {
   const [texte, setTexte] = useState("");
   const [presentsOuverts, setPresentsOuverts] = useState(false);
-  const pied = useRef(null); /* V0.43 : le défilement auto meurt — le plus récent vit EN HAUT */
   const envoyer = () => {
     const t = texte.trim();
     if (!t || !joueur) return;
@@ -3472,9 +3474,7 @@ function ChatSalon({
   }, "Aucun message \u2014 le salon attend la premi\xE8re parole.") : fil.map(e => /*#__PURE__*/React.createElement(LigneConsole, {
     key: e.id,
     e: e
-  })), /*#__PURE__*/React.createElement("div", {
-    ref: pied
-  })), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 items-center px-2 py-2",
     style: {
       borderTop: "1px solid #27272a"
