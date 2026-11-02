@@ -1713,8 +1713,13 @@ const fondrePresents = (precedent, diff) => {
    VERT sans cadenas quand la porte est libre (on rejoint aussitôt),
    GRIS avec 🔒 quand elle est scellée (le mot de passe se demande) ;
    côté MJ, les icônes ▶/■ s'élargissent (deux fois l'écrou) et le
-   nom d'une aventure en ligne garde son vert SANS soulignement. ── */
-const BUILD = "0.40";
+   nom d'une aventure en ligne garde son vert SANS soulignement.
+   V0.41 : LE SALON ENCRÉ — le salon du LOBBY s'ancre en BAS DE PAGE
+   (la scroll bar vit dans son propre cadre, le salon ne saute plus
+   de taille) ; le cadre CONNECTÉS quitte le lobby : une petite
+   icône 👥 sur la ligne du titre, à droite, le fait paraître en
+   petit cadre flottant — un clic l'ouvre, un autre le referme. ── */
+const BUILD = "0.41";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3323,24 +3328,29 @@ function ConsoleGlobale({
   }, "commandes : /de 3d6 \xB7 /tour Pr\xE9nom")));
 }
 
-/* ══════════ V0.38 — LE SALON D'UN JDR : le petit chat du lobby.
+/* ══════════ V0.41 — LE SALON D'UN JDR : le petit chat du lobby.
    Chaque JDR a SON salon (canal jeu de la Console) — les joueurs
    des Protocoles Éternels y parlent entre eux, sans le brouhaha du
    fil global ni le secret du canal de partie. V0.38 : plus de
    filtre — les paroles et le journal vivent ENSEMBLE (les dés
-   restent à la table) — et le cadre prend LA HAUTEUR DE LA FENÊTRE
-   (45vh, la mécanique de la console de partie) : le salon ne saute
-   plus de taille à chaque message. Le rendu des lignes reste celui
-   de LA Console (LigneConsole) — une seule langue pour tous les
-   fils. ══════════ */
+   restent à la table). V0.41 : LE SALON ENCRÉ — quand le lobby
+   l'exige (remplir), le cadre S'ANCRE EN BAS DE PAGE et la scroll
+   bar vit dans son propre cadre ; le cadre CONNECTÉS vit
+   désormais REPLIÉ derrière la petite icône 👥 de la ligne du
+   titre — un clic le fait paraître en flottant, un autre le
+   chasse. Le rendu des lignes reste celui de LA Console
+   (LigneConsole) — une seule langue pour tous les fils. ══════════ */
 function ChatSalon({
   titre,
   fil,
   onEnvoyer,
   joueur,
-  enEnvoi
+  enEnvoi,
+  presents,
+  remplir
 }) {
   const [texte, setTexte] = useState("");
+  const [presentsOuverts, setPresentsOuverts] = useState(false);
   const pied = useRef(null);
   useEffect(() => {
     if (pied.current) pied.current.scrollIntoView({
@@ -3354,21 +3364,71 @@ function ChatSalon({
     setTexte("");
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl flex flex-col",
+    className: "rounded-xl flex flex-col" + (remplir ? " flex-1 min-h-0" : ""),
     style: {
       background: "#14161b",
       border: "1px solid #27272a"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 flex-wrap px-3 pt-3 pb-2"
+    className: "flex items-center gap-2 flex-wrap px-3 pt-3 pb-2 relative"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold tracking-widest",
     style: {
       color: "#a8adb8"
     }
-  }, titre || "SALON")), /*#__PURE__*/React.createElement("div", {
-    className: "px-3 pb-1 overflow-y-auto",
+  }, titre || "SALON"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPresentsOuverts(o => !o),
+    className: "ml-auto px-2 py-0.5 rounded text-xs font-bold",
     style: {
+      background: presentsOuverts ? "#a8adb822" : "#a8adb810",
+      color: "#c8c8ce",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    },
+    title: "Les connect\xE9s de ce JDR"
+  }, "\uD83D\uDC65"), presentsOuverts && /*#__PURE__*/React.createElement("div", {
+    className: "absolute right-2 top-full mt-1 rounded-lg p-3 z-20",
+    style: {
+      background: "#14161b",
+      border: "1px solid #3f3f46",
+      boxShadow: "0 12px 32px #000000cc",
+      minWidth: 200
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "CONNECT\xC9S (", (presents || []).length, ")"), (presents || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-2",
+    style: {
+      color: "#52525b"
+    }
+  }, "Personne dans ce JDR pour l'instant.") : /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, (presents || []).map(j => /*#__PURE__*/React.createElement("div", {
+    key: j.compte_id,
+    className: "flex items-center gap-2 px-2 py-1 rounded-lg",
+    style: {
+      background: "#a8adb810",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "rounded-full",
+    style: {
+      width: 6,
+      height: 6,
+      background: "#2ee6c9",
+      display: "inline-block"
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold"
+  }, j.pseudo, j.compte_id === (joueur && joueur.compteId) ? " (vous)" : "")))))), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 pb-1 overflow-y-auto",
+    style: remplir ? {
+      flex: 1,
+      minHeight: 0
+    } : {
       height: "45vh"
     }
   }, (fil || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
@@ -3731,13 +3791,13 @@ function EcranPartie({
     });
   }
   return /*#__PURE__*/React.createElement("div", {
-    className: "min-h-screen flex flex-col text-zinc-200",
+    className: onglet === "lobby" ? "h-screen overflow-hidden flex flex-col text-zinc-200" : "min-h-screen flex flex-col text-zinc-200",
     style: {
       background: "#0c0d10",
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col gap-5"
+    className: onglet === "lobby" ? "max-w-2xl w-full mx-auto px-5 pt-8 pb-5 flex-1 flex flex-col gap-5 min-h-0" : "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col gap-5"
   }, /*#__PURE__*/React.createElement(BandeauArchiviste, {
     session: session,
     onAvatar: onAvatar,
@@ -3789,48 +3849,15 @@ function EcranPartie({
       borderRight: "none",
       cursor: "pointer"
     }
-  }, o[1]))), onglet === "lobby" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ChatSalon, {
+  }, o[1]))), onglet === "lobby" && /*#__PURE__*/React.createElement(ChatSalon, {
     titre: "SALON — " + pack.nom,
     fil: filSalon,
     onEnvoyer: onEnvoyerSalon,
     joueur: session,
-    enEnvoi: salonEnvoi
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-5",
-    style: {
-      background: "#14161b",
-      border: "1px solid #27272a"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-3",
-    style: {
-      color: "#a8adb8"
-    }
-  }, "CONNECT\xC9S (", duPack.length, ")"), duPack.length === 0 ? /*#__PURE__*/React.createElement("div", {
-    className: "text-xs py-2",
-    style: {
-      color: "#52525b"
-    }
-  }, "Personne dans ce JDR pour l'instant.") : /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2"
-  }, duPack.map(j => /*#__PURE__*/React.createElement("div", {
-    key: j.compte_id,
-    className: "flex items-center gap-2 px-2 py-1 rounded-lg",
-    style: {
-      background: "#a8adb810",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "rounded-full",
-    style: {
-      width: 6,
-      height: 6,
-      background: "#2ee6c9",
-      display: "inline-block"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold"
-  }, j.pseudo, j.compte_id === (session && session.compteId) ? " (vous)" : "")))))), onglet === "aventures" && modeU === "joueur" && /*#__PURE__*/React.createElement("div", {
+    enEnvoi: salonEnvoi,
+    presents: duPack,
+    remplir: true
+  }), onglet === "aventures" && modeU === "joueur" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
