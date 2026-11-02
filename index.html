@@ -525,11 +525,15 @@ window.LARCHIVISTE_CLOUD = (function () {
        par MOT DE PASSE (salle privée) — la Tombe vérifie le sceau
        (hash sha256, jamais le mot de passe en clair), grave la table
        et rend la salle. L'ancien CODE à six caractères s'efface. */
+    /* V0.48 : LE REJOINT EST IDEMPOTENT — un membre qui revient (retour au
+       hub puis ENTRER, reconnexion) ne doit pas se heurter à sa propre
+       ligne : PostgREST "resolution=ignore-duplicates" rend l'INSERT
+       silencieux sur doublon — déjà membre = on ENTRE, plus d'erreur. */
     rejoindrePartie: function (partieId, compteId) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
       return api("/rest/v1/archiviste_partie_joueurs", {
-        method: "POST", token: m.access_token, prefer: "return=representation",
+        method: "POST", token: m.access_token, prefer: "return=representation, resolution=ignore-duplicates",
         body: { partie_id: partieId, compte_id: compteId }
       }).then(function (l) { return (l && l[0]) || null; })
         .catch(function (e) { throw e; });
@@ -1359,7 +1363,8 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
         return api("/rest/v1/archiviste_partie_joueurs", {
           method: "POST",
           token: m.access_token,
-          prefer: "return=representation",
+          /* V0.48 : deja membre = on ENTRE, pas d'erreur de doublon */
+          prefer: "return=representation, resolution=ignore-duplicates",
           body: {
             partie_id: partieId,
             compte_id: compteId
@@ -1775,8 +1780,16 @@ const fondrePresents = (precedent, diff) => {
    des trois listes + les scellés). Bonus : le correctif V0.46 de
    fermerSalle/fermerPartie (visibilite publique dans le PATCH)
    n'était jamais entré dans le client en clair de la page — la
-   greffe le porte enfin. ── */
-const BUILD = "0.47";
+   greffe le porte enfin. ──
+   V0.48 : LE REJOINT EST IDEMPOTENT — un joueur membre d’une partie
+   qui clique de nouveau ENTRER (retour au hub sans QUITTER,
+   reconnexion) se heurtait à SA PROPRE ligne membre : l’INSERT
+   tombait en doublon de clé primaire et le toast disait « Impossible
+   de rejoindre » alors que tout allait bien. Le rejoint public porte
+   désormais "resolution=ignore-duplicates" : déjà membre = on ENTRE
+   sans erreur, comme le fait déjà la RPC privée (on conflict do
+   nothing). ── */
+const BUILD = "0.48";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
