@@ -361,7 +361,7 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
       if (!m || !m.access_token) return Promise.resolve([]);
       return rajeunir().then(function (token) {
         return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", { token: token })
-          .then(function (l) { return (l || []).slice().reverse(); });
+          .then(function (l) { return (l || []); });
       }).catch(function () { return []; });
     },
 
@@ -527,8 +527,13 @@ const {
    launcher — racine en hauteur pleine (100vh, débordement caché quand
    l'onglet CONSOLE est actif), le cadre des messages remplit tout
    l'espace disponible et scrolle LUI-MÊME (plus de maxHeight 320px),
-   la zone de saisie et le pied de page restent en permanence en bas. ── */
-const BUILD = "0.40";
+   la zone de saisie et le pied de page restent en permanence en bas.
+   V0.41 : LE PLUS RÉCENT EN HAUT — règle générale de Michael, toutes
+   les consoles : le fil de l'institution lit du PLUS RÉCENT au plus
+   ancien — la Tombe rend déjà ses 60 messages par id desc, on ne les
+   retourne plus ; le temps réel grave les nouveaux EN TÊTE et la
+   fenêtre glisse (80 lignes) côté queue. ── */
+const BUILD = "0.41";
 
 /* ══════════ Le thème du scrolling — la barre d'ambre de l'institution ══════════
    L'Archivistère n'est pas une vitrine : il n'y a pas de packs ici, la
@@ -989,7 +994,7 @@ if (typeof window !== "undefined" && !window.ARCHIVISTERIUM_CLOUD) {
           return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id&order=id.desc&limit=60", {
             token: token
           }).then(function (l) {
-            return (l || []).slice().reverse();
+            return l || [];
           });
         }).catch(function () {
           return [];
@@ -2842,7 +2847,7 @@ function App() {
         if (donnee && donnee.table === "archiviste_console" && evType === "INSERT" && ligne) {
           setConsoleFil(f => {
             if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
-            return [...f, ligne].slice(-80);
+            return [ligne, ...f].slice(0, 80); /* V0.41 : le plus récent naît EN TÊTE */
           });
           return;
         }
