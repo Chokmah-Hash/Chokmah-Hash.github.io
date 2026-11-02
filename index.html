@@ -396,7 +396,7 @@ window.LARCHIVISTE_CLOUD = (function () {
         : "partie_id=is.null&jeu=is.null";
       return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id,jeu&"
         + filtre + "&order=id.desc&limit=60", { token: m.access_token })
-        .then(function (l) { return (l || []).slice().reverse(); })
+        .then(function (l) { return (l || []); })
         .catch(function () { return []; });
     },
 
@@ -687,7 +687,8 @@ window.LARCHIVISTE_CLOUD = (function () {
     tempsReel: tempsReel
   };
 })();
-</script>
+
+  </script>
 
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
   <script>
@@ -1192,7 +1193,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
         return api("/rest/v1/archiviste_console?select=id,pseudo,role,contenu,type,donnees,cree_le,partie_id,jeu&" + filtre + "&order=id.desc&limit=60", {
           token: m.access_token
         }).then(function (l) {
-          return (l || []).slice().reverse();
+          return l || [];
         }).catch(function () {
           return [];
         });
@@ -1729,8 +1730,15 @@ const fondrePresents = (precedent, diff) => {
    flex 1 1 0% + min-height 0 — le salon remplit TOUT l'espace
    au-dessus du pied, collé en bas de la fenêtre, et sa scroll
    bar vit DANS son cadre (10 000 messages ne font plus scroller
-   la page). ── */
-const BUILD = "0.42";
+   la page).
+   V0.43 : LE PLUS RÉCENT EN HAUT — règle générale de Michael : TOUTES
+   les consoles (canal global du hub, salon de partie) lisent du PLUS
+   RÉCENT au plus ancien — la Tombe rend déjà ses 60 messages par
+   id desc, on ne les retourne PLUS ; le temps réel grave les
+   nouveaux EN TÊTE du fil et la fenêtre glisse (80 lignes) côté
+   queue ; le défilement automatique vers le bas meurt — le plus
+   récent vit en haut, visible sans toucher à la barre. ── */
+const BUILD = "0.43";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3246,13 +3254,7 @@ function ConsoleGlobale({
   enEnvoi
 }) {
   const [texte, setTexte] = useState("");
-  const pied = useRef(null);
-  /* Le fil défile tout seul vers le dernier message reçu */
-  useEffect(() => {
-    if (pied.current) pied.current.scrollIntoView({
-      block: "nearest"
-    });
-  }, [fil.length]);
+  const pied = useRef(null); /* V0.43 : le défilement auto meurt — le plus récent vit EN HAUT */
   const envoyer = () => {
     const t = texte.trim();
     if (!t || !joueur) return;
@@ -3362,12 +3364,7 @@ function ChatSalon({
 }) {
   const [texte, setTexte] = useState("");
   const [presentsOuverts, setPresentsOuverts] = useState(false);
-  const pied = useRef(null);
-  useEffect(() => {
-    if (pied.current) pied.current.scrollIntoView({
-      block: "nearest"
-    });
-  }, [(fil || []).length]);
+  const pied = useRef(null); /* V0.43 : le défilement auto meurt — le plus récent vit EN HAUT */
   const envoyer = () => {
     const t = texte.trim();
     if (!t || !joueur) return;
@@ -7781,7 +7778,7 @@ function App() {
           if ((ligne.partie_id || null) === (ctx.partieId || null) && (ligne.jeu || null) === (ctx.packId || null)) {
             setConsoleFil(f => {
               if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
-              return [...f, ligne].slice(-80);
+              return [ligne, ...f].slice(0, 80); /* V0.43 : le plus récent naît EN TÊTE */
             });
           }
           return;
@@ -8217,7 +8214,9 @@ Promise.all(_PACKS.map(function (id) {
   var _a = document.getElementById("attente");
   if (_a) _a.textContent = "Echec du chargement des packs : " + err;
   throw err;
-});</script>
+});
+
+  </script>
 
   <script>
     /* Le service worker : l'Archiviste s'installe et sait se rouvrir hors ligne */
