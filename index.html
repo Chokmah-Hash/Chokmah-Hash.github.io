@@ -1406,7 +1406,8 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           token: m.access_token,
           body: {
             salle_ouverte_le: null,
-            mdp_hash: null
+            mdp_hash: null,
+            visibilite: "publique"
           }
         });
       },
@@ -1495,7 +1496,8 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
             statut: "close",
             fermee_le: new Date().toISOString(),
             salle_ouverte_le: null,
-            mdp_hash: null
+            mdp_hash: null,
+            visibilite: "publique"
           }
         });
       },
@@ -1749,8 +1751,17 @@ const fondrePresents = (precedent, diff) => {
    été retiré des fils) s'effacent des deux consoles ; le round-trip
    des packs (canvas → forge → packs servis) est passé bit-exact ;
    la crypte est purgée de ses scellés périmés. Aucun changement
-   visible : le nettoyage des coulisses. ── */
-const BUILD = "0.45";
+   visible : le nettoyage des coulisses.
+   V0.46 : LE CADENAS EXPLICITE — le mot de passe d'une salle ne se
+   devine plus : une case à cocher dit l'intention, dans l'écrou de
+   l'aventure comme dans la modale d'ouverture — cochée, le champ
+   s'arme et exige ses 3 caractères ; décochée, il se grise et la
+   porte est libre. LA CHASSE AU FANTÔME : fermer la salle n'efface
+   plus le mot de passe en laissant l'aventure « privée » sans
+   cadenas (l'état qui enfermait les joueurs dehors) — fermer
+   réouvre la porte, et la Tombe gagne un garde-fou : privée sans
+   mot de passe n'existe pas, elle redevient publique. ── */
+const BUILD = "0.46";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3603,6 +3614,7 @@ function EcranPartie({
   const [motSuppr, setMotSuppr] = useState(""); // V46 : la consécration écrite « suppression »
   const [mdpSaisi, setMdpSaisi] = useState(""); // V49 : le mot de passe gravé via l'écrou, à côté de REPRENDRE
   const [enGravure, setEnGravure] = useState(false); // V49 : la Tombe grave — le scellé met un instant
+  const [cadenasChoix, setCadenasChoix] = useState(false); // V0.46 : la case du cadenas — cochée, le champ s'arme
   const [compteOuvert, setCompteOuvert] = useState(false); // V46b : le menu du compte du bandeau
   const [fermerPour, setFermerPour] = useState(null); // V0.37 : l'aventure dont le FERMER attend sa confirmation
   /* V0.38 — arriver sur l'onglet LOBBY relit le salon du JDR : ceinture
@@ -3617,6 +3629,7 @@ function EcranPartie({
       le mot de passe tel que la Tombe l'a gardé pour le MJ. */
   useEffect(() => {
     setMdpSaisi(detail && mdpsClairs && mdpsClairs[detail.id] ? mdpsClairs[detail.id] : "");
+    setCadenasChoix(!!(detail && detail.visibilite === "privee")); /* V0.46 : la case dit l'état RÉEL du cadenas */
   }, [detail, mdpsClairs]);
   /* — V48 : LE REGISTRE DES PERSONNAGES — l'écrou, l'éveil, la sentence — */
   const [enCreationPerso, setEnCreationPerso] = useState(false);
@@ -3631,7 +3644,9 @@ function EcranPartie({
   const graverMotDePasse = () => {
     if (!detail || !onGraverMdp) return;
     setEnGravure(true);
-    onGraverMdp(detail, mdpSaisi).then(l => {
+    /* V0.46 : la case dit l'intention — décochée, on grave la porte
+       libre (champ ignoré) ; cochée, on grave le mot de passe saisi. */
+    onGraverMdp(detail, cadenasChoix ? mdpSaisi : "").then(l => {
       if (l) setDetail(l);
     }).catch(() => {}).finally(() => setEnGravure(false));
   };
@@ -4190,15 +4205,33 @@ function EcranPartie({
     style: {
       color: "#71717a"
     }
-  }, "Mot de passe de l'Aventure"), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 items-center flex-wrap mb-4"
+  }, "Mot de passe de l'Aventure"), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2 mb-2 text-sm font-bold",
+    style: {
+      color: cadenasChoix ? "#f0b24a" : "#a8adb8",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: cadenasChoix,
+    onChange: e => setCadenasChoix(e.target.checked),
+    disabled: enGravure,
+    style: {
+      accentColor: "#f0b24a",
+      width: 16,
+      height: 16,
+      cursor: "pointer"
+    }
+  }), "Cadenasser \u2014 le mot de passe sera demand\xE9 aux joueurs"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center flex-wrap mb-1"
   }, /*#__PURE__*/React.createElement("input", {
     value: mdpSaisi,
     onChange: e => setMdpSaisi(e.target.value),
     type: "password",
     maxLength: 24,
     autoComplete: "off",
-    disabled: enGravure,
+    disabled: enGravure || !cadenasChoix,
+    placeholder: cadenasChoix ? "Mot de passe (3 caractères minimum)" : "Porte libre — cochez pour cadenasser",
     onKeyDown: e => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -4211,20 +4244,21 @@ function EcranPartie({
       background: "#0c0d10",
       border: "1px solid #3f3f46",
       color: "#e8e4d8",
-      outline: "none"
+      outline: "none",
+      opacity: cadenasChoix ? 1 : 0.45
     }
   }), /*#__PURE__*/React.createElement("button", {
     onClick: graverMotDePasse,
-    disabled: enGravure || mdpSaisi.trim().length < 3 && detail.visibilite !== "privee",
-    title: detail.visibilite === "privee" ? "Vider le champ et graver = porte libre à tous" : "Graver ce mot de passe — il sera demandé aux joueurs",
+    disabled: enGravure || cadenasChoix && mdpSaisi.trim().length < 3 || !cadenasChoix && detail.visibilite !== "privee",
+    title: cadenasChoix ? "Graver ce mot de passe — il sera demandé aux joueurs" : "Déverrouiller : l'aventure s'ouvre à tous, sans mot de passe",
     className: "px-3 py-2 rounded-lg text-xs font-bold",
     style: {
-      background: mdpSaisi.trim().length > 0 ? "#f0b24a" : "#a8adb814",
-      color: mdpSaisi.trim().length > 0 ? "#0c0d10" : "#a8adb8",
+      background: cadenasChoix ? "#f0b24a" : "#2ee6c9",
+      color: "#0c0d10",
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, enGravure ? "…" : "✓ GRAVER")), /*#__PURE__*/React.createElement("div", {
+  }, enGravure ? "…" : cadenasChoix ? "✓ GRAVER" : "OUVRIR À TOUS")), /*#__PURE__*/React.createElement("div", {
     className: "pt-3",
     style: {
       borderTop: "1px solid #27272a"
@@ -4576,40 +4610,46 @@ function EcranPartie({
       color: "#a1a1aa"
     }
   }, "Une salle publique vit dans le lobby de tous ; une salle priv\xE9e s'ouvre par le mot de passe que vous confierez \xE0 vos joueurs."), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 mb-4"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setVisChoix("publique"),
-    className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
+    className: "text-sm font-bold mb-2",
     style: {
-      background: visChoix === "publique" ? "#f0b24a22" : "transparent",
-      color: visChoix === "publique" ? "#f0b24a" : "#71717a",
-      border: "1px solid " + (visChoix === "publique" ? "#f0b24a44" : "#27272a"),
+      color: visChoix === "privee" ? "#f0b24a" : "#2ee6c9"
+    }
+  }, visChoix === "privee" ? "🔒 Salle privée — vos joueurs entrent avec le mot de passe" : "🚪 Salle publique — elle vit dans « AVENTURES OUVERTES » du lobby de tous"), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2 mb-3 text-sm font-bold",
+    style: {
+      color: "#f0b24a",
       cursor: "pointer"
     }
-  }, "PUBLIQUE \u2014 visible de tous"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setVisChoix("privee"),
-    className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: visChoix === "privee",
+    onChange: e => setVisChoix(e.target.checked ? "privee" : "publique"),
     style: {
-      background: visChoix === "privee" ? "#f0b24a22" : "transparent",
-      color: visChoix === "privee" ? "#f0b24a" : "#71717a",
-      border: "1px solid " + (visChoix === "privee" ? "#f0b24a44" : "#27272a"),
+      accentColor: "#f0b24a",
+      width: 16,
+      height: 16,
       cursor: "pointer"
     }
-  }, "PRIV\xC9E \u2014 mot de passe")), visChoix === "privee" && /*#__PURE__*/React.createElement("input", {
+  }), "Cadenasser la salle (mot de passe)"), visChoix === "privee" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
     value: mdpChoix,
     onChange: e => setMdpChoix(e.target.value),
     maxLength: 24,
     type: "text",
     autoComplete: "off",
     placeholder: "Mot de passe (3 caract\xE8res minimum)",
-    className: "w-full px-3 py-2 rounded-lg text-sm mb-4",
+    className: "w-full px-3 py-2 rounded-lg text-sm mb-2",
     style: {
       background: "#0c0d10",
       border: "1px solid #3f3f46",
       color: "#e8e4d8",
       outline: "none"
     }
-  }), /*#__PURE__*/React.createElement("div", {
+  }), mdpChoix.trim().length < 3 && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#fb7185"
+    }
+  }, "Un mot de passe d'au moins 3 caract\xE8res est requis pour une salle priv\xE9e.")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 justify-end"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setEnOuverture(false),
