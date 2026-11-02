@@ -532,8 +532,15 @@ const {
    les consoles : le fil de l'institution lit du PLUS RÉCENT au plus
    ancien — la Tombe rend déjà ses 60 messages par id desc, on ne les
    retourne plus ; le temps réel grave les nouveaux EN TÊTE et la
-   fenêtre glisse (80 lignes) côté queue. ── */
-const BUILD = "0.41";
+   fenêtre glisse (80 lignes) côté queue. ──
+   V0.42 : LE CANAL NE VIT QUE LES VIVANTES — les onglets filtres
+   de la Console listaient TOUTES les parties, corbeille comprise :
+   une aventure effacée gardait son onglet. Les canaux ne se bâtissent
+   plus que sur les parties VIVANTES (supprime_le NULL) ; une
+   aventure qui part en Corbeille masque son onglet, le canal ouvert
+   sur elle retombe sur TOUS, et la purge (ou le vidage) l’efface
+   pour toujours — la restauration la rend à l’onglet. ── */
+const BUILD = "0.42";
 
 /* ══════════ Le thème du scrolling — la barre d'ambre de l'institution ══════════
    L'Archivistère n'est pas une vitrine : il n'y a pas de packs ici, la
@@ -1494,6 +1501,16 @@ function Salle({
       setMotSuppr("");
     }
   }, [comptes, detail]);
+  /* V0.42 : LE CANAL NE SUIT PAS LES MORTES — la partie du canal ouvert
+     part en Corbeille (ou est purgée) → l'onglet disparaît, le fil
+     retombe sur TOUS : plus de canal fantôme sans onglet. La restauration
+     de la partie rouvre son onglet, le fil ne se réouvre pas lui-même
+     (l'institution choisit). */
+  useEffect(() => {
+    if (canal && canal !== "global" && !parties.some(p => p.id === canal && !p.supprime_le)) {
+      setCanal(null);
+    }
+  }, [parties, canal]);
   const champ = {
     background: "#0c0d10",
     border: "1px solid #3f3f46",
@@ -2211,7 +2228,7 @@ function Salle({
     style: {
       color: "#71717a"
     }
-  }, "canal :"), [["tous", "TOUT"], ["global", "🌐 GLOBAL"]].concat(parties.slice(0, 12).map(p => [p.id, "🎭 " + p.code])).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, "canal :"), [["tous", "TOUT"], ["global", "🌐 GLOBAL"]].concat(vivantes.slice(0, 12).map(p => [p.id, "🎭 " + p.code])) /* V0.42 : seules les VIVANTES ont un canal — une corbeillée n’a plus d’onglet */.map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setCanal(id === "tous" ? null : id),
     className: "px-2 py-0.5 rounded text-xs font-bold",
@@ -3075,3 +3092,4 @@ ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React
   </script>
 </body>
 </html>
+
