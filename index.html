@@ -1705,8 +1705,16 @@ const fondrePresents = (precedent, diff) => {
    MJ seul lecteur) et le champ le ré-affiche pré-rempli : vide si la
    porte est libre, sinon le mot de passe sauvegardé ; la gravure
    du scellé marche désormais aussi sur une séance CLOSE (le refus
-   silencieux de la RPC est corrigé). ── */
-const BUILD = "0.39";
+   silencieux de la RPC est corrigé).
+   V0.40 : LA PORTE DU JOUEUR — l'onglet AVENTURES du joueur dit
+   « AVENTURES EN LIGNE » ; la carte d'une aventure perd sa sous-
+   ligne de radotage (cadenas/joueurs/PARTIE EN COURS) et garde le
+   seul nom du MJ, en gris clair lisible ; UN SEUL bouton ENTRER —
+   VERT sans cadenas quand la porte est libre (on rejoint aussitôt),
+   GRIS avec 🔒 quand elle est scellée (le mot de passe se demande) ;
+   côté MJ, les icônes ▶/■ s'élargissent (deux fois l'écrou) et le
+   nom d'une aventure en ligne garde son vert SANS soulignement. ── */
+const BUILD = "0.40";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3833,7 +3841,7 @@ function EcranPartie({
     style: {
       color: "#a8adb8"
     }
-  }, "AVENTURES \xC0 REJOINDRE (", partiesOuvertes.length, ")"), partiesOuvertes.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "AVENTURES EN LIGNE (", partiesOuvertes.length, ")"), partiesOuvertes.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs py-2",
     style: {
       color: "#52525b"
@@ -3857,16 +3865,11 @@ function EcranPartie({
         color: "#e8e4d8"
       }
     }, p.nom), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs",
+      className: "text-xs font-semibold",
       style: {
-        color: "#52525b"
+        color: "#a8adb8"
       }
-    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"), " ", "\xB7 ", p.visibilite === "privee" ? "🔒 salle privée" : "salle publique", " \xB7 ", nbJoueurs(p), " joueur", nbJoueurs(p) > 1 ? "s" : "", p.statut === "en_cours" ? " · " : "", p.statut === "en_cours" && /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "#f0b24a",
-        fontWeight: "bold"
-      }
-    }, "PARTIE EN COURS"))), laMienne ? /*#__PURE__*/React.createElement("button", {
+    }, laMienne ? "VOTRE aventure — vous en êtes le MJ" : "MJ " + (p.mj_pseudo || "?"))), laMienne ? /*#__PURE__*/React.createElement("button", {
       onClick: () => onReprendre(p),
       className: "px-3 py-1.5 rounded-lg text-xs font-bold",
       style: {
@@ -3886,21 +3889,21 @@ function EcranPartie({
         color: "#a8adb8",
         border: "1px solid #27272a",
         cursor: "pointer"
-      }
+      },
+      title: "Salle priv\xE9e \u2014 le mot de passe se demande"
     }, mdpPour === p.id ? "▲ ANNULER" : "🔒 ENTRER") : /*#__PURE__*/React.createElement("button", {
       onClick: () => {
         setEnRejoindre(true);
         onRejoindre(p).finally(() => setEnRejoindre(false));
       },
       disabled: enRejoindre,
-      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
       style: {
-        background: "#a8adb814",
-        color: "#a8adb8",
-        border: "1px solid #27272a",
+        background: "#4ade80",
         cursor: "pointer"
-      }
-    }, "REJOINDRE")), mdpPour === p.id && !laMienne && /*#__PURE__*/React.createElement("div", {
+      },
+      title: "Rejoindre l'aventure \u2014 la porte est libre"
+    }, "ENTRER")), mdpPour === p.id && !laMienne && /*#__PURE__*/React.createElement("div", {
       className: "flex gap-2 pb-2.5"
     }, /*#__PURE__*/React.createElement("input", {
       value: mdpTexte,
@@ -3991,11 +3994,7 @@ function EcranPartie({
       padding: 0
     },
     title: "Revenir \xE0 cette table \u2014 l'aventure est en ligne"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      borderBottom: "1px solid #2ee6c955"
-    }
-  }, p.nom)) : /*#__PURE__*/React.createElement("div", {
+  }, p.nom) : /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold truncate",
     style: {
       color: "#e8e4d8"
@@ -4009,7 +4008,7 @@ function EcranPartie({
     className: "py-2.5 pl-6 text-right whitespace-nowrap"
   }, p.statut !== "en_cours" ? /*#__PURE__*/React.createElement("button", {
     onClick: () => onLancer(p),
-    className: "px-2.5 py-1 rounded-lg text-sm font-bold text-black",
+    className: "px-5 py-1 rounded-lg text-sm font-bold text-black",
     style: {
       background: "#4ade80",
       cursor: "pointer"
@@ -4020,7 +4019,7 @@ function EcranPartie({
       setFermerPour(null);
       onFermer(p);
     },
-    className: "px-2.5 py-1 rounded-lg text-sm font-bold text-black",
+    className: "px-5 py-1 rounded-lg text-sm font-bold text-black",
     style: {
       background: "#e0524d",
       cursor: "pointer"
@@ -4031,7 +4030,7 @@ function EcranPartie({
       setFermerPour(p.id);
       setDetail(null);
     },
-    className: "px-2.5 py-1 rounded-lg text-sm font-bold",
+    className: "px-5 py-1 rounded-lg text-sm font-bold",
     style: {
       background: "#e0524d14",
       color: "#e0524d",
