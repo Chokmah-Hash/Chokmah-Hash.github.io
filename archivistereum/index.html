@@ -476,7 +476,8 @@ window.ARCHIVISTERIUM_CLOUD = (function () {
     tempsReel: tempsReel
   };
 })();
-</script>
+
+  </script>
 
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
   <script>
@@ -520,8 +521,14 @@ const {
    parle l'ambre de l'œil du MJ (#f0b24a), rail sombre teinté d'ambre,
    curseur ivoire au survol. Même système que le launcher V0.36 (style
    posé en tête, variables CSS sur <html>) mais sans packs : la salle
-   n'a qu'une couleur, la sienne. ── */
-const BUILD = "0.39";
+   n'a qu'une couleur, la sienne.
+   V0.40 : LE CONSOLE ENCRÉ (STYLE CADRE CONSOLE) — premier chantier
+   explicite de la salle : l'onglet CONSOLE passe au pattern du salon du
+   launcher — racine en hauteur pleine (100vh, débordement caché quand
+   l'onglet CONSOLE est actif), le cadre des messages remplit tout
+   l'espace disponible et scrolle LUI-MÊME (plus de maxHeight 320px),
+   la zone de saisie et le pied de page restent en permanence en bas. ── */
+const BUILD = "0.40";
 
 /* ══════════ Le thème du scrolling — la barre d'ambre de l'institution ══════════
    L'Archivistère n'est pas une vitrine : il n'y a pas de packs ici, la
@@ -1567,13 +1574,22 @@ function Salle({
   const pctMax = Math.max(...statsPack.map(s => s.pct), 1);
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen flex flex-col text-zinc-200",
-    style: {
+    style: onglet === "console" ? {
+      background: "#0c0d10",
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif",
+      height: "100vh",
+      overflow: "hidden"
+    } : {
       background: "#0c0d10",
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, /*#__PURE__*/React.createElement("style", null, `@keyframes glisseHaut { from { transform: translateY(-110%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .glisseHaut { animation: glisseHaut 280ms ease-out; }`), /*#__PURE__*/React.createElement("div", {
-    className: "max-w-4xl w-full mx-auto px-5 pt-8 pb-0 flex-1 flex flex-col"
+    className: "max-w-4xl w-full mx-auto px-5 pt-8 pb-0 flex-1 flex flex-col",
+    style: onglet === "console" ? {
+      flex: "1 1 0%",
+      minHeight: 0
+    } : undefined
   }, /*#__PURE__*/React.createElement("header", {
     className: "flex items-center justify-between mb-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2167,7 +2183,12 @@ function Salle({
       color: "#71717a"
     }
   }, "La Corbeille est vide \u2014 aucune aventure effac\xE9e pour l'instant.")), onglet === "console" && /*#__PURE__*/React.createElement("div", {
-    className: "mb-8"
+    style: {
+      flex: "1 1 0%",
+      minHeight: 0,
+      display: "flex",
+      flexDirection: "column"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold tracking-widest mb-2",
     style: {
@@ -2198,11 +2219,16 @@ function Salle({
   }, lbl))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl overflow-hidden",
     style: {
-      border: "1px solid #27272a"
+      border: "1px solid #27272a",
+      flex: "1 1 0%",
+      minHeight: 0,
+      display: "flex",
+      flexDirection: "column"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      maxHeight: "320px",
+      flex: "1 1 0%",
+      minHeight: 0,
       overflowY: "auto"
     }
   }, filConsole.length === 0 && /*#__PURE__*/React.createElement("div", {
@@ -3031,7 +3057,8 @@ function App() {
 }
 var _attente = document.getElementById("attente");
 if (_attente) _attente.remove();
-ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));</script>
+ReactDOM.createRoot(document.getElementById("racine")).render(/*#__PURE__*/React.createElement(App, null));
+  </script>
 
   <script>
     /* PWA : service worker propre à la salle (portée /archivistereum/) */
