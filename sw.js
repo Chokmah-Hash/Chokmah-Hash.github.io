@@ -1,6 +1,6 @@
 /* L'Archiviste — service worker : network-first avec repli hors ligne.
    L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */
-var CACHE = "archiviste-a0-v48";
+var CACHE = "archiviste-a0-v49";
 var PRECACHE = [
   "/",
   "/index.html",
@@ -42,8 +42,6 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== location.origin) {
-    /* Les CDN (React, Babel, Tailwind, polices) : cache network-first pour le hors-ligne.
-       L'API Supabase : JAMAIS mise en cache (données de jeu vivantes). */
     var cachable = url.origin === "https://unpkg.com" ||
       url.origin === "https://cdn.tailwindcss.com" ||
       url.origin === "https://fonts.googleapis.com" ||
