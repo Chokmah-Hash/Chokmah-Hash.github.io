@@ -559,7 +559,7 @@ window.LARCHIVISTE_CLOUD = (function () {
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
         method: "PATCH", token: m.access_token,
-        body: { salle_ouverte_le: null, mdp_hash: null }
+        body: { salle_ouverte_le: null, mdp_hash: null, visibilite: "publique" }
       });
     },
     rouvrirSalle: function (id) {
@@ -628,7 +628,7 @@ window.LARCHIVISTE_CLOUD = (function () {
       if (!m || !m.access_token) return Promise.resolve();
       return api("/rest/v1/archiviste_parties?id=eq." + id, {
         method: "PATCH", token: m.access_token,
-        body: { statut: "close", fermee_le: new Date().toISOString(), salle_ouverte_le: null, mdp_hash: null }
+        body: { statut: "close", fermee_le: new Date().toISOString(), salle_ouverte_le: null, mdp_hash: null, visibilite: "publique" }
       });
     },
 
@@ -1760,8 +1760,23 @@ const fondrePresents = (precedent, diff) => {
    plus le mot de passe en laissant l'aventure « privée » sans
    cadenas (l'état qui enfermait les joueurs dehors) — fermer
    réouvre la porte, et la Tombe gagne un garde-fou : privée sans
-   mot de passe n'existe pas, elle redevient publique. ── */
-const BUILD = "0.46";
+   mot de passe n'existe pas, elle redevient publique.
+   V0.47 : LES DEUX PORTES RÉPARÉES — ① LA PARTIE SANS MOT DE PASSE SE
+   REJOINT : la policy de la Tombe n'acceptait l'entrée que dans une
+   salle OUVERTE (statut ouverte + salle tenue) ; une partie LANCÉE
+   sans salle, ou décadenassée en plein jeu, refusait le joueur qui
+   cliquait ENTRER — la policy accepte désormais AUSSI les parties
+   en cours publiques (le privé passe toujours par la RPC à mot de
+   passe, les closes restent closes). ② OUVRIR À TOUS NE PLANTE
+   PLUS : rechargerListes ne rendait RIEN (pas de promesse) alors
+   que graverMdpSalle enchaînait dessus → « Cannot read properties
+   of undefined (reading 'then') » dès la gravure du scellé ;
+   rechargerListes rend désormais TOUJOURS une promesse (Promise.all
+   des trois listes + les scellés). Bonus : le correctif V0.46 de
+   fermerSalle/fermerPartie (visibilite publique dans le PATCH)
+   n'était jamais entré dans le client en clair de la page — la
+   greffe le porte enfin. ── */
+const BUILD = "0.47";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -7476,12 +7491,11 @@ function App() {
   /* Recharger le lobby du pack multijoueur courant (aventures ouvertes
      + nos parties en cours) — au montage de l'écran et à chaque poussée. */
   const rechargerListes = () => {
+    /* V0.47 : rend TOUJOURS une promesse — graverMdpSalle enchaîne dessus */
     const pk = packPartieRef.current;
-    if (!CLOUD || !session || !pk) return;
-    CLOUD.listerParties(pk.id).then(l => setPartiesOuvertes(l || [])).catch(() => {});
-    CLOUD.mesAventures(pk.id, session.compteId).then(l => setMesAventuresListe(l || [])).catch(() => {}); /* V46 registre MJ */
-    CLOUD.listerPersonnages(pk.id).then(l => setMesPersonnages(l || [])).catch(() => {}); /* V48 registre du joueur */
-    rechargerScelles(); /* V0.39 : le scellé de chaque aventure suit le registre */
+    if (!CLOUD || !session || !pk) return Promise.resolve();
+    return Promise.all([CLOUD.listerParties(pk.id).then(l => setPartiesOuvertes(l || [])).catch(() => {}), CLOUD.mesAventures(pk.id, session.compteId).then(l => setMesAventuresListe(l || [])).catch(() => {}), /* V46 registre MJ */
+    CLOUD.listerPersonnages(pk.id).then(l => setMesPersonnages(l || [])).catch(() => {}) /* V48 registre du joueur */]).then(() => rechargerScelles()); /* V0.39 : le scellé de chaque aventure suit le registre */
   };
 
   /* V43 : LES FICHES DE LA TABLE — le personnage du joueur vit dans la
@@ -7580,7 +7594,7 @@ function App() {
     return CLOUD.rejoindrePartie(p.id, session.compteId).then(() => {
       setPartie(p);
       return rechargerPartie(p.id);
-    }).catch(() => showToast("Impossible de rejoindre — l'aventure est peut-être déjà lancée."));
+    }).catch(() => showToast("Impossible de rejoindre — la salle est peut-être fermée, privée, ou l'aventure close."));
   };
   /* V47 — OUVRIR LA SALLE : le MJ tranche, publique ou privée. La Tombe
      grave et rend la salle ; le MJ y entre. Le mot de passe reste en
