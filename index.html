@@ -1357,13 +1357,16 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
          par MOT DE PASSE (salle privée) — la Tombe vérifie le sceau
          (hash sha256, jamais le mot de passe en clair), grave la table
          et rend la salle. L'ancien CODE à six caractères s'efface. */
+      /* V0.48 : LE REJOINT EST IDEMPOTENT — un membre qui revient (retour au
+         hub puis ENTRER, reconnexion) ne doit pas se heurter à sa propre
+         ligne : PostgREST "resolution=ignore-duplicates" rend l'INSERT
+         silencieux sur doublon — déjà membre = on ENTRE, plus d'erreur. */
       rejoindrePartie: function (partieId, compteId) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve(null);
         return api("/rest/v1/archiviste_partie_joueurs", {
           method: "POST",
           token: m.access_token,
-          /* V0.48 : deja membre = on ENTRE, pas d'erreur de doublon */
           prefer: "return=representation, resolution=ignore-duplicates",
           body: {
             partie_id: partieId,
@@ -1788,8 +1791,21 @@ const fondrePresents = (precedent, diff) => {
    de rejoindre » alors que tout allait bien. Le rejoint public porte
    désormais "resolution=ignore-duplicates" : déjà membre = on ENTRE
    sans erreur, comme le fait déjà la RPC privée (on conflict do
-   nothing). ── */
-const BUILD = "0.48";
+   nothing). ──
+   V0.49 : ORDONNANCE DE L'ÉCRAN DE PARTIE (Protocoles Éternels) —
+   ne garder que ce qui fonctionne : plus de boutons ← Hub / 📖
+   Règles, plus de cadres démo Signa-3 / Ork Boy, plus de combat
+   d'entraînement. L'écran devient un système d'ONGLETS : CANTINA
+   d'abord (Console de partie en cadre console + Jet de Dés avec
+   face de dé en points + Journal append-only dessous), puis
+   SCENARIO côté MJ (coming soon + fiches de la table) et FICHE
+   PERSONNAGE côté joueur (l'unité réelle, registre à la porte,
+   création — état vide sinon). L'entête passe à gauche (glyphe +
+   titre + badge rôle, sous-titre K-BoT) et l'avatar du joueur
+   s'affiche à droite avec le halo de son rôle, comme au Hub. Le
+   bandeau CONSOLE DE PARTIE en bas de page disparaît pour ce
+   noyau-40k (les autres packs le gardent). ── */
+const BUILD = "0.49";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5206,25 +5222,128 @@ function LecteurDocuments({
 }
 
 /* ════════ La vue du noyau-40k — générique : elle ne lit QUE pack.contenu ════════ */
+
+/* ════════ V0.49 — Entête de partie (noyau-40k seul) ════════
+   Le titre à gauche avec son glyphe et le badge de rôle (comme le titre
+   L'ARCHIVISTE du Hub), le sous-titre « K-BoT », et à droite l'avatar du
+   joueur avec le halo de son rôle — ambre pour le MJ, turquoise pour le
+   joueur. Plus de boutons ← Hub / 📖 Règles : on quitte par déco/reco. */
+function EntetePartie({
+  pack,
+  role,
+  joueur,
+  avatar
+}) {
+  const T = pack.theme;
+  const halo = role === "mj" ? "#f0b24a" : "#2ee6c9";
+  return /*#__PURE__*/React.createElement("header", {
+    className: "flex items-center justify-between mb-6 pb-4",
+    style: {
+      borderBottom: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl",
+    style: {
+      color: T.or
+    }
+  }, pack.glyphs || "⟁"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xl font-bold flex items-center gap-2",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, pack.nom, role && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs px-1.5 py-0.5 rounded font-bold",
+    style: {
+      background: halo + "22",
+      color: halo
+    }
+  }, role === "mj" ? "MJ" : "JOUEUR")), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "K-BoT"))), joueur && avatar ? /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2.5"
+  }, /*#__PURE__*/React.createElement(Avatar, {
+    a: avatar,
+    size: 40,
+    halo: halo
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-left leading-tight"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-white text-sm"
+  }, joueur.pseudo), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: halo
+    }
+  }, role === "mj" ? "Maître de la Tombe" : "en ligne"))) : /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl",
+    style: {
+      color: T.or
+    }
+  }, pack.glyphs || "⟁"));
+}
+
+/* ════════ V0.49 — La face de dé en points (pips), pure CSS ════════
+   Une grille 3×3 : les points s'allument selon la face tirée — le
+   feedback visuel du Jet de Dés du CANTINA. */
+function DeFace({
+  v,
+  accent
+}) {
+  const pips = {
+    1: [4],
+    2: [0, 8],
+    3: [0, 4, 8],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 2, 3, 5, 6, 8]
+  }[v] || [];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg grid grid-cols-3 gap-0.5 items-center justify-items-center shrink-0",
+    style: {
+      width: 44,
+      height: 44,
+      padding: 6,
+      background: "#0c0d10",
+      border: "1px solid " + accent + "66"
+    }
+  }, Array.from({
+    length: 9
+  }, (_, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "rounded-full",
+    style: {
+      background: pips.includes(i) ? accent : "transparent",
+      width: 6,
+      height: 6
+    }
+  })));
+}
 function VueNoyau40k({
   pack,
   onRetour,
   role,
   onJournal,
-  table
+  table,
+  joueur,
+  avatar,
+  consolePartie
 }) {
   const T = pack.theme;
-  const C = pack.contenu; /* le sac de données du pack : fiche, adversaire, arsenal… */
-  const [enLivre, setEnLivre] = useState(false);
+  const C = pack.contenu; /* le sac de données du pack : fiche, arsenal… */
+  /* V0.49 — ORDONNANCE : l'écran en onglets. CANTINA d'abord (console,
+     dés, journal), puis SCENARIO (MJ) ou FICHE PERSONNAGE (joueur). */
+  const [onglet, setOnglet] = useState("cantina");
   const [journal, setJournal] = useState([]);
-  const [pvSigna, setPvSigna] = useState(C.perso.pvMax);
-  const [pvOrk, setPvOrk] = useState(C.adversaire.pvMax);
-  const [enCombat, setEnCombat] = useState(false);
-  const [finCombat, setFinCombat] = useState(null);
-  const [round, setRound] = useState(0);
+  const [pvSigna, setPvSigna] = useState(0);
   const [cibleLibre, setCibleLibre] = useState("4+");
   const [modLibre, setModLibre] = useState(0);
-  /* — création d'unité : l'unité éveillée remplace Signa-3 partout — */
+  const [dernierDe, setDernierDe] = useState(null); /* la face du dernier jet, pour le dé en points */
+  /* — création d'unité : l'unité éveillée EST la fiche — */
   const [enCreationPE, setEnCreationPE] = useState(false);
   const [persoCree, setPersoCree] = useState(null);
   /* — V43 : l'écran MJ des fiches de la table — */
@@ -5268,9 +5387,15 @@ function VueNoyau40k({
     onJournal && onJournal(type, texte); /* V3 : chaque événement du moteur se grave aussi dans la Console Globale */
   };
 
-  /* Jet libre (la primitive du noyau, étiquetée) */
+  /* Jet libre (la primitive du noyau, étiquetée) — V0.49 : la face du dé
+     reste affichée en points sous le bouton (feedback visuel du CANTINA) */
   const jetLibre = () => {
     const r = resoudreTest(cibleLibre, modLibre, pack.noyau);
+    setDernierDe({
+      v: r.de,
+      reussi: r.reussi,
+      nat: r.nat
+    });
     const modTxt = modLibre === 0 ? "" : modLibre > 0 ? " (+1)" : " (−1)";
     logEvent("libre.jet", `Jet libre — cible ${cibleLibre}${modTxt} → ${r.de}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
   };
@@ -5290,10 +5415,9 @@ function VueNoyau40k({
     }]);
   };
 
-  /* La fiche active : Signa-3 (démo) ou l'unité éveillée — et son arme de
-     combat (les armes du manuel portent « A »/« F+1 »/« D3 », résolues ici) */
-  const perso = persoCree || C.perso;
-  const armeCombat = persoCree ? peArmeCombat(persoCree.armeDef, persoCree.st) : C.armes[C.perso.arme];
+  /* V0.49 — la fiche active : l'unité éveillée, ou RIEN (plus de démo
+     Signa-3 : l'onglet FICHE PERSONNAGE montre un état vide sinon) */
+  const perso = persoCree || null;
   const validerCreation = p => {
     setPersoCree(p);
     setEnCreationPE(false);
@@ -5315,87 +5439,9 @@ function VueNoyau40k({
     logEvent("perso.adoption", `${p.contenu.nom} entre dans la Tombe — ${resumePerso(p.contenu)} · PV au complet`);
   };
 
-  /* Le combat : la séquence du noyau, les surcharges du mod */
-  const demarrerCombat = () => {
-    setEnCombat(true);
-    setFinCombat(null);
-    logEvent("scene.debut", `Combat engagé — ${perso.nom} (${perso.chassis}) vs ${C.adversaire.nom} (${C.adversaire.chassis})`);
-  };
-  const nouveauCombat = () => {
-    setPvSigna(perso.pvMax);
-    setPvOrk(C.adversaire.pvMax);
-    setRound(0);
-    setFinCombat(null);
-    logEvent("scene.debut", "Nouvel engagement — PV réinitialisés (light light)");
-  };
-  const jouerRound = () => {
-    const adv = C.adversaire;
-    let pvS = pvSigna,
-      pvO = pvOrk;
-    const isJ = d6() + perso.rfx,
-      isO = d6() + adv.ini;
-    logEvent("combat.initiative", `Initiative — ${perso.nom} : ${isJ} (1D6 + Rfx +${perso.rfx}, surcharge du mod) vs ${adv.nom} : ${isO} (1D6 + Ini ${adv.ini}) — ${isJ >= isO ? perso.nom + " agit d'abord" : adv.nom + " agit d'abord"}`);
-    const ordre = isJ >= isO ? ["joueur", "adversaire"] : ["adversaire", "joueur"];
-    ordre.forEach(qui => {
-      if (pvS <= 0 || pvO <= 0) return;
-      if (qui === "joueur") {
-        const arme = armeCombat;
-        for (let t = 0; t < arme.attaques; t++) {
-          const jt = resoudreTest(arme.bs_ws, 0, pack.noyau);
-          logEvent("combat.jet", `${arme.tir ? "Tir" : "Frappe"} ${t + 1}/${arme.attaques} — ${arme.nom} : toucher ${arme.tir ? "CT" : "CC"} ${arme.bs_ws} → ${jt.de}${jt.nat ? " · " + jt.nat : ""} — ${jt.reussi ? "touché" : "raté"}`);
-          if (!jt.reussi) continue;
-          const cb = cibleBlessure(arme.f, adv.st.e);
-          const jb = resoudreTest(cb, 0, pack.noyau);
-          logEvent("combat.blesse", `Blessure F${arme.f} vs E${adv.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
-          if (!jb.reussi) continue;
-          const cs = cibleSauvegarde(adv.st.sv, arme.pa);
-          const js = resoudreTest(cs, 0, pack.noyau);
-          logEvent("combat.sauvegarde", `Sauvegarde ${adv.nom} ${adv.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
-          if (!js.reussi) {
-            const dgt = typeof arme.degats === "function" ? arme.degats() : arme.degats;
-            pvO = Math.max(0, pvO - dgt);
-            logEvent("combat.degats", `${adv.nom} : −${dgt} PV (${pvO}/${adv.pvMax})`);
-          }
-        }
-      } else {
-        const arme = C.armes[adv.arme];
-        const jt = resoudreTest(arme.bs_ws, 0, pack.noyau);
-        logEvent("combat.riposte", `${adv.nom} riposte — ${arme.nom} : toucher CC ${arme.bs_ws} → ${jt.de} — ${jt.reussi ? "touché" : "raté"}`);
-        if (jt.reussi) {
-          const cb = cibleBlessure(arme.f, perso.st.e);
-          const jb = resoudreTest(cb, 0, pack.noyau);
-          logEvent("combat.blesse", `Blessure F${arme.f} vs E${perso.st.e} → ${cb} → ${jb.de} — ${jb.reussi ? "blessé" : "absorbé"}`);
-          if (jb.reussi) {
-            const cs = cibleSauvegarde(perso.st.sv, arme.pa);
-            const js = resoudreTest(cs, 0, pack.noyau);
-            logEvent("combat.sauvegarde", `Sauvegarde ${perso.nom} ${perso.st.sv} avec PA ${arme.pa} → ${cs} → ${js.de} — ${js.reussi ? "sauvé" : "encaissé"}`);
-            if (!js.reussi) {
-              pvS = Math.max(0, pvS - arme.degats);
-              logEvent("combat.degats", `${perso.nom} : −${arme.degats} PV (${pvS}/${perso.pvMax})`);
-            }
-          }
-        }
-      }
-    });
-    setPvSigna(pvS);
-    setPvOrk(pvO);
-    setRound(r => r + 1);
-    if (pvO <= 0) {
-      logEvent("combat.fin", `${C.adversaire.nom} ☠ à terre — fin du combat, retour au dialogue`);
-      setFinCombat("victoire");
-    } else if (pvS <= 0) {
-      /* surcharge hors_combat du mod : le Protocole de Secours */
-      const js = resoudreTest(C.horsCombat.seuil, 0, pack.noyau);
-      logEvent("protocole.secours", `${perso.nom} à 0 PV — Protocole de Secours (surcharge du mod) : ${C.horsCombat.seuil} → ${js.de} — ${js.reussi ? `l'unité se redresse ⚡ (${C.horsCombat.pv} PV)` : "échec"}`);
-      if (js.reussi) {
-        pvS = C.horsCombat.pv;
-        setPvSigna(C.horsCombat.pv);
-      } else {
-        logEvent("protocole.extraction", `Extraction d'urgence — ${perso.nom} téléporté hors scène (1 PV à la scène suivante)`);
-        setFinCombat("extraction");
-      }
-    }
-  };
+  /* V0.49 — le combat d'entraînement (Signa-3 vs Ork Boy) est retiré :
+     l'écran ne garde que ce qui fonctionne en partie réelle. */
+
   const familleCouleur = {
     combat: T.accent,
     libre: "#7dd3fc",
@@ -5405,10 +5451,6 @@ function VueNoyau40k({
     perso: T.accent
   };
   const journalInverse = [...journal].reverse();
-  if (enLivre) return /*#__PURE__*/React.createElement(LecteurDocuments, {
-    pack: pack,
-    onFermer: () => setEnLivre(false)
-  });
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen",
     style: {
@@ -5417,218 +5459,51 @@ function VueNoyau40k({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-5 py-6"
-  }, /*#__PURE__*/React.createElement(PackEntete, {
+  }, /*#__PURE__*/React.createElement(EntetePartie, {
     pack: pack,
     role: role,
-    onRetour: onRetour,
-    onLivre: () => setEnLivre(true)
-  }), role === "mj" && table && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setFichesMjOuvert(true),
-    className: "w-full py-2.5 rounded-lg text-sm font-bold mb-5",
+    joueur: joueur,
+    avatar: avatar
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 mb-5",
     style: {
-      background: "#0c0d10",
-      border: "1px solid " + T.accent + "66",
-      color: T.accent
+      borderBottom: "1px solid #27272a"
     }
-  }, "\uD83D\uDCDC FICHES DE LA TABLE"), /*#__PURE__*/React.createElement("div", {
-    className: "grid md:grid-cols-2 gap-4 mb-5"
-  }, enCreationPE ? /*#__PURE__*/React.createElement("div", {
-    className: "md:col-span-2"
-  }, /*#__PURE__*/React.createElement(EcranCreationUnite, {
-    contenu: C,
-    accent: T.accent,
-    onValide: validerCreation,
-    onAnnule: () => setEnCreationPE(false)
-  })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
+  }, (role === "mj" ? [["cantina", "CANTINA"], ["scenario", "SCENARIO"]] : [["cantina", "CANTINA"], ["fiche", "FICHE PERSONNAGE"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setOnglet(id),
+    className: "px-4 py-2 text-sm font-bold tracking-wider",
     style: {
-      background: "#ffffff08",
+      background: onglet === id ? "#ffffff0d" : "transparent",
+      border: "none",
+      borderBottom: "2px solid " + (onglet === id ? T.accent : "transparent"),
+      color: onglet === id ? T.accent : "#71717a",
+      cursor: "pointer"
+    }
+  }, lbl))), onglet === "cantina" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl mb-4 overflow-hidden",
+    style: {
+      background: "#14161b",
       border: "1px solid " + T.accent + "33"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between mb-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-lg",
+    className: "px-3 py-2 text-xs font-bold tracking-widest",
     style: {
+      borderBottom: "1px solid #27272a",
       color: T.accent
     }
-  }, perso.nom), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
+  }, "\uD83D\uDCAC CONSOLE DE PARTIE"), consolePartie ? /*#__PURE__*/React.createElement(ConsoleGlobale, {
+    fil: consolePartie.fil,
+    onEnvoyer: consolePartie.onEnvoyer,
+    joueur: consolePartie.joueur || joueur,
+    enEnvoi: consolePartie.enEnvoi
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-4 text-center",
     style: {
       color: "#71717a"
     }
-  }, persoCree ? `${perso.chassis} · code ${perso.code}` : perso.chassis)), /*#__PURE__*/React.createElement(PvBarre, {
-    pv: pvSigna,
-    pvMax: perso.pvMax,
-    accent: T.accent
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "text-right text-xs mt-1",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, pvSigna, " / ", perso.pvMax, " PV"), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-3 gap-2 mt-3 text-center text-sm"
-  }, [["CC", perso.st.cc], ["CT", perso.st.ct], ["F", perso.st.f], ["E", perso.st.e], ["Sv", perso.st.sv], ["Cd", perso.st.cd]].concat(perso.st.a ? [["A", perso.st.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "rounded py-1.5",
-    style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
-    className: "mt-2 rounded py-1.5 text-center text-sm",
-    style: {
-      background: T.or + "22",
-      color: T.or
-    }
-  }, "Rfx +", perso.rfx, " ", /*#__PURE__*/React.createElement("span", {
-    className: "text-xs"
-  }, "\u2014 surcharge du mod P\xC9")), persoCree ? /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded p-2 text-xs",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, perso.armeDef.nom), " \xB7 ", perso.armeDef.tir ? "tir" : "mêlée", " \xB7 ", perso.armeDef.portee, " \xB7 A ", perso.armeDef.att, " \xB7 ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", perso.armeDef.f, " \xB7 PA ", perso.armeDef.pa, " \xB7 D ", perso.armeDef.d, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#71717a"
-    }
-  }, " \xB7 ", perso.armeDef.regle)) : /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded p-2 text-xs",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, C.armes[perso.arme].nom), " \xB7 ", C.armes[perso.arme].type, " \xB7 ", C.armes[perso.arme].portee, " \xB7 A ", C.armes[perso.arme].attaques, " \xB7 ", C.armes[perso.arme].bs_ws, " \xB7 F ", C.armes[perso.arme].f, " \xB7 PA ", C.armes[perso.arme].pa, " \xB7 D ", C.armes[perso.arme].degats), perso.apt && /*#__PURE__*/React.createElement("div", {
-    className: "mt-2 rounded p-2 text-xs",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.comps && /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-1 mt-2"
-  }, perso.comps.map(c => /*#__PURE__*/React.createElement("span", {
-    key: c,
-    className: "text-xs px-1.5 py-0.5 rounded",
-    style: {
-      background: T.accent + "22",
-      color: T.accent
-    }
-  }, c))), table && !persoCree && (table.persos || []).length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded-lg p-3",
-    style: {
-      background: "#0c0d10",
-      border: "1px dashed " + T.accent + "66"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-2",
-    style: {
-      color: T.accent
-    }
-  }, "QUI ENTRE DANS LA TOMBE ?"), table.persos.map(p => /*#__PURE__*/React.createElement("button", {
-    key: p.id,
-    onClick: () => adopterDuRegistre(p),
-    className: "w-full text-left rounded-lg px-3 py-2 mb-1.5",
-    style: {
-      background: "#14161b",
-      border: "1px solid #3f3f46",
-      cursor: "pointer"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-sm",
-    style: {
-      color: "#e8e4d8"
-    }
-  }, p.nom), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, " \u2014 ", resumePerso(p.contenu)))), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-1",
-    style: {
-      color: "#71717a"
-    }
-  }, "Votre unit\xE9 entre avec ses PV au complet ; ou cr\xE9ez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEnCreationPE(true),
-    className: "w-full py-2 rounded-lg text-sm font-bold mt-2",
-    style: {
-      background: "#0c0d10",
-      border: "1px solid " + T.accent + "66",
-      color: T.accent
-    }
-  }, persoCree ? C.textes.recreer : C.textes.creer)), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid #3f3f46"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between mb-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-lg",
-    style: {
-      color: pvOrk > 0 ? "#e8e4d8" : "#52525b"
-    }
-  }, pvOrk > 0 ? C.adversaire.nom : C.adversaire.nom + " ☠"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, "adversaire d'entra\xEEnement")), /*#__PURE__*/React.createElement(PvBarre, {
-    pv: pvOrk,
-    pvMax: C.adversaire.pvMax,
-    accent: "#f0b24a"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "text-right text-xs mt-1",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, pvOrk, " / ", C.adversaire.pvMax, " PV"), /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 flex flex-col gap-2"
-  }, !enCombat || finCombat ? /*#__PURE__*/React.createElement("button", {
-    onClick: enCombat ? nouveauCombat : demarrerCombat,
-    className: "py-2.5 rounded-lg font-bold text-black",
-    style: {
-      background: finCombat ? "#3f3f46" : T.or,
-      color: finCombat ? "#e8e4d8" : "#0a120f"
-    }
-  }, enCombat ? "↺ Nouvel engagement" : "⚔ Engager le combat") : /*#__PURE__*/React.createElement("button", {
-    onClick: jouerRound,
-    className: "py-2.5 rounded-lg font-bold text-black",
-    style: {
-      background: T.accent
-    }
-  }, "\u2694 Jouer le round ", round + 1), finCombat && /*#__PURE__*/React.createElement("div", {
-    className: "text-center text-sm py-2 rounded",
-    style: {
-      background: "#ffffff0d",
-      color: finCombat === "victoire" ? T.accent : T.or
-    }
-  }, finCombat === "victoire" ? "Victoire — la Tombe se tait." : finCombat === "extraction" ? `Extraction d'urgence — ${perso.nom} est sorti du combat.` : ""), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-center",
-    style: {
-      color: "#71717a"
-    }
-  }, "S\xE9quence du noyau : toucher \u2192 blesser (F vs E) \u2192 sauvegarde (PA) \u2192 d\xE9g\xE2ts"))))), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 mb-5",
+  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table.")), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4 mb-4",
     style: {
       background: "#ffffff08",
       border: "1px solid " + T.accent + "33"
@@ -5638,7 +5513,7 @@ function VueNoyau40k({
     style: {
       color: T.accent
     }
-  }, "\uD83C\uDFB2 Jet libre \xE9tiquet\xE9"), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83C\uDFB2 Jet de D\xE9s"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center gap-3"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-sm",
@@ -5676,7 +5551,17 @@ function VueNoyau40k({
     style: {
       background: T.or
     }
-  }, "Lancer 1D6"), /*#__PURE__*/React.createElement("span", {
+  }, "Lancer 1D6"), dernierDe && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(DeFace, {
+    v: dernierDe.v,
+    accent: dernierDe.reussi ? T.accent : "#fb7185"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: dernierDe.reussi ? T.accent : "#fb7185"
+    }
+  }, dernierDe.reussi ? "RÉUSSI" : "ÉCHOUÉ", dernierDe.nat ? " · " + dernierDe.nat : "")), /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
       color: "#71717a"
@@ -5740,7 +5625,173 @@ function VueNoyau40k({
     style: {
       color: "#71717a"
     }
-  }, "Surcharges du mod appliqu\xE9es : ", C.surcharges.join(" · ")))), fichesMjOuvert && table && /*#__PURE__*/React.createElement(EcranMjFiches, {
+  }, "Surcharges du mod appliqu\xE9es : ", C.surcharges.join(" · ")))), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-6 text-center",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: T.or
+    }
+  }, "\uD83D\uDDFA SCENARIO"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#71717a"
+    }
+  }, "Coming soon \u2014 la campagne s'\xE9crira ici."), role === "mj" && table && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setFichesMjOuvert(true),
+    className: "mt-4 px-4 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + T.accent + "66",
+      color: T.accent
+    }
+  }, "\uD83D\uDCDC FICHES DE LA TABLE")), onglet === "fiche" && (enCreationPE ? /*#__PURE__*/React.createElement(EcranCreationUnite, {
+    contenu: C,
+    accent: T.accent,
+    onValide: validerCreation,
+    onAnnule: () => setEnCreationPE(false)
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, perso ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-lg",
+    style: {
+      color: T.accent
+    }
+  }, perso.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, perso.chassis, " \xB7 code ", perso.code)), /*#__PURE__*/React.createElement(PvBarre, {
+    pv: pvSigna,
+    pvMax: perso.pvMax,
+    accent: T.accent
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-right text-xs mt-1",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, pvSigna, " / ", perso.pvMax, " PV"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 mt-3 text-center text-sm"
+  }, [["CC", perso.st.cc], ["CT", perso.st.ct], ["F", perso.st.f], ["E", perso.st.e], ["Sv", perso.st.sv], ["Cd", perso.st.cd]].concat(perso.st.a ? [["A", perso.st.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 rounded py-1.5 text-center text-sm",
+    style: {
+      background: T.or + "22",
+      color: T.or
+    }
+  }, "Rfx +", perso.rfx, " ", /*#__PURE__*/React.createElement("span", {
+    className: "text-xs"
+  }, "\u2014 surcharge du mod P\xC9")), /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, perso.armeDef.nom), " \xB7 ", perso.armeDef.tir ? "tir" : "mêlée", " \xB7 ", perso.armeDef.portee, " \xB7 A ", perso.armeDef.att, " \xB7 ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", perso.armeDef.f, " \xB7 PA ", perso.armeDef.pa, " \xB7 D ", perso.armeDef.d, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, " \xB7 ", perso.armeDef.regle)), perso.apt && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.comps && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1 mt-2"
+  }, perso.comps.map(c => /*#__PURE__*/React.createElement("span", {
+    key: c,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: T.accent + "22",
+      color: T.accent
+    }
+  }, c)))) : /*#__PURE__*/React.createElement("div", {
+    className: "text-center py-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: T.or
+    }
+  }, "AUCUNE UNIT\xC9 \xC9VEILL\xC9E"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#71717a"
+    }
+  }, "Cr\xE9ez une unit\xE9, ou laissez-en une entrer par le registre ci-dessous.")), table && !persoCree && (table.persos || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 rounded-lg p-3",
+    style: {
+      background: "#0c0d10",
+      border: "1px dashed " + T.accent + "66"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: T.accent
+    }
+  }, "QUI ENTRE DANS LA TOMBE ?"), table.persos.map(p => /*#__PURE__*/React.createElement("button", {
+    key: p.id,
+    onClick: () => adopterDuRegistre(p),
+    className: "w-full text-left rounded-lg px-3 py-2 mb-1.5",
+    style: {
+      background: "#14161b",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-bold text-sm",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, p.nom), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, " \u2014 ", resumePerso(p.contenu)))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mt-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Votre unit\xE9 entre avec ses PV au complet ; ou cr\xE9ez-en une neuve plus bas.")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEnCreationPE(true),
+    className: "w-full py-2 rounded-lg text-sm font-bold mt-3",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + T.accent + "66",
+      color: T.accent
+    }
+  }, persoCree ? C.textes.recreer : C.textes.creer)))), fichesMjOuvert && table && /*#__PURE__*/React.createElement(EcranMjFiches, {
     table: table,
     theme: T,
     onFermer: () => setFichesMjOuvert(false)
@@ -8218,7 +8269,7 @@ function App() {
     const enPartie = !!(partie && partie.jeu === packActif.id && partie.statut === "en_cours");
     const role = enPartie ? session && partie.mj_compte_id === session.compteId ? "mj" : "joueur" : rolesPacks[packActif.id];
     return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-      style: enPartie ? {
+      style: enPartie && dep.id !== "noyau-40k" ? {
         paddingBottom: 44
       } : undefined
     }, /*#__PURE__*/React.createElement(Vue, {
@@ -8240,8 +8291,16 @@ function App() {
         setPackPartie(null);
         setVue("hub");
       },
-      onJournal: journalVersConsole
-    })), enPartie && /*#__PURE__*/React.createElement(BandeauConsolePartie, {
+      onJournal: journalVersConsole,
+      joueur: session,
+      avatar: session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null,
+      consolePartie: enPartie && dep.id === "noyau-40k" ? {
+        fil: consoleFil,
+        onEnvoyer: envoyerConsoleMessage,
+        joueur: session,
+        enEnvoi: consoleEnvoi
+      } : null
+    })), enPartie && dep.id !== "noyau-40k" && /*#__PURE__*/React.createElement(BandeauConsolePartie, {
       ouverte: consolePartieOuverte,
       onToggle: () => setConsolePartieOuverte(o => !o),
       fil: consoleFil,
