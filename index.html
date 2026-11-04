@@ -1839,8 +1839,16 @@ const fondrePresents = (precedent, diff) => {
    du D20 du bandeau). Calibrage sur l'icône D20 (44 px, dessin
    visible ~38,7 px) : entêtes pack + partie + lecteur à 40 px
    (dessin visible 40 px), tuile du hub 44 px dans son cadre
-   56 px (6 px d'air). ── */
-const BUILD = "0.54";
+   56 px (6 px d'air). ──
+   V0.55 — GM : LES IDs INTERNES DEVENNENT OPAQUES : les jeux
+   passent aux IDs internes GM-0001 (Les Protocoles Éternels),
+   GM-0002 (Stormbringer), GM-0003 (Bloodlust) — dans le code,
+   les fichiers packs/GM-000X.json et la colonne jeu de la
+   Tombe ; l'affichage garde les noms complets du manifeste.
+   Les noyaux (noyau-40k, noyau-d100) attendent leur refonte.
+   La valeur « critiques: "bloodlust" » (style de critique,
+   pas un ID de jeu) reste inchangée. ── */
+const BUILD = "0.55";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -1851,7 +1859,7 @@ const BUILD = "0.54";
 /* ── Le magasin : de la donnée ── */
 const PACKS = [{
   format: 1,
-  id: "protocoles-eternels",
+  id: "GM-0001",
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Les Protocoles Éternels",
@@ -1874,7 +1882,7 @@ const PACKS = [{
   glyphs: "⟁"
 }, {
   format: 1,
-  id: "stormbringer",
+  id: "GM-0002",
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Stormbringer",
@@ -1895,7 +1903,7 @@ const PACKS = [{
   glyphs: "⚔"
 }, {
   format: 1,
-  id: "bloodlust",
+  id: "GM-0003",
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Bloodlust",
@@ -2206,7 +2214,7 @@ function GlyphePack({
   size = 32,
   fond = "#0c0d10"
 }) {
-  if (pack.id === "protocoles-eternels") {
+  if (pack.id === "GM-0001") {
     return /*#__PURE__*/React.createElement(CibleJeu, {
       size: size,
       color: pack.theme ? pack.theme.or : "#e8e4d8",
@@ -8443,7 +8451,7 @@ function App() {
     }
   }, toast));
 }
-var _PACKS = ["noyau-40k", "noyau-d100", "protocoles-eternels", "stormbringer", "bloodlust"];
+var _PACKS = ["noyau-40k", "noyau-d100", "GM-0001", "GM-0002", "GM-0003"];
 Promise.all(_PACKS.map(function (id) {
   return fetch("packs/" + id + ".json", {
     cache: "no-store"
@@ -8460,7 +8468,7 @@ Promise.all(_PACKS.map(function (id) {
     var id = _PACKS[i];
     if (id.indexOf("noyau-") === 0) window.LARCHIVISTE_PACKS.noyaux[id] = d;else window.LARCHIVISTE_PACKS.packs[id] = d;
   });
-  if (!window.LARCHIVISTE_PACKS.packs["protocoles-eternels"] || !window.LARCHIVISTE_PACKS.noyaux["noyau-40k"]) {
+  if (!window.LARCHIVISTE_PACKS.packs["GM-0001"] || !window.LARCHIVISTE_PACKS.noyaux["noyau-40k"]) {
     throw new Error("packs manquants");
   }
 }).then(function () {
