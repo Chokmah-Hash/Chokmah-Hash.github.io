@@ -1,6 +1,6 @@
 /* L'Archiviste — service worker : network-first avec repli hors ligne.
    L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */
-var CACHE = "archiviste-a0-v65";
+var CACHE = "archiviste-a0-v66";
 var PRECACHE = [
   "/",
   "/index.html",
@@ -17,7 +17,8 @@ var PRECACHE = [
   "/packs/noyau-d100.json",
   "/packs/GM-0001.json",
   "/packs/GM-0002.json",
-  "/packs/GM-0003.json"
+  "/packs/GM-0003.json",
+  "/packs/livre-sb-v2.json"
 ];
 
 self.addEventListener("install", function (e) {
