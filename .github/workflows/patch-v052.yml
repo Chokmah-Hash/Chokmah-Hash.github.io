@@ -1,0 +1,22 @@
+name: patch-v052
+on:
+  push:
+    branches: [main]
+    paths: ['patch-v052.json']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node patch-v052.js index.html
+      - name: bump sw v54
+        run: node -e "const fs=require('fs');let s=fs.readFileSync('sw.js','utf8');if(!s.includes('archiviste-a0-v53')){console.error('sw v53 introuvable');process.exit(1);}fs.writeFileSync('sw.js',s.split('archiviste-a0-v53').join('archiviste-a0-v54'));console.log('sw v54 OK');"
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html sw.js
+          git commit -m "V0.52 — la Cible aux quatre coupes, icône du jeu (sw v54) [skip ci]"
+          git push
