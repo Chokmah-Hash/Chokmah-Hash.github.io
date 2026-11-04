@@ -1886,8 +1886,17 @@ const fondrePresents = (precedent, diff) => {
    : 99/175), et la fiche montre ce que la Tombe garde : PV et blessure
    majeure, S.F.T, identité, armes, armures, pouvoirs, possessions.
    Chaque bloc n'existe que si la fiche le porte — les fiches anciennes
-   ne changent pas d'un pixel. ── */
-const BUILD = "0.60";
+   ne changent pas d'un pixel. ──
+   V0.61 — LES THÈMES DE LA FICHE : quand le pack déclare ses familles
+   de compétences (Stormbringer : ARMES - ARMURES, CONNAISSANCE,
+   INVOCATION, PERCEPTION, COMMUNICATION, MANIPULATION, AGILITÉ,
+   DISCRÉTION), la fiche range chaque compétence SOUS SON THÈME — le
+   MJ dit « Crocheter », le joueur voit MANIPULATION. Les entêtes
+   CARACTÉRISTIQUES, ARMES - ARMURES et POSSESSION prennent la couleur
+   du pack ; le sélecteur de jets se groupe pareil. Les compétences
+   non répertoriées restent visibles sous « AUTRES » — jamais cachées.
+   Les packs sans familles gardent la fiche d'avant, au pixel. ── */
+const BUILD = "0.61";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6853,17 +6862,31 @@ function VueNoyauD100({
   /* — sources de jets : déclarées par le pack (caracs brutes, multiplicateurs,
      compétences). Un pack à paliers (Bloodlust) joue ses compétences avec
      modificateurs de palier ; un pack à sources joue tout sous %. — */
+  /* V0.61 — LES THÈMES DE LA FICHE : quand le pack déclare ses familles
+     (Stormbringer : CONNAISSANCE, INVOCATION, PERCEPTION…), chaque compétence
+     se range SOUS SON THÈME — fiche et sélecteur de jets parlent le langage
+     du manuel. L'ordre des thèmes = l'ordre déclaré ; les compétences non
+     répertoriées restent visibles en fin, sous « AUTRES ». */
+  const themesComps = C.themesCompetences || null;
+  const ordreThemes = themesComps ? Object.keys(themesComps) : [];
+  const familleDe = {};
+  if (themesComps) ordreThemes.forEach(t => themesComps[t].forEach(k => {
+    familleDe[k] = t;
+  }));
+  const compsBruts = Object.keys(perso.competences || {});
+  const comps = themesComps ? [...compsBruts.filter(k => familleDe[k]).sort((a, b) => ordreThemes.indexOf(familleDe[a]) - ordreThemes.indexOf(familleDe[b])), ...compsBruts.filter(k => !familleDe[k])] : compsBruts;
   const sources = [...(C.ordreCaracs || Object.keys(c)).map(k => ({
     label: `${k} ${c[k]} — carac brute (${c[k]} %)`,
     seuil: c[k]
   })), ...(C.mults || []).map(m => ({
     label: `${m.carac}×${m.mult} — ${m.label} (${c[m.carac] * m.mult} %)`,
     seuil: c[m.carac] * m.mult
-  })), ...Object.entries(perso.competences || {}).map(([k, v]) => ({
-    label: `${k} (${v} %)`,
-    seuil: v
+  })), ...comps.map(k => ({
+    label: `${k} (${perso.competences[k]} %)`,
+    seuil: perso.competences[k]
   }))];
-  const comps = Object.keys(perso.competences || {});
+  /* L'index dans sources d'une compétence k — pour le sélecteur groupé */
+  const srcIdxDe = k => (C.ordreCaracs || Object.keys(c)).length + (C.mults || []).length + comps.indexOf(k);
   const [srcIdx, setSrcIdx] = useState(0);
   const [compIdx, setCompIdx] = useState(0);
   const [palierIdx, setPalierIdx] = useState(2);
@@ -7177,7 +7200,29 @@ function VueNoyauD100({
       color: "#e8e4d8",
       border: "1px solid #3f3f46"
     }
-  }, sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
+  }, themesComps ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("optgroup", {
+    label: "CARACT\xC9RISTIQUES"
+  }, sources.slice(0, (C.ordreCaracs || Object.keys(c)).length).map((s, i) => /*#__PURE__*/React.createElement("option", {
+    key: i,
+    value: i
+  }, s.label))), (C.mults || []).length > 0 && /*#__PURE__*/React.createElement("optgroup", {
+    label: "CARACS \xD7MULTIPLICATEUR"
+  }, (C.mults || []).map((m, i) => /*#__PURE__*/React.createElement("option", {
+    key: "m" + i,
+    value: (C.ordreCaracs || Object.keys(c)).length + i
+  }, m.carac, "\xD7", m.mult, " \u2014 ", m.label, " (", c[m.carac] * m.mult, " %)"))), [...ordreThemes.map(t => ({
+    theme: t,
+    liste: comps.filter(k => familleDe[k] === t)
+  })), ...(comps.filter(k => !familleDe[k]).length ? [{
+    theme: "AUTRES",
+    liste: comps.filter(k => !familleDe[k])
+  }] : [])].map(g => /*#__PURE__*/React.createElement("optgroup", {
+    key: g.theme,
+    label: g.theme
+  }, g.liste.map(k => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: srcIdxDe(k)
+  }, k, " (", perso.competences[k], " %)"))))) : sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
     key: i,
     value: i
   }, s.label)))), /*#__PURE__*/React.createElement("button", {
@@ -7250,7 +7295,15 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, perso.origine || perso.peuple)), /*#__PURE__*/React.createElement("div", {
+  }, perso.origine || perso.peuple)), themesComps &&
+  /*#__PURE__*/
+  /* V0.61 — l'entête du premier thème, celui du manuel */
+  React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: T.accent
+    }
+  }, "CARACT\xC9RISTIQUES"), /*#__PURE__*/React.createElement("div", {
     className: "grid gap-2 text-center text-sm " + (nbCaracs > 6 ? "grid-cols-4" : "grid-cols-3")
   }, Object.entries(c).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -7264,7 +7317,42 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, k, " "), v))), perso.competences ? /*#__PURE__*/React.createElement("div", {
+  }, k, " "), v))), perso.competences && themesComps ?
+  /*#__PURE__*/
+  /* V0.61 — LES THÈMES : chaque compétence rangée sous SA famille,
+     dans l'ordre du manuel. Le MJ dit « Crocheter » — le joueur
+     voit MANIPULATION. Rien n'est jamais caché : les non-classées
+     vivent sous « AUTRES ». */
+  React.createElement("div", {
+    className: "mt-2"
+  }, [...ordreThemes.map(t => ({
+    theme: t,
+    items: comps.filter(k => familleDe[k] === t).map(k => [k, perso.competences[k]])
+  })), ...(comps.filter(k => !familleDe[k]).length ? [{
+    theme: "AUTRES",
+    items: comps.filter(k => !familleDe[k]).map(k => [k, perso.competences[k]])
+  }] : [])].filter(g => g.items.length > 0).map(g => /*#__PURE__*/React.createElement("div", {
+    key: g.theme,
+    className: "mt-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: T.accent
+    }
+  }, g.theme), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-1.5 text-xs"
+  }, g.items.map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "flex justify-between rounded px-2 py-1",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, k), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v, " %"))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-2 text-xs"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -7323,11 +7411,11 @@ function VueNoyauD100({
   }, [perso.identite.titre, perso.identite.age ? perso.identite.age + " ans" : null, perso.identite.yeux ? "yeux " + perso.identite.yeux : null, perso.identite.cheveux ? "cheveux " + perso.identite.cheveux : null].filter(Boolean).join(" · ")), perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-1",
+    className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
     style: {
-      color: "#71717a"
+      color: themesComps ? T.accent : "#71717a"
     }
-  }, "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
+  }, themesComps ? "ARMES - ARMURES" : "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
     key: a.nom,
     className: "flex justify-between text-xs rounded px-2 py-1 mb-1",
     style: {
@@ -7342,8 +7430,8 @@ function VueNoyauD100({
       color: "#c8c8ce"
     }
   }, a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : "")))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
+    className: themesComps ? "mt-1" : "mt-3"
+  }, !themesComps && /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
@@ -7374,11 +7462,11 @@ function VueNoyauD100({
   }, p)))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-1",
+    className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
     style: {
-      color: "#71717a"
+      color: themesComps ? T.accent : "#71717a"
     }
-  }, "Possessions"), /*#__PURE__*/React.createElement("div", {
+  }, themesComps ? "POSSESSION" : "Possessions"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1"
   }, perso.possessions.map((p, i) => /*#__PURE__*/React.createElement("span", {
     key: i,

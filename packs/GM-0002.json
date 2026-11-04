@@ -65,6 +65,94 @@
     "base": 50,
     "pas": 5
   },
+  "themesCompetences": {
+    "ARMES - ARMURES": [
+      "Armes naturelles",
+      "Attaque",
+      "Parade",
+      "Esquive",
+      "Bouclier",
+      "Escrime",
+      "Armes d'hast",
+      "Lancer",
+      "Tir",
+      "Matraquer",
+      "Orgien"
+    ],
+    "CONNAISSANCE": [
+      "Artisanat",
+      "Cartographie",
+      "Chirurgie",
+      "Connaissance de la musique",
+      "Connaissance des plantes",
+      "Connaissance des poisons",
+      "Connaissance des démons",
+      "Évaluer un trésor",
+      "Méditation",
+      "Méditation relaxante",
+      "Mémoriser",
+      "Multivers",
+      "Naviguer",
+      "Premiers soins"
+    ],
+    "INVOCATION": [
+      "Invocation",
+      "Sylphe",
+      "Gnome",
+      "Ondine",
+      "Salamandre",
+      "Démon de combat",
+      "Démon de garde",
+      "Démon de possession",
+      "Démon de voyage"
+    ],
+    "PERCEPTION": [
+      "Chercher",
+      "Écoute",
+      "Écouter",
+      "Goûter",
+      "Sentir",
+      "Pister",
+      "Voir"
+    ],
+    "COMMUNICATION": [
+      "Langue commune",
+      "Langage commun",
+      "Bas melnibonéen",
+      "Haut melnibonéen",
+      "Éloquence",
+      "Chanter",
+      "Commandement",
+      "Jouer d'un instrument",
+      "Séduire"
+    ],
+    "MANIPULATION": [
+      "Crocheter",
+      "Crédit",
+      "Jongler",
+      "Passe-passe",
+      "Persuader"
+    ],
+    "AGILITÉ": [
+      "Élan",
+      "Éviter",
+      "Équitation",
+      "Grimper",
+      "Sauter",
+      "Danser",
+      "Canotage",
+      "Natation"
+    ],
+    "DISCRÉTION": [
+      "Se cacher",
+      "Mouvement silencieux",
+      "Dissimuler",
+      "Embuscade",
+      "Se déguiser",
+      "Discrétion",
+      "Filature"
+    ]
+  },
   "aideJet": "« 01 » réussite critique",
   "creation": "aventurier",
   "textes": {
