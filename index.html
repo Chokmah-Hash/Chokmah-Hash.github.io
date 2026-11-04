@@ -1819,8 +1819,14 @@ const fondrePresents = (precedent, diff) => {
    ambre = MJ, turquoise = joueur, exactement comme L'ARCHIVISTE) ;
    le clic sur l'icône ouvre le cadre COMPTE — CLOUD du hub (CompteJoueur
    réutilisé, prop avatarSeul) : changement d'image de compte et
-   déconnexion accessibles depuis la partie. ── */
-const BUILD = "0.51";
+   déconnexion accessibles depuis la partie. ──
+   V0.52 : LA CIBLE AUX QUATRE COUPES, ICÔNE DU JEU — le candidat n° 9
+   validé par Michael (chantier K-BoT) devient l'icône des Protocoles
+   Éternels partout où le pack s'affiche : tuile du hub, entête de
+   l'écran de partie, entête générique des packs, lecteur de documents
+   (composants CibleJeu + GlyphePack ; le glyphe texte reste en repli
+   pour les autres packs — les données du manifeste ne bougent pas). ── */
+const BUILD = "0.52";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2116,6 +2122,89 @@ function Cible({
     r: "8.5",
     fill: color
   }));
+}
+
+/* V0.52 — La Cible aux quatre coupes (candidat n° 9 validé, chantier
+   K-BoT) : œil plein, deux anneaux fins, quatre coupes à 3 h, 4 h 30,
+   7 h 30 et 9 h qui mordent l'anneau extérieur des deux côtés —
+   rien à 12 h ni à 6 h. Le glyphe texte reste en repli (GlyphePack). */
+function CibleJeu({
+  size = 32,
+  color = "#e8e4d8",
+  fond = "#0c0d10"
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 192 192",
+    style: {
+      display: "block"
+    }
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "96",
+    cy: "96",
+    r: "31",
+    fill: "none",
+    stroke: color,
+    strokeWidth: "6"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "96",
+    cy: "96",
+    r: "59",
+    fill: "none",
+    stroke: color,
+    strokeWidth: "6"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "96",
+    cy: "96",
+    r: "9",
+    fill: color
+  }), /*#__PURE__*/React.createElement("g", {
+    fill: fond,
+    transform: "translate(96,96)"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "52",
+    y: "-2",
+    width: "14",
+    height: "4"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "52",
+    y: "-2",
+    width: "14",
+    height: "4",
+    transform: "rotate(45)"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "52",
+    y: "-2",
+    width: "14",
+    height: "4",
+    transform: "rotate(135)"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "52",
+    y: "-2",
+    width: "14",
+    height: "4",
+    transform: "rotate(180)"
+  })));
+}
+function GlyphePack({
+  pack,
+  size = 32,
+  fond = "#0c0d10"
+}) {
+  if (pack.id === "protocoles-eternels") {
+    return /*#__PURE__*/React.createElement(CibleJeu, {
+      size: size,
+      color: pack.theme ? pack.theme.or : "#e8e4d8",
+      fond: fond
+    });
+  }
+  return /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl",
+    style: {
+      color: pack.theme ? pack.theme.or : "#e8e4d8"
+    }
+  }, pack.glyphs || "⟁");
 }
 
 /* ══════════ L'Archivisterium (miroir) — vitrine du magasin côté launcher ══════════
@@ -3164,7 +3253,11 @@ function Vignette({
       background: pack.theme.fond,
       border: `1px solid ${pack.theme.accent}44`
     }
-  }, pack.glyphs), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(GlyphePack, {
+    pack: pack,
+    size: 40,
+    fond: pack.theme.fond
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-white font-bold text-lg leading-tight"
   }, pack.nom), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-0.5",
@@ -5076,11 +5169,11 @@ function PackEntete({
     style: {
       color: "#71717a"
     }
-  }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => d.id + "@" + d.format_min).join(", "), " \xB7 v", pack.version, " \xB7 priv\xE9")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: T.or
-    }
-  }, pack.glyphs || "⟁"));
+  }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => d.id + "@" + d.format_min).join(", "), " \xB7 v", pack.version, " \xB7 priv\xE9")), /*#__PURE__*/React.createElement(GlyphePack, {
+    pack: pack,
+    size: 30,
+    fond: T.fond
+  }));
 }
 
 /* ════════ Le lecteur de documents — UNIVERSEL (couche « documents » du pack) ════════
@@ -5180,11 +5273,11 @@ function LecteurDocuments({
     style: {
       color: "#71717a"
     }
-  }, "couche \xAB documents \xBB du pack \u2014 lue par le lecteur universel")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: T.or
-    }
-  }, pack.glyphs || "⟁")), /*#__PURE__*/React.createElement("div", {
+  }, "couche \xAB documents \xBB du pack \u2014 lue par le lecteur universel")), /*#__PURE__*/React.createElement(GlyphePack, {
+    pack: pack,
+    size: 30,
+    fond: T.fond
+  })), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-3 gap-4"
   }, /*#__PURE__*/React.createElement("nav", {
     className: "rounded-xl p-3 md:max-h-[70vh] md:overflow-y-auto",
@@ -5259,24 +5352,22 @@ function EntetePartie({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-2xl",
-    style: {
-      color: T.or
-    }
-  }, pack.glyphs || "⟁"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(GlyphePack, {
+    pack: pack,
+    size: 34,
+    fond: T.fond
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-2xl font-bold text-white tracking-wide leading-tight"
   }, pack.nom), /*#__PURE__*/React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa"
     }
-  }, "K-BoT"))), joueur && avatar && compte ? compte : /*#__PURE__*/React.createElement("span", {
-    className: "text-2xl",
-    style: {
-      color: T.or
-    }
-  }, pack.glyphs || "⟁"));
+  }, "K-BoT"))), joueur && avatar && compte ? compte : /*#__PURE__*/React.createElement(GlyphePack, {
+    pack: pack,
+    size: 34,
+    fond: T.fond
+  }));
 }
 
 /* ════════ V0.49 — La face de dé en points (pips), pure CSS ════════
