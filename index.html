@@ -1878,8 +1878,16 @@ const fondrePresents = (precedent, diff) => {
    Correction : les Flèches du Chaos et la Gemme et le démon reprennent
    EXACTEMENT la géométrie des maquettes, et l'absence de marge vient
    du CADRAGE — le viewBox épouse le dessin (comme la Cible fait déjà),
-   pas l'inverse. ── */
-const BUILD = "0.59";
+   pas l'inverse. ──
+   V0.60 — LA FICHE RICHE : le noyau d100 adopte le personnage du
+   REGISTRE du joueur dès l'entrée (avant : seule une création en
+   session remplaçait la fiche démo — la Tombe n'était jamais relue).
+   La SAN affichée devient la SAN COURANTE de la fiche (Mad Marthygann
+   : 99/175), et la fiche montre ce que la Tombe garde : PV et blessure
+   majeure, S.F.T, identité, armes, armures, pouvoirs, possessions.
+   Chaque bloc n'existe que si la fiche le porte — les fiches anciennes
+   ne changent pas d'un pixel. ── */
+const BUILD = "0.60";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6822,7 +6830,8 @@ function VueNoyauD100({
   consolePartie,
   versionBase,
   onAvatar,
-  onLogout
+  onLogout,
+  persos
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack */
@@ -6859,10 +6868,28 @@ function VueNoyauD100({
   const [compIdx, setCompIdx] = useState(0);
   const [palierIdx, setPalierIdx] = useState(2);
 
-  /* — Santé Mentale (si le pack en déclare une : SAN = POU×5) — */
-  const [san, setSan] = useState(C.perso.sanMax || 0);
+  /* — Santé Mentale (si le pack en déclare une : SAN = POU×5) —
+     V0.60 : si la fiche porte sa SAN COURANTE, c'est ELLE qui s'affiche
+     (Mad Marthygann : 99/175), pas le maximum du perso de démo. */
+  const [san, setSan] = useState(perso.san != null ? perso.san : perso.sanMax || 0);
   const [ronde, setRonde] = useState(0);
   const [lutteFinie, setLutteFinie] = useState(null);
+
+  /* ════════ V0.60 — LA FICHE DE LA TOMBE ════════
+     Le noyau d100 adopte le personnage du REGISTRE du joueur pour ce
+     pack (le premier de la liste) dès l'entrée — la fiche démo du pack
+     ne survit que si la Tombe ne connaît personne. Le noyau 40k restaure
+     depuis la table de partie ; le d100, lui, adopte son registre :
+     solo ou en partie, la fiche de la Tombe est la sienne. */
+  useEffect(() => {
+    if (persoCree) return;
+    const liste = persos || [];
+    if (!liste.length) return;
+    const p = liste[0].contenu || liste[0];
+    if (!p || !p.caracs) return;
+    setPersoCree(p);
+    setSan(p.san != null ? p.san : p.sanMax || 0);
+  }, [persos && persos.length]); /* eslint-disable-line */
 
   /* — la forge de l'Arme vivante (si le pack en déclare une) — */
   const [pts, setPts] = useState(C.forge ? C.forge.base : 0);
@@ -7271,7 +7298,96 @@ function VueNoyauD100({
     max: perso.sanMax,
     accent: T.accent,
     label: `${san} / ${perso.sanMax} SAN`
-  })) : null, perso.desirs && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  })) : null, perso.pv != null && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Points de Vie \u2014 blessure majeure \xE0 ", perso.blessureMajeure || Math.floor((perso.pvMax || perso.pv) / 2)), /*#__PURE__*/React.createElement(BarrePct, {
+    valeur: perso.pv,
+    max: perso.pvMax || perso.pv,
+    accent: "#e0524d",
+    label: `${perso.pv} / ${perso.pvMax || perso.pv} PV`
+  })), perso.sft != null && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mt-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "S.F.T \u2014 ", perso.sft), perso.identite && (perso.identite.titre || perso.identite.age) && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mt-2",
+    style: {
+      color: "#71717a"
+    }
+  }, [perso.identite.titre, perso.identite.age ? perso.identite.age + " ans" : null, perso.identite.yeux ? "yeux " + perso.identite.yeux : null, perso.identite.cheveux ? "cheveux " + perso.identite.cheveux : null].filter(Boolean).join(" · ")), perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
+    key: a.nom,
+    className: "flex justify-between text-xs rounded px-2 py-1 mb-1",
+    style: {
+      background: "#ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, a.nom), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#c8c8ce"
+    }
+  }, a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : "")))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Armures"), perso.armures.map((a, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "text-xs rounded px-2 py-1 mb-1",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, a))), perso.pouvoirs && perso.pouvoirs.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Pouvoirs"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1"
+  }, perso.pouvoirs.map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: T.accent + "22",
+      color: T.accent
+    }
+  }, p)))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Possessions"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1"
+  }, perso.possessions.map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, p)))), perso.desirs && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-3 mb-1",
     style: {
       color: "#71717a"
@@ -8552,6 +8668,7 @@ function App() {
         enEnvoi: consoleEnvoi
       } : null,
       versionBase: versionBase,
+      persos: mesPersonnages,
       onAvatar: changerAvatar,
       onLogout: seDeconnecter
     })));
