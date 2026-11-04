@@ -1,0 +1,21 @@
+name: patch-v054
+on:
+  push:
+    branches: [main]
+    paths: ['patch-v054.json']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node patch-v054.js
+      - run: node -e "const fs=require('fs');let s=fs.readFileSync('sw.js','utf8');if(!s.includes('archiviste-a0-v55')){console.error('sw v55 introuvable');process.exit(1);}fs.writeFileSync('sw.js',s.split('archiviste-a0-v55').join('archiviste-a0-v56'));console.log('sw v56 OK');"
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "V0.54 — la Cible recadrée : viewBox épousé, entêtes 40 px calés D20, tuile 44 px [skip ci]"
+          git push

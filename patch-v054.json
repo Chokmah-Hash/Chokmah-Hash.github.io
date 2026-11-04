@@ -1,0 +1,6 @@
+[
+  ["viewBox: \"0 0 192 192\"", "viewBox: \"30 30 132 132\"", 1],
+  ["    size: 46,\n    fond: pack.theme.fond", "    size: 44,\n    fond: pack.theme.fond", 1],
+  ["    size: 34,\n    fond: T.fond", "    size: 40,\n    fond: T.fond", 2],
+  ["   validé (3 h, 4 h 30, 7 h 30, 9 h — morsure 52..66). ── */\nconst BUILD = \"0.53\";", "   validé (3 h, 4 h 30, 7 h 30, 9 h — morsure 52..66). ──\n   V0.54 — LA CIBLE RECADRÉE, UNE SEULE IMAGE : le viewBox de\n   CibleJeu épouse désormais le dessin (\"30 30 132 132\", zéro\n   marge interne — le dessin remplissait 132/192 de sa boîte,\n   ~15,6 % de vide de chaque côté, contre 6 % pour l'hexagone\n   du D20 du bandeau). Calibrage sur l'icône D20 (44 px, dessin\n   visible ~38,7 px) : entêtes pack + partie + lecteur à 40 px\n   (dessin visible 40 px), tuile du hub 44 px dans son cadre\n   56 px (6 px d'air). ── */\nconst BUILD = \"0.54\";", 1]
+]
