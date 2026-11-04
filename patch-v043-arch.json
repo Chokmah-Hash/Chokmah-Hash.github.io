@@ -1,0 +1,6 @@
+[
+  ["  id: \"protocoles-eternels\",\n  nom: \"Les Protocoles Éternels\",", "  id: \"GM-0001\",\n  nom: \"Protocole Ω\",", 1],
+  ["  id: \"stormbringer\",", "  id: \"GM-0002\",", 1],
+  ["  id: \"bloodlust\",", "  id: \"GM-0003\",", 1],
+  ["   pour toujours — la restauration la rend à l’onglet. ── */\nconst BUILD = \"0.42\";", "   pour toujours — la restauration la rend à l’onglet. ──\n   V0.43 — GM : LE MIROIR SUIT LES IDs — le PACKS de la salle\n   reflète la nomenclature du launcher : GM-0001 (« Protocole Ω »,\n   ex-« Les Protocoles Éternels »), GM-0002 (Stormbringer),\n   GM-0003 (Bloodlust). Les stats du magasin retrouvent les\n   installations et favoris : la Tombe dit déjà GM-0001 depuis\n   le chantier V0.55 du launcher. ── */\nconst BUILD = \"0.43\";", 1]
+]

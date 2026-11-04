@@ -1,0 +1,21 @@
+name: patch-v043-arch
+on:
+  push:
+    branches: [main]
+    paths: ['patch-v043-arch.json']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node patch-v043-arch.js
+      - run: node -e "const fs=require('fs');let s=fs.readFileSync('archivistereum/sw.js','utf8');if(!s.includes('archivistereum-v30')){console.error('sw salle v30 introuvable');process.exit(1);}fs.writeFileSync('archivistereum/sw.js',s.split('archivistereum-v30').join('archivistereum-v31'));console.log('sw salle v31 OK');"
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Salle V0.43 — le miroir PACKS suit les IDs GM (GM-0001 = Protocole Ω) [skip ci]"
+          git push
