@@ -539,8 +539,14 @@ const {
    plus que sur les parties VIVANTES (supprime_le NULL) ; une
    aventure qui part en Corbeille masque son onglet, le canal ouvert
    sur elle retombe sur TOUS, et la purge (ou le vidage) l’efface
-   pour toujours — la restauration la rend à l’onglet. ── */
-const BUILD = "0.42";
+   pour toujours — la restauration la rend à l’onglet. ──
+   V0.43 — GM : LE MIROIR SUIT LES IDs — le PACKS de la salle
+   reflète la nomenclature du launcher : GM-0001 (« Protocole Ω »,
+   ex-« Les Protocoles Éternels »), GM-0002 (Stormbringer),
+   GM-0003 (Bloodlust). Les stats du magasin retrouvent les
+   installations et favoris : la Tombe dit déjà GM-0001 depuis
+   le chantier V0.55 du launcher. ── */
+const BUILD = "0.43";
 
 /* ══════════ Le thème du scrolling — la barre d'ambre de l'institution ══════════
    L'Archivistère n'est pas une vitrine : il n'y a pas de packs ici, la
@@ -1163,15 +1169,15 @@ const CLOUD = typeof window !== "undefined" && window.ARCHIVISTERIUM_CLOUD || nu
 
 /* ── Les packs du launcher (miroir de ses id pour les stats) ── */
 const PACKS = [{
-  id: "protocoles-eternels",
-  nom: "Les Protocoles Éternels",
+  id: "GM-0001",
+  nom: "Protocole Ω",
   accent: "#2ee6c9"
 }, {
-  id: "stormbringer",
+  id: "GM-0002",
   nom: "Stormbringer",
   accent: "#9d86e8"
 }, {
-  id: "bloodlust",
+  id: "GM-0003",
   nom: "Bloodlust",
   accent: "#e0524d"
 }];
