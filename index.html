@@ -1831,8 +1831,16 @@ const fondrePresents = (precedent, diff) => {
    épaissis 6 → 8 px, œil 9 → 10, et empreinte agrandie : tuile du
    hub 40 → 46, entête de partie 34 → 40, entête générique et lecteur
    de documents 30 → 34. La géométrie des coupes reste celle du n° 9
-   validé (3 h, 4 h 30, 7 h 30, 9 h — morsure 52..66). ── */
-const BUILD = "0.53";
+   validé (3 h, 4 h 30, 7 h 30, 9 h — morsure 52..66). ──
+   V0.54 — LA CIBLE RECADRÉE, UNE SEULE IMAGE : le viewBox de
+   CibleJeu épouse désormais le dessin ("30 30 132 132", zéro
+   marge interne — le dessin remplissait 132/192 de sa boîte,
+   ~15,6 % de vide de chaque côté, contre 6 % pour l'hexagone
+   du D20 du bandeau). Calibrage sur l'icône D20 (44 px, dessin
+   visible ~38,7 px) : entêtes pack + partie + lecteur à 40 px
+   (dessin visible 40 px), tuile du hub 44 px dans son cadre
+   56 px (6 px d'air). ── */
+const BUILD = "0.54";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2142,7 +2150,7 @@ function CibleJeu({
   return /*#__PURE__*/React.createElement("svg", {
     width: size,
     height: size,
-    viewBox: "0 0 192 192",
+    viewBox: "30 30 132 132",
     style: {
       display: "block"
     }
@@ -3261,7 +3269,7 @@ function Vignette({
     }
   }, /*#__PURE__*/React.createElement(GlyphePack, {
     pack: pack,
-    size: 46,
+    size: 44,
     fond: pack.theme.fond
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-white font-bold text-lg leading-tight"
@@ -5177,7 +5185,7 @@ function PackEntete({
     }
   }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => d.id + "@" + d.format_min).join(", "), " \xB7 v", pack.version, " \xB7 priv\xE9")), /*#__PURE__*/React.createElement(GlyphePack, {
     pack: pack,
-    size: 34,
+    size: 40,
     fond: T.fond
   }));
 }
@@ -5281,7 +5289,7 @@ function LecteurDocuments({
     }
   }, "couche \xAB documents \xBB du pack \u2014 lue par le lecteur universel")), /*#__PURE__*/React.createElement(GlyphePack, {
     pack: pack,
-    size: 34,
+    size: 40,
     fond: T.fond
   })), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-3 gap-4"
