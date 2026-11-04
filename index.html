@@ -7971,6 +7971,22 @@ function App() {
     rechargerListes();
   }, [vue, packPartie, session ? session.compteId : null]);
 
+  /* V0.60b — LE REGISTRE SUIT LE PACK OUVERT, PAS SEULEMENT LE LOBBY :
+     listerPersonnages ne passait que par l'écran de partie — en solo
+     (pack ouvert, aucun lobby), la liste restait vide et la fiche de la
+     Tombe n'était JAMAIS adoptée. On charge le registre du pack à
+     CHAQUE ouverture de vue pack. */
+  useEffect(() => {
+    if (vue !== "pack" || !packActif || !CLOUD || !session) return;
+    let vivant = true;
+    CLOUD.listerPersonnages(packActif.id).then(l => {
+      if (vivant) setMesPersonnages(l || []);
+    }).catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, [vue, packActif ? packActif.id : null, session ? session.compteId : null]);
+
   /* Parler dans la Console : le message part à la Tombe (elle le signe et
      le pousse à tous, nous compris), dans le canal du CONTEXTE. */
   const [consoleEnvoi, setConsoleEnvoi] = useState(false);
