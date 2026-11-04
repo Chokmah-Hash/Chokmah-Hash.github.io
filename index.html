@@ -1847,8 +1847,14 @@ const fondrePresents = (precedent, diff) => {
    Tombe ; l'affichage garde les noms complets du manifeste.
    Les noyaux (noyau-40k, noyau-d100) attendent leur refonte.
    La valeur « critiques: "bloodlust" » (style de critique,
-   pas un ID de jeu) reste inchangée. ── */
-const BUILD = "0.55";
+   pas un ID de jeu) reste inchangée. ──
+   V0.56 — PROTOCOLE Ω : le jeu GM-0001 change de nom
+   d'affichage : « Les Protocoles Éternels » devient
+   « Protocole Ω » (façade pure — l'ID interne GM-0001,
+   les fichiers packs et la Tombe ne bougent pas). Le
+   libellé du glyphe passe à « Glyphe GM-0001 » : les
+   textes internes parlent d'IDs, pas de noms. ── */
+const BUILD = "0.56";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -1862,7 +1868,7 @@ const PACKS = [{
   id: "GM-0001",
   version: "0.1.0-alpha",
   type: "mod",
-  nom: "Les Protocoles Éternels",
+  nom: "Protocole Ω",
   multijoueur: true,
   /* V4 : se lance par LA PARTIE — lobby, code, MJ et joueurs */
   depend_de: [{
@@ -2355,7 +2361,7 @@ function RootConsole({
     })
   }, {
     id: "pe",
-    label: "Glyphe Protocoles Éternels",
+    label: "Glyphe GM-0001",
     note: "vignette pack",
     el: /*#__PURE__*/React.createElement("div", {
       className: "flex items-center justify-center text-3xl",
