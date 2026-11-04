@@ -1,0 +1,9 @@
+[
+  ["id: \"protocoles-eternels\"", "id: \"GM-0001\"", 1],
+  ["if (pack.id === \"protocoles-eternels\") {", "if (pack.id === \"GM-0001\") {", 1],
+  ["var _PACKS = [\"noyau-40k\", \"noyau-d100\", \"protocoles-eternels\", \"stormbringer\", \"bloodlust\"];", "var _PACKS = [\"noyau-40k\", \"noyau-d100\", \"GM-0001\", \"GM-0002\", \"GM-0003\"];", 1],
+  [".packs[\"protocoles-eternels\"]", ".packs[\"GM-0001\"]", 1],
+  ["id: \"stormbringer\"", "id: \"GM-0002\"", 1],
+  ["id: \"bloodlust\"", "id: \"GM-0003\"", 1],
+  ["   56 px (6 px d'air). ── */\nconst BUILD = \"0.54\";", "   56 px (6 px d'air). ──\n   V0.55 — GM : LES IDs INTERNES DEVENNENT OPAQUES : les jeux\n   passent aux IDs internes GM-0001 (Les Protocoles Éternels),\n   GM-0002 (Stormbringer), GM-0003 (Bloodlust) — dans le code,\n   les fichiers packs/GM-000X.json et la colonne jeu de la\n   Tombe ; l'affichage garde les noms complets du manifeste.\n   Les noyaux (noyau-40k, noyau-d100) attendent leur refonte.\n   La valeur « critiques: \"bloodlust\" » (style de critique,\n   pas un ID de jeu) reste inchangée. ── */\nconst BUILD = \"0.55\";", 1]
+]
