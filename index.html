@@ -1862,8 +1862,17 @@ const fondrePresents = (precedent, diff) => {
    soon) ou FICHE PERSONNAGE côté joueur (fiche, création, forge,
    lutte de POU, SAN). Le bandeau bas de console disparaît : chaque
    jeu porte sa console dans son salon, et PackEntete quitte la
-   scène (l'entête de partie fait foi). ── */
-const BUILD = "0.57";
+   scène (l'entête de partie fait foi). ──
+   V0.58 — LES GLYPHES DES TROIS JEUX : chaque pack affiche sa
+   propre icône vectorielle, dessinée plein cadre sans marge
+   intérieure — les Flèches du Chaos (les huit pointes, symbole
+   canonique de Stormbringer : celles des axes touchent les bords,
+   celles des diagonales tombent dans les coins) pour GM-0002, la
+   Gemme et le démon (le losange inscrit au carré, la goutte de
+   sang suspendue au centre) pour GM-0003. La Cible aux quatre
+   coupes reste celle de GM-0001 ; le glyphe texte ne survit qu'en
+   repli. ── */
+const BUILD = "0.58";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2227,24 +2236,106 @@ function CibleJeu({
   })));
 }
 
+/* ════════ V0.58 — Les Flèches du Chaos, ICÔNE DE STORMBRINGER ════════
+   Validé par Michael (04/11/2026) : les huit flèches du Chaos — le
+   symbole canonique du jeu. PLEIN CADRE, SANS MARGE INTÉRIEURE : les
+   pointes des axes touchent les bords, celles des diagonales tombent
+   dans les coins — le glyphe occupe tout son carré (192×192). */
+function FlechesChaos({
+  size = 32,
+  color = "#e8e4d8"
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 192 192",
+    style: {
+      display: "block"
+    }
+  }, /*#__PURE__*/React.createElement("g", {
+    transform: "translate(96,96)",
+    stroke: color,
+    strokeWidth: "8",
+    fill: color
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "0",
+    cy: "0",
+    r: "14",
+    stroke: "none"
+  }), [0, 45, 90, 135, 180, 225, 270, 315].map(a => /*#__PURE__*/React.createElement("g", {
+    key: a,
+    transform: "rotate(" + a + ")"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "26",
+    y: "-4",
+    width: a % 90 === 0 ? "150" : "93.8",
+    height: "8",
+    stroke: "none"
+  }), /*#__PURE__*/React.createElement("polygon", {
+    points: a % 90 === 0 ? "176,-12 192,0 176,12" : "119.8,-12 135.8,0 119.8,12",
+    stroke: "none"
+  })))));
+}
+
+/* ════════ V0.58 — La Gemme et le démon, ICÔNE DE BLOODLUST ════════
+   Validé par Michael (04/11/2026) : le concept même du jeu — le démon
+   intérieur, ici une goutte de sang suspendue, enfermé dans la gemme.
+   PLEIN CADRE, SANS MARGE INTÉRIEURE : le losange est inscrit au
+   carré, ses sommets touchent les quatre bords (192×192). */
+function GemmeDemon({
+  size = 32,
+  color = "#e8e4d8"
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 192 192",
+    style: {
+      display: "block"
+    }
+  }, /*#__PURE__*/React.createElement("polygon", {
+    points: "96,4 188,96 96,188 4,96",
+    fill: "none",
+    stroke: color,
+    strokeWidth: "8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M96 62 C 88.5 78 81 90 81 102 A 15 15 0 0 0 111 102 C 111 90 103.5 78 96 62 Z",
+    fill: color
+  }));
+}
+
 /* Le glyphe d'un pack : la Cible aux quatre coupes pour Les Protocoles
-   Éternels, le glyphe texte du manifeste pour les autres. */
+   Éternels (V0.52), les Flèches du Chaos pour Stormbringer et la Gemme
+   et le démon pour Bloodlust (V0.58) — le glyphe texte en repli. */
 function GlyphePack({
   pack,
   size = 32,
   fond = "#0c0d10"
 }) {
+  const teinte = pack.theme ? pack.theme.or : "#e8e4d8";
   if (pack.id === "GM-0001") {
     return /*#__PURE__*/React.createElement(CibleJeu, {
       size: size,
-      color: pack.theme ? pack.theme.or : "#e8e4d8",
+      color: teinte,
       fond: fond
+    });
+  }
+  if (pack.id === "GM-0002") {
+    return /*#__PURE__*/React.createElement(FlechesChaos, {
+      size: size,
+      color: teinte
+    });
+  }
+  if (pack.id === "GM-0003") {
+    return /*#__PURE__*/React.createElement(GemmeDemon, {
+      size: size,
+      color: teinte
     });
   }
   return /*#__PURE__*/React.createElement("span", {
     className: "text-2xl",
     style: {
-      color: pack.theme ? pack.theme.or : "#e8e4d8"
+      color: teinte
     }
   }, pack.glyphs || "⟁");
 }
@@ -2386,17 +2477,21 @@ function RootConsole({
       }
     }, "\u27C1")
   }, {
-    id: "sb",
-    label: "Glyphe Stormbringer",
-    note: "vignette pack",
-    el: /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-center text-3xl",
-      style: {
-        width: 40,
-        height: 40,
-        color: "#e8e4d8"
-      }
-    }, "\u2694")
+    id: "chaos",
+    label: "Les Flèches du Chaos",
+    note: "glyphe officiel",
+    el: /*#__PURE__*/React.createElement(FlechesChaos, {
+      size: 40,
+      color: "#e8e4d8"
+    })
+  }, {
+    id: "gemme",
+    label: "La Gemme et le démon",
+    note: "glyphe officiel",
+    el: /*#__PURE__*/React.createElement(GemmeDemon, {
+      size: 40,
+      color: "#e8e4d8"
+    })
   }].map(s => /*#__PURE__*/React.createElement("div", {
     key: s.id,
     className: "flex flex-col items-center gap-1 rounded-xl p-2",

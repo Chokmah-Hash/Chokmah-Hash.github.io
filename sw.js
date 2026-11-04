@@ -1,1 +1,76 @@
-[{"type":"text","text":"successfully downloaded text file (SHA: adf460d187c61bb46410f2e4383fbdd71663459d)"},{"type":"resource","resource":{"uri":"repo://Chokmah-Hash/Chokmah-Hash.github.io/sha/a22815181f1d5d3922cbb5ab0e9f47eafca506ee/contents/sw.js","mimeType":"text/plain; charset=utf-8","text":"/* L'Archiviste — service worker : network-first avec repli hors ligne.\n   L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */\nvar CACHE = \"archiviste-a0-v59\";\nvar PRECACHE = [\n  \"/\",\n  \"/index.html\",\n      \"/app.css\",\n  \"/react.production.min.js\",\n  \"/react-dom.production.min.js\",\n  \"/manifest.webmanifest\",\n  \"/favicon.svg\",\n  \"/icons/icon-192.png\",\n  \"/icons/icon-512.png\",\n  \"/icons/icon-192-maskable.png\",\n  \"/icons/icon-512-maskable.png\",\n  \"/icons/apple-touch-icon.png\",\n  \"/packs/noyau-40k.json\",\n  \"/packs/noyau-d100.json\",\n  \"/packs/GM-0001.json\",\n  \"/packs/GM-0002.json\",\n  \"/packs/GM-0003.json\"\n];\n\nself.addEventListener(\"install\", function (e) {\n  e.waitUntil(\n    caches.open(CACHE)\n      .then(function (c) { return c.addAll(PRECACHE); })\n      .then(function () { return self.skipWaiting(); })\n  );\n});\n\nself.addEventListener(\"activate\", function (e) {\n  e.waitUntil(\n    caches.keys()\n      .then(function (ks) { return Promise.all(ks.map(function (k) { return k === CACHE ? null : caches.delete(k); })); })\n      .then(function () { return self.clients.claim(); })\n  );\n});\n\nself.addEventListener(\"fetch\", function (e) {\n  var req = e.request;\n  if (req.method !== \"GET\") return;\n  var url = new URL(req.url);\n  if (url.origin !== location.origin) {\n    var cachable = url.origin === \"https://unpkg.com\" ||\n      url.origin === \"https://cdn.tailwindcss.com\" ||\n      url.origin === \"https://fonts.googleapis.com\" ||\n      url.origin === \"https://fonts.gstatic.com\";\n    if (!cachable) return;\n    e.respondWith(\n      fetch(req).then(function (res) {\n        if (res && res.ok) {\n          var copie = res.clone();\n          caches.open(CACHE).then(function (c) { c.put(req, copie); });\n        }\n        return res;\n      }).catch(function () { return caches.match(req); })\n    );\n    return;\n  }\n  e.respondWith(\n    fetch(req).then(function (res) {\n      if (res && res.ok) {\n        var copie = res.clone();\n        caches.open(CACHE).then(function (c) { c.put(req, copie); });\n      }\n      return res;\n    }).catch(function () {\n      return caches.match(req, { ignoreSearch: true }).then(function (r) {\n        if (r) return r;\n        if (req.mode === \"navigate\") return caches.match(\"/\");\n        return new Response(\"Hors ligne\", { status: 503, headers: { \"Content-Type\": \"text/plain; charset=utf-8\" } });\n      });\n    })\n  );\n});\n"}}]
+/* L'Archiviste — service worker : network-first avec repli hors ligne.
+   L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */
+var CACHE = "archiviste-a0-v60";
+var PRECACHE = [
+  "/",
+  "/index.html",
+      "/app.css",
+  "/react.production.min.js",
+  "/react-dom.production.min.js",
+  "/manifest.webmanifest",
+  "/favicon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/icon-192-maskable.png",
+  "/icons/icon-512-maskable.png",
+  "/icons/apple-touch-icon.png",
+  "/packs/noyau-40k.json",
+  "/packs/noyau-d100.json",
+  "/packs/GM-0001.json",
+  "/packs/GM-0002.json",
+  "/packs/GM-0003.json"
+];
+
+self.addEventListener("install", function (e) {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(function (c) { return c.addAll(PRECACHE); })
+      .then(function () { return self.skipWaiting(); })
+  );
+});
+
+self.addEventListener("activate", function (e) {
+  e.waitUntil(
+    caches.keys()
+      .then(function (ks) { return Promise.all(ks.map(function (k) { return k === CACHE ? null : caches.delete(k); })); })
+      .then(function () { return self.clients.claim(); })
+  );
+});
+
+self.addEventListener("fetch", function (e) {
+  var req = e.request;
+  if (req.method !== "GET") return;
+  var url = new URL(req.url);
+  if (url.origin !== location.origin) {
+    var cachable = url.origin === "https://unpkg.com" ||
+      url.origin === "https://cdn.tailwindcss.com" ||
+      url.origin === "https://fonts.googleapis.com" ||
+      url.origin === "https://fonts.gstatic.com";
+    if (!cachable) return;
+    e.respondWith(
+      fetch(req).then(function (res) {
+        if (res && res.ok) {
+          var copie = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copie); });
+        }
+        return res;
+      }).catch(function () { return caches.match(req); })
+    );
+    return;
+  }
+  e.respondWith(
+    fetch(req).then(function (res) {
+      if (res && res.ok) {
+        var copie = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(req, copie); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req, { ignoreSearch: true }).then(function (r) {
+        if (r) return r;
+        if (req.mode === "navigate") return caches.match("/");
+        return new Response("Hors ligne", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      });
+    })
+  );
+});
