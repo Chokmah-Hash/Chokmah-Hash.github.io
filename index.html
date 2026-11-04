@@ -1812,8 +1812,15 @@ const fondrePresents = (precedent, diff) => {
    MJ/JOUEUR disparaît de l'entête : le halo de l'avatar EST le statut
    (ambre = MJ, turquoise = joueur). Et le pied « Powered by Vibe ·
    N° 0.XX » devient une RÈGLE GÉNÉRALE : il vit sur TOUS les écrans,
-   collé au bas (flex flex-col) — le noyau-40k l'avait oublié. ── */
-const BUILD = "0.50";
+   collé au bas (flex flex-col) — le noyau-40k l'avait oublié. ──
+   V0.51 : ICÔNE JOUEUR SEULE + COMPTE — CLOUD DANS LA PARTIE — dans
+   l'entête de l'écran de partie noyau-40k, l'icône du joueur vit
+   SEULE (plus de texte « pseudo · rôle » à gauche : le halo dit tout,
+   ambre = MJ, turquoise = joueur, exactement comme L'ARCHIVISTE) ;
+   le clic sur l'icône ouvre le cadre COMPTE — CLOUD du hub (CompteJoueur
+   réutilisé, prop avatarSeul) : changement d'image de compte et
+   déconnexion accessibles depuis la partie. ── */
+const BUILD = "0.51";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2429,7 +2436,8 @@ function CompteJoueur({
   ouvert,
   onOuvert,
   onLogout,
-  halo = null
+  halo = null,
+  avatarSeul = false
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "relative"
@@ -2444,7 +2452,7 @@ function CompteJoueur({
     a: avatar,
     size: 40,
     halo: halo
-  }), !mobile && /*#__PURE__*/React.createElement("div", {
+  }), !mobile && !avatarSeul && /*#__PURE__*/React.createElement("div", {
     className: "text-left leading-tight"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-white text-sm"
@@ -5240,10 +5248,10 @@ function EntetePartie({
   pack,
   role,
   joueur,
-  avatar
+  avatar,
+  compte
 }) {
   const T = pack.theme;
-  const halo = role === "mj" ? "#f0b24a" : "#2ee6c9";
   return /*#__PURE__*/React.createElement("header", {
     className: "flex items-center justify-between mb-6 pb-4",
     style: {
@@ -5263,22 +5271,7 @@ function EntetePartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "K-BoT"))), joueur && avatar ? /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2.5"
-  }, /*#__PURE__*/React.createElement(Avatar, {
-    a: avatar,
-    size: 40,
-    halo: halo
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "text-left leading-tight"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-white text-sm"
-  }, joueur.pseudo), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: halo
-    }
-  }, role === "mj" ? "Maître de la Tombe" : "en ligne"))) : /*#__PURE__*/React.createElement("span", {
+  }, "K-BoT"))), joueur && avatar && compte ? compte : /*#__PURE__*/React.createElement("span", {
     className: "text-2xl",
     style: {
       color: T.or
@@ -5331,13 +5324,16 @@ function VueNoyau40k({
   joueur,
   avatar,
   consolePartie,
-  versionBase
+  versionBase,
+  onAvatar,
+  onLogout
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack : fiche, arsenal… */
   /* V0.49 — ORDONNANCE : l'écran en onglets. CANTINA d'abord (console,
      dés, journal), puis SCENARIO (MJ) ou FICHE PERSONNAGE (joueur). */
   const [onglet, setOnglet] = useState("cantina");
+  const [compteOuvert, setCompteOuvert] = useState(false);
   const [journal, setJournal] = useState([]);
   const [pvSigna, setPvSigna] = useState(0);
   const [cibleLibre, setCibleLibre] = useState("4+");
@@ -5451,6 +5447,19 @@ function VueNoyau40k({
     perso: T.accent
   };
   const journalInverse = [...journal].reverse();
+  /* V0.51 — l'icône joueur SEULE dans l'entête : le halo dit le rôle,
+     le clic ouvre le cadre COMPTE — CLOUD (comme dans le hub). */
+  const haloRole = role === "mj" ? "#f0b24a" : "#2ee6c9";
+  const compte = joueur && avatar ? /*#__PURE__*/React.createElement(CompteJoueur, {
+    joueur: joueur,
+    avatar: avatar,
+    onAvatar: onAvatar,
+    avatarSeul: true,
+    ouvert: compteOuvert,
+    onOuvert: () => setCompteOuvert(o => !o),
+    onLogout: onLogout,
+    halo: haloRole
+  }) : null;
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen flex flex-col",
     style: {
@@ -5463,7 +5472,8 @@ function VueNoyau40k({
     pack: pack,
     role: role,
     joueur: joueur,
-    avatar: avatar
+    avatar: avatar,
+    compte: compte
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 mb-5",
     style: {
@@ -8302,7 +8312,9 @@ function App() {
         joueur: session,
         enEnvoi: consoleEnvoi
       } : null,
-      versionBase: versionBase
+      versionBase: versionBase,
+      onAvatar: changerAvatar,
+      onLogout: seDeconnecter
     })), enPartie && dep.id !== "noyau-40k" && /*#__PURE__*/React.createElement(BandeauConsolePartie, {
       ouverte: consolePartieOuverte,
       onToggle: () => setConsolePartieOuverte(o => !o),
@@ -8368,4 +8380,5 @@ Promise.all(_PACKS.map(function (id) {
   </script>
 </body>
 </html>
+
 
