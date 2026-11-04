@@ -1,0 +1,5 @@
+[
+  ["nom: \"Les Protocoles Éternels\"", "nom: \"Protocole Ω\"", 1],
+  ["label: \"Glyphe Protocoles Éternels\"", "label: \"Glyphe GM-0001\"", 1],
+  ["   La valeur « critiques: \"bloodlust\" » (style de critique,\n   pas un ID de jeu) reste inchangée. ── */\nconst BUILD = \"0.55\";", "   La valeur « critiques: \"bloodlust\" » (style de critique,\n   pas un ID de jeu) reste inchangée. ──\n   V0.56 — PROTOCOLE Ω : le jeu GM-0001 change de nom\n   d'affichage : « Les Protocoles Éternels » devient\n   « Protocole Ω » (façade pure — l'ID interne GM-0001,\n   les fichiers packs et la Tombe ne bougent pas). Le\n   libellé du glyphe passe à « Glyphe GM-0001 » : les\n   textes internes parlent d'IDs, pas de noms. ── */\nconst BUILD = \"0.56\";", 1]
+]
