@@ -4,6 +4,7 @@
     "combat.hors_combat = protocole_de_secours (5+)",
     "fiche.eveil = 10 châssis × 6 codes de fabrique × arsenal neutre"
   ],
+  "salon": "CANTINA",
   "primitive": "resoudreTest(cible, modificateur) — 1D6 ≥ cible",
   "perso": {
     "id": "signa-3",

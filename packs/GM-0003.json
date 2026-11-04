@@ -4,6 +4,7 @@
     "réussite critique unités 0 · échec critique unités 1",
     "contrôle VO×5 · PV EN×2 · plancher 5 %"
   ],
+  "salon": "CAMP",
   "primitive": "resoudreD100(seuil %, modificateur)",
   "critiques": "bloodlust",
   "perso": {

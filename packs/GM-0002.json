@@ -5,6 +5,7 @@
     "lutte de POU : 50 % ± 5 %/pt d'écart",
     "création : 7×3D6, total ≤ 52 · SAN = POU×5"
   ],
+  "salon": "TAVERNE",
   "primitive": "resoudreD100(seuil %, modificateur)",
   "critiques": "brp",
   "perso": {

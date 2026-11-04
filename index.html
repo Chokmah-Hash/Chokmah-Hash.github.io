@@ -1813,18 +1813,16 @@ const fondrePresents = (precedent, diff) => {
    (ambre = MJ, turquoise = joueur). Et le pied « Powered by Vibe ·
    N° 0.XX » devient une RÈGLE GÉNÉRALE : il vit sur TOUS les écrans,
    collé au bas (flex flex-col) — le noyau-40k l'avait oublié. ──
-   V0.51 : ICÔNE JOUEUR SEULE + COMPTE — CLOUD DANS LA PARTIE — dans
-   l'entête de l'écran de partie noyau-40k, l'icône du joueur vit
-   SEULE (plus de texte « pseudo · rôle » à gauche : le halo dit tout,
-   ambre = MJ, turquoise = joueur, exactement comme L'ARCHIVISTE) ;
-   le clic sur l'icône ouvre le cadre COMPTE — CLOUD du hub (CompteJoueur
-   réutilisé, prop avatarSeul) : changement d'image de compte et
-   déconnexion accessibles depuis la partie. ──
+   V0.51 — L'ICÔNE JOUEUR, SEULE ET PARLANTE : plus de texte
+   « pseudo · Maître de la Tombe » à gauche de l'icône dans l'entête
+   de partie — l'icône seule (son halo dit le rôle), et son clic
+   ouvre le cadre COMPTE — CLOUD, exactement comme dans le hub
+   (CompteJoueur partagé, nouvelle option avatarSeul). ──
    V0.52 : LA CIBLE AUX QUATRE COUPES, ICÔNE DU JEU — le candidat n° 9
    validé par Michael (chantier K-BoT) devient l'icône des Protocoles
    Éternels partout où le pack s'affiche : tuile du hub, entête de
    l'écran de partie, entête générique des packs, lecteur de documents
-   (composants CibleJeu + GlyphePack ; le glyphe texte reste en repli
+   (composants CibleJeu + GlyphePack ; le glyphe texte ⟁ reste en repli
    pour les autres packs — les données du manifeste ne bougent pas). ──
    V0.53 — LA CIBLE AFFIRMÉE : Michael la trouvait un peu menue à
    l'œil (des traits fins pèsent moins qu'un glyphe plein) — anneaux
@@ -1853,8 +1851,19 @@ const fondrePresents = (precedent, diff) => {
    « Protocole Ω » (façade pure — l'ID interne GM-0001,
    les fichiers packs et la Tombe ne bougent pas). Le
    libellé du glyphe passe à « Glyphe GM-0001 » : les
-   textes internes parlent d'IDs, pas de noms. ── */
-const BUILD = "0.56";
+   textes internes parlent d'IDs, pas de noms. ──
+   V0.57 — L'ORDONNANCE UNIVERSELLE : l'écran de partie à onglets
+   devient la coquille de TOUS les JDR Multi. Chaque pack déclare
+   son salon dans son contenu (GM-0001 CANTINA, GM-0002 TAVERNE,
+   GM-0003 CAMP) ; le noyau-d100 gagne la même ordonnance que le
+   noyau-40k : entête de partie (icône joueur seule + compte),
+   onglets SALON (console de partie + jet 1D100 à face chiffrée
+   DeFace100 + journal append-only) puis SCENARIO côté MJ (coming
+   soon) ou FICHE PERSONNAGE côté joueur (fiche, création, forge,
+   lutte de POU, SAN). Le bandeau bas de console disparaît : chaque
+   jeu porte sa console dans son salon, et PackEntete quitte la
+   scène (l'entête de partie fait foi). ── */
+const BUILD = "0.57";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2152,10 +2161,12 @@ function Cible({
   }));
 }
 
-/* V0.52 — La Cible aux quatre coupes (candidat n° 9 validé, chantier
-   K-BoT) : œil plein, deux anneaux fins, quatre coupes à 3 h, 4 h 30,
-   7 h 30 et 9 h qui mordent l'anneau extérieur des deux côtés —
-   rien à 12 h ni à 6 h. Le glyphe texte reste en repli (GlyphePack). */
+/* ════════ V0.52 — La Cible aux quatre coupes, ICÔNE DU JEU ════════
+   Candidat n° 9 validé par Michael (chantier K-BoT, 26/10/2026) : œil
+   plein, deux anneaux fins, et quatre coupes — à 3 h, 4 h 30, 7 h 30
+   et 9 h — qui mordent l'anneau extérieur des deux côtés sans jamais
+   toucher l'anneau intérieur. Rien à 12 h ni à 6 h. Le glyphe ⟁ reste
+   en repli pour les autres packs (données du manifeste inchangées). */
 function CibleJeu({
   size = 32,
   color = "#e8e4d8",
@@ -2215,6 +2226,9 @@ function CibleJeu({
     transform: "rotate(180)"
   })));
 }
+
+/* Le glyphe d'un pack : la Cible aux quatre coupes pour Les Protocoles
+   Éternels, le glyphe texte du manifeste pour les autres. */
 function GlyphePack({
   pack,
   size = 32,
@@ -4922,74 +4936,6 @@ function EcranPartie({
   }));
 }
 
-/* ══════════ Le bandeau de la Console de partie (dans le pack) ══════════
-   En partie, la Console vit AU-DESSUS du pack : repliée, elle ne montre
-   qu'un bouton fin avec le dernier message ; ouverte, le même panneau
-   ConsoleGlobale sert le canal de la partie. V42b : l'ancrage est en
-   STYLE INLINE — le CSS compilé ne connaissait pas .bottom-0/.left-0/
-   .z-40 et le bandeau partait se cacher sous la ligne de flottaison. */
-function BandeauConsolePartie({
-  ouverte,
-  onToggle,
-  fil,
-  onEnvoyer,
-  joueur,
-  enEnvoi
-}) {
-  const dernier = fil[fil.length - 1];
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 40,
-      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      maxWidth: "56rem",
-      margin: "0 auto",
-      padding: "0 20px"
-    }
-  }, ouverte && /*#__PURE__*/React.createElement("div", {
-    className: "mb-1",
-    style: {
-      maxHeight: "45vh",
-      overflow: "hidden"
-    }
-  }, /*#__PURE__*/React.createElement(ConsoleGlobale, {
-    fil: fil,
-    onEnvoyer: onEnvoyer,
-    joueur: joueur,
-    enEnvoi: enEnvoi
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: onToggle,
-    className: "w-full px-4 py-2 flex items-center gap-2 rounded-t-xl text-xs font-bold tracking-wider",
-    style: {
-      background: "#1d2027",
-      border: "1px solid #a8adb866",
-      borderBottom: "none",
-      color: "#e8e4d8",
-      cursor: "pointer",
-      boxShadow: "0 -4px 12px #00000066"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, ouverte ? "▼" : "▲"), /*#__PURE__*/React.createElement("span", {
-    className: "shrink-0"
-  }, "\uD83D\uDCAC CONSOLE DE PARTIE"), /*#__PURE__*/React.createElement("span", {
-    className: "px-1.5 rounded",
-    style: {
-      background: "#f0b24a22",
-      color: "#f0b24a"
-    }
-  }, fil.length), dernier && /*#__PURE__*/React.createElement("span", {
-    className: "flex-1 text-left truncate font-normal",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, "\xB7 ", dernier.pseudo, " : ", dernier.contenu))));
-}
-
 /* ══════════ Le hub : le magasin et la bibliothèque ══════════ */
 function Hub({
   packs,
@@ -5150,60 +5096,6 @@ function PvBarre({
   })));
 }
 
-/* ════════ L'entête de pack — UNIVERSELLE (le chrome ne connaît que le pack) ════════ */
-function PackEntete({
-  pack,
-  role,
-  onRetour,
-  onLivre
-}) {
-  const T = pack.theme;
-  return /*#__PURE__*/React.createElement("header", {
-    className: "flex items-center justify-between mb-6 pb-4",
-    style: {
-      borderBottom: "1px solid " + T.accent + "33"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onRetour,
-    className: "px-3 py-1.5 rounded-lg text-sm font-bold",
-    style: {
-      border: "1px solid " + T.accent + "66",
-      color: T.accent
-    }
-  }, "\u2190 Hub"), /*#__PURE__*/React.createElement("button", {
-    onClick: onLivre,
-    className: "px-3 py-1.5 rounded-lg text-sm font-bold",
-    style: {
-      border: "1px solid " + T.or + "66",
-      color: T.or
-    }
-  }, "\uD83D\uDCD6 R\xE8gles")), /*#__PURE__*/React.createElement("div", {
-    className: "text-center"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xl font-bold flex items-center justify-center gap-2",
-    style: {
-      color: "#e8e4d8"
-    }
-  }, pack.nom, role && /*#__PURE__*/React.createElement("span", {
-    className: "text-xs px-1.5 py-0.5 rounded font-bold",
-    style: {
-      background: role === "mj" ? "#f0b24a22" : "#2ee6c922",
-      color: role === "mj" ? "#f0b24a" : "#2ee6c9"
-    }
-  }, role === "mj" ? "MJ" : "JOUEUR")), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => d.id + "@" + d.format_min).join(", "), " \xB7 v", pack.version, " \xB7 priv\xE9")), /*#__PURE__*/React.createElement(GlyphePack, {
-    pack: pack,
-    size: 40,
-    fond: T.fond
-  }));
-}
-
 /* ════════ Le lecteur de documents — UNIVERSEL (couche « documents » du pack) ════════
    Le livre de règles de chaque jeu est une DONNÉE du pack (manifeste v1.3) :
    documents → sections → blocs (para, liste, table). Le Core affiche, le pack
@@ -5360,11 +5252,14 @@ function LecteurDocuments({
 
 /* ════════ La vue du noyau-40k — générique : elle ne lit QUE pack.contenu ════════ */
 
-/* ════════ V0.49 — Entête de partie (noyau-40k seul) ════════
-   Le titre à gauche avec son glyphe et le badge de rôle (comme le titre
-   L'ARCHIVISTE du Hub), le sous-titre « K-BoT », et à droite l'avatar du
-   joueur avec le halo de son rôle — ambre pour le MJ, turquoise pour le
-   joueur. Plus de boutons ← Hub / 📖 Règles : on quitte par déco/reco. */
+/* ════════ V0.49/50 — Entête de partie (noyau-40k seul) ════════
+   Le titre à gauche avec son glyphe, AU MÊME STYLE que le titre
+   L'ARCHIVISTE du Hub (text-2xl blanc tracking-wide + sous-titre
+   K-BoT en tracking-widest gris), et à droite l'avatar du joueur
+   avec le halo de son rôle — ambre pour le MJ, turquoise pour le
+   joueur. PAS de vignette MJ/JOUEUR : le halo de l'avatar EST le
+   statut. Plus de boutons ← Hub / 📖 Règles : on quitte par
+   déco/reco. */
 function EntetePartie({
   pack,
   role,
@@ -5434,6 +5329,30 @@ function DeFace({
     }
   })));
 }
+
+/* ════════ V0.57 — La face du d100, chiffrée (1-100), pure CSS ════════
+   Même empreinte que DeFace (44 px, bord accent) : le nombre tiré
+   s'écrit en clair — le d100 n'a pas de points, il a des chiffres. */
+function DeFace100({
+  v,
+  accent
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg flex items-center justify-center shrink-0",
+    style: {
+      minWidth: 44,
+      height: 44,
+      padding: "0 12px",
+      background: "#0c0d10",
+      border: "1px solid " + accent + "66"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-bold text-lg",
+    style: {
+      color: accent
+    }
+  }, v));
+}
 function VueNoyau40k({
   pack,
   onRetour,
@@ -5452,6 +5371,7 @@ function VueNoyau40k({
   /* V0.49 — ORDONNANCE : l'écran en onglets. CANTINA d'abord (console,
      dés, journal), puis SCENARIO (MJ) ou FICHE PERSONNAGE (joueur). */
   const [onglet, setOnglet] = useState("cantina");
+  /* V0.51 — le cadre COMPTE — CLOUD s'ouvre depuis l'icône du joueur */
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [journal, setJournal] = useState([]);
   const [pvSigna, setPvSigna] = useState(0);
@@ -5566,8 +5486,9 @@ function VueNoyau40k({
     perso: T.accent
   };
   const journalInverse = [...journal].reverse();
-  /* V0.51 — l'icône joueur SEULE dans l'entête : le halo dit le rôle,
-     le clic ouvre le cadre COMPTE — CLOUD (comme dans le hub). */
+
+  /* V0.51 — l'icône du joueur SEULE (le halo dit le rôle) ; le clic
+     ouvre le cadre COMPTE — CLOUD, exactement comme dans le hub. */
   const haloRole = role === "mj" ? "#f0b24a" : "#2ee6c9";
   const compte = joueur && avatar ? /*#__PURE__*/React.createElement(CompteJoueur, {
     joueur: joueur,
@@ -5598,7 +5519,7 @@ function VueNoyau40k({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, (role === "mj" ? [["cantina", "CANTINA"], ["scenario", "SCENARIO"]] : [["cantina", "CANTINA"], ["fiche", "FICHE PERSONNAGE"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, (role === "mj" ? [["cantina", C.salon || "CANTINA"], ["scenario", "SCENARIO"]] : [["cantina", C.salon || "CANTINA"], ["fiche", "FICHE PERSONNAGE"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -6788,7 +6709,14 @@ function VueNoyauD100({
   pack,
   onRetour,
   role,
-  onJournal
+  onJournal,
+  table,
+  joueur,
+  avatar,
+  consolePartie,
+  versionBase,
+  onAvatar,
+  onLogout
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack */
@@ -6797,8 +6725,12 @@ function VueNoyauD100({
     log,
     corrigerDernier
   } = useJournal(onJournal);
-  const [enLivre, setEnLivre] = useState(false);
   const [enCreation, setEnCreation] = useState(false);
+  /* V0.57 — l'ordonnance universelle : onglets SALON puis SCENARIO/FICHE,
+     entête de partie, compte joueur — la même coquille que le noyau-40k. */
+  const [onglet, setOnglet] = useState("salon");
+  const [compteOuvert, setCompteOuvert] = useState(false);
+  const [dernierDe, setDernierDe] = useState(null); /* la face du dernier d100, en chiffres */
   const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
   const perso = persoCree || C.perso;
   const c = perso.caracs;
@@ -6966,11 +6898,21 @@ function VueNoyauD100({
       const seuil = perso.competences[comp];
       const p = C.paliers[palierIdx];
       const r = resoudreD100(seuil, p.mod, C.critiques, pack.noyau);
+      setDernierDe({
+        de: r.de,
+        reussi: r.reussi,
+        nat: r.nat
+      });
       const modTxt = p.mod > 0 ? "+" + p.mod : p.mod < 0 ? "−" + Math.abs(p.mod) : "±0";
       log("libre.jet", `Jet libre — ${comp} ${seuil} % (${p.label} ${modTxt}) → seuil ${r.sFinal} % → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
     } else {
       const src = sources[srcIdx];
       const r = resoudreD100(src.seuil, 0, C.critiques, pack.noyau);
+      setDernierDe({
+        de: r.de,
+        reussi: r.reussi,
+        nat: r.nat
+      });
       log("libre.jet", `Jet libre — ${src.label} → ${fmtD100(r.de)}${r.nat ? " · " + r.nat : ""} — ${r.reussi ? "RÉUSSI" : "ÉCHOUÉ"}`);
     }
   };
@@ -6979,24 +6921,176 @@ function VueNoyauD100({
     aventurier: EcranCreationAventurier,
     porteur: EcranCreationPorteur
   }[C.creation];
-  if (enLivre) return /*#__PURE__*/React.createElement(LecteurDocuments, {
-    pack: pack,
-    onFermer: () => setEnLivre(false)
-  });
+
+  /* V0.51/57 — l'icône du joueur SEULE (le halo dit le rôle) ; le clic
+     ouvre le cadre COMPTE — CLOUD, exactement comme dans le hub. */
+  const haloRole = role === "mj" ? "#f0b24a" : "#2ee6c9";
+  const compte = joueur && avatar ? /*#__PURE__*/React.createElement(CompteJoueur, {
+    joueur: joueur,
+    avatar: avatar,
+    onAvatar: onAvatar,
+    avatarSeul: true,
+    ouvert: compteOuvert,
+    onOuvert: () => setCompteOuvert(o => !o),
+    onLogout: onLogout,
+    halo: haloRole
+  }) : null;
   return /*#__PURE__*/React.createElement("div", {
-    className: "min-h-screen",
+    className: "min-h-screen flex flex-col",
     style: {
       background: T.fond,
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5 py-6"
-  }, /*#__PURE__*/React.createElement(PackEntete, {
+    className: "max-w-4xl mx-auto px-5 py-6 w-full"
+  }, /*#__PURE__*/React.createElement(EntetePartie, {
     pack: pack,
     role: role,
-    onRetour: onRetour,
-    onLivre: () => setEnLivre(true)
+    joueur: joueur,
+    avatar: avatar,
+    compte: compte
   }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 mb-5",
+    style: {
+      borderBottom: "1px solid #27272a"
+    }
+  }, (role === "mj" ? [["salon", C.salon || "SALON"], ["scenario", "SCENARIO"]] : [["salon", C.salon || "SALON"], ["fiche", "FICHE PERSONNAGE"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setOnglet(id),
+    className: "px-4 py-2 text-sm font-bold tracking-wider",
+    style: {
+      background: onglet === id ? "#ffffff0d" : "transparent",
+      border: "none",
+      borderBottom: "2px solid " + (onglet === id ? T.accent : "transparent"),
+      color: onglet === id ? T.accent : "#71717a",
+      cursor: "pointer"
+    }
+  }, lbl))), onglet === "salon" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl mb-4 overflow-hidden",
+    style: {
+      background: "#14161b",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2 text-xs font-bold tracking-widest",
+    style: {
+      borderBottom: "1px solid #27272a",
+      color: T.accent
+    }
+  }, "\uD83D\uDCAC CONSOLE DE PARTIE"), consolePartie ? /*#__PURE__*/React.createElement(ConsoleGlobale, {
+    fil: consolePartie.fil,
+    onEnvoyer: consolePartie.onEnvoyer,
+    joueur: consolePartie.joueur || joueur,
+    enEnvoi: consolePartie.enEnvoi
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-4 text-center",
+    style: {
+      color: "#71717a"
+    }
+  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table.")), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4 mb-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold mb-3",
+    style: {
+      color: T.accent
+    }
+  }, "\uD83C\uDFB2 Jet de D\xE9s"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap items-center gap-3"
+  }, C.paliers ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+    className: "text-sm",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Comp\xE9tence", " ", /*#__PURE__*/React.createElement("select", {
+    value: compIdx,
+    onChange: e => setCompIdx(Number(e.target.value)),
+    className: "ml-1 rounded px-2 py-1",
+    style: {
+      background: "#14161b",
+      color: "#e8e4d8",
+      border: "1px solid #3f3f46"
+    }
+  }, comps.map((k, i) => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: i
+  }, k, " \u2014 ", perso.competences[k], " %")))), /*#__PURE__*/React.createElement("div", {
+    className: "flex rounded overflow-hidden",
+    style: {
+      border: "1px solid #3f3f46"
+    }
+  }, C.paliers.map((p, i) => /*#__PURE__*/React.createElement("button", {
+    key: p.label,
+    onClick: () => setPalierIdx(i),
+    className: "px-2.5 py-1 text-xs",
+    style: {
+      background: palierIdx === i ? T.accent : "#14161b",
+      color: palierIdx === i ? "#0c0d10" : "#c8c8ce"
+    }
+  }, p.label)))) : /*#__PURE__*/React.createElement("label", {
+    className: "text-sm",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Sous", " ", /*#__PURE__*/React.createElement("select", {
+    value: srcIdx,
+    onChange: e => setSrcIdx(Number(e.target.value)),
+    className: "ml-1 rounded px-2 py-1",
+    style: {
+      background: "#14161b",
+      color: "#e8e4d8",
+      border: "1px solid #3f3f46"
+    }
+  }, sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
+    key: i,
+    value: i
+  }, s.label)))), /*#__PURE__*/React.createElement("button", {
+    onClick: jetLibre,
+    className: "px-4 py-1.5 rounded-lg font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "Lancer 1D100"), dernierDe && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(DeFace100, {
+    v: dernierDe.de,
+    accent: dernierDe.reussi ? T.accent : "#fb7185"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: dernierDe.reussi ? T.accent : "#fb7185"
+    }
+  }, dernierDe.reussi ? "RÉUSSI" : "ÉCHOUÉ", dernierDe.nat ? " · " + dernierDe.nat : "")), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "1D100 \u2264 seuil \xB7 plancher 5 % \xB7 \xAB 00 \xBB \xE9chec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement(JournalBloc, {
+    journal: journal,
+    corriger: corrigerDernier,
+    accent: T.accent,
+    or: T.or,
+    surcharges: C.surcharges.join(" · ")
+  })), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-6 text-center",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: T.or
+    }
+  }, "\uD83D\uDDFA SCENARIO"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#71717a"
+    }
+  }, "Coming soon \u2014 la campagne s'\xE9crira ici.")), onglet === "fiche" && /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
     className: "md:col-span-2"
@@ -7311,84 +7405,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, C.forgeAide))) : null)), !enCreation && /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 mb-5",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid " + T.accent + "33"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold mb-3",
-    style: {
-      color: T.accent
-    }
-  }, "\uD83C\uDFB2 Jet libre \xE9tiquet\xE9"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-center gap-3"
-  }, C.paliers ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
-    className: "text-sm",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, "Comp\xE9tence", " ", /*#__PURE__*/React.createElement("select", {
-    value: compIdx,
-    onChange: e => setCompIdx(Number(e.target.value)),
-    className: "ml-1 rounded px-2 py-1",
-    style: {
-      background: "#14161b",
-      color: "#e8e4d8",
-      border: "1px solid #3f3f46"
-    }
-  }, comps.map((k, i) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: i
-  }, k, " \u2014 ", perso.competences[k], " %")))), /*#__PURE__*/React.createElement("div", {
-    className: "flex rounded overflow-hidden",
-    style: {
-      border: "1px solid #3f3f46"
-    }
-  }, C.paliers.map((p, i) => /*#__PURE__*/React.createElement("button", {
-    key: p.label,
-    onClick: () => setPalierIdx(i),
-    className: "px-2.5 py-1 text-xs",
-    style: {
-      background: palierIdx === i ? T.accent : "#14161b",
-      color: palierIdx === i ? "#0c0d10" : "#c8c8ce"
-    }
-  }, p.label)))) : /*#__PURE__*/React.createElement("label", {
-    className: "text-sm",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, "Sous", " ", /*#__PURE__*/React.createElement("select", {
-    value: srcIdx,
-    onChange: e => setSrcIdx(Number(e.target.value)),
-    className: "ml-1 rounded px-2 py-1",
-    style: {
-      background: "#14161b",
-      color: "#e8e4d8",
-      border: "1px solid #3f3f46"
-    }
-  }, sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
-    key: i,
-    value: i
-  }, s.label)))), /*#__PURE__*/React.createElement("button", {
-    onClick: jetLibre,
-    className: "px-4 py-1.5 rounded-lg font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "Lancer 1D100"), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, "1D100 \u2264 seuil \xB7 plancher 5 % \xB7 \xAB 00 \xBB \xE9chec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement(JournalBloc, {
-    journal: journal,
-    corriger: corrigerDernier,
-    accent: T.accent,
-    or: T.or,
-    surcharges: C.surcharges.join(" · ")
-  })));
+  }, C.forgeAide))) : null))));
 }
 
 /* §SECTION:APP§ — le hub, le chargement du pack, le pack */
@@ -7591,7 +7608,8 @@ function App() {
   const [mdpSalle, setMdpSalle] = useState(null); /* V47 : le mot de passe de la salle qu'on vient d'ouvrir (affiché au MJ) */
   const canalPresenceRef = useRef(null); /* V47 : pour re-pister quand on change de pack */
   const [packPartie, setPackPartie] = useState(null); /* le pack multijoueur en cours de partie */
-  const [consolePartieOuverte, setConsolePartieOuverte] = useState(false); /* bandeau dans le pack */
+  const [consolePartieOuverte, setConsolePartieOuverte] = useState(false); /* V0.57 : réservé (le bandeau a quitté la scène) */
+
   const partieIdRef = useRef(null);
   const packPartieRef = useRef(null);
   const vueRef = useRef("hub");
@@ -8399,11 +8417,7 @@ function App() {
        le rôle du dernier lancement. */
     const enPartie = !!(partie && partie.jeu === packActif.id && partie.statut === "en_cours");
     const role = enPartie ? session && partie.mj_compte_id === session.compteId ? "mj" : "joueur" : rolesPacks[packActif.id];
-    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-      style: enPartie && dep.id !== "noyau-40k" ? {
-        paddingBottom: 44
-      } : undefined
-    }, /*#__PURE__*/React.createElement(Vue, {
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Vue, {
       pack: packActif,
       role: role,
       table: enPartie ? {
@@ -8425,7 +8439,7 @@ function App() {
       onJournal: journalVersConsole,
       joueur: session,
       avatar: session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null,
-      consolePartie: enPartie && dep.id === "noyau-40k" ? {
+      consolePartie: enPartie ? {
         fil: consoleFil,
         onEnvoyer: envoyerConsoleMessage,
         joueur: session,
@@ -8434,14 +8448,7 @@ function App() {
       versionBase: versionBase,
       onAvatar: changerAvatar,
       onLogout: seDeconnecter
-    })), enPartie && dep.id !== "noyau-40k" && /*#__PURE__*/React.createElement(BandeauConsolePartie, {
-      ouverte: consolePartieOuverte,
-      onToggle: () => setConsolePartieOuverte(o => !o),
-      fil: consoleFil,
-      onEnvoyer: envoyerConsoleMessage,
-      joueur: session,
-      enEnvoi: consoleEnvoi
-    }));
+    })));
   })(), rolePour && /*#__PURE__*/React.createElement(ChoixRole, {
     pack: rolePour,
     onChoisi: choisirRole,
@@ -8487,6 +8494,7 @@ Promise.all(_PACKS.map(function (id) {
   throw err;
 });
 
+
   </script>
 
   <script>
@@ -8499,5 +8507,3 @@ Promise.all(_PACKS.map(function (id) {
   </script>
 </body>
 </html>
-
-
