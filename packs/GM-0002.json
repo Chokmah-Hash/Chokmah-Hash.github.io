@@ -112,6 +112,7 @@
       "Écouter",
       "Goûter",
       "Sentir",
+      "Équilibre",
       "Pister",
       "Voir"
     ],
@@ -131,7 +132,9 @@
       "Crédit",
       "Jongler",
       "Passe-passe",
-      "Persuader"
+      "Persuader",
+      "Faire des nœuds",
+      "Amorcer un piège"
     ],
     "AGILITÉ": [
       "Élan",
@@ -139,6 +142,7 @@
       "Équitation",
       "Grimper",
       "Sauter",
+      "Culbuter",
       "Danser",
       "Canotage",
       "Natation"
@@ -148,11 +152,70 @@
       "Mouvement silencieux",
       "Dissimuler",
       "Embuscade",
+      "Couper une bourse",
       "Se déguiser",
       "Discrétion",
       "Filature"
     ]
   },
+  "departCompetences": {
+    "Mouvement silencieux": "10+",
+    "Se cacher": "10+",
+    "Embuscade": "bonus",
+    "Dissimuler": "bonus",
+    "Couper une bourse": "bonus",
+    "Se déguiser": "bonus",
+    "Discrétion": "bonus",
+    "Filature": "bonus",
+    "Élan": "bonus",
+    "Éviter": "bonus",
+    "Équitation": "bonus",
+    "Grimper": "10+",
+    "Sauter": "10+",
+    "Culbuter": "bonus",
+    "Danser": "bonus",
+    "Canotage": "bonus",
+    "Natation": "bonus",
+    "Crocheter": "bonus",
+    "Crédit": "bonus",
+    "Jongler": "bonus",
+    "Passe-passe": "bonus",
+    "Persuader": "10+",
+    "Faire des nœuds": "bonus",
+    "Amorcer un piège": "bonus",
+    "Chercher": "bonus",
+    "Écoute": "10+",
+    "Écouter": null,
+    "Goûter": "bonus",
+    "Sentir": "bonus",
+    "Équilibre": "10+",
+    "Pister": "bonus",
+    "Voir": "10+",
+    "Évaluer un trésor": "bonus",
+    "Naviguer": "bonus",
+    "Artisanat": "bonus",
+    "Premiers soins": "bonus",
+    "Cartographie": "bonus",
+    "Mémoriser": "bonus",
+    "Connaissance des poisons": "0",
+    "Connaissance des plantes": "0",
+    "Connaissance de la musique": "0",
+    "Chirurgie": "bonus",
+    "Méditation": "bonus",
+    "Méditation relaxante": "bonus",
+    "Multivers": "bonus",
+    "Connaissance des démons": "bonus",
+    "Éloquence": "bonus",
+    "Chanter": "bonus",
+    "Commandement": "bonus",
+    "Jouer d'un instrument": "bonus",
+    "Séduire": "bonus",
+    "Langue commune": "0",
+    "Langage commun": null,
+    "Bas melnibonéen": "0",
+    "Haut melnibonéen": "0"
+  },
+  "bonusCompetences": "stormbringer-v2",
   "aideJet": "« 01 » réussite critique",
   "creation": "aventurier",
   "textes": {
@@ -184,6 +247,32 @@
             {
               "type": "para",
               "texte": "Jet sous le pourcentage : 1D100 ≤ seuil. « 01 » = réussite critique, « 00 » = échec automatique. Les caracs se lancent en brute, ×2, ×3 ou ×5 selon l'action."
+            }
+          ]
+        },
+        {
+          "titre": "Les bonus aux compétences (livre v2, §2.5)",
+          "blocs": [
+            {
+              "type": "para",
+              "texte": "Chaque famille gagne un bonus calculé sur les caracs : +1 % par point au-dessus de 12, −1 % par point en dessous de 9 — la TAI s'inverse pour la Parade, l'Agilité et la Discrétion. Une carac qui change, le bonus est recalculé."
+            },
+            {
+              "type": "liste",
+              "items": [
+                "Attaque : FOR + INT + POU + DEX",
+                "Parade : FOR + POU + DEX, moins la TAI",
+                "Agilité : FOR + POU + DEX, moins la TAI",
+                "Manipulation : FOR + INT + POU + DEX",
+                "Perception : INT + POU",
+                "Discrétion : INT + DEX, moins la TAI",
+                "Communication : CHA + INT + POU",
+                "Connaissance : 2 % par point d'INT au-dessus de 12, plus 1 % par année au-delà de 25 ans (Nobles 2 %, Prêtres 3 %)"
+              ]
+            },
+            {
+              "type": "para",
+              "texte": "Une compétence non apprise de type « Bonus » se joue sur le bonus de sa famille ; « 10 % + » part de 10 + le bonus ; les compétences « 0 % » (Poisons, Plantes, Musique, langues) exigent un maître avant tout jet."
             }
           ]
         },

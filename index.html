@@ -1895,8 +1895,17 @@ const fondrePresents = (precedent, diff) => {
    CARACTÉRISTIQUES, ARMES - ARMURES et POSSESSION prennent la couleur
    du pack ; le sélecteur de jets se groupe pareil. Les compétences
    non répertoriées restent visibles sous « AUTRES » — jamais cachées.
-   Les packs sans familles gardent la fiche d'avant, au pixel. ── */
-const BUILD = "0.61";
+   Les packs sans familles gardent la fiche d'avant, au pixel. ──
+   V0.62 — LE CATALOGUE ET LES BONUS DU LIVRE V2 : le pack GM-0002 déclare
+   la liste COMPLÈTE des compétences du manuel (§4.11) avec leur
+   « % de départ » (departCompetences : « 10+ », « bonus », « 0 ») — la
+   fiche montre tout, même à 0. Les bonus de famille (livre v2, §2.5)
+   sont calculés purs depuis les caracs (bonusCompetences) : +1 %/pt
+   au-dessus de 12, −1 %/pt en dessous de 9, TAI inversée, Connaissance
+   ×2 + âge. Une compétence « bonus » non apprise se joue SUR le bonus
+   de sa famille ; une « 10+ » sur 10 + bonus ; une « 0 » exige un
+   maître — jamais au jet. INVOCATION, maison, reste sans bonus. ── */
+const BUILD = "0.62";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6873,20 +6882,74 @@ function VueNoyauD100({
   if (themesComps) ordreThemes.forEach(t => themesComps[t].forEach(k => {
     familleDe[k] = t;
   }));
+  /* V0.62 — LES BONUS DE FAMILLE DU LIVRE V2 (§2.5) : calculés purs depuis
+     les caracs — +1 %/pt au-dessus de 12, −1 %/pt en dessous de 9, la TAI
+     s'inverse pour Parade, Agilité et Discrétion. La Connaissance vaut
+     double (2 %/pt d'INT au-dessus de 12) et grandit avec l'âge : 1 %/an
+     au-delà de 25 ans (Nobles 2, Prêtres 3 — la fiche porte son taux dans
+     bonusConnaissanceAge). Si la fiche change, les bonus suivent. */
+  const bonusFamilles = C.bonusCompetences === "stormbringer-v2" && perso.caracs ? (() => {
+    const cr = perso.caracs;
+    const plus = k => cr[k] > 12 ? cr[k] - 12 : cr[k] < 9 ? 9 - cr[k] : 0;
+    const inv = k => cr[k] > 12 ? 12 - cr[k] : cr[k] < 9 ? 9 - cr[k] : 0; /* TAI inversée */
+    const age = perso.identite && perso.identite.age || 25;
+    const tauxAge = perso.bonusConnaissanceAge || 1;
+    return {
+      "DISCRÉTION": plus("INT") + plus("DEX") + inv("TAI"),
+      "AGILITÉ": plus("FOR") + plus("POU") + plus("DEX") + inv("TAI"),
+      "MANIPULATION": plus("FOR") + plus("INT") + plus("POU") + plus("DEX"),
+      "PERCEPTION": plus("INT") + plus("POU"),
+      "CONNAISSANCE": Math.max(0, cr.INT - 12) * 2 + Math.max(0, age - 25) * tauxAge,
+      "COMMUNICATION": plus("CHA") + plus("INT") + plus("POU"),
+      attaque: plus("FOR") + plus("INT") + plus("POU") + plus("DEX"),
+      parade: plus("FOR") + plus("POU") + plus("DEX") + inv("TAI")
+    };
+  })() : null;
+  /* V0.62 — LE SEUIL EFFECTIF d'une compétence : son score si elle est
+     apprise ; sinon le plancher de sa famille selon son « % de départ » du
+     manuel — « bonus » → le bonus de famille, « 10+ » → 10 + bonus, « 0 » →
+     aucun jet avant l'entraînement (livre v2 : « doit être initialement
+     enseignée par un Maître, avant qu'un bonus y soit appliqué »). */
+  const departDe = themesComps && C.departCompetences ? C.departCompetences : null;
+  const modeComplet = !!(departDe && bonusFamilles);
+  const seuilComp = k => {
+    const v = (perso.competences || {})[k];
+    if (v != null && v > 0) return v;
+    if (!modeComplet || !(k in departDe) || !familleDe[k]) return v != null ? v : null;
+    const d = departDe[k];
+    if (d === "bonus") return bonusFamilles[familleDe[k]];
+    if (d === "10+") return 10 + bonusFamilles[familleDe[k]];
+    return null; /* « 0 » : un maître d'abord, ou type inconnu */
+  };
   const compsBruts = Object.keys(perso.competences || {});
-  const comps = themesComps ? [...compsBruts.filter(k => familleDe[k]).sort((a, b) => ordreThemes.indexOf(familleDe[a]) - ordreThemes.indexOf(familleDe[b])), ...compsBruts.filter(k => !familleDe[k])] : compsBruts;
+  /* V0.62 — LE CATALOGUE ENTRE EN SCÈNE : toutes les compétences du manuel
+     non apprises rejoignent la liste — « bonus »/« 10+ » se tirent sur le
+     seuil de leur famille et s'affichent discrètement ; les « 0 % »
+     restent visibles sur la fiche (« — », l'entraînement d'abord) mais ne
+     tirent jamais. */
+  const extrasCatalogue = modeComplet ? ordreThemes.flatMap(t => themesComps[t]).filter(k => !(k in (perso.competences || {})) && (departDe[k] === "bonus" || departDe[k] === "10+" || departDe[k] === "0")) : [];
+  const comps = themesComps ? [...compsBruts.filter(k => familleDe[k]).sort((a, b) => ordreThemes.indexOf(familleDe[a]) - ordreThemes.indexOf(familleDe[b]) || themesComps[familleDe[a]].indexOf(a) - themesComps[familleDe[b]].indexOf(b)), ...compsBruts.filter(k => !familleDe[k]), ...extrasCatalogue] : compsBruts;
+  /* V0.62 — au jet, une compétence du catalogue non apprise se joue sur
+     le seuil effectif de sa famille ; une « 0 % » (entraînement requis)
+     n'entre jamais au sélecteur. Hors catalogue : byte-pour-byte la
+     liste d'avant. */
+  const compsJet = modeComplet ? comps.filter(k => seuilComp(k) > 0) : comps;
   const sources = [...(C.ordreCaracs || Object.keys(c)).map(k => ({
     label: `${k} ${c[k]} — carac brute (${c[k]} %)`,
     seuil: c[k]
   })), ...(C.mults || []).map(m => ({
     label: `${m.carac}×${m.mult} — ${m.label} (${c[m.carac] * m.mult} %)`,
     seuil: c[m.carac] * m.mult
-  })), ...comps.map(k => ({
-    label: `${k} (${perso.competences[k]} %)`,
-    seuil: perso.competences[k]
-  }))];
-  /* L'index dans sources d'une compétence k — pour le sélecteur groupé */
-  const srcIdxDe = k => (C.ordreCaracs || Object.keys(c)).length + (C.mults || []).length + comps.indexOf(k);
+  })), ...compsJet.map(k => {
+    const s = modeComplet ? seuilComp(k) : perso.competences[k];
+    return {
+      label: `${k} (${s} %)`,
+      seuil: s
+    };
+  })];
+  /* L'index dans sources d'une compétence k — pour le sélecteur groupé
+     (V0.62 : l'index court sur compsJet, la liste réellement au jet) */
+  const srcIdxDe = k => (C.ordreCaracs || Object.keys(c)).length + (C.mults || []).length + compsJet.indexOf(k);
   const [srcIdx, setSrcIdx] = useState(0);
   const [compIdx, setCompIdx] = useState(0);
   const [palierIdx, setPalierIdx] = useState(2);
@@ -7219,10 +7282,10 @@ function VueNoyauD100({
   }] : [])].map(g => /*#__PURE__*/React.createElement("optgroup", {
     key: g.theme,
     label: g.theme
-  }, g.liste.map(k => /*#__PURE__*/React.createElement("option", {
+  }, g.liste.filter(k => seuilComp(k) > 0).map(k => /*#__PURE__*/React.createElement("option", {
     key: k,
     value: srcIdxDe(k)
-  }, k, " (", perso.competences[k], " %)"))))) : sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
+  }, k, " (", seuilComp(k), " %)"))))) : sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
     key: i,
     value: i
   }, s.label)))), /*#__PURE__*/React.createElement("button", {
@@ -7319,18 +7382,27 @@ function VueNoyauD100({
     }
   }, k, " "), v))), perso.competences && themesComps ?
   /*#__PURE__*/
-  /* V0.61 — LES THÈMES : chaque compétence rangée sous SA famille,
-     dans l'ordre du manuel. Le MJ dit « Crocheter » — le joueur
-     voit MANIPULATION. Rien n'est jamais caché : les non-classées
-     vivent sous « AUTRES ». */
+  /* V0.62 — LE CATALOGUE COMPLET : chaque compétence rangée sous
+     sa famille, dans l'ordre du manuel — les apprises pleines,
+     celles du catalogue non apprises en discret avec leur seuil
+     de jet (le bonus de famille, ou 10 + bonus), les « 0 % »
+     marquées « — » (un maître d'abord). Les non-classées vivent
+     sous « AUTRES » ; l'entête porte le bonus de la famille
+     calculé depuis les caracs (livre v2, §2.5). */
   React.createElement("div", {
     className: "mt-2"
   }, [...ordreThemes.map(t => ({
     theme: t,
-    items: comps.filter(k => familleDe[k] === t).map(k => [k, perso.competences[k]])
+    items: comps.filter(k => familleDe[k] === t).map(k => ({
+      k,
+      v: perso.competences[k]
+    }))
   })), ...(comps.filter(k => !familleDe[k]).length ? [{
     theme: "AUTRES",
-    items: comps.filter(k => !familleDe[k]).map(k => [k, perso.competences[k]])
+    items: comps.filter(k => !familleDe[k]).map(k => ({
+      k,
+      v: perso.competences[k]
+    }))
   }] : [])].filter(g => g.items.length > 0).map(g => /*#__PURE__*/React.createElement("div", {
     key: g.theme,
     className: "mt-2"
@@ -7339,20 +7411,25 @@ function VueNoyauD100({
     style: {
       color: T.accent
     }
-  }, g.theme), /*#__PURE__*/React.createElement("div", {
+  }, g.theme, bonusFamilles && g.theme in bonusFamilles ? " — BONUS " + (bonusFamilles[g.theme] >= 0 ? "+" + bonusFamilles[g.theme] : bonusFamilles[g.theme]) : ""), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 text-xs"
-  }, g.items.map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "flex justify-between rounded px-2 py-1",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, k), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, v, " %"))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
+  }, g.items.map(it => {
+    const apprise = it.v != null && it.v > 0;
+    const bloquee = modeComplet && !apprise && departDe[it.k] === "0";
+    const seuil = modeComplet ? seuilComp(it.k) : it.v;
+    return /*#__PURE__*/React.createElement("div", {
+      key: it.k,
+      className: "flex justify-between rounded px-2 py-1",
+      style: {
+        background: apprise ? "#ffffff08" : "#ffffff04",
+        color: apprise ? "#c8c8ce" : "#71717a"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, it.k), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: apprise ? "#e8e4d8" : "#a1a1aa"
+      }
+    }, bloquee ? "—" : seuil != null ? seuil + " %" : "—"));
+  }))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-2 text-xs"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -7415,7 +7492,7 @@ function VueNoyauD100({
     style: {
       color: themesComps ? T.accent : "#71717a"
     }
-  }, themesComps ? "ARMES - ARMURES" : "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
+  }, themesComps ? "ARMES - ARMURES" + (bonusFamilles ? " — ATTAQUE +" + bonusFamilles.attaque + " · PARADE +" + bonusFamilles.parade : "") : "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
     key: a.nom,
     className: "flex justify-between text-xs rounded px-2 py-1 mb-1",
     style: {
@@ -8820,7 +8897,6 @@ Promise.all(_PACKS.map(function (id) {
   if (_a) _a.textContent = "Echec du chargement des packs : " + err;
   throw err;
 });
-
 
   </script>
 
