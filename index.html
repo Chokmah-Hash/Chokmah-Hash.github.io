@@ -1871,8 +1871,15 @@ const fondrePresents = (precedent, diff) => {
    Gemme et le démon (le losange inscrit au carré, la goutte de
    sang suspendue au centre) pour GM-0003. La Cible aux quatre
    coupes reste celle de GM-0001 ; le glyphe texte ne survit qu'en
-   repli. ── */
-const BUILD = "0.58";
+   repli. ──
+   V0.59 — GLYPHES FIDÈLES AUX MAQUETTES : la V0.58 avait répondu au
+   « sans marge intérieure » en étirant les dessins jusqu'aux bords —
+   les proportions des maquettes validées s'en trouvaient déformées.
+   Correction : les Flèches du Chaos et la Gemme et le démon reprennent
+   EXACTEMENT la géométrie des maquettes, et l'absence de marge vient
+   du CADRAGE — le viewBox épouse le dessin (comme la Cible fait déjà),
+   pas l'inverse. ── */
+const BUILD = "0.59";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2236,11 +2243,13 @@ function CibleJeu({
   })));
 }
 
-/* ════════ V0.58 — Les Flèches du Chaos, ICÔNE DE STORMBRINGER ════════
+/* ════════ V0.59 — Les Flèches du Chaos, ICÔNE DE STORMBRINGER ════════
    Validé par Michael (04/11/2026) : les huit flèches du Chaos — le
-   symbole canonique du jeu. PLEIN CADRE, SANS MARGE INTÉRIEURE : les
-   pointes des axes touchent les bords, celles des diagonales tombent
-   dans les coins — le glyphe occupe tout son carré (192×192). */
+   symbole canonique du jeu, EXACTEMENT aux proportions de la maquette
+   validée. SANS MARGE par le CADRAGE : le viewBox épouse le dessin
+   (20 20 152 152 — les pointes s'arrêtent à 76 du centre, le cadre
+   les suit), pas en étirant les flèches jusqu'aux bords (V0.58,
+   déformation rejetée par Michael). */
 function FlechesChaos({
   size = 32,
   color = "#e8e4d8"
@@ -2248,7 +2257,7 @@ function FlechesChaos({
   return /*#__PURE__*/React.createElement("svg", {
     width: size,
     height: size,
-    viewBox: "0 0 192 192",
+    viewBox: "20 20 152 152",
     style: {
       display: "block"
     }
@@ -2266,22 +2275,24 @@ function FlechesChaos({
     key: a,
     transform: "rotate(" + a + ")"
   }, /*#__PURE__*/React.createElement("rect", {
-    x: "26",
+    x: "22",
     y: "-4",
-    width: a % 90 === 0 ? "150" : "93.8",
+    width: "40",
     height: "8",
     stroke: "none"
   }), /*#__PURE__*/React.createElement("polygon", {
-    points: a % 90 === 0 ? "176,-12 192,0 176,12" : "119.8,-12 135.8,0 119.8,12",
+    points: "60,-10 76,0 60,10",
     stroke: "none"
   })))));
 }
 
-/* ════════ V0.58 — La Gemme et le démon, ICÔNE DE BLOODLUST ════════
+/* ════════ V0.59 — La Gemme et le démon, ICÔNE DE BLOODLUST ════════
    Validé par Michael (04/11/2026) : le concept même du jeu — le démon
    intérieur, ici une goutte de sang suspendue, enfermé dans la gemme.
-   PLEIN CADRE, SANS MARGE INTÉRIEURE : le losange est inscrit au
-   carré, ses sommets touchent les quatre bords (192×192). */
+   EXACTEMENT aux proportions de la maquette validée (losange plus large
+   que haut, goutte au tiers supérieur). SANS MARGE par le CADRAGE :
+   le viewBox épouse le dessin (36 26 120 140), pas en gonflant le
+   losange jusqu'au carré (V0.58, déformation rejetée par Michael). */
 function GemmeDemon({
   size = 32,
   color = "#e8e4d8"
@@ -2289,17 +2300,17 @@ function GemmeDemon({
   return /*#__PURE__*/React.createElement("svg", {
     width: size,
     height: size,
-    viewBox: "0 0 192 192",
+    viewBox: "36 26 120 140",
     style: {
       display: "block"
     }
   }, /*#__PURE__*/React.createElement("polygon", {
-    points: "96,4 188,96 96,188 4,96",
+    points: "96,30 152,74 96,162 40,74",
     fill: "none",
     stroke: color,
     strokeWidth: "8"
   }), /*#__PURE__*/React.createElement("path", {
-    d: "M96 62 C 88.5 78 81 90 81 102 A 15 15 0 0 0 111 102 C 111 90 103.5 78 96 62 Z",
+    d: "M96 62 C 89 78 82 90 82 102 A 14 14 0 0 0 110 102 C 110 90 103 78 96 62 Z",
     fill: color
   }));
 }
