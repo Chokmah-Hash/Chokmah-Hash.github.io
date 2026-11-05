@@ -1929,8 +1929,14 @@ const fondrePresents = (precedent, diff) => {
    la couleur changent (l'accent du jeu teinte le cadre) ; le Jet de
    Dés quitte la Taverne (il reviendra avec l'intégration visuelle) ;
    l'icône des connectés devient un bouton texte CONNECTÉS (règle
-   sans emoji). ── */
-const BUILD = "0.65";
+   sans emoji). ──
+   V0.66 — LE SALON DU JEU : la TAVERNE n'est PAS la console de partie —
+   c'est le salon du JEU Stormbringer, l'endroit où joueurs et MJ se
+   réunissent AVANT de lancer une aventure (comme le LOBBY de Protocole
+   Ω) : le canal du JDR (jeu, null) de la Tombe, vivant dès l'ouverture
+   du jeu, sans attendre une partie — plus de cadre muet. La console
+   d'AVENTURE vivra sur la page de l'aventure, quand elle existera. ── */
+const BUILD = "0.66";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -8426,6 +8432,7 @@ function VueNoyauD100({
   joueur,
   avatar,
   consolePartie,
+  salonJeu,
   versionBase,
   onAvatar,
   onLogout,
@@ -8764,23 +8771,16 @@ function VueNoyauD100({
       color: onglet === id ? T.accent : "#71717a",
       cursor: "pointer"
     }
-  }, lbl))), onglet === "salon" && (consolePartie ? /*#__PURE__*/React.createElement(ChatSalon, {
+  }, lbl))), onglet === "salon" && /*#__PURE__*/React.createElement(ChatSalon, {
     titre: "SALON — " + pack.nom,
-    fil: consolePartie.fil,
-    onEnvoyer: consolePartie.onEnvoyer,
-    joueur: consolePartie.joueur || joueur,
-    enEnvoi: consolePartie.enEnvoi,
-    presents: consolePartie.presents || [],
+    fil: salonJeu && salonJeu.fil || [],
+    onEnvoyer: salonJeu && salonJeu.onEnvoyer || (() => {}),
+    joueur: salonJeu && salonJeu.joueur || joueur,
+    enEnvoi: salonJeu && salonJeu.enEnvoi,
+    presents: salonJeu && salonJeu.presents || [],
     remplir: true,
     accent: T.accent
-  }) : /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-6 text-center text-sm",
-    style: {
-      background: "#14161b",
-      border: "1px solid " + T.accent + "33",
-      color: "#71717a"
-    }
-  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table.")), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
+  }), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-6 text-center",
     style: {
       background: "#ffffff08",
@@ -9489,6 +9489,7 @@ function App() {
   const packPartieRef = useRef(null);
   const vueRef = useRef("hub");
   const contexteConsoleRef = useRef(null); /* {partieId, packId} — le canal de la console : partie en cours, salon du JDR, ou global */
+  const salonJeuIdRef = useRef(null); /* V0.66 : le JDR du pack ouvert — le canal du SALON DU JEU (Taverne du d100) */
   partieIdRef.current = partie ? partie.id : null;
   packPartieRef.current = packPartie;
   vueRef.current = vue;
@@ -9514,6 +9515,7 @@ function App() {
      lu et gravé par ses membres seuls. Le contexte est tenu dans une
      ref : les closures du canal temps réel la lisissent à chaque poussée. */
   const [consoleFil, setConsoleFil] = useState([]);
+  const [salonJeuFil, setSalonJeuFil] = useState([]); /* V0.66 : le fil du SALON DU JEU — canal (jeu, null), indépendant de la console de partie */
   /* V0.38 — le canal à DEUX dimensions : la partie en cours UNIQUEMENT
      en vue pack (la table : le lobby n'est JAMAIS détourné, le MJ qui
      tient une aventure voyait son salon muet), sinon LE SALON DU JDR
@@ -9532,6 +9534,8 @@ function App() {
     packId: null
   };
   contexteConsoleRef.current = contexteConsole;
+  const salonJeuId = vue === "pack" && packActif ? packActif.id : null; /* V0.66 : le pack OUVERT vit son salon de JDR (la vue partie a déjà le sien via contexteConsole) */
+  salonJeuIdRef.current = salonJeuId;
   useEffect(() => {
     if (!CLOUD || !session) {
       setConsoleFil([]);
@@ -9548,6 +9552,17 @@ function App() {
     const ctx = contexteConsoleRef.current || {};
     CLOUD.lireConsole(ctx.partieId || null, ctx.packId || null).then(f => setConsoleFil(f || [])).catch(() => {});
   };
+
+  /* V0.66 — le fil du SALON DU JEU se lit à l'entrée du pack : le canal
+     (jeu, null) de la Tombe, le même que le LOBBY d'EcranPartie. Les
+     poussées temps réel le maintiennent vivant. */
+  useEffect(() => {
+    if (!CLOUD || !session || !salonJeuIdRef.current) {
+      setSalonJeuFil([]);
+      return;
+    }
+    CLOUD.lireConsole(null, salonJeuIdRef.current).then(f => setSalonJeuFil(f || [])).catch(() => {});
+  }, [session ? session.compteId : null, salonJeuId]);
 
   /* Recharger la partie courante et sa table (utilisée au montage et à
      chaque poussée parties/joueurs : la Tombe reste la seule vérité).
@@ -9660,6 +9675,21 @@ function App() {
        dans le canal de la partie quand il y en a une. */
     const envoi = ev.des ? CLOUD.lancerDes(ev.des.nb, ev.des.faces, undefined, ctx.partieId || null).catch(() => showToast("La Tombe n'a pas gravé le dé — réessayez.")) : CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees, ctx.partieId || null, ctx.packId || null).catch(() => showToast("La Console n'a pas gravé — réessayez."));
     envoi.then(() => setConsoleEnvoi(false));
+  };
+
+  /* V0.66 — PARLER DANS LE SALON DU JEU : la Taverne du d100 est le lobby
+     de SON JDR — le canal (jeu, null) reçoit les paroles, jamais les dés
+     (ils vivront à la table de l'aventure, sur sa page future). */
+  const envoyerSalonJeu = texte => {
+    if (!CLOUD || !session || !salonJeuIdRef.current) return;
+    const ev = interpreterConsole(texte);
+    if (!ev.contenu && !ev.des) return;
+    if (ev.des) {
+      showToast("Les dés se roulent à la table — le salon est fait pour parler.");
+      return;
+    }
+    setConsoleEnvoi(true);
+    CLOUD.envoyerConsole(session.compteId, ev.contenu, ev.type, ev.donnees, null, salonJeuIdRef.current).catch(() => showToast("Le salon n'a pas gravé — réessayez.")).finally(() => setConsoleEnvoi(false));
   };
 
   /* V3 : le journal de chaque moteur se grave aussi dans la Console —
@@ -9948,6 +9978,15 @@ function App() {
             setConsoleFil(f => {
               if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
               return [ligne, ...f].slice(0, 80); /* V0.43 : le plus récent naît EN TÊTE */
+            });
+          }
+          /* V0.66 — LE SALON DU JEU : la Taverne du d100 vit le canal de
+             SON JDR, hors de toute aventure. */
+          const sidJeu = salonJeuIdRef.current;
+          if (sidJeu && (ligne.partie_id || null) === null && (ligne.jeu || null) === sidJeu) {
+            setSalonJeuFil(f => {
+              if (f.some(x => x.id === ligne.id)) return f; /* anti-écho */
+              return [ligne, ...f].slice(0, 80);
             });
           }
           return;
@@ -10337,6 +10376,13 @@ function App() {
         enEnvoi: consoleEnvoi,
         presents: Object.values(presents).filter(j => j && j.jeu === packActif.id)
       } : null,
+      salonJeu: {
+        fil: salonJeuFil,
+        onEnvoyer: envoyerSalonJeu,
+        joueur: session,
+        enEnvoi: consoleEnvoi,
+        presents: Object.values(presents).filter(j => j && j.jeu === packActif.id)
+      },
       versionBase: versionBase,
       persos: mesPersonnages,
       onAvatar: changerAvatar,
