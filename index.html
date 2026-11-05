@@ -1995,8 +1995,19 @@ const fondrePresents = (precedent, diff) => {
    se répartit sur les deux colonnes du milieu ; l'espace entre
    les jauges PV/SAN/S.F.T resserre (Michael trouve la fiche
    trop aérée là). Nationalité/Culte de Mad Marthygann gravés
-   dans la Tombe : Eshmirien · élémentaire de l'air. ── */
-const BUILD = "0.72";
+   dans la Tombe : Eshmirien · élémentaire de l'air. ──
+   V0.73 — LA FICHE EN CINQ BLOCS DISTINCTS (Michael) : cinq
+   cadres séparés — ① le bandeau IDENTITÉ + CARACTÉRISTIQUES
+   EN UNE LIGNE DE LÉGENDES (le nom posé sur la bordure du
+   petit cadre, façon fieldset/legend) + les jauges, Points de
+   Vie EN CASES (16 PV = 16 cases, la classe pv-pleine garde
+   le contraste sur papier) ; ② le bandeau ARMES - ARMURES ;
+   ③ le bloc COLONNES ÉQUILIBRÉES des compétences (md:columns-2
+   — le flux de l'impression : chaque famille descend la
+   première colonne puis remplit la seconde, SANS les vides
+   d'alignement des rangées de grille) ; ④ le bandeau
+   POSSESSION ; ⑤ le bandeau NOTES. ── */
+const BUILD = "0.73";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6848,7 +6859,7 @@ function PvBarre({
     length: pvMax
   }).map((_, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
-    className: "pv-case h-8 flex-1 rounded",
+    className: (i < pv ? "pv-case pv-pleine" : "pv-case") + " h-8 flex-1 rounded",
     style: {
       background: i < pv ? accent : "#5c1f1f",
       border: "1px solid #ffffff18"
@@ -8928,7 +8939,9 @@ function VueNoyauD100({
     onValide: validerCreation,
     onAnnule: () => setEnCreation(false)
   })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 md:col-span-2 fiche-impression",
+    className: "md:col-span-2 fiche-impression space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
       border: "1px solid " + T.accent + "33"
@@ -8966,31 +8979,38 @@ function VueNoyauD100({
     style: {
       color: "#e8e4d8"
     }
-  }, v != null && v !== "" ? v : "—")))), themesComps &&
-  /*#__PURE__*/
-  /* V0.61 — l'entête du premier thème, celui du manuel */
-  React.createElement("div", {
+  }, v != null && v !== "" ? v : "—")))), themesComps && /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-bold tracking-widest mb-1",
     style: {
       color: T.accent
     }
   }, "CARACT\xC9RISTIQUES"), /*#__PURE__*/React.createElement("div", {
-    className: "grid gap-2 text-center text-sm " + (nbCaracs > 6 ? "grid-cols-4" : "grid-cols-3")
-  }, Object.entries(c).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-7 gap-1.5"
+  }, Object.entries(c).map(([k, v]) => /*#__PURE__*/React.createElement("fieldset", {
     key: k,
-    className: "rounded py-1.5",
+    className: "rounded text-center",
     style: {
-      background: "#ffffff0d",
+      border: "1px solid " + T.accent + "33",
+      borderRadius: 8,
+      padding: "6px 2px 4px",
+      margin: 0
+    }
+  }, /*#__PURE__*/React.createElement("legend", {
+    className: "text-[10px] tracking-widest",
+    style: {
+      color: "#a1a1aa",
+      padding: "0 4px"
+    }
+  }, k), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
       color: "#e8e4d8"
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, k, " "), v))), perso.pv != null &&
+  }, v)))), perso.pv != null &&
   /*#__PURE__*/
-  /* V0.72 — l'espace resserre entre les trois jauges (Michael). */
+  /* V0.73 — LES POINTS DE VIE EN CASES (Michael) : 16 PV
+     = 16 cases à rayer — PvBarre les rend déjà ; la classe
+     pv-pleine distingue les pleines sur papier clair. */
   React.createElement("div", {
     className: "mt-2"
   }, /*#__PURE__*/React.createElement("div", {
@@ -8998,11 +9018,10 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "Points de Vie \u2014 blessure majeure \xE0 ", perso.blessureMajeure || Math.floor((perso.pvMax || perso.pv) / 2)), /*#__PURE__*/React.createElement(BarrePct, {
-    valeur: perso.pv,
-    max: perso.pvMax || perso.pv,
-    accent: "#e0524d",
-    label: `${perso.pv} / ${perso.pvMax || perso.pv} PV`
+  }, "Points de Vie \u2014 ", perso.pv, " / ", perso.pvMax || perso.pv, " PV \u2014 blessure majeure \xE0 ", perso.blessureMajeure || Math.floor((perso.pvMax || perso.pv) / 2)), /*#__PURE__*/React.createElement(PvBarre, {
+    pv: perso.pv,
+    pvMax: perso.pvMax || perso.pv,
+    accent: "#e0524d"
   })), perso.sanMax ? /*#__PURE__*/React.createElement("div", {
     className: "mt-2"
   }, /*#__PURE__*/React.createElement("div", {
@@ -9029,8 +9048,12 @@ function VueNoyauD100({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), perso.armes && perso.armes.length > 0 || perso.armures && perso.armures.length > 0 ? /*#__PURE__*/React.createElement("div", {
-    className: "mt-2"
+  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || ""))))), perso.armes && perso.armes.length > 0 || perso.armures && perso.armures.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
     style: {
@@ -9075,8 +9098,14 @@ function VueNoyauD100({
         color: "#e8e4d8"
       }
     }, nom), reste ? " · " + reste : "");
-  })))) : null, /*#__PURE__*/React.createElement("div", {
-    className: "grid gap-x-4 gap-y-2 mt-3 md:grid-cols-2 print:grid-cols-2"
+  })))) : null, perso.competences || perso.desirs || perso.pouvoirs && perso.pouvoirs.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "md:columns-2 print:columns-2 gap-4"
   }, perso.competences && themesComps ?
   /*#__PURE__*/
   /* V0.62 — LE CATALOGUE COMPLET : chaque compétence rangée sous
@@ -9102,7 +9131,8 @@ function VueNoyauD100({
       v: perso.competences[k]
     }))
   }] : [])].filter(g => g.items.length > 0).map(g => /*#__PURE__*/React.createElement("div", {
-    key: g.theme
+    key: g.theme,
+    className: "mb-3 break-inside-avoid"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-bold tracking-widest mb-1",
     style: {
@@ -9160,7 +9190,7 @@ function VueNoyauD100({
       color: "#e8e4d8"
     }
   }, "3\xD7POU \xB7 ", 3 * (perso.caracs && perso.caracs.POU || 0), " %"))))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-1.5 text-xs"
+    className: "grid grid-cols-2 gap-1.5 text-xs mb-3 break-inside-avoid"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
     className: "flex justify-between rounded px-2 py-1",
@@ -9177,7 +9207,9 @@ function VueNoyauD100({
   /* V0.68 — repli : si le pack n'a pas de famille INVOCATION,
      les pouvoirs gardent leur bloc propre — V0.72 : une
      CELLULE du milieu de fiche, avec les compétences. */
-  React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  React.createElement("div", {
+    className: "mb-3 break-inside-avoid"
+  }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
@@ -9196,7 +9228,9 @@ function VueNoyauD100({
   /* V0.72 — LES DÉSIRS : une CELLULE du milieu de fiche,
      à côté des familles de compétences (le fragment de
      la V0.70 devenait DEUX cellules — un div l'englobe). */
-  React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  React.createElement("div", {
+    className: "mb-3 break-inside-avoid"
+  }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
@@ -9218,8 +9252,12 @@ function VueNoyauD100({
     pv: v,
     pvMax: 10,
     accent: v >= 8 ? T.accent : "#a8adb8"
-  }))))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
+  })))))) : null, perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
     style: {
@@ -9244,7 +9282,11 @@ function VueNoyauD100({
       }
     }, nom), detail ? " · " + detail : "");
   }))), /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-bold tracking-widest mb-1",
     style: {
