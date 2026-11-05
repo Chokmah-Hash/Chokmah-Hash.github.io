@@ -1912,8 +1912,18 @@ const fondrePresents = (precedent, diff) => {
    « livre: "sb-v2" » — le livre gravé (données v7.0,
    packs/livre-sb-v2.json) est fetché à l'entrée du pack et injecté
    dans le moteur. Invisible : aucun panneau ne l'affiche encore —
-   préparation des panneaux du salon (SAN, folie, invocations). ── */
-const BUILD = "0.63";
+   préparation des panneaux du salon (SAN, folie, invocations). ──
+   V0.64 — LA TAVERNE DU JOUEUR, LE TITRE DE CHAQUE JEU : le sous-titre
+   de l'entête vient du MANIFESTE (sousTitre : K-BoT pour Protocole Ω,
+   « Cycle d'Elric » pour Stormbringer, « Les armes-dieux » pour
+   Bloodlust) et le trait de couleur sous le titre disparaît ; le pied
+   « Powered by Vibe · N° » vit aussi sur le noyau-d100, collé en bas ;
+   la TAVERNE est l'onglet du JOUEUR seul (le MJ garde SCENARIO) : le
+   Jet de Dés en haut, la CONSOLE DE PARTIE en cadre COLLÉE EN BAS ; le
+   journal append-only déménage dans un nouvel onglet JOURNAL, à droite
+   de FICHE PERSONNAGE. Et la règle d'or du jour : AUCUN EMOJI dans
+   l'interface (le cadenas seul reste). ── */
+const BUILD = "0.64";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -1928,6 +1938,8 @@ const PACKS = [{
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Protocole Ω",
+  sousTitre: "K-BoT",
+  /* V0.64 : le sous-titre de l'entête vient du manifeste */
   multijoueur: true,
   /* V4 : se lance par LA PARTIE — lobby, code, MJ et joueurs */
   depend_de: [{
@@ -1951,6 +1963,7 @@ const PACKS = [{
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Stormbringer",
+  sousTitre: "Cycle d'Elric",
   depend_de: [{
     id: "noyau-d100",
     format_min: 1
@@ -1974,6 +1987,7 @@ const PACKS = [{
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Bloodlust",
+  sousTitre: "Les armes-dieux",
   depend_de: [{
     id: "noyau-d100",
     format_min: 1
@@ -6962,10 +6976,7 @@ function EntetePartie({
 }) {
   const T = pack.theme;
   return /*#__PURE__*/React.createElement("header", {
-    className: "flex items-center justify-between mb-6 pb-4",
-    style: {
-      borderBottom: "1px solid " + T.accent + "33"
-    }
+    className: "flex items-center justify-between mb-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement(GlyphePack, {
@@ -6979,7 +6990,7 @@ function EntetePartie({
     style: {
       color: "#a1a1aa"
     }
-  }, "K-BoT"))), joueur && avatar && compte ? compte : /*#__PURE__*/React.createElement(GlyphePack, {
+  }, pack.sousTitre || ""))), joueur && avatar && compte ? compte : /*#__PURE__*/React.createElement(GlyphePack, {
     pack: pack,
     size: 40,
     fond: T.fond
@@ -7765,7 +7776,7 @@ function JournalBloc({
     style: {
       color: or
     }
-  }, "\uD83D\uDCDC Journal du personnage \u2014 append-only"), /*#__PURE__*/React.createElement("button", {
+  }, "Journal du personnage \u2014 append-only"), /*#__PURE__*/React.createElement("button", {
     onClick: corriger,
     className: "text-xs px-3 py-1 rounded font-bold",
     style: {
@@ -7773,7 +7784,7 @@ function JournalBloc({
       color: "#fb7185"
     },
     disabled: journal.length === 0
-  }, "\u270E Annuler le dernier (par \xE9crit)")), /*#__PURE__*/React.createElement("div", {
+  }, "Annuler le dernier (par \xE9crit)")), /*#__PURE__*/React.createElement("div", {
     className: "max-h-80 overflow-y-auto flex flex-col gap-1.5 pr-1"
   }, journalInverse.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-sm py-3 text-center",
@@ -8422,7 +8433,7 @@ function VueNoyauD100({
   const [enCreation, setEnCreation] = useState(false);
   /* V0.57 — l'ordonnance universelle : onglets SALON puis SCENARIO/FICHE,
      entête de partie, compte joueur — la même coquille que le noyau-40k. */
-  const [onglet, setOnglet] = useState("salon");
+  const [onglet, setOnglet] = useState(role === "mj" ? "scenario" : "salon"); /* V0.64 : la TAVERNE est au joueur — le MJ ouvre sur SCENARIO */
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [dernierDe, setDernierDe] = useState(null); /* la face du dernier d100, en chiffres */
   const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
@@ -8615,7 +8626,7 @@ function VueNoyauD100({
     log("forge.achat", `${t.nom} ${fmtD100(cle)} — ${pouvoir.nom} · ${prixN1 > 0 ? "+" : ""}${prixN1} → total ${nvPts}/${C.forge.budget}`);
     if (nvPts > C.forge.budget && !armeEveillee) {
       setArmeEveillee(true);
-      log("forge.fin", `Total ${nvPts} > ${C.forge.budget} — ${C.forge.nom} s'ÉVEILLE ⚔ l'épée est terminée (prestige de l'arme : ${prestigeNv} pts — nouveaux pouvoirs uniquement en jeu)`);
+      log("forge.fin", `Total ${nvPts} > ${C.forge.budget} — ${C.forge.nom} s'ÉVEILLE — l'épée est terminée (prestige de l'arme : ${prestigeNv} pts — nouveaux pouvoirs uniquement en jeu)`);
     }
   };
   const choisirOrdreForge = premier => {
@@ -8722,7 +8733,7 @@ function VueNoyauD100({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5 py-6 w-full"
+    className: "max-w-4xl mx-auto px-5 py-6 w-full flex flex-col flex-1"
   }, /*#__PURE__*/React.createElement(EntetePartie, {
     pack: pack,
     role: role,
@@ -8734,7 +8745,7 @@ function VueNoyauD100({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, (role === "mj" ? [["salon", C.salon || "SALON"], ["scenario", "SCENARIO"]] : [["salon", C.salon || "SALON"], ["fiche", "FICHE PERSONNAGE"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, (role === "mj" ? [["scenario", "SCENARIO"]] : [["salon", C.salon || "SALON"], ["fiche", "FICHE PERSONNAGE"], ["journal", "JOURNAL"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -8745,29 +8756,9 @@ function VueNoyauD100({
       color: onglet === id ? T.accent : "#71717a",
       cursor: "pointer"
     }
-  }, lbl))), onglet === "salon" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl mb-4 overflow-hidden",
-    style: {
-      background: "#14161b",
-      border: "1px solid " + T.accent + "33"
-    }
+  }, lbl))), onglet === "salon" && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col flex-1"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "px-3 py-2 text-xs font-bold tracking-widest",
-    style: {
-      borderBottom: "1px solid #27272a",
-      color: T.accent
-    }
-  }, "\uD83D\uDCAC CONSOLE DE PARTIE"), consolePartie ? /*#__PURE__*/React.createElement(ConsoleGlobale, {
-    fil: consolePartie.fil,
-    onEnvoyer: consolePartie.onEnvoyer,
-    joueur: consolePartie.joueur || joueur,
-    enEnvoi: consolePartie.enEnvoi
-  }) : /*#__PURE__*/React.createElement("div", {
-    className: "text-xs py-4 text-center",
-    style: {
-      color: "#71717a"
-    }
-  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table.")), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 mb-4",
     style: {
       background: "#ffffff08",
@@ -8778,7 +8769,7 @@ function VueNoyauD100({
     style: {
       color: T.accent
     }
-  }, "\uD83C\uDFB2 Jet de D\xE9s"), /*#__PURE__*/React.createElement("div", {
+  }, "Jet de D\xE9s"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center gap-3"
   }, C.paliers ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
     className: "text-sm",
@@ -8870,13 +8861,29 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "1D100 \u2264 seuil \xB7 plancher 5 % \xB7 \xAB 00 \xBB \xE9chec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement(JournalBloc, {
-    journal: journal,
-    corriger: corrigerDernier,
-    accent: T.accent,
-    or: T.or,
-    surcharges: C.surcharges.join(" · ")
-  })), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
+  }, "1D100 \u2264 seuil \xB7 plancher 5 % \xB7 \xAB 00 \xBB \xE9chec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl overflow-hidden mt-auto",
+    style: {
+      background: "#14161b",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2 text-xs font-bold tracking-widest",
+    style: {
+      borderBottom: "1px solid #27272a",
+      color: T.accent
+    }
+  }, "CONSOLE DE PARTIE"), consolePartie ? /*#__PURE__*/React.createElement(ConsoleGlobale, {
+    fil: consolePartie.fil,
+    onEnvoyer: consolePartie.onEnvoyer,
+    joueur: consolePartie.joueur || joueur,
+    enEnvoi: consolePartie.enEnvoi
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs py-4 text-center",
+    style: {
+      color: "#71717a"
+    }
+  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table."))), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-6 text-center",
     style: {
       background: "#ffffff08",
@@ -8887,12 +8894,18 @@ function VueNoyauD100({
     style: {
       color: T.or
     }
-  }, "\uD83D\uDDFA SCENARIO"), /*#__PURE__*/React.createElement("div", {
+  }, "SCENARIO"), /*#__PURE__*/React.createElement("div", {
     className: "text-sm",
     style: {
       color: "#71717a"
     }
-  }, "Coming soon \u2014 la campagne s'\xE9crira ici.")), onglet === "fiche" && /*#__PURE__*/React.createElement("div", {
+  }, "Coming soon \u2014 la campagne s'\xE9crira ici.")), onglet === "journal" && /*#__PURE__*/React.createElement(JournalBloc, {
+    journal: journal,
+    corriger: corrigerDernier,
+    accent: T.accent,
+    or: T.or,
+    surcharges: C.surcharges.join(" · ")
+  }), onglet === "fiche" && /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
     className: "md:col-span-2"
@@ -9223,7 +9236,7 @@ function VueNoyauD100({
     valeur: Math.min(pts, C.forge.budget),
     max: C.forge.budget,
     accent: T.or,
-    label: armeEveillee ? `${pts} points — l'arme s'éveille ⚔ · prestige : ${prestige} pts` : `${pts} / ${C.forge.budget} points de forge (base ${C.forge.typeArme || "de l'arme"} : ${C.forge.base})`
+    label: armeEveillee ? `${pts} points — l'arme s'éveille · prestige : ${prestige} pts` : `${pts} / ${C.forge.budget} points de forge (base ${C.forge.typeArme || "de l'arme"} : ${C.forge.base})`
   })), acquis.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-3 text-center py-2 rounded",
     style: {
@@ -9332,7 +9345,7 @@ function VueNoyauD100({
         color: bloque ? "#a1a1aa" : "#0c0d10",
         cursor: bloque ? "not-allowed" : "pointer"
       }
-    }, "\uD83C\uDFB2 ", t.nom.replace("Pouvoirs ", ""), t.max !== null && /*#__PURE__*/React.createElement("span", {
+    }, t.nom.replace("Pouvoirs ", ""), t.max !== null && /*#__PURE__*/React.createElement("span", {
       className: "text-xs font-normal ml-1"
     }, "(", n, "/", t.max, ")"));
   })), armeEveillee && /*#__PURE__*/React.createElement("div", {
@@ -9341,7 +9354,7 @@ function VueNoyauD100({
       background: "#ffffff0d",
       color: T.or
     }
-  }, "\u2694 ", C.forge.nom, " est \xE9veill\xE9e \u2014 la forge est close (nouveaux pouvoirs en jeu, par l'XP)"), C.controle ? /*#__PURE__*/React.createElement("button", {
+  }, C.forge.nom, " est \xE9veill\xE9e \u2014 la forge est close (nouveaux pouvoirs en jeu, par l'XP)"), C.controle ? /*#__PURE__*/React.createElement("button", {
     onClick: testerControle,
     className: "py-2 rounded-lg text-sm font-bold",
     style: {
@@ -9353,7 +9366,9 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, C.forgeAide))) : null))));
+  }, C.forgeAide))) : null))), /*#__PURE__*/React.createElement(PiedVibe, {
+    versionBase: versionBase
+  }));
 }
 
 /* §SECTION:APP§ — le hub, le chargement du pack, le pack */

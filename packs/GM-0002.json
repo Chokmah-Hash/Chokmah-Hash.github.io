@@ -219,7 +219,7 @@
   "aideJet": "« 01 » réussite critique",
   "creation": "aventurier",
   "textes": {
-    "creer": "⚔ Créer un aventurier",
+    "creer": "Créer un aventurier",
     "recreer": "↺ Créer un nouvel aventurier"
   },
   "journalCreation": "Fait naître {nom}, {origine} — 7 caracs 3D6 (total {total}/52) · SAN {sanMax} (POU {pou}×5)",
