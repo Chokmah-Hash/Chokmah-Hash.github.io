@@ -1961,8 +1961,17 @@ const fondrePresents = (precedent, diff) => {
    famille (la règle du « maître d'abord » du livre s'incline devant
    la table — Michael l'a tranché) ; les POUVOIRS du personnage sont
    des pouvoirs d'INVOCATION gagnés (le nécromancien) : ils vivent
-   désormais DANS la famille INVOCATION de la fiche. ── */
-const BUILD = "0.68";
+   désormais DANS la famille INVOCATION de la fiche. ──
+   V0.69 — LES POUVOIRS OFFICIELS DU LIVRE : les pouvoirs
+   d'INVOCATION gagnés s'affichent comme les compétences de la
+   famille (Sylphe, Gnome...) sauf que leur chance se joue à 3×POU
+   (POU 35 → 3×POU · 105 %) — pour l'instant SEULS les pouvoirs
+   OFFICIELS du livre gravé s'affichent (pouvoirs démoniaques §5.7.1,
+   esprits élémentaires §5.4, Seigneurs §5.9-§5.10) ; les pouvoirs
+   maison (gagnés en aventure) attendront leur gravure (Michael) ;
+   le bouton « Créer un aventurier » en bas de fiche disparaît —
+   l'écran de création est le chantier suivant. ── */
+const BUILD = "0.69";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -8455,7 +8464,8 @@ function VueNoyauD100({
   onLogout,
   persos,
   onCreerPersonnage,
-  onSupprimerPersonnage
+  onSupprimerPersonnage,
+  livreSb
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack */
@@ -8475,6 +8485,44 @@ function VueNoyauD100({
   const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
   const perso = persoCree || C.perso;
   const c = perso.caracs;
+
+  /* V0.69 — POUVOIRS D'INVOCATION GAGNÉS : n'afficher que les
+     pouvoirs OFFICIELS du livre gravé (Michael : « pour l'instant
+     affiche que les officiels »). Le livre connaît les pouvoirs
+     démoniaques (§5.7.1), les esprits élémentaires (§5.4, au
+     singulier comme au pluriel — Sylphe, Gnome...) et les Seigneurs
+     (§5.9, §5.10) ; un pouvoir du personnage qui n'y figure pas a
+     été gagné en aventure (maison) et attendra sa gravure. Tant que
+     le livre d'un pack qui en déclare un n'est pas chargé, on
+     n'affiche rien plutôt que de flasher les pouvoirs maison. */
+  const pouvoirsGagnes = function () {
+    const ps = perso.pouvoirs || [];
+    if (livreSb && livreSb.sorcellerie) {
+      const S = livreSb.sorcellerie;
+      const noms = new Set();
+      const ajouter = n => {
+        if (n) noms.add(String(n).trim().toLowerCase());
+      };
+      [].concat(S.pouvoirsDemoniaques && S.pouvoirsDemoniaques.defenseurs || [], S.pouvoirsDemoniaques && S.pouvoirsDemoniaques.offensifs || [], S.pouvoirsDeplacement || [], S.pouvoirsPerception || [], S.pouvoirsDivers || []).forEach(function (p) {
+        ajouter(p.nom);
+      });
+      Object.values(S.elementaires && S.elementaires.esprits || {}).forEach(function (e) {
+        const pluriel = String(e).toLowerCase();
+        noms.add(pluriel);
+        noms.add(pluriel.replace(/s$/, ""));
+      });
+      (S.seigneursElementaires && S.seigneursElementaires.seigneurs || []).forEach(function (s) {
+        ajouter(s.nom);
+      });
+      (S.seigneursDesBetes && S.seigneursDesBetes.table || []).forEach(function (s) {
+        ajouter(s.nom);
+      });
+      return ps.filter(function (p) {
+        return noms.has(String(p).trim().toLowerCase());
+      });
+    }
+    return pack && pack.livre ? [] : ps;
+  }();
 
   /* — sources de jets : déclarées par le pack (caracs brutes, multiplicateurs,
      compétences). Un pack à paliers (Bloodlust) joue ses compétences avec
@@ -8994,11 +9042,16 @@ function VueNoyauD100({
         color: "#e8e4d8"
       }
     }, v, " %"));
-  }), g.theme === "INVOCATION" && perso.pouvoirs && perso.pouvoirs.length > 0 &&
+  }), g.theme === "INVOCATION" && pouvoirsGagnes.length > 0 &&
   /*#__PURE__*/
-  /* V0.68 — les pouvoirs du personnage sont des
-     pouvoirs d'INVOCATION gagnés (le nécromancien) :
-     ils vivent dans leur famille. */
+  /* V0.69 — les pouvoirs d'INVOCATION gagnés
+     s'affichent comme les compétences de la
+     famille (Sylphe, Gnome...) sauf que leur
+     chance se joue à 3×POU (Michael) : POU 35
+     → 3×POU · 105 %. Seuls les pouvoirs
+     OFFICIELS du livre s'affichent pour
+     l'instant — les pouvoirs maison (gagnés
+     en aventure) attendront leur gravure. */
   React.createElement("div", {
     className: "col-span-2 mt-1.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -9007,15 +9060,19 @@ function VueNoyauD100({
       color: "#71717a"
     }
   }, "POUVOIRS D'INVOCATION GAGN\xC9S"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-1"
-  }, perso.pouvoirs.map((p, i) => /*#__PURE__*/React.createElement("span", {
+    className: "grid grid-cols-1 gap-1"
+  }, pouvoirsGagnes.map((p, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
-    className: "text-xs px-1.5 py-0.5 rounded",
+    className: "flex justify-between rounded px-2 py-1",
     style: {
-      background: T.accent + "22",
-      color: T.accent
+      background: "#ffffff08",
+      color: "#c8c8ce"
     }
-  }, p)))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, p), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "3\xD7POU \xB7 ", 3 * (perso.caracs && perso.caracs.POU || 0), " %"))))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-2 text-xs"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -9130,15 +9187,7 @@ function VueNoyauD100({
     pv: v,
     pvMax: 10,
     accent: v >= 8 ? T.accent : "#a8adb8"
-  })))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEnCreation(true),
-    className: "w-full py-2 rounded-lg text-sm font-bold mt-2",
-    style: {
-      background: "#0c0d10",
-      border: "1px solid " + T.accent + "66",
-      color: T.accent
-    }
-  }, persoCree ? C.textes.recreer : C.textes.creer)), C.forge ? /*#__PURE__*/React.createElement("div", {
+  }))))), C.forge ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
@@ -10427,6 +10476,7 @@ function App() {
         presents: Object.values(presents).filter(j => j && j.jeu === packActif.id)
       },
       versionBase: versionBase,
+      livreSb: livreSb,
       persos: mesPersonnages,
       onCreerPersonnage: p => creerPersonnageRegistre(packActif.id, p),
       onSupprimerPersonnage: p => supprimerPersonnageRegistre(packActif.id, p),
