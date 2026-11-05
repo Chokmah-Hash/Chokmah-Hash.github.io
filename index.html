@@ -1948,8 +1948,21 @@ const fondrePresents = (precedent, diff) => {
    REGISTRE du compte — extrait en composant partagé
    RegistrePersonnages — puis la fiche ; l'onglet JOURNAL déménage,
    il quitte la barre). Le terme TAVERNE devient le nom du LOBBY DE
-   L'AVENTURE (la future page d'aventure). ── */
-const BUILD = "0.67";
+   L'AVENTURE (la future page d'aventure). ──
+   V0.68 — LA FICHE PERSONNAGE, PREMIÈRE PIERRE : Stormbringer d'abord
+   (Michael le Maître de la Tombe) — la fiche ouvre sur la DESCRIPTION
+   COMPLÈTE du personnage (PERSONNAGE : Nom, Sexe, Age, Yeux, Cheveux,
+   Nationalité, Culte — « — » tant que la fiche ne le porte pas), puis
+   LES TROIS JAUGES juste après : Points de Vie, Santé Mentale, S.F.T ;
+   le cadre du démon de test (adversaire + lutte de POU) quitte la
+   fiche — l'Arme vivante garde sa forge ; les compétences non
+   apprises portent leur SCORE (« 0 % »), jamais le seuil calculé, et
+   AUCUNE n'est grisée : au jet, tout 0 % se joue à 0 + bonus de
+   famille (la règle du « maître d'abord » du livre s'incline devant
+   la table — Michael l'a tranché) ; les POUVOIRS du personnage sont
+   des pouvoirs d'INVOCATION gagnés (le nécromancien) : ils vivent
+   désormais DANS la famille INVOCATION de la fiche. ── */
+const BUILD = "0.68";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -8500,21 +8513,26 @@ function VueNoyauD100({
       parade: plus("FOR") + plus("POU") + plus("DEX") + inv("TAI")
     };
   })() : null;
-  /* V0.62 — LE SEUIL EFFECTIF d'une compétence : son score si elle est
-     apprise ; sinon le plancher de sa famille selon son « % de départ » du
-     manuel — « bonus » → le bonus de famille, « 10+ » → 10 + bonus, « 0 » →
-     aucun jet avant l'entraînement (livre v2 : « doit être initialement
-     enseignée par un Maître, avant qu'un bonus y soit appliqué »). */
+  /* V0.62/V0.68 — LE SEUIL EFFECTIF d'une compétence : son score si elle
+     est apprise ; sinon le bonus de sa famille — V0.68, règle de la
+     table : TOUT 0 % se joue à 0 + bonus de famille, y compris les
+     compétences « à enseigner par un maître d'abord » du livre v2
+     (Michael l'a tranché : elles servent). La ligne de fiche, elle,
+     porte toujours le SCORE — 0 % non appris, jamais le seuil. */
   const departDe = themesComps && C.departCompetences ? C.departCompetences : null;
   const modeComplet = !!(departDe && bonusFamilles);
   const seuilComp = k => {
     const v = (perso.competences || {})[k];
     if (v != null && v > 0) return v;
-    if (!modeComplet || !(k in departDe) || !familleDe[k]) return v != null ? v : null;
-    const d = departDe[k];
-    if (d === "bonus") return bonusFamilles[familleDe[k]];
-    if (d === "10+") return 10 + bonusFamilles[familleDe[k]];
-    return null; /* « 0 » : un maître d'abord, ou type inconnu */
+    /* V0.68 — LA RÈGLE DE LA TABLE : tout 0 % se joue à 0 + bonus de
+       famille — même les compétences que le livre disait « à enseigner
+       par un maître d'abord » : elles servent, Michael l'a tranché.
+       La fiche affiche le SCORE (0 %), le bonus ne se lit pas sur la
+       ligne — il vit dans le jet. */
+    if (bonusFamilles && familleDe[k] && bonusFamilles[familleDe[k]] != null) {
+      return bonusFamilles[familleDe[k]];
+    }
+    return v != null && v > 0 ? v : null;
   };
   const compsBruts = Object.keys(perso.competences || {});
   /* V0.62 — LE CATALOGUE ENTRE EN SCÈNE : toutes les compétences du manuel
@@ -8524,10 +8542,10 @@ function VueNoyauD100({
      tirent jamais. */
   const extrasCatalogue = modeComplet ? ordreThemes.flatMap(t => themesComps[t]).filter(k => !(k in (perso.competences || {})) && (departDe[k] === "bonus" || departDe[k] === "10+" || departDe[k] === "0")) : [];
   const comps = themesComps ? [...compsBruts.filter(k => familleDe[k]).sort((a, b) => ordreThemes.indexOf(familleDe[a]) - ordreThemes.indexOf(familleDe[b]) || themesComps[familleDe[a]].indexOf(a) - themesComps[familleDe[b]].indexOf(b)), ...compsBruts.filter(k => !familleDe[k]), ...extrasCatalogue] : compsBruts;
-  /* V0.62 — au jet, une compétence du catalogue non apprise se joue sur
-     le seuil effectif de sa famille ; une « 0 % » (entraînement requis)
-     n'entre jamais au sélecteur. Hors catalogue : byte-pour-byte la
-     liste d'avant. */
+  /* V0.62/V0.68 — au jet, une compétence non apprise se joue sur le
+     bonus de sa famille (tout 0 % sert) ; seule une compétence sans
+     famille bonusée reste hors sélecteur. Hors catalogue :
+     byte-pour-byte la liste d'avant. */
   const compsJet = modeComplet ? comps.filter(k => seuilComp(k) > 0) : comps;
   const sources = [...(C.ordreCaracs || Object.keys(c)).map(k => ({
     label: `${k} ${c[k]} — carac brute (${c[k]} %)`,
@@ -8854,7 +8872,55 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, perso.origine || perso.peuple)), themesComps &&
+  }, perso.origine || perso.peuple)), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: T.accent
+    }
+  }, "PERSONNAGE"), [["Nom", perso.nom], ["Sexe", perso.identite ? perso.identite.sexe : null], ["Age", perso.identite && perso.identite.age != null ? perso.identite.age : null], ["Yeux", perso.identite ? perso.identite.yeux : null], ["Cheveux", perso.identite ? perso.identite.cheveux : null], ["Nationalité", perso.nationalite || (perso.identite ? perso.identite.nationalite : null)], ["Culte", perso.culte || (perso.identite ? perso.identite.culte : null)]].map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "flex justify-between text-xs py-1",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, k, " :"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v != null && v !== "" ? v : "—"))), perso.pv != null && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Points de Vie \u2014 blessure majeure \xE0 ", perso.blessureMajeure || Math.floor((perso.pvMax || perso.pv) / 2)), /*#__PURE__*/React.createElement(BarrePct, {
+    valeur: perso.pv,
+    max: perso.pvMax || perso.pv,
+    accent: "#e0524d",
+    label: `${perso.pv} / ${perso.pvMax || perso.pv} PV`
+  })), perso.sanMax ? /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Sant\xE9 Mentale \u2014 POU\xD75 (", perso.sanMax, ")"), /*#__PURE__*/React.createElement(BarrePct, {
+    valeur: san,
+    max: perso.sanMax,
+    accent: T.accent,
+    label: `${san} / ${perso.sanMax} SAN`
+  })) : null, perso.sft != null && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mt-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "S.F.T \u2014 ", perso.sft), themesComps &&
   /*#__PURE__*/
   /* V0.61 — l'entête du premier thème, celui du manuel */
   React.createElement("div", {
@@ -8910,22 +8976,46 @@ function VueNoyauD100({
   }, g.theme, bonusFamilles && g.theme in bonusFamilles ? " — BONUS " + (bonusFamilles[g.theme] >= 0 ? "+" + bonusFamilles[g.theme] : bonusFamilles[g.theme]) : ""), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 text-xs"
   }, g.items.map(it => {
-    const apprise = it.v != null && it.v > 0;
-    const bloquee = modeComplet && !apprise && departDe[it.k] === "0";
-    const seuil = modeComplet ? seuilComp(it.k) : it.v;
+    /* V0.68 — LA LIGNE PORTE LE SCORE (Michael) : « 0 % »
+       tant que la compétence n'est pas apprise, JAMAIS le
+       seuil calculé — et AUCUNE ligne n'est grisée : les
+       0 % servent, leur jet se joue à 0 + bonus de
+       famille (le bonus vit dans l'entête et le jet). */
+    const v = it.v != null && it.v > 0 ? it.v : 0;
     return /*#__PURE__*/React.createElement("div", {
       key: it.k,
       className: "flex justify-between rounded px-2 py-1",
       style: {
-        background: apprise ? "#ffffff08" : "#ffffff04",
-        color: apprise ? "#c8c8ce" : "#71717a"
+        background: "#ffffff08",
+        color: "#c8c8ce"
       }
     }, /*#__PURE__*/React.createElement("span", null, it.k), /*#__PURE__*/React.createElement("span", {
       style: {
-        color: apprise ? "#e8e4d8" : "#a1a1aa"
+        color: "#e8e4d8"
       }
-    }, bloquee ? "—" : seuil != null ? seuil + " %" : "—"));
-  }))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
+    }, v, " %"));
+  }), g.theme === "INVOCATION" && perso.pouvoirs && perso.pouvoirs.length > 0 &&
+  /*#__PURE__*/
+  /* V0.68 — les pouvoirs du personnage sont des
+     pouvoirs d'INVOCATION gagnés (le nécromancien) :
+     ils vivent dans leur famille. */
+  React.createElement("div", {
+    className: "col-span-2 mt-1.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1 tracking-widest",
+    style: {
+      color: "#71717a"
+    }
+  }, "POUVOIRS D'INVOCATION GAGN\xC9S"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1"
+  }, perso.pouvoirs.map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: T.accent + "22",
+      color: T.accent
+    }
+  }, p)))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-2 text-xs"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -8947,41 +9037,7 @@ function VueNoyauD100({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), perso.sanMax ? /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-1",
-    style: {
-      color: "#71717a"
-    }
-  }, "Sant\xE9 Mentale \u2014 POU\xD75 (", perso.sanMax, ")"), /*#__PURE__*/React.createElement(BarrePct, {
-    valeur: san,
-    max: perso.sanMax,
-    accent: T.accent,
-    label: `${san} / ${perso.sanMax} SAN`
-  })) : null, perso.pv != null && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-1",
-    style: {
-      color: "#71717a"
-    }
-  }, "Points de Vie \u2014 blessure majeure \xE0 ", perso.blessureMajeure || Math.floor((perso.pvMax || perso.pv) / 2)), /*#__PURE__*/React.createElement(BarrePct, {
-    valeur: perso.pv,
-    max: perso.pvMax || perso.pv,
-    accent: "#e0524d",
-    label: `${perso.pv} / ${perso.pvMax || perso.pv} PV`
-  })), perso.sft != null && /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-2",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, "S.F.T \u2014 ", perso.sft), perso.identite && (perso.identite.titre || perso.identite.age) && /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-2",
-    style: {
-      color: "#71717a"
-    }
-  }, [perso.identite.titre, perso.identite.age ? perso.identite.age + " ans" : null, perso.identite.yeux ? "yeux " + perso.identite.yeux : null, perso.identite.cheveux ? "cheveux " + perso.identite.cheveux : null].filter(Boolean).join(" · ")), perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
@@ -9016,7 +9072,11 @@ function VueNoyauD100({
       background: "#ffffff08",
       color: "#c8c8ce"
     }
-  }, a))), perso.pouvoirs && perso.pouvoirs.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, a))), perso.pouvoirs && perso.pouvoirs.length > 0 && !(themesComps && themesComps.INVOCATION) &&
+  /*#__PURE__*/
+  /* V0.68 — repli : si le pack n'a pas de famille INVOCATION,
+     les pouvoirs gardent leur bloc propre. */
+  React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
@@ -9078,63 +9138,7 @@ function VueNoyauD100({
       border: "1px solid " + T.accent + "66",
       color: T.accent
     }
-  }, persoCree ? C.textes.recreer : C.textes.creer)), C.demon ? /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid #3f3f46"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between mb-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-lg",
-    style: {
-      color: "#e8e4d8"
-    }
-  }, C.demon.nom), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, "adversaire de test")), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-3",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, C.demon.ligne), /*#__PURE__*/React.createElement("div", {
-    className: "rounded p-2 mb-3 text-xs",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, "Lutte de POU : ", C.lutte.base, " % \xB1 ", C.lutte.pas, " % par point d'\xE9cart \u2014 POU ", c.POU, " vs ", C.demon.pou, " \u2192", " ", C.lutte.base - C.lutte.pas * (C.demon.pou - c.POU), " % contre ", C.lutte.base + C.lutte.pas * (C.demon.pou - c.POU), " %"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: lutterPOU,
-    className: "py-2.5 rounded-lg font-bold text-black",
-    style: {
-      background: T.accent
-    }
-  }, "\u26A1 Lutter un round (test)"), perso.sanMax ? /*#__PURE__*/React.createElement("button", {
-    onClick: reposerSAN,
-    className: "py-2 rounded-lg text-sm font-bold",
-    style: {
-      border: "1px solid " + T.accent + "66",
-      color: T.accent,
-      background: "transparent"
-    }
-  }, "Repos \u2014 restaurer la SAN") : null, lutteFinie && /*#__PURE__*/React.createElement("div", {
-    className: "text-center text-sm py-2 rounded",
-    style: {
-      background: "#ffffff0d",
-      color: lutteFinie === "victoire" ? T.accent : "#fb7185"
-    }
-  }, lutteFinie === "victoire" ? "Victoire — le démon regagne son plan." : "Défaite — le pacte a un prix."), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-center",
-    style: {
-      color: "#71717a"
-    }
-  }, "Les deux r\xE9ussissent ou \xE9chouent : la lutte se prolonge (relancez)"))) : null, C.forge ? /*#__PURE__*/React.createElement("div", {
+  }, persoCree ? C.textes.recreer : C.textes.creer)), C.forge ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
