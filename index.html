@@ -2031,8 +2031,22 @@ const fondrePresents = (precedent, diff) => {
    libre (une arme, une armure). La grande fiche s'OUVRE depuis le
    registre (l'écrou du perso) et grave chaque geste dans la Tombe
    (archiviste_personnages.contenu, PATCH majPersonnage) ; la fiche
-   démo et la création fraîche ne vivent qu'à l'écran. ── */
-const BUILD = "0.74";
+   démo et la création fraîche ne vivent qu'à l'écran.
+   V0.75 — L'ÉVEIL SÉQUENTIEL (Michael) : la création d'aventurier
+   devient un RITUEL EN SIX ÉTAPES SCELLÉES (l'ordonnance du livre
+   §2 fait loi — chaque validation verrouille, jamais de retour) :
+   ① NAISSANCE (nom + sexe — le sexe pèse sur les ajustements
+   nationaux), ② LES DÉS (7×3D6 — toujours validable, la pitié du
+   livre offre la relance si total ≤ 52 : JAMAIS un plafond), ③ LA
+   NATIONALITÉ (1D100, le Chaos décide — ses ajustements s'appliquent
+   aux dés, son modificateur de SAN et ses classes forcées notés),
+   ④ L'ORIGINE SOCIALE (1D100 sauf classes forcées, l'âge base 25),
+   ⑤ LES COMPÉTENCES (de classe — les armes deviennent objets
+   physiques — universelles, et 1D6+2 supplémentaires choisies), ⑥
+   LA GRAVURE (PV, SAN, SFT, bonus de dommages, bénéfices — la fiche
+   complète naît). La corpulence et l'histoire personnelle vivent
+   HORS rituel, en liberté sur la fiche. ── */
+const BUILD = "0.75";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5523,7 +5537,8 @@ function RegistrePersonnages({
   persos,
   onCreer,
   onSupprimer,
-  onOuvrir
+  onOuvrir,
+  livre
 }) {
   const [enCreationPerso, setEnCreationPerso] = useState(false);
   const [detailPerso, setDetailPerso] = useState(null);
@@ -5564,6 +5579,7 @@ function RegistrePersonnages({
   }, /*#__PURE__*/React.createElement(EcranCreationPerso, {
     contenu: pack.contenu,
     accent: "#f0b24a",
+    livre: livre,
     onValide: p => {
       setEnCreationPerso(false);
       onCreer && onCreer(p);
@@ -8165,36 +8181,311 @@ function EcranCreationPorteur({
    dépasse 52, le livre permet de TOUT relancer. SAN de départ = POU×5.
    Les compétences du ch. 4 ne sont pas encore extraites : l'aventurier né
    ici joue ses caracs (brute, ×2, ×3, ×5) — honnêteté d'alpha assumée. */
+/* ════════ MOTEUR DU RITUEL D'ÉVEIL (V0.75 — livre §2, pures et testables).
+   La création séquentielle d'un aventurier des Jeunes Royaumes suit
+   l'ordonnance du livre : chaque § devient une étape scellée (Michael) —
+   la validation d'une étape verrouille la précédente, jamais de retour
+   arrière. Les dés parlent : nationalité au 1D100 (le Chaos décide),
+   relance de pitié seulement si le total des caracs ≤ 52. La corpulence
+   (§2.1.3.2) et l'histoire personnelle (§2.9) vivent HORS rituel, en
+   liberté sur la fiche. */
+function lancerDes(spec) {
+  /* "3D6" ou "1D10" → la somme des dés ; null si la spec n'est pas un jet */
+  const m = /^(\d+)D(\d+)$/.exec(String(spec).trim());
+  if (!m) return null;
+  let s = 0;
+  for (let i = 0; i < parseInt(m[1], 10); i++) s += 1 + Math.floor(Math.random() * parseInt(m[2], 10));
+  return s;
+}
+function bornePlage(plage) {
+  /* "01-02" → [1,2] ; "100" → [100,100] ; "51+" → [51,Infinity] */
+  const m = /^(\d+)(?:-(\d+))?\+?$/.exec(String(plage).trim());
+  if (!m) return [0, 0];
+  const a = parseInt(m[1], 10);
+  return [a, m[2] ? parseInt(m[2], 10) : a];
+}
+function trouverNation(jet, liste) {
+  for (const n of liste || []) {
+    const [a, b] = bornePlage(n.plage);
+    if (jet >= a && jet <= b) return n;
+  }
+  return null;
+}
+function appliquerAjustements(caracs, ajustements, sexe) {
+  /* §2.2 : chaque nationalité ajuste les dés de naissance — un dé qui
+     s'ajoute (des), une valeur qui se fixe (fixe), parfois seulement
+     pour une femme (siSexe). Retourne les caracs finies et la trace
+     avant/après pour l'affichage. */
+  const sortis = {
+    ...caracs
+  };
+  const trace = [];
+  for (const adj of ajustements || []) {
+    if (adj.siSexe && adj.siSexe !== String(sexe || "").toLowerCase()) continue;
+    const avant = sortis[adj.c];
+    if (adj.fixe != null) sortis[adj.c] = adj.fixe;else if (adj.des) sortis[adj.c] = (sortis[adj.c] || 0) + (lancerDes(adj.des) || 0);
+    trace.push({
+      c: adj.c,
+      avant,
+      apres: sortis[adj.c]
+    });
+  }
+  return {
+    caracs: sortis,
+    trace
+  };
+}
+function pvDepuis(caracs) {
+  /* §2.1.8 : CON + 1 par point de TAI au-dessus de 12, −1 par point en
+     dessous de 9 — jamais sous la moitié de la CON (l'exemple du livre :
+     CON 14 TAI 17 → 19 ; CON 4 TAI 3 → 2). */
+  const con = caracs.CON || 0,
+    tai = caracs.TAI || 0;
+  const brut = con + (tai > 12 ? tai - 12 : 0) - (tai < 9 ? 9 - tai : 0);
+  return Math.max(brut, Math.floor(con / 2));
+}
+function sanDepuis(pou, modif) {
+  /* §2.1.9 : SAN = 5 × POU + modificateur de nationalité (Merak : POU 12
+     sans modificateur → 60). */
+  return (pou || 0) * 5 + (modif || 0);
+}
+function bonusDommagesDe(forV, tai) {
+  /* §2.5.3 : FOR + TAI sur la table — l'exemple du livre (FOR 14 TAI 17)
+     tombe en 25-40 → +1D6. */
+  const s = (forV || 0) + (tai || 0);
+  if (s <= 16) return "−1D6";
+  if (s <= 24) return "";
+  if (s <= 40) return "+1D6";
+  if (s <= 50) return "+2D6";
+  return "+3D6";
+}
+function modulationAge(age, physique) {
+  /* §2.3 : moins de 25 ans → −5 % par année retranchée à CHAQUE
+     compétence ; 25 à 40 → +1 % par année au-delà de 25 (max +15) ;
+     après 40 → le livre dit « les mentales restent » : elles gardent
+     le plafond adulte, et les physiques reculent de 1 % par année
+     DEPUIS ce plafond (pas de saut à zéro à 41 ans). */
+  if (age < 25) return -5 * (25 - age);
+  const adulte = Math.min(15, age - 25);
+  if (age <= 40) return adulte;
+  return physique ? adulte - (age - 40) : adulte;
+}
+function trouverClasseSociale(jet, table) {
+  for (const r of table || []) {
+    const [a, b] = bornePlage(r.plage);
+    if (jet >= a && jet <= b) return r;
+  }
+  return null;
+}
+
+/* ════════ L'ÉVEIL SÉQUENTIEL — six étapes scellées (Michael) : ① la
+   naissance (nom + sexe — le sexe pèse sur certains ajustements
+   nationaux), ② les dés de naissance (7 × 3D6, la pitié du livre si
+   total ≤ 52), ③ la nationalité (1D100 — le Chaos décide), ④ l'origine
+   sociale (1D100, sauf classes forcées par la nationalité) et l'âge,
+   ⑤ les compétences (classe + universelles + 1D6+2 supplémentaires),
+   ⑥ la gravure (dérivés, bénéfices, validation). Chaque étape validée
+   verrouille la précédente — l'ordonnance du livre fait loi. */
 function EcranCreationAventurier({
   contenu,
   accent,
+  livre,
   onValide,
   onAnnule
 }) {
+  const L = livre || {};
+  const ORDRE = contenu.ordreCaracs || L.caracteristiques && L.caracteristiques.liste || ["FOR", "CON", "TAI", "INT", "POU", "DEX", "CHA"];
+  const nations = L.nationalites && L.nationalites.liste || [];
+  const classesL = L.classes && L.classes.liste || {};
+  const tableSociale = L.origineSociale && L.origineSociale.table || [];
+  const universelles = ((L.classes || {}).universelles || {}).competences || [];
+  const armesMelee = (L.armes || {}).melee || [];
+  const armesBoucliers = (L.armes || {}).boucliers || [];
+  const armesJet = (L.armes || {}).jet || [];
+  const beneficesDe = id => (classesL[id] || {}).benefices || [];
+  /* les universelles et leur famille (§2.4 — connues de tous à 10 %) */
+  const FAM_UNIV = {
+    "Sauter": "agilite",
+    "Grimper": "agilite",
+    "Éviter": "agilite",
+    "Équilibre": "agilite",
+    "Persuader": "communication",
+    "Écouter": "perception",
+    "Se cacher": "discretion"
+  };
+  const TAUX_CLASSE = {
+    pretre: 3,
+    noble: 2
+  };
+  const [etape, setEtape] = useState(1);
   const [nom, setNom] = useState("");
-  const [jets, setJets] = useState(null); /* carac → les trois dés */
-  const [essais, setEssais] = useState(0);
-  const ordre = contenu.ordreCaracs,
-    totalMax = contenu.totalCaracs || 52;
-  const lancer = () => {
+  const [sexe, setSexe] = useState(null);
+  const [jets, setJets] = useState(null); /* 7 × [d,d,d] — la matrice brute */
+  const [caracs, setCaracs] = useState(null); /* après les ajustements nationaux */
+  const [traceAjust, setTraceAjust] = useState(null);
+  const [jetNation, setJetNation] = useState(null);
+  const [nation, setNation] = useState(null);
+  const [jetClasse, setJetClasse] = useState(null);
+  const [classe, setClasse] = useState(null); /* { id, nom } */
+  const [age, setAge] = useState(25);
+  const [nbSupp, setNbSupp] = useState(null); /* le 1D6+2 du Chaos */
+  const [suppChoisis, setSuppChoisis] = useState([]); /* [{ nom, famille }] */
+  const [armesChoisies, setArmesChoisies] = useState({}); /* slot → arme du livre */
+
+  const caracsNaissance = jets ? Object.fromEntries(ORDRE.map(k => [k, jets[k][0] + jets[k][1] + jets[k][2]])) : null;
+  const totalNaissance = caracsNaissance ? ORDRE.reduce((s, k) => s + caracsNaissance[k], 0) : 0;
+  const pitie = !!caracsNaissance && totalNaissance <= 52;
+  const lancerDesNaissance = () => {
     const j = {};
-    ordre.forEach(k => {
+    ORDRE.forEach(k => {
       j[k] = [d6(), d6(), d6()];
     });
     setJets(j);
-    setEssais(e => e + 1);
   };
-  const caracs = jets ? Object.fromEntries(ordre.map(k => [k, jets[k][0] + jets[k][1] + jets[k][2]])) : null;
-  const total = caracs ? ordre.reduce((s, k) => s + caracs[k], 0) : 0;
-  const trop = !!caracs && total > totalMax;
-  const peutValider = !!caracs && nom.trim().length > 0;
-  const valider = () => onValide({
-    id: "cree",
-    nom: nom.trim(),
-    origine: "aventurier des Jeunes Royaumes",
-    caracs,
-    sanMax: caracs.POU * 5
+  const tirerNation = () => {
+    const j = lancerDes("1D100");
+    const n = trouverNation(j, nations);
+    if (!n) return;
+    const fait = appliquerAjustements(caracsNaissance, n.ajustements, sexe);
+    setJetNation(j);
+    setNation(n);
+    setCaracs(fait.caracs);
+    setTraceAjust(fait.trace);
+  };
+  const tirerClasse = () => {
+    const forcees = (nation.classesForcees || []).map(nom => ({
+      id: nom.toLowerCase(),
+      nom
+    }));
+    if (forcees.length === 1) {
+      setJetClasse(null);
+      setClasse(forcees[0]);
+      return;
+    }
+    if (forcees.length >= 2) {
+      /* la nation n'admet que ses classes : le Chaos tranche entre elles */
+      const j = lancerDes("1D100");
+      setJetClasse(j);
+      setClasse(forcees[j <= 50 ? 0 : 1]);
+      return;
+    }
+    const j = lancerDes("1D100");
+    const r = trouverClasseSociale(j, tableSociale);
+    if (!r) return;
+    let id = r.classe.toLowerCase(),
+      nomC = r.classe;
+    /* le Guerrier social porte la marque du livre : 1D10, 9-10 → Assassin */
+    if (id === "guerrier" && r.special && r.special.includes("Assassin") && lancerDes("1D10") >= 9) {
+      id = "assassin";
+      nomC = "Assassin";
+    }
+    setJetClasse(j);
+    setClasse({
+      id,
+      nom: nomC
+    });
+  };
+
+  /* la classe porte-t-elle des slots d'armes (« 1re arme ou bouclier »,
+     « Arme au choix ») — gravés comme objets physiques, pas comme lignes */
+  const compsClasse = classe ? classesL[classe.id].competences || [] : [];
+  const estSlotArme = comp => /[Aa]rme/.test(comp.nom);
+  const slotsArmes = compsClasse.filter(estSlotArme);
+  const optionsArme = slot => (slot.nom.includes("ouclier") ? armesMelee.concat(armesBoucliers) : armesMelee).filter(w => (w.for == null || (caracs.FOR || 0) >= w.for) && (w.dex == null || (caracs.DEX || 0) >= w.dex));
+  const chercherArmeLivre = nom => armesMelee.concat(armesBoucliers, armesJet).find(w => w.nom === nom) || null;
+
+  /* le catalogue des supplémentaires : les compétences du ch. 4 portées
+     par le pack (leurs noms propres), hors ARMES (2 compétences l'une)
+     et hors INVOCATION (famille maison, gravure à part) */
+  const nomPris = new Set(compsClasse.map(c => c.nom).concat(universelles));
+  const catalogue = [];
+  Object.entries(contenu.themesCompetences || {}).forEach(([famille, items]) => {
+    if (famille === "ARMES - ARMURES" || famille === "INVOCATION") return;
+    (items || []).forEach(k => {
+      if (!nomPris.has(k)) catalogue.push({
+        nom: k,
+        famille
+      });
+    });
   });
+  const validerEtape = () => {
+    if (etape === 1 && nom.trim() && sexe) setEtape(2);else if (etape === 2 && jets) setEtape(3);else if (etape === 3 && nation) setEtape(4);else if (etape === 4 && classe && age >= 14 && age <= 90) setEtape(5);else if (etape === 5 && nbSupp != null && suppChoisis.length === nbSupp && slotsArmes.every(s => armesChoisies[s.nom])) setEtape(6);
+  };
+  const peutValider = etape === 1 ? !!(nom.trim() && sexe) : etape === 2 ? !!jets : etape === 3 ? !!nation : etape === 4 ? !!(classe && age >= 14 && age <= 90) : etape === 5 ? !!(nbSupp != null && suppChoisis.length === nbSupp && slotsArmes.every(s => armesChoisies[s.nom])) : false;
+
+  /* la gravure finale : tout ce que le livre a fait naître devient
+     l'aventurier — la fiche complète, prête pour la Tombe */
+  const graver = () => {
+    const bF = (() => {
+      const plus = k => caracs[k] > 12 ? caracs[k] - 12 : caracs[k] < 9 ? 9 - caracs[k] : 0;
+      const inv = k => caracs[k] > 12 ? 12 - caracs[k] : caracs[k] < 9 ? 9 - caracs[k] : 0;
+      return {
+        attaque: plus("FOR") + plus("INT") + plus("POU") + plus("DEX"),
+        parade: plus("FOR") + plus("POU") + plus("DEX") + inv("TAI")
+      };
+    })();
+    const dom = bonusDommagesDe(caracs.FOR, caracs.TAI);
+    const physique = fam => fam === "attaque_parade" || fam === "agilite" || fam === "discretion" || fam === "AGILITÉ" || fam === "DISCRÉTION";
+    const compsGravees = {};
+    const armesGravees = [];
+    const armeGravee = (w, base) => ({
+      nom: w.nom,
+      seuil: base + bF.attaque + "/" + (base + bF.parade),
+      degats: (w.degats || "") + (dom && dom.startsWith("−") ? " " + dom : ""),
+      bonus: dom && dom.startsWith("+") ? dom.slice(1) : ""
+    });
+    compsClasse.forEach(comp => {
+      const base = typeof comp.base === "number" ? comp.base : lancerDes(comp.base) || 0;
+      if (estSlotArme(comp)) {
+        const w = armesChoisies[comp.nom];
+        if (w) armesGravees.push(armeGravee(w, base));
+        return;
+      }
+      const fam = comp.bonus || "aucun";
+      compsGravees[comp.nom] = Math.max(0, base + modulationAge(age, physique(fam)));
+      /* une arme nommée par la classe (Dague, Bâton…) devient aussi un objet physique */
+      const w = chercherArmeLivre(comp.nom);
+      if (w) armesGravees.push(armeGravee(w, base));
+    });
+    universelles.forEach(u => {
+      const fam = FAM_UNIV[u] || "agilite";
+      compsGravees[u] = Math.max(0, 10 + modulationAge(age, physique(fam)));
+    });
+    suppChoisis.forEach(s => {
+      compsGravees[s.nom] = Math.max(0, 10 + Math.ceil((1 + Math.floor(Math.random() * 100)) / 2) + modulationAge(age, physique(s.famille)));
+    });
+    const pv = pvDepuis(caracs);
+    const sanMax = sanDepuis(caracs.POU, nation.san);
+    const sorcier = (caracs.INT || 0) + (caracs.POU || 0) >= 32;
+    onValide({
+      id: "cree",
+      nom: nom.trim(),
+      origine: nation.nom + " · " + classe.nom + (sorcier ? " — les dés disent sorcier (INT + POU ≥ 32)" : ""),
+      identite: {
+        titre: classe.nom,
+        sexe,
+        age: parseInt(age, 10),
+        yeux: "",
+        cheveux: "",
+        nationalite: nation.nom,
+        culte: ""
+      },
+      caracs,
+      pv,
+      pvMax: pv,
+      blessureMajeure: Math.floor(pv / 2),
+      san: sanMax,
+      sanMax,
+      sft: Math.floor(sanMax / 2),
+      bonusConnaissanceAge: TAUX_CLASSE[classe.id] || 1,
+      competences: compsGravees,
+      armes: armesGravees,
+      armures: [],
+      pouvoirs: [],
+      possessions: []
+    });
+  };
+  const ETAPES = [["NAISSANCE"], ["LES DÉS"], ["NATIONALITÉ"], ["ORIGINE SOCIALE"], ["COMPÉTENCES"], ["GRAVURE"]];
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
@@ -8202,23 +8493,32 @@ function EcranCreationAventurier({
       border: "1px solid " + accent + "33"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between mb-2"
+    className: "flex items-baseline justify-between mb-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg",
     style: {
       color: accent
     }
-  }, "\u2694 Cr\xE9er un aventurier"), /*#__PURE__*/React.createElement("div", {
+  }, "L'\xC9VEIL D'UN AVENTURIER"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "7 caracs \xE0 3D6 \xB7 total \u2264 52")), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-4",
+  }, "rituel s\xE9quentiel \u2014 le livre fait loi")), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 mb-4 flex-wrap"
+  }, ETAPES.map(([lbl], i) => /*#__PURE__*/React.createElement("div", {
+    key: lbl,
+    className: "px-2 py-0.5 rounded text-[10px] font-bold tracking-wider",
+    style: {
+      background: etape > i + 1 ? accent + "22" : etape === i + 1 ? accent : "#ffffff0d",
+      color: etape >= i + 1 ? etape === i + 1 ? "#0c0d10" : accent : "#52525b"
+    }
+  }, i + 1, " \xB7 ", lbl))), etape === 1 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
     style: {
       color: "#a1a1aa"
     }
-  }, "Nom \u2192 les d\xE9s de naissance. SAN de d\xE9part = POU\xD75. Si le total d\xE9passe 52, le livre permet de tout relancer."), /*#__PURE__*/React.createElement("input", {
+  }, "La naissance d'abord : un nom, un sexe \u2014 la suite est aux d\xE9s (\xA72.1)."), /*#__PURE__*/React.createElement("input", {
     value: nom,
     onChange: e => setNom(e.target.value),
     placeholder: "Nom de l'aventurier\u2026",
@@ -8228,15 +8528,31 @@ function EcranCreationAventurier({
       border: "1px solid #3f3f46",
       color: "#e8e4d8"
     }
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: lancer,
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, ["Homme", "Femme"].map(s => /*#__PURE__*/React.createElement("button", {
+    key: s,
+    onClick: () => setSexe(s),
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: sexe === s ? accent : "#0c0d10",
+      color: sexe === s ? "#0c0d10" : "#a1a1aa",
+      border: "1px solid " + (sexe === s ? accent : "#3f3f46")
+    }
+  }, s)))), etape === 2 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Les d\xE9s de naissance (\xA72.1) : 3D6 pour chacune des 7 caract\xE9ristiques."), !jets && /*#__PURE__*/React.createElement("button", {
+    onClick: lancerDesNaissance,
     className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
     style: {
       background: accent
     }
-  }, jets ? "🎲 Tout relancer (7 × 3D6)" : "🎲 Lancer les dés de naissance (7 × 3D6)"), jets && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-4 gap-2 text-center"
-  }, ordre.map(k => /*#__PURE__*/React.createElement("div", {
+  }, "LANCER LES D\xC9S DE NAISSANCE (7 \xD7 3D6)"), jets && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-4 gap-2 text-center mb-2"
+  }, ORDRE.map(k => /*#__PURE__*/React.createElement("div", {
     key: k,
     className: "rounded-lg py-2",
     style: {
@@ -8252,7 +8568,7 @@ function EcranCreationAventurier({
     style: {
       color: "#e8e4d8"
     }
-  }, caracs[k]), /*#__PURE__*/React.createElement("div", {
+  }, caracsNaissance[k]), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#a1a1aa"
@@ -8260,8 +8576,8 @@ function EcranCreationAventurier({
   }, jets[k].join(" + ")))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-lg py-2",
     style: {
-      background: trop ? "#fb718522" : accent + "22",
-      border: "1px solid " + (trop ? "#fb718566" : accent + "44")
+      background: accent + "22",
+      border: "1px solid " + accent + "44"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
@@ -8271,33 +8587,298 @@ function EcranCreationAventurier({
   }, "Total"), /*#__PURE__*/React.createElement("div", {
     className: "text-2xl font-bold",
     style: {
-      color: trop ? "#fb7185" : accent
+      color: accent
     }
-  }, total), /*#__PURE__*/React.createElement("div", {
+  }, totalNaissance), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#a1a1aa"
     }
-  }, trop ? `> ${totalMax} — relance autorisée` : `≤ ${totalMax} ✓`))), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 mt-3 text-center text-xs"
+  }, pitie ? "≤ 52 — pitié" : "— les dés ont parlé"))), pitie && /*#__PURE__*/React.createElement("button", {
+    onClick: lancerDesNaissance,
+    className: "w-full py-2 rounded-lg text-sm font-bold mb-2",
+    style: {
+      background: "#0c0d10",
+      color: accent,
+      border: "1px solid " + accent + "44"
+    }
+  }, "TOUT RELANCER \u2014 la piti\xE9 du livre (total \u2264 52)"))), etape === 3 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "La nationalit\xE9 (\xA72.2) : 1D100 sur la table des Jeunes Royaumes \u2014 le Chaos d\xE9cide."), !nation && /*#__PURE__*/React.createElement("button", {
+    onClick: tirerNation,
+    className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
+    style: {
+      background: accent
+    }
+  }, "TIRER LA NATIONALIT\xC9 (1D100)"), nation && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg p-3",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + accent + "44"
+    }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 rounded-lg py-1.5",
+    className: "flex items-baseline justify-between mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold",
     style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
+      color: accent
     }
-  }, "SAN = POU\xD75 ", /*#__PURE__*/React.createElement("b", null, caracs.POU * 5)), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 rounded-lg py-1.5",
-    style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
-    }
-  }, "Lutte de POU vs ", contenu.demon.pou, " : ", /*#__PURE__*/React.createElement("b", null, contenu.lutte.base - contenu.lutte.pas * (contenu.demon.pou - caracs.POU), " %"))), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-2 text-center",
+  }, nation.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "Tentative n\xB0 ", essais, " \xB7 comp\xE9tences du ch. 4 non extraites \u2014 l'aventurier n\xE9 ici joue ses caracs (brute, \xD72, \xD73, \xD75)")), /*#__PURE__*/React.createElement("div", {
+  }, "1D100 \u2192 ", jetNation)), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-4 gap-2 text-center mb-2"
+  }, ORDRE.map(k => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5 text-xs",
+    style: {
+      background: "#ffffff0d",
+      color: "#c8c8ce"
+    }
+  }, k, " ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, caracs[k])))), traceAjust && traceAjust.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, traceAjust.map(t => t.c + " " + t.avant + "→" + t.apres).join(" · ")), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "Modificateur de SAN : ", nation.san > 0 ? "+" : "", nation.san, (nation.classesForcees || []).length > 0 ? " · classes imposées : " + nation.classesForcees.join(", ") : "", (caracs.INT || 0) + (caracs.POU || 0) >= 32 ? " · INT + POU ≥ 32 : les dés disent sorcier" : ""))), etape === 4 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "L'origine sociale (\xA72.3) : la classe vient de la table \u2014 l'\xE2ge, de vous (base 25)."), !classe && /*#__PURE__*/React.createElement("button", {
+    onClick: tirerClasse,
+    className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
+    style: {
+      background: accent
+    }
+  }, "TIRER L'ORIGINE SOCIALE (1D100)"), classe && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-lg p-3 mb-3",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + accent + "44"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline justify-between mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold",
+    style: {
+      color: accent
+    }
+  }, classe.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, jetClasse ? "1D100 → " + jetClasse : "imposée par la nationalité")), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, compsClasse.map(c => c.nom + " " + (typeof c.base === "number" ? c.base + "%" : c.base)).join(" · ")), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, beneficesDe(classe.id).join(" — "))), classe && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "\xC2ge"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: 14,
+    max: 90,
+    value: age,
+    onChange: e => setAge(Math.max(14, Math.min(90, parseInt(e.target.value, 10) || 25))),
+    className: "w-24 rounded px-3 py-1.5 text-sm",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, age < 25 ? "jeune : −5 % par année sous 25" : age <= 40 ? "+1 % par année au-delà de 25 (max +15)" : "vieux : −1 % par année aux physiques"))), etape === 5 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Les comp\xE9tences (\xA72.4) : celles de la classe, les universelles \xE0 10 % \u2014 et ", nbSupp == null ? "le Chaos va compter" : nbSupp + " choisies", " par vous."), nbSupp == null && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setNbSupp((lancerDes("1D6") || 1) + 2),
+    className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
+    style: {
+      background: accent
+    }
+  }, "LE CHAOS COMPTE (1D6+2)"), nbSupp != null && /*#__PURE__*/React.createElement("div", null, slotsArmes.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1 tracking-widest",
+    style: {
+      color: "#71717a"
+    }
+  }, "LES ARMES DE LA CLASSE (FOR/DEX requises)"), slotsArmes.map(comp => /*#__PURE__*/React.createElement("div", {
+    key: comp.nom,
+    className: "flex items-center gap-2 mb-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs flex-1",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, comp.nom, " \xB7 ", typeof comp.base === "number" ? comp.base + "%" : comp.base), /*#__PURE__*/React.createElement("select", {
+    value: (armesChoisies[comp.nom] || {}).nom || "",
+    onChange: e => setArmesChoisies({
+      ...armesChoisies,
+      [comp.nom]: optionsArme(comp).find(w => w.nom === e.target.value)
+    }),
+    className: "rounded px-2 py-1 text-xs",
+    style: {
+      background: "#14161b",
+      color: "#e8e4d8",
+      border: "1px solid #3f3f46"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u2014 choisir l'arme \u2014"), optionsArme(comp).map(w => /*#__PURE__*/React.createElement("option", {
+    key: w.nom,
+    value: w.nom
+  }, w.nom, " \xB7 ", w.degats, w.for ? " · FOR " + w.for : "", w.dex ? " · DEX " + w.dex : "")))))), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1 tracking-widest",
+    style: {
+      color: "#71717a"
+    }
+  }, "LES ", nbSupp, " SUPPL\xC9MENTAIRES (10 + 1D100/2 \xE0 la gravure)"), /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-3 gap-1 mb-2"
+  }, catalogue.map(s => {
+    const choisi = suppChoisis.some(x => x.nom === s.nom);
+    const complet = suppChoisis.length >= nbSupp;
+    return /*#__PURE__*/React.createElement("button", {
+      key: s.nom,
+      onClick: () => setSuppChoisis(choisi ? suppChoisis.filter(x => x.nom !== s.nom) : complet ? suppChoisis : suppChoisis.concat([s])),
+      className: "rounded px-2 py-1 text-xs text-left",
+      style: {
+        background: choisi ? accent + "22" : "#ffffff0d",
+        color: choisi ? accent : "#c8c8ce",
+        border: "1px solid " + (choisi ? accent + "44" : "transparent"),
+        cursor: "pointer"
+      }
+    }, choisi ? "✓ " : "", s.nom);
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-center",
+    style: {
+      color: "#71717a"
+    }
+  }, suppChoisis.length, " / ", nbSupp, " choisies \xB7 universelles connues de tous : ", universelles.join(", ")))), etape === 6 && (() => {
+    const pv = pvDepuis(caracs);
+    const sanMax = sanDepuis(caracs.POU, nation.san);
+    const dom = bonusDommagesDe(caracs.FOR, caracs.TAI);
+    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-2 md:grid-cols-4 gap-2 text-center mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "rounded-lg py-2",
+      style: {
+        background: "#ffffff0d"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, "PV (CON/TAI)"), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-bold",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, pv), /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px]",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "majeure \xE0 ", Math.floor(pv / 2))), /*#__PURE__*/React.createElement("div", {
+      className: "rounded-lg py-2",
+      style: {
+        background: "#ffffff0d"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, "SAN (5\xD7POU", nation.san ? (nation.san > 0 ? "+" : "") + nation.san : "", ")"), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-bold",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, sanMax), /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px]",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "SFT ", Math.floor(sanMax / 2))), /*#__PURE__*/React.createElement("div", {
+      className: "rounded-lg py-2",
+      style: {
+        background: "#ffffff0d"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, "Bonus de dommages"), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-bold",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, dom || "aucun"), /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px]",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "FOR ", caracs.FOR, " + TAI ", caracs.TAI)), /*#__PURE__*/React.createElement("div", {
+      className: "rounded-lg py-2",
+      style: {
+        background: "#ffffff0d"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, "L'aventurier"), /*#__PURE__*/React.createElement("div", {
+      className: "text-sm font-bold",
+      style: {
+        color: accent
+      }
+    }, nom.trim()), /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px]",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, nation.nom, " \xB7 ", classe.nom, " \xB7 ", age, " ans"))), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mb-2",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "B\xE9n\xE9fices de la classe : ", beneficesDe(classe.id).join(" — ") || "aucun gravé", " \xB7 Yeux, cheveux, culte et corpulence se compl\xE8tent librement sur la fiche."));
+  })(), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onAnnule,
@@ -8307,15 +8888,22 @@ function EcranCreationAventurier({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "\u2715 Annuler"), /*#__PURE__*/React.createElement("button", {
-    onClick: valider,
+  }, "QUITTER LE RITUEL"), etape < 6 && /*#__PURE__*/React.createElement("button", {
+    onClick: validerEtape,
     disabled: !peutValider,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
     style: {
       background: peutValider ? accent : "#27272a",
       color: peutValider ? "#0c0d10" : "#71717a"
     }
-  }, peutValider ? `⚔ Créer ${nom.trim()}` : "⚔ Lancer les dés et choisir un nom")));
+  }, "VALIDER \u2014 ", ETAPES[etape - 1][0]), etape === 6 && /*#__PURE__*/React.createElement("button", {
+    onClick: graver,
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: accent,
+      color: "#0c0d10"
+    }
+  }, "GRAVER ", nom.trim() || "L'AVENTURIER")));
 }
 
 /* ══════════ PÉ : éveil d'une unité (manuel joueur — noms neutres) ══════════
@@ -8562,7 +9150,7 @@ function VueNoyauD100({
   const c = perso.caracs;
 
   /* V0.74 — LA PHYSICALISATION DE L'ÉQUIPEMENT (Michael) : le fer et
-     la protection sont des OBJETS PHYSIQUES — déséquiper les RANGe
+     la protection sont des OBJETS PHYSIQUES — déséquiper les RANGENT
      dans le sac (le bandeau POSSESSION les montre, zone ÉQUIPEMENT
      RANGÉ, AVEC leurs caractéristiques — rien ne se perd), équiper
      ne se fait que la place libre (une arme, une armure). Le drapeau
@@ -9044,7 +9632,8 @@ function VueNoyauD100({
     persos: persos || [],
     onCreer: onCreerPersonnage,
     onSupprimer: onSupprimerPersonnage,
-    onOuvrir: ouvrirPersoDuRegistre
+    onOuvrir: ouvrirPersoDuRegistre,
+    livre: livreSb
   })), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
@@ -9052,6 +9641,7 @@ function VueNoyauD100({
   }, /*#__PURE__*/React.createElement(EcranCreation, {
     contenu: C,
     accent: T.accent,
+    livre: livreSb,
     onValide: validerCreation,
     onAnnule: () => setEnCreation(false)
   })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
