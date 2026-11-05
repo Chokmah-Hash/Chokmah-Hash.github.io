@@ -1583,6 +1583,23 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           }
         });
       },
+      /* V0.74 — LA FICHE VIVANTE : la grande fiche OUVERTE depuis le
+         registre grave ses changements — la physicalisation de
+         l'équipement (équiper, déséquiper) écrit DANS la Tombe, pas
+         seulement à l'écran. Le contenu part EN ENTIER : la fiche est
+         la seule souveraine du perso, pas de fusion à demi-mot. */
+      majPersonnage: function (id, contenu) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.reject(new Error("hors session"));
+        return api("/rest/v1/archiviste_personnages?id=eq." + id, {
+          method: "PATCH",
+          token: m.access_token,
+          body: {
+            contenu: contenu,
+            maj_le: new Date().toISOString()
+          }
+        });
+      },
       /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
          la synchro devient de la poussée, pas du polling. */
       tempsReel: tempsReel
@@ -2006,8 +2023,16 @@ const fondrePresents = (precedent, diff) => {
    — le flux de l'impression : chaque famille descend la
    première colonne puis remplit la seconde, SANS les vides
    d'alignement des rangées de grille) ; ④ le bandeau
-   POSSESSION ; ⑤ le bandeau NOTES. ── */
-const BUILD = "0.73";
+   POSSESSION ; ⑤ le bandeau NOTES. ──
+   V0.74 — LA PHYSICALISATION DE L'ÉQUIPEMENT (Michael) : DÉSÉQUIPER
+   range l'arme ou l'armure dans le sac (zone « ÉQUIPEMENT RANGÉ » du
+   bandeau POSSESSION — l'objet garde ses caractéristiques, son
+   drapeau equipe passe à false) ; ÉQUIPER ne se fait que la place
+   libre (une arme, une armure). La grande fiche s'OUVRE depuis le
+   registre (l'écrou du perso) et grave chaque geste dans la Tombe
+   (archiviste_personnages.contenu, PATCH majPersonnage) ; la fiche
+   démo et la création fraîche ne vivent qu'à l'écran. ── */
+const BUILD = "0.74";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5497,7 +5522,8 @@ function RegistrePersonnages({
   pack,
   persos,
   onCreer,
-  onSupprimer
+  onSupprimer,
+  onOuvrir
 }) {
   const [enCreationPerso, setEnCreationPerso] = useState(false);
   const [detailPerso, setDetailPerso] = useState(null);
@@ -5575,7 +5601,15 @@ function RegistrePersonnages({
     style: {
       color: "#52525b"
     }
-  }, "cr\xE9\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "cr\xE9\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), onOuvrir && /*#__PURE__*/React.createElement("button", {
+    onClick: () => onOuvrir(detailPerso),
+    className: "w-full px-4 py-2 rounded-lg text-xs font-bold mb-3",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      cursor: "pointer"
+    }
+  }, "OUVRIR LA GRANDE FICHE"), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
   }, [["CC", stDetail.cc], ["CT", stDetail.ct], ["F", stDetail.f], ["E", stDetail.e], ["Sv", stDetail.sv], ["Cd", stDetail.cd]].concat(stDetail.a ? [["A", stDetail.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -8501,6 +8535,7 @@ function VueNoyauD100({
   persos,
   onCreerPersonnage,
   onSupprimerPersonnage,
+  onModifierPersonnage,
   livreSb
 }) {
   const T = pack.theme;
@@ -8519,8 +8554,88 @@ function VueNoyauD100({
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [dernierDe, setDernierDe] = useState(null); /* la face du dernier d100, en chiffres */
   const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
+  /* V0.74 — LE PERSO OUVERT DE LA TOMBE : quand la grande fiche vient
+     du registre, ses gestes se gravent dans la pierre — sinon (fiche
+     démo, création fraîche) l'équipement ne vit qu'à l'écran. */
+  const [persoOuvert, setPersoOuvert] = useState(null);
   const perso = persoCree || C.perso;
   const c = perso.caracs;
+
+  /* V0.74 — LA PHYSICALISATION DE L'ÉQUIPEMENT (Michael) : le fer et
+     la protection sont des OBJETS PHYSIQUES — déséquiper les RANGe
+     dans le sac (le bandeau POSSESSION les montre, zone ÉQUIPEMENT
+     RANGÉ, AVEC leurs caractéristiques — rien ne se perd), équiper
+     ne se fait que la place libre (une arme, une armure). Le drapeau
+     equipe vit sur l'objet ; une armure en chaîne de la Tombe (une
+     simple string « Nom — reste ») se convertit en objet au premier
+     geste. Le perso OUVERT grave chaque geste dans la Tombe. */
+  const armesEquipees = (perso.armes || []).filter(a => a.equipe !== false);
+  const armesRangees = (perso.armes || []).filter(a => a.equipe === false);
+  const armuresEquipees = (perso.armures || []).filter(a => typeof a === "object" ? a.equipe !== false : true);
+  const armuresRangees = (perso.armures || []).filter(a => typeof a === "object" && a.equipe === false);
+  const majPersoAffiche = changement => {
+    const nouveau = {
+      ...perso,
+      ...changement
+    };
+    setPersoCree(nouveau);
+    if (persoOuvert && onModifierPersonnage) onModifierPersonnage({
+      ...persoOuvert,
+      contenu: nouveau
+    });
+  };
+  const desequiperArme = a => majPersoAffiche({
+    armes: (perso.armes || []).map(x => x === a ? {
+      ...x,
+      equipe: false
+    } : x)
+  });
+  const equiperArme = a => {
+    if (armesEquipees.length === 0) majPersoAffiche({
+      armes: (perso.armes || []).map(x => x === a ? {
+        ...x,
+        equipe: true
+      } : x)
+    });
+  };
+  const desequiperArmure = a => {
+    /* une armure de la Tombe peut être une simple string : au premier
+       geste elle devient objet — nom, reste, drapeau. */
+    const objet = typeof a === "object" ? a : function () {
+      const sep = String(a).indexOf(" — ");
+      return sep > 0 ? {
+        nom: String(a).slice(0, sep),
+        reste: String(a).slice(sep + 3),
+        equipe: false
+      } : {
+        nom: String(a),
+        reste: "",
+        equipe: false
+      };
+    }();
+    majPersoAffiche({
+      armures: (perso.armures || []).map(x => x === a ? {
+        ...objet,
+        equipe: false
+      } : x)
+    });
+  };
+  const equiperArmure = a => {
+    if (armuresEquipees.length === 0) majPersoAffiche({
+      armures: (perso.armures || []).map(x => x === a ? {
+        ...x,
+        equipe: true
+      } : x)
+    });
+  };
+  const ouvrirPersoDuRegistre = p => {
+    /* la grande fiche prend le perso de la Tombe — et se lie à la
+       pierre : chaque geste d'équipement se gravera dedans. */
+    setPersoOuvert(p);
+    setPersoCree(p.contenu);
+    setEnCreation(false);
+    if (p.contenu && p.contenu.sanMax) setSan(p.contenu.sanMax);
+  };
 
   /* V0.69 — POUVOIRS D'INVOCATION GAGNÉS : n'afficher que les
      pouvoirs OFFICIELS du livre gravé (Michael : « pour l'instant
@@ -8928,7 +9043,8 @@ function VueNoyauD100({
     pack: pack,
     persos: persos || [],
     onCreer: onCreerPersonnage,
-    onSupprimer: onSupprimerPersonnage
+    onSupprimer: onSupprimerPersonnage,
+    onOuvrir: ouvrirPersoDuRegistre
   })), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
@@ -9066,39 +9182,69 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "ARMES"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
+  }, "ARMES"), armesEquipees.map(a => /*#__PURE__*/React.createElement("div", {
     key: a.nom,
-    className: "mt-1 rounded p-2 text-xs",
+    className: "mt-1 rounded p-2 text-xs flex items-center justify-between gap-2",
     style: {
       background: "#ffffff08",
       color: "#c8c8ce"
     }
-  }, /*#__PURE__*/React.createElement("b", {
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
     style: {
       color: "#e8e4d8"
     }
-  }, a.nom), " \xB7 ", a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : ""))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, a.nom), " \xB7 ", a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: () => desequiperArme(a),
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "\u2193 D\xC9S\xC9QUIPER"))), armesEquipees.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#71717a"
+    }
+  }, "\xC0 mains nues \u2014 le fer est rang\xE9 dans le sac.")), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] mb-1",
     style: {
       color: "#71717a"
     }
-  }, "ARMURES"), perso.armures.map((a, i) => {
+  }, "ARMURES"), armuresEquipees.map((a, i) => {
     const sep = String(a).indexOf(" — ");
-    const nom = sep > 0 ? String(a).slice(0, sep) : String(a);
-    const reste = sep > 0 ? String(a).slice(sep + 3) : "";
+    const nom = typeof a === "object" ? a.nom : sep > 0 ? String(a).slice(0, sep) : String(a);
+    const reste = typeof a === "object" ? a.reste || "" : sep > 0 ? String(a).slice(sep + 3) : "";
     return /*#__PURE__*/React.createElement("div", {
       key: i,
-      className: "mt-1 rounded p-2 text-xs",
+      className: "mt-1 rounded p-2 text-xs flex items-center justify-between gap-2",
       style: {
         background: "#ffffff08",
         color: "#c8c8ce"
       }
-    }, /*#__PURE__*/React.createElement("b", {
+    }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
       style: {
         color: "#e8e4d8"
       }
-    }, nom), reste ? " · " + reste : "");
-  })))) : null, perso.competences || perso.desirs || perso.pouvoirs && perso.pouvoirs.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    }, nom), reste ? " · " + reste : ""), /*#__PURE__*/React.createElement("button", {
+      onClick: () => desequiperArmure(a),
+      className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+      style: {
+        background: "#a8adb814",
+        color: "#a8adb8",
+        border: "1px solid #3f3f46",
+        cursor: "pointer"
+      }
+    }, "\u2193 D\xC9S\xC9QUIPER"));
+  }), armuresEquipees.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#71717a"
+    }
+  }, "Sans armure \u2014 la protection est rang\xE9e dans le sac.")))) : null, perso.competences || perso.desirs || perso.pouvoirs && perso.pouvoirs.length > 0 ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -9252,7 +9398,7 @@ function VueNoyauD100({
     pv: v,
     pvMax: 10,
     accent: v >= 8 ? T.accent : "#a8adb8"
-  })))))) : null, perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })))))) : null, perso.possessions && perso.possessions.length > 0 || armesRangees.length > 0 || armuresRangees.length > 0 ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -9263,7 +9409,60 @@ function VueNoyauD100({
     style: {
       color: themesComps ? T.accent : "#71717a"
     }
-  }, themesComps ? "POSSESSION" : "Possessions"), /*#__PURE__*/React.createElement("div", {
+  }, themesComps ? "POSSESSION" : "Possessions"), (armesRangees.length > 0 || armuresRangees.length > 0) && /*#__PURE__*/React.createElement("div", {
+    className: "mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "\xC9QUIPEMENT RANG\xC9 \u2014 \xE0 port\xE9e de main"), /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-1"
+  }, armesRangees.map(a => /*#__PURE__*/React.createElement("div", {
+    key: "r-" + a.nom,
+    className: "rounded p-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, a.nom), " \xB7 ", a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: () => equiperArme(a),
+    disabled: armesEquipees.length > 0,
+    title: armesEquipees.length > 0 ? "Une arme à la fois — déséquipez la tenue d'abord" : "",
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+    style: {
+      background: armesEquipees.length > 0 ? "#a8adb80d" : T.accent + "22",
+      color: armesEquipees.length > 0 ? "#52525b" : T.accent,
+      border: "1px solid " + (armesEquipees.length > 0 ? "#27272a" : T.accent + "44"),
+      cursor: armesEquipees.length > 0 ? "default" : "pointer"
+    }
+  }, "\u2191 \xC9QUIPER"))), armuresRangees.map((a, i) => /*#__PURE__*/React.createElement("div", {
+    key: "ra-" + i,
+    className: "rounded p-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, a.nom), a.reste ? " · " + a.reste : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: () => equiperArmure(a),
+    disabled: armuresEquipees.length > 0,
+    title: armuresEquipees.length > 0 ? "Une armure à la fois — déséquipez la tenue d'abord" : "",
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+    style: {
+      background: armuresEquipees.length > 0 ? "#a8adb80d" : T.accent + "22",
+      color: armuresEquipees.length > 0 ? "#52525b" : T.accent,
+      border: "1px solid " + (armuresEquipees.length > 0 ? "#27272a" : T.accent + "44"),
+      cursor: armuresEquipees.length > 0 ? "default" : "pointer"
+    }
+  }, "\u2191 \xC9QUIPER"))))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-1"
   }, perso.possessions.map((p, i) => {
     const po = String(p).indexOf(" (");
@@ -9281,7 +9480,7 @@ function VueNoyauD100({
         color: "#e8e4d8"
       }
     }, nom), detail ? " · " + detail : "");
-  }))), /*#__PURE__*/React.createElement("div", {
+  }))) : null, /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -9828,6 +10027,16 @@ function App() {
       showToast("« " + p.nom + " » quitte le registre — la Tombe garde sa trace.");
       return rechargerListes().then(() => rechargerPersonnages(packId));
     }).catch(() => showToast("La Tombe a refusé — le personnage reste au registre."));
+  };
+  /* V0.74 — LA FICHE VIVANTE : la grande fiche ouverte depuis le
+     registre grave ses gestes d'équipement (équiper, déséquiper)
+     dans la Tombe. L'écran applique déjà le changement (état local
+     optimiste) ; la Tombe grave le contenu EN ENTIER et le registre
+     se recharge — le perso du sac et celui de la pierre ne divergent
+     jamais. */
+  const modifierPersonnageRegistre = (packId, p) => {
+    if (!CLOUD || !p || !p.id || !p.contenu) return;
+    CLOUD.majPersonnage(p.id, p.contenu).then(() => rechargerPersonnages(packId)).catch(() => showToast("La Tombe a refusé — le geste d'équipement n'est pas gravé. Réessayez."));
   };
   const sauverFiche = contenu => {
     if (!CLOUD || !session || !partieIdRef.current) return;
@@ -10592,6 +10801,7 @@ function App() {
       persos: mesPersonnages,
       onCreerPersonnage: p => creerPersonnageRegistre(packActif.id, p),
       onSupprimerPersonnage: p => supprimerPersonnageRegistre(packActif.id, p),
+      onModifierPersonnage: p => modifierPersonnageRegistre(packActif.id, p),
       onAvatar: changerAvatar,
       onLogout: seDeconnecter
     })));
