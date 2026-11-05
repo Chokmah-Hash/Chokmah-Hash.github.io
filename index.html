@@ -1986,8 +1986,17 @@ const fondrePresents = (precedent, diff) => {
    (l'ordre de lecture y redevient compétences puis équipement,
    par order-*). Un bloc NOTES vide se remplit à la main. Le CSS
    print (entree.css) rend la fiche PAPIER CLAIR : fond blanc,
-   texte noir, seul le contenu de la fiche s'imprime. ── */
-const BUILD = "0.71";
+   texte noir, seul le contenu de la fiche s'imprime. ──
+   V0.72 — LA FICHE RÉORGANISÉE EN BANDEAUX (Michael) : ARMES -
+   ARMURES descend en BANDEAU sous le S.F.T, ses ARMES à gauche
+   et ses ARMURES à droite ; POSSESSION et NOTES ferment la
+   fiche en BANDEAUX pleine largeur ; tout le reste — les
+   familles de compétences, les pouvoirs du repli, les désirs —
+   se répartit sur les deux colonnes du milieu ; l'espace entre
+   les jauges PV/SAN/S.F.T resserre (Michael trouve la fiche
+   trop aérée là). Nationalité/Culte de Mad Marthygann gravés
+   dans la Tombe : Eshmirien · élémentaire de l'air. ── */
+const BUILD = "0.72";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -8979,8 +8988,11 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, k, " "), v))), perso.pv != null && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
+  }, k, " "), v))), perso.pv != null &&
+  /*#__PURE__*/
+  /* V0.72 — l'espace resserre entre les trois jauges (Michael). */
+  React.createElement("div", {
+    className: "mt-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
@@ -8992,7 +9004,7 @@ function VueNoyauD100({
     accent: "#e0524d",
     label: `${perso.pv} / ${perso.pvMax || perso.pv} PV`
   })), perso.sanMax ? /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
+    className: "mt-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
@@ -9004,7 +9016,7 @@ function VueNoyauD100({
     accent: T.accent,
     label: `${san} / ${perso.sanMax} SAN`
   })) : null, perso.sft != null && /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-2",
+    className: "text-xs mt-1",
     style: {
       color: "#a1a1aa"
     }
@@ -9017,10 +9029,54 @@ function VueNoyauD100({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), /*#__PURE__*/React.createElement("div", {
-    className: "grid gap-4 mt-3 md:grid-cols-2 print:grid-cols-2"
+  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), perso.armes && perso.armes.length > 0 || perso.armures && perso.armures.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "mt-2"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "order-1 md:order-2 print:order-2"
+    className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
+    style: {
+      color: themesComps ? T.accent : "#71717a"
+    }
+  }, themesComps ? "ARMES - ARMURES" + (bonusFamilles ? " — ATTAQUE +" + bonusFamilles.attaque + " · PARADE +" + bonusFamilles.parade : "") : "Armes - Armures"), /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-2"
+  }, perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "ARMES"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
+    key: a.nom,
+    className: "mt-1 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, a.nom), " \xB7 ", a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : ""))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "ARMURES"), perso.armures.map((a, i) => {
+    const sep = String(a).indexOf(" — ");
+    const nom = sep > 0 ? String(a).slice(0, sep) : String(a);
+    const reste = sep > 0 ? String(a).slice(sep + 3) : "";
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "mt-1 rounded p-2 text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, nom), reste ? " · " + reste : "");
+  })))) : null, /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-x-4 gap-y-2 mt-3 md:grid-cols-2 print:grid-cols-2"
   }, perso.competences && themesComps ?
   /*#__PURE__*/
   /* V0.62 — LE CATALOGUE COMPLET : chaque compétence rangée sous
@@ -9029,10 +9085,11 @@ function VueNoyauD100({
      de jet (le bonus de famille, ou 10 + bonus), les « 0 % »
      marquées « — » (un maître d'abord). Les non-classées vivent
      sous « AUTRES » ; l'entête porte le bonus de la famille
-     calculé depuis les caracs (livre v2, §2.5). */
-  React.createElement("div", {
-    className: "mt-2"
-  }, [...ordreThemes.map(t => ({
+     calculé depuis les caracs (livre v2, §2.5). V0.72 : chaque
+     FAMILLE devient une CELLULE du milieu de fiche (le
+     fragment ne crée pas de DOM — les familles se posent
+     DIRECTEMENT dans la grille). */
+  React.createElement(React.Fragment, null, [...ordreThemes.map(t => ({
     theme: t,
     items: comps.filter(k => familleDe[k] === t).map(k => ({
       k,
@@ -9045,8 +9102,7 @@ function VueNoyauD100({
       v: perso.competences[k]
     }))
   }] : [])].filter(g => g.items.length > 0).map(g => /*#__PURE__*/React.createElement("div", {
-    key: g.theme,
-    className: "mt-2"
+    key: g.theme
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-bold tracking-widest mb-1",
     style: {
@@ -9104,7 +9160,7 @@ function VueNoyauD100({
       color: "#e8e4d8"
     }
   }, "3\xD7POU \xB7 ", 3 * (perso.caracs && perso.caracs.POU || 0), " %"))))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-1.5 mt-2 text-xs"
+    className: "grid grid-cols-2 gap-1.5 text-xs"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
     className: "flex justify-between rounded px-2 py-1",
@@ -9119,10 +9175,9 @@ function VueNoyauD100({
   }, v, " %")))) : null, perso.pouvoirs && perso.pouvoirs.length > 0 && !(themesComps && themesComps.INVOCATION) &&
   /*#__PURE__*/
   /* V0.68 — repli : si le pack n'a pas de famille INVOCATION,
-     les pouvoirs gardent leur bloc propre. */
-  React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
+     les pouvoirs gardent leur bloc propre — V0.72 : une
+     CELLULE du milieu de fiche, avec les compétences. */
+  React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
@@ -9136,50 +9191,34 @@ function VueNoyauD100({
       background: T.accent + "22",
       color: T.accent
     }
-  }, p))))), /*#__PURE__*/React.createElement("div", {
-    className: "order-2 md:order-1 print:order-1"
-  }, perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
-    style: {
-      color: themesComps ? T.accent : "#71717a"
-    }
-  }, themesComps ? "ARMES - ARMURES" + (bonusFamilles ? " — ATTAQUE +" + bonusFamilles.attaque + " · PARADE +" + bonusFamilles.parade : "") : "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
-    key: a.nom,
-    className: "mt-1 rounded p-2 text-xs",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, a.nom), " \xB7 ", a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : ""))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: themesComps ? "mt-1" : "mt-3"
-  }, !themesComps && /*#__PURE__*/React.createElement("div", {
+  }, p)))), perso.desirs &&
+  /*#__PURE__*/
+  /* V0.72 — LES DÉSIRS : une CELLULE du milieu de fiche,
+     à côté des familles de compétences (le fragment de
+     la V0.70 devenait DEUX cellules — un div l'englobe). */
+  React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
     }
-  }, "Armures"), perso.armures.map((a, i) => {
-    const sep = String(a).indexOf(" — ");
-    const nom = sep > 0 ? String(a).slice(0, sep) : String(a);
-    const reste = sep > 0 ? String(a).slice(sep + 3) : "";
-    return /*#__PURE__*/React.createElement("div", {
-      key: i,
-      className: "mt-1 rounded p-2 text-xs",
-      style: {
-        background: "#ffffff08",
-        color: "#c8c8ce"
-      }
-    }, /*#__PURE__*/React.createElement("b", {
-      style: {
-        color: "#e8e4d8"
-      }
-    }, nom), reste ? " · " + reste : "");
-  })), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "D\xE9sirs du peuple ", perso.peuple, " (livre p. 88 \u2014 un PJ ajuste de \xB11 \xE0 \xB12 par d\xE9sir)"), Object.entries(perso.desirs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "mb-1.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between text-xs mb-0.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#c8c8ce"
+    }
+  }, k), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v, "/10", v >= 9 ? " 🔥" : "")), /*#__PURE__*/React.createElement(PvBarre, {
+    pv: v,
+    pvMax: 10,
+    accent: v >= 8 ? T.accent : "#a8adb8"
+  }))))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
@@ -9204,29 +9243,7 @@ function VueNoyauD100({
         color: "#e8e4d8"
       }
     }, nom), detail ? " · " + detail : "");
-  }))), perso.desirs && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-3 mb-1",
-    style: {
-      color: "#71717a"
-    }
-  }, "D\xE9sirs du peuple ", perso.peuple, " (livre p. 88 \u2014 un PJ ajuste de \xB11 \xE0 \xB12 par d\xE9sir)"), Object.entries(perso.desirs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "mb-1.5"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-between text-xs mb-0.5"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#c8c8ce"
-    }
-  }, k), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, v, "/10", v >= 9 ? " 🔥" : "")), /*#__PURE__*/React.createElement(PvBarre, {
-    pv: v,
-    pvMax: 10,
-    accent: v >= 8 ? T.accent : "#a8adb8"
-  })))), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-bold tracking-widest mb-1",
@@ -9240,7 +9257,7 @@ function VueNoyauD100({
       height: "20px",
       borderBottom: "1px solid #ffffff08"
     }
-  })))))), C.forge ? /*#__PURE__*/React.createElement("div", {
+  })))), C.forge ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
