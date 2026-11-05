@@ -1728,7 +1728,7 @@ const fondrePresents = (precedent, diff) => {
    V0.41 : LE SALON ENCRÉ — le salon du LOBBY s'ancre en BAS DE PAGE
    (la scroll bar vit dans son propre cadre, le salon ne saute plus
    de taille) ; le cadre CONNECTÉS quitte le lobby : une petite
-   icône 👥 sur la ligne du titre, à droite, le fait paraître en
+   petit bouton sur la ligne du titre, à droite, le fait paraître en
    petit cadre flottant — un clic l'ouvre, un autre le referme.
    V0.42 : LE VRAI SALON ENCRÉ — app.css (Tailwind compilé une
    fois, figé) ne connaît PAS h-screen/overflow-hidden/min-h-0/
@@ -1922,8 +1922,15 @@ const fondrePresents = (precedent, diff) => {
    Jet de Dés en haut, la CONSOLE DE PARTIE en cadre COLLÉE EN BAS ; le
    journal append-only déménage dans un nouvel onglet JOURNAL, à droite
    de FICHE PERSONNAGE. Et la règle d'or du jour : AUCUN EMOJI dans
-   l'interface (le cadenas seul reste). ── */
-const BUILD = "0.64";
+   l'interface (le cadenas seul reste). ──
+   V0.65 — LE SALON UNIFIÉ : la TAVERNE est le LOBBY de Stormbringer,
+   pour le MJ AUSSI — même cadre, mêmes fonctions que le SALON du LOBBY
+   de Protocole Ω (ChatSalon : fil, envoi, connectés), seuls le nom et
+   la couleur changent (l'accent du jeu teinte le cadre) ; le Jet de
+   Dés quitte la Taverne (il reviendra avec l'intégration visuelle) ;
+   l'icône des connectés devient un bouton texte CONNECTÉS (règle
+   sans emoji). ── */
+const BUILD = "0.65";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5277,7 +5284,7 @@ function ConsoleGlobale({
    restent à la table). V0.41 : LE SALON ENCRÉ — quand le lobby
    l'exige (remplir), le cadre S'ANCRE EN BAS DE PAGE et la scroll
    bar vit dans son propre cadre ; le cadre CONNECTÉS vit
-   désormais REPLIÉ derrière la petite icône 👥 de la ligne du
+   désormais REPLIÉ derrière le petit bouton de la ligne du
    titre — un clic le fait paraître en flottant, un autre le
    chasse. Le rendu des lignes reste celui de LA Console
    (LigneConsole) — une seule langue pour tous les fils. ══════════ */
@@ -5288,7 +5295,8 @@ function ChatSalon({
   joueur,
   enEnvoi,
   presents,
-  remplir
+  remplir,
+  accent
 }) {
   const [texte, setTexte] = useState("");
   const [presentsOuverts, setPresentsOuverts] = useState(false);
@@ -5302,21 +5310,21 @@ function ChatSalon({
     className: "rounded-xl flex flex-col" + (remplir ? " flex-1" : ""),
     style: remplir ? {
       background: "#14161b",
-      border: "1px solid #27272a",
+      border: "1px solid " + (accent ? accent + "33" : "#27272a"),
       flex: "1 1 0%",
       minHeight: 0,
       display: "flex",
       flexDirection: "column"
     } : {
       background: "#14161b",
-      border: "1px solid #27272a"
+      border: "1px solid " + (accent ? accent + "33" : "#27272a")
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 flex-wrap px-3 pt-3 pb-2 relative"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold tracking-widest",
     style: {
-      color: "#a8adb8"
+      color: accent || "#a8adb8"
     }
   }, titre || "SALON"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setPresentsOuverts(o => !o),
@@ -5328,7 +5336,7 @@ function ChatSalon({
       cursor: "pointer"
     },
     title: "Les connect\xE9s de ce JDR"
-  }, "\uD83D\uDC65"), presentsOuverts && /*#__PURE__*/React.createElement("div", {
+  }, "CONNECT\xC9S"), presentsOuverts && /*#__PURE__*/React.createElement("div", {
     className: "rounded-lg p-3",
     style: {
       background: "#14161b",
@@ -8433,7 +8441,7 @@ function VueNoyauD100({
   const [enCreation, setEnCreation] = useState(false);
   /* V0.57 — l'ordonnance universelle : onglets SALON puis SCENARIO/FICHE,
      entête de partie, compte joueur — la même coquille que le noyau-40k. */
-  const [onglet, setOnglet] = useState(role === "mj" ? "scenario" : "salon"); /* V0.64 : la TAVERNE est au joueur — le MJ ouvre sur SCENARIO */
+  const [onglet, setOnglet] = useState("salon"); /* V0.65 : la TAVERNE est le LOBBY — MJ et joueur y atterrissent */
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [dernierDe, setDernierDe] = useState(null); /* la face du dernier d100, en chiffres */
   const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
@@ -8745,7 +8753,7 @@ function VueNoyauD100({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, (role === "mj" ? [["scenario", "SCENARIO"]] : [["salon", C.salon || "SALON"], ["fiche", "FICHE PERSONNAGE"], ["journal", "JOURNAL"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, (role === "mj" ? [["salon", C.salon || "SALON"], ["scenario", "SCENARIO"]] : [["salon", C.salon || "SALON"], ["fiche", "FICHE PERSONNAGE"], ["journal", "JOURNAL"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -8756,134 +8764,23 @@ function VueNoyauD100({
       color: onglet === id ? T.accent : "#71717a",
       cursor: "pointer"
     }
-  }, lbl))), onglet === "salon" && /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col flex-1"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 mb-4",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid " + T.accent + "33"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold mb-3",
-    style: {
-      color: T.accent
-    }
-  }, "Jet de D\xE9s"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-center gap-3"
-  }, C.paliers ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
-    className: "text-sm",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, "Comp\xE9tence", " ", /*#__PURE__*/React.createElement("select", {
-    value: compIdx,
-    onChange: e => setCompIdx(Number(e.target.value)),
-    className: "ml-1 rounded px-2 py-1",
-    style: {
-      background: "#14161b",
-      color: "#e8e4d8",
-      border: "1px solid #3f3f46"
-    }
-  }, comps.map((k, i) => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: i
-  }, k, " \u2014 ", perso.competences[k], " %")))), /*#__PURE__*/React.createElement("div", {
-    className: "flex rounded overflow-hidden",
-    style: {
-      border: "1px solid #3f3f46"
-    }
-  }, C.paliers.map((p, i) => /*#__PURE__*/React.createElement("button", {
-    key: p.label,
-    onClick: () => setPalierIdx(i),
-    className: "px-2.5 py-1 text-xs",
-    style: {
-      background: palierIdx === i ? T.accent : "#14161b",
-      color: palierIdx === i ? "#0c0d10" : "#c8c8ce"
-    }
-  }, p.label)))) : /*#__PURE__*/React.createElement("label", {
-    className: "text-sm",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, "Sous", " ", /*#__PURE__*/React.createElement("select", {
-    value: srcIdx,
-    onChange: e => setSrcIdx(Number(e.target.value)),
-    className: "ml-1 rounded px-2 py-1",
-    style: {
-      background: "#14161b",
-      color: "#e8e4d8",
-      border: "1px solid #3f3f46"
-    }
-  }, themesComps ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("optgroup", {
-    label: "CARACT\xC9RISTIQUES"
-  }, sources.slice(0, (C.ordreCaracs || Object.keys(c)).length).map((s, i) => /*#__PURE__*/React.createElement("option", {
-    key: i,
-    value: i
-  }, s.label))), (C.mults || []).length > 0 && /*#__PURE__*/React.createElement("optgroup", {
-    label: "CARACS \xD7MULTIPLICATEUR"
-  }, (C.mults || []).map((m, i) => /*#__PURE__*/React.createElement("option", {
-    key: "m" + i,
-    value: (C.ordreCaracs || Object.keys(c)).length + i
-  }, m.carac, "\xD7", m.mult, " \u2014 ", m.label, " (", c[m.carac] * m.mult, " %)"))), [...ordreThemes.map(t => ({
-    theme: t,
-    liste: comps.filter(k => familleDe[k] === t)
-  })), ...(comps.filter(k => !familleDe[k]).length ? [{
-    theme: "AUTRES",
-    liste: comps.filter(k => !familleDe[k])
-  }] : [])].map(g => /*#__PURE__*/React.createElement("optgroup", {
-    key: g.theme,
-    label: g.theme
-  }, g.liste.filter(k => seuilComp(k) > 0).map(k => /*#__PURE__*/React.createElement("option", {
-    key: k,
-    value: srcIdxDe(k)
-  }, k, " (", seuilComp(k), " %)"))))) : sources.map((s, i) => /*#__PURE__*/React.createElement("option", {
-    key: i,
-    value: i
-  }, s.label)))), /*#__PURE__*/React.createElement("button", {
-    onClick: jetLibre,
-    className: "px-4 py-1.5 rounded-lg font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "Lancer 1D100"), dernierDe && /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(DeFace100, {
-    v: dernierDe.de,
-    accent: dernierDe.reussi ? T.accent : "#fb7185"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: dernierDe.reussi ? T.accent : "#fb7185"
-    }
-  }, dernierDe.reussi ? "RÉUSSI" : "ÉCHOUÉ", dernierDe.nat ? " · " + dernierDe.nat : "")), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, "1D100 \u2264 seuil \xB7 plancher 5 % \xB7 \xAB 00 \xBB \xE9chec automatique", C.aideJet ? " · " + C.aideJet : ""))), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl overflow-hidden mt-auto",
-    style: {
-      background: "#14161b",
-      border: "1px solid " + T.accent + "33"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "px-3 py-2 text-xs font-bold tracking-widest",
-    style: {
-      borderBottom: "1px solid #27272a",
-      color: T.accent
-    }
-  }, "CONSOLE DE PARTIE"), consolePartie ? /*#__PURE__*/React.createElement(ConsoleGlobale, {
+  }, lbl))), onglet === "salon" && (consolePartie ? /*#__PURE__*/React.createElement(ChatSalon, {
+    titre: "SALON — " + pack.nom,
     fil: consolePartie.fil,
     onEnvoyer: consolePartie.onEnvoyer,
     joueur: consolePartie.joueur || joueur,
-    enEnvoi: consolePartie.enEnvoi
+    enEnvoi: consolePartie.enEnvoi,
+    presents: consolePartie.presents || [],
+    remplir: true,
+    accent: T.accent
   }) : /*#__PURE__*/React.createElement("div", {
-    className: "text-xs py-4 text-center",
+    className: "rounded-xl p-6 text-center text-sm",
     style: {
+      background: "#14161b",
+      border: "1px solid " + T.accent + "33",
       color: "#71717a"
     }
-  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table."))), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
+  }, "Console muette hors partie \u2014 lancez ou rejoignez une aventure pour parler \xE0 la table.")), onglet === "scenario" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-6 text-center",
     style: {
       background: "#ffffff08",
@@ -10437,7 +10334,8 @@ function App() {
         fil: consoleFil,
         onEnvoyer: envoyerConsoleMessage,
         joueur: session,
-        enEnvoi: consoleEnvoi
+        enEnvoi: consoleEnvoi,
+        presents: Object.values(presents).filter(j => j && j.jeu === packActif.id)
       } : null,
       versionBase: versionBase,
       persos: mesPersonnages,
