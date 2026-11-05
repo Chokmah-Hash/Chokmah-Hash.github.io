@@ -1977,8 +1977,17 @@ const fondrePresents = (precedent, diff) => {
    ARMES - ARMURES et POSSESSION deviennent des OBJETS PHYSIQUES comme
    dans Protocole Ω — une carte par objet, le nom en gras et ses
    caractéristiques à la suite (l'arme du 40k : « Blaster gauss ·
-   tir · 48 m · A 2 · ... »). ── */
-const BUILD = "0.70";
+   tir · 48 m · A 2 · ... »). ──
+   V0.71 — LA FICHE CHARSET PAPIER (Michael) : deux bandeaux pleine
+   largeur (IDENTITÉ compacte en rangées façon fiche Chaosium, puis
+   CARACTÉRISTIQUES + PV/SAN/S.F.T), corps en DEUX COLONNES —
+   l'équipement (armes, armures, possession, désirs, NOTES) à
+   gauche, les compétences à droite — une colonne sur mobile
+   (l'ordre de lecture y redevient compétences puis équipement,
+   par order-*). Un bloc NOTES vide se remplit à la main. Le CSS
+   print (entree.css) rend la fiche PAPIER CLAIR : fond blanc,
+   texte noir, seul le contenu de la fiche s'imprime. ── */
+const BUILD = "0.71";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6830,7 +6839,7 @@ function PvBarre({
     length: pvMax
   }).map((_, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
-    className: "h-8 flex-1 rounded",
+    className: "pv-case h-8 flex-1 rounded",
     style: {
       background: i < pv ? accent : "#5c1f1f",
       border: "1px solid #ffffff18"
@@ -7773,12 +7782,12 @@ function BarrePct({
 }) {
   const pct = Math.max(0, Math.min(100, Math.round(valeur / max * 100)));
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "h-2 rounded-full overflow-hidden",
+    className: "barre-piste h-2 rounded-full overflow-hidden",
     style: {
       background: "#ffffff14"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "h-full rounded-full transition-all",
+    className: "barre-remplissage h-full rounded-full transition-all",
     style: {
       width: pct + "%",
       background: accent
@@ -8910,7 +8919,7 @@ function VueNoyauD100({
     onValide: validerCreation,
     onAnnule: () => setEnCreation(false)
   })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 md:col-span-2",
+    className: "rounded-xl p-4 md:col-span-2 fiche-impression",
     style: {
       background: "#ffffff08",
       border: "1px solid " + T.accent + "33"
@@ -8932,9 +8941,11 @@ function VueNoyauD100({
     style: {
       color: T.accent
     }
-  }, "PERSONNAGE"), [["Nom", perso.nom], ["Sexe", perso.identite ? perso.identite.sexe : null], ["Age", perso.identite && perso.identite.age != null ? perso.identite.age : null], ["Yeux", perso.identite ? perso.identite.yeux : null], ["Cheveux", perso.identite ? perso.identite.cheveux : null], ["Nationalité", perso.nationalite || (perso.identite ? perso.identite.nationalite : null)], ["Culte", perso.culte || (perso.identite ? perso.identite.culte : null)]].map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+  }, "PERSONNAGE"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-x-4 text-xs mb-3"
+  }, [["Sexe", perso.identite ? perso.identite.sexe : null], ["Age", perso.identite && perso.identite.age != null ? perso.identite.age : null], ["Yeux", perso.identite ? perso.identite.yeux : null], ["Cheveux", perso.identite ? perso.identite.cheveux : null], ["Nationalité", perso.nationalite || (perso.identite ? perso.identite.nationalite : null)], ["Culte", perso.culte || (perso.identite ? perso.identite.culte : null)]].map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
-    className: "flex justify-between text-xs py-1",
+    className: "flex justify-between py-1",
     style: {
       borderBottom: "1px solid #ffffff08"
     }
@@ -8946,7 +8957,29 @@ function VueNoyauD100({
     style: {
       color: "#e8e4d8"
     }
-  }, v != null && v !== "" ? v : "—"))), perso.pv != null && /*#__PURE__*/React.createElement("div", {
+  }, v != null && v !== "" ? v : "—")))), themesComps &&
+  /*#__PURE__*/
+  /* V0.61 — l'entête du premier thème, celui du manuel */
+  React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: T.accent
+    }
+  }, "CARACT\xC9RISTIQUES"), /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-2 text-center text-sm " + (nbCaracs > 6 ? "grid-cols-4" : "grid-cols-3")
+  }, Object.entries(c).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " "), v))), perso.pv != null && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
@@ -8975,29 +9008,20 @@ function VueNoyauD100({
     style: {
       color: "#a1a1aa"
     }
-  }, "S.F.T \u2014 ", perso.sft), themesComps &&
-  /*#__PURE__*/
-  /* V0.61 — l'entête du premier thème, celui du manuel */
-  React.createElement("div", {
-    className: "text-[11px] font-bold tracking-widest mb-1",
-    style: {
-      color: T.accent
-    }
-  }, "CARACT\xC9RISTIQUES"), /*#__PURE__*/React.createElement("div", {
-    className: "grid gap-2 text-center text-sm " + (nbCaracs > 6 ? "grid-cols-4" : "grid-cols-3")
-  }, Object.entries(c).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "rounded py-1.5",
+  }, "S.F.T \u2014 ", perso.sft), C.derivees && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mt-2 text-center text-xs"
+  }, C.derivees.map(d => /*#__PURE__*/React.createElement("div", {
+    key: d.label,
+    className: "flex-1 rounded py-1.5",
     style: {
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, k, " "), v))), perso.competences && themesComps ?
+  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-4 mt-3 md:grid-cols-2 print:grid-cols-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "order-1 md:order-2 print:order-2"
+  }, perso.competences && themesComps ?
   /*#__PURE__*/
   /* V0.62 — LE CATALOGUE COMPLET : chaque compétence rangée sous
      sa famille, dans l'ordre du manuel — les apprises pleines,
@@ -9092,16 +9116,29 @@ function VueNoyauD100({
     style: {
       color: "#e8e4d8"
     }
-  }, v, " %")))) : null, C.derivees && /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 mt-2 text-center text-xs"
-  }, C.derivees.map(d => /*#__PURE__*/React.createElement("div", {
-    key: d.label,
-    className: "flex-1 rounded py-1.5",
+  }, v, " %")))) : null, perso.pouvoirs && perso.pouvoirs.length > 0 && !(themesComps && themesComps.INVOCATION) &&
+  /*#__PURE__*/
+  /* V0.68 — repli : si le pack n'a pas de famille INVOCATION,
+     les pouvoirs gardent leur bloc propre. */
+  React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
     style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
+      color: "#71717a"
     }
-  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || "")))), perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Pouvoirs"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1"
+  }, perso.pouvoirs.map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: T.accent + "22",
+      color: T.accent
+    }
+  }, p))))), /*#__PURE__*/React.createElement("div", {
+    className: "order-2 md:order-1 print:order-1"
+  }, perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
@@ -9142,27 +9179,7 @@ function VueNoyauD100({
         color: "#e8e4d8"
       }
     }, nom), reste ? " · " + reste : "");
-  })), perso.pouvoirs && perso.pouvoirs.length > 0 && !(themesComps && themesComps.INVOCATION) &&
-  /*#__PURE__*/
-  /* V0.68 — repli : si le pack n'a pas de famille INVOCATION,
-     les pouvoirs gardent leur bloc propre. */
-  React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-1",
-    style: {
-      color: "#71717a"
-    }
-  }, "Pouvoirs"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-1"
-  }, perso.pouvoirs.map((p, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "text-xs px-1.5 py-0.5 rounded",
-    style: {
-      background: T.accent + "22",
-      color: T.accent
-    }
-  }, p)))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
@@ -9209,7 +9226,21 @@ function VueNoyauD100({
     pv: v,
     pvMax: 10,
     accent: v >= 8 ? T.accent : "#a8adb8"
-  }))))), C.forge ? /*#__PURE__*/React.createElement("div", {
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: T.accent
+    }
+  }, "NOTES"), [0, 1, 2, 3, 4, 5].map(i => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "notes-ligne",
+    style: {
+      height: "20px",
+      borderBottom: "1px solid #ffffff08"
+    }
+  })))))), C.forge ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
