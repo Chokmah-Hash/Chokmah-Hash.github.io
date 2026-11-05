@@ -2045,8 +2045,18 @@ const fondrePresents = (precedent, diff) => {
    physiques — universelles, et 1D6+2 supplémentaires choisies), ⑥
    LA GRAVURE (PV, SAN, SFT, bonus de dommages, bénéfices — la fiche
    complète naît). La corpulence et l'histoire personnelle vivent
-   HORS rituel, en liberté sur la fiche. ── */
-const BUILD = "0.75";
+   HORS rituel, en liberté sur la fiche. ──
+   V0.76 — LE PERSO POUR L'AVENTURE (Michael) : dans le registre
+   « MES PERSONNAGES », un bouton PRENDRE vit À GAUCHE de l'écrou ;
+   le personnage pris sera CELUI QUE L'ON CONNECTE à l'aventure.
+   La sélection vit dans le sac du compte (la Tombe — un perso par
+   jeu, elle survit rechargements et appareils) ; re-cliquer dépose
+   le perso (« PRIS POUR L'AVENTURE » redevient PRENDRE). La prise
+   AFFICHE LA FICHE : la grande fiche dans le noyau d100, la fiche
+   du registre dans le lobby. Le branchement réel à la table (le
+   d100 adopte le perso choisi plutôt que le premier) viendra d'un
+   protocole futur. ── */
+const BUILD = "0.76";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5538,7 +5548,9 @@ function RegistrePersonnages({
   onCreer,
   onSupprimer,
   onOuvrir,
-  livre
+  livre,
+  persoChoisi,
+  onChoisir
 }) {
   const [enCreationPerso, setEnCreationPerso] = useState(false);
   const [detailPerso, setDetailPerso] = useState(null);
@@ -5779,16 +5791,40 @@ function RegistrePersonnages({
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold",
     style: {
-      color: "#e8e4d8"
+      color: persoChoisi === p.id ? "#f0b24a" : "#e8e4d8"
     }
-  }, p.nom), /*#__PURE__*/React.createElement("div", {
+  }, persoChoisi === p.id ? "● " : "", p.nom), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#52525b"
     }
   }, resumePerso(p.contenu), " \xB7 cr\xE9\xE9 le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5 text-right"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-end gap-1.5"
+  }, onChoisir && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (persoChoisi !== p.id) {
+        setDetailPerso(p);
+        setEnCreationPerso(false);
+        setEnSuppressionPerso(false);
+        setMotSupprPerso("");
+        if (onOuvrir) onOuvrir(p);
+      }
+      onChoisir(p);
+    },
+    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    style: persoChoisi === p.id ? {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      cursor: "pointer"
+    } : {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, persoChoisi === p.id ? "PRIS POUR L'AVENTURE" : "PRENDRE"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setDetailPerso(p);
       setEnCreationPerso(false);
@@ -5802,7 +5838,7 @@ function RegistrePersonnages({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, "\u2699")))))));
+  }, "\u2699"))))))));
 }
 
 /* ══════════ V48.6 — LE PIED VIBE : « Powered by Vibe · N° 0.XX »
@@ -5848,6 +5884,8 @@ function EcranPartie({
   onRelireSalon,
   onCreerPersonnage,
   onSupprimerPersonnage,
+  persoChoisi,
+  onChoisirPerso,
   onCreer,
   onRejoindre,
   onRejoindreMdp,
@@ -6580,7 +6618,9 @@ function EcranPartie({
     pack: pack,
     persos: persos,
     onCreer: onCreerPersonnage,
-    onSupprimer: onSupprimerPersonnage
+    onSupprimer: onSupprimerPersonnage,
+    persoChoisi: persoChoisi,
+    onChoisir: onChoisirPerso
   }), ")}", onglet === "regles" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
@@ -9124,7 +9164,9 @@ function VueNoyauD100({
   onCreerPersonnage,
   onSupprimerPersonnage,
   onModifierPersonnage,
-  livreSb
+  livreSb,
+  persoChoisi,
+  onChoisirPerso
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack */
@@ -9633,7 +9675,9 @@ function VueNoyauD100({
     onCreer: onCreerPersonnage,
     onSupprimer: onSupprimerPersonnage,
     onOuvrir: ouvrirPersoDuRegistre,
-    livre: livreSb
+    livre: livreSb,
+    persoChoisi: persoChoisi,
+    onChoisir: onChoisirPerso
   })), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
@@ -10343,6 +10387,7 @@ function App() {
   const [etapes, setEtapes] = useState([]);
   const [totalEtapes, setTotalEtapes] = useState(7);
   const [rolesPacks, setRolesPacks] = useState({}); // packId → rôle du DERNIER lancement ("mj" | "joueur")
+  const [persoChoisi, setPersoChoisi] = useState({}); // V0.76 — jeu → id du perso PRIS POUR L'AVENTURE (vit dans le sac du compte)
   const [rolePour, setRolePour] = useState(null); // pack en attente du choix de rôle, au lancement
   const [modePour, setModePour] = useState(null); // V46 : pack multijoueur en attente du choix MODE MJ/JOUEUR
   const [modePartie, setModePartie] = useState(null); // V46 : le mode choisi pour l'écran de partie courant
@@ -10367,6 +10412,7 @@ function App() {
     setInstalles(memo.installes || []);
     setFavoris(memo.favoris || []);
     setRolesPacks(memo.rolesPacks || {});
+    setPersoChoisi(memo.persoChoisi || {});
     setSession(p);
     showToast((memo.installes || []).length ? `Bienvenue, ${p.pseudo} — bibliothèque restaurée (${memo.installes.length} pack${memo.installes.length > 1 ? "s" : ""})` : `Bienvenue, ${p.pseudo} — compte connecté`);
   };
@@ -10856,6 +10902,20 @@ function App() {
     setTimeout(() => setVue("pack"), 320 * liste.length + 550);
   }, [vue, partie, partieJoueurs, packPartie]);
 
+  /* ════════ V0.76 — LE PERSO POUR L'AVENTURE ════════
+     La sélection du registre vit dans le sac du compte (la Tombe) :
+     un perso par jeu, le clic sur un perso pris le DÉPOSE. Le bouton
+     vit dans « MES PERSONNAGES » (PRENDRE à gauche de l'écrou) ; la
+     fiche s'affiche à la prise. */
+  const choisirPersoAventure = (jeu, p) => {
+    const deja = persoChoisi[jeu] === p.id;
+    setPersoChoisi({
+      ...persoChoisi,
+      [jeu]: deja ? null : p.id
+    });
+    showToast(deja ? "« " + p.nom + " » rend sa place au registre." : "« " + p.nom + " » partira à l'aventure.");
+  };
+
   /* Mode CLOUD — le sac du compte (installations, favoris, rôles) part dans le
      nuage dès qu'il change (débouncé) : l'état vit dans le compte, jamais
      dans l'appareil. */
@@ -10864,10 +10924,11 @@ function App() {
     const t = setTimeout(() => CLOUD.sauveMemoire(session.compteId, {
       installes,
       favoris,
-      rolesPacks
+      rolesPacks,
+      persoChoisi
     }).catch(() => {}), 700);
     return () => clearTimeout(t);
-  }, [session, installes, favoris, rolesPacks]);
+  }, [session, installes, favoris, rolesPacks, persoChoisi]);
 
   /* ════════ Le module de Synchronisation (Core) — TEMPS RÉEL ════════
      La Tombe POUSSÉ ses changements (Supabase Realtime, WebSocket) : un
@@ -11314,6 +11375,8 @@ function App() {
     onRelireSalon: relireConsole,
     onCreerPersonnage: p => creerPersonnageRegistre(packPartie.id, p),
     onSupprimerPersonnage: p => supprimerPersonnageRegistre(packPartie.id, p),
+    persoChoisi: persoChoisi[packPartie.id],
+    onChoisirPerso: p => choisirPersoAventure(packPartie.id, p),
     onCreer: creerAventure,
     onRejoindre: rejoindreAventure,
     onRejoindreMdp: rejoindreAventureMdp,
@@ -11392,6 +11455,8 @@ function App() {
       onCreerPersonnage: p => creerPersonnageRegistre(packActif.id, p),
       onSupprimerPersonnage: p => supprimerPersonnageRegistre(packActif.id, p),
       onModifierPersonnage: p => modifierPersonnageRegistre(packActif.id, p),
+      persoChoisi: persoChoisi[packActif.id],
+      onChoisirPerso: p => choisirPersoAventure(packActif.id, p),
       onAvatar: changerAvatar,
       onLogout: seDeconnecter
     })));
