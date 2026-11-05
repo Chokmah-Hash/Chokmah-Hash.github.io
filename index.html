@@ -1970,8 +1970,15 @@ const fondrePresents = (precedent, diff) => {
    esprits élémentaires §5.4, Seigneurs §5.9-§5.10) ; les pouvoirs
    maison (gagnés en aventure) attendront leur gravure (Michael) ;
    le bouton « Créer un aventurier » en bas de fiche disparaît —
-   l'écran de création est le chantier suivant. ── */
-const BUILD = "0.69";
+   l'écran de création est le chantier suivant. ──
+   V0.70 — LA FICHE PLEINE LARGEUR + LES OBJETS PHYSIQUES : la fiche
+   occupe toute la largeur du cadre (Michael la voyait à moitié page —
+   la seconde colonne est vide depuis le départ du démon de test) ;
+   ARMES - ARMURES et POSSESSION deviennent des OBJETS PHYSIQUES comme
+   dans Protocole Ω — une carte par objet, le nom en gras et ses
+   caractéristiques à la suite (l'arme du 40k : « Blaster gauss ·
+   tir · 48 m · A 2 · ... »). ── */
+const BUILD = "0.70";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -8903,7 +8910,7 @@ function VueNoyauD100({
     onValide: validerCreation,
     onAnnule: () => setEnCreation(false)
   })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
+    className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
       border: "1px solid " + T.accent + "33"
@@ -9103,33 +9110,39 @@ function VueNoyauD100({
     }
   }, themesComps ? "ARMES - ARMURES" + (bonusFamilles ? " — ATTAQUE +" + bonusFamilles.attaque + " · PARADE +" + bonusFamilles.parade : "") : "Armes"), perso.armes.map(a => /*#__PURE__*/React.createElement("div", {
     key: a.nom,
-    className: "flex justify-between text-xs rounded px-2 py-1 mb-1",
+    className: "mt-1 rounded p-2 text-xs",
     style: {
-      background: "#ffffff08"
+      background: "#ffffff08",
+      color: "#c8c8ce"
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("b", {
     style: {
       color: "#e8e4d8"
     }
-  }, a.nom), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#c8c8ce"
-    }
-  }, a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : "")))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, a.nom), " \xB7 ", a.seuil, a.degats ? " · " + a.degats : "", a.bonus ? " · +" + a.bonus : ""))), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: themesComps ? "mt-1" : "mt-3"
   }, !themesComps && /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
     }
-  }, "Armures"), perso.armures.map((a, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    className: "text-xs rounded px-2 py-1 mb-1",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, a))), perso.pouvoirs && perso.pouvoirs.length > 0 && !(themesComps && themesComps.INVOCATION) &&
+  }, "Armures"), perso.armures.map((a, i) => {
+    const sep = String(a).indexOf(" — ");
+    const nom = sep > 0 ? String(a).slice(0, sep) : String(a);
+    const reste = sep > 0 ? String(a).slice(sep + 3) : "";
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "mt-1 rounded p-2 text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, nom), reste ? " · " + reste : "");
+  })), perso.pouvoirs && perso.pouvoirs.length > 0 && !(themesComps && themesComps.INVOCATION) &&
   /*#__PURE__*/
   /* V0.68 — repli : si le pack n'a pas de famille INVOCATION,
      les pouvoirs gardent leur bloc propre. */
@@ -9157,15 +9170,24 @@ function VueNoyauD100({
       color: themesComps ? T.accent : "#71717a"
     }
   }, themesComps ? "POSSESSION" : "Possessions"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-1"
-  }, perso.possessions.map((p, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "text-xs px-1.5 py-0.5 rounded",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, p)))), perso.desirs && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-1"
+  }, perso.possessions.map((p, i) => {
+    const po = String(p).indexOf(" (");
+    const nom = po > 0 ? String(p).slice(0, po) : String(p);
+    const detail = po > 0 ? String(p).slice(po + 2, String(p).length - 1) : "";
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "rounded p-2 text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, nom), detail ? " · " + detail : "");
+  }))), perso.desirs && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-3 mb-1",
     style: {
       color: "#71717a"
