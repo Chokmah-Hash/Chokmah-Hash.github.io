@@ -2092,7 +2092,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.82";
+const BUILD = "0.83";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6904,7 +6904,12 @@ function Hub({
   versionBase,
   modsParJeu
 }) {
-  const [onglet, setOnglet] = useState("magasin");
+  /* V0.83 — L'ONGLET PAR DÉFAUT suit la bibliothèque : non identifié ou
+     bibliothèque vide → MAGASIN (on vient chercher un jeu) ; identifié
+     avec au moins un pack installé → BIBLIOTHÈQUE (on vient jouer). Le
+     hub est remonté à chaque changement de compte (key={compteId}) :
+     l'état initial suffit, aucun effet de bord à l'installation. */
+  const [onglet, setOnglet] = useState(joueur && installes && installes.length ? "bibliotheque" : "magasin");
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [rootOuvert, setRootOuvert] = useState(false);
   const [authOuvert, setAuthOuvert] = useState(false);
