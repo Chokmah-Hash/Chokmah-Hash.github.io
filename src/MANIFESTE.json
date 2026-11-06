@@ -429,7 +429,7 @@
       "octets": 4251
     },
     {
-      "fichier": "views/use-journal.js",
+      "fichier": "hooks/use-journal.js",
       "debut": 311222,
       "octets": 1072
     },
@@ -449,47 +449,47 @@
       "octets": 7429
     },
     {
-      "fichier": "views/lancer-des.js",
+      "fichier": "utils/lancer-des.js",
       "debut": 322466,
       "octets": 124
     },
     {
-      "fichier": "views/borne-plage.js",
+      "fichier": "utils/borne-plage.js",
       "debut": 322549,
       "octets": 79
     },
     {
-      "fichier": "views/trouver-nation.js",
+      "fichier": "utils/trouver-nation.js",
       "debut": 322626,
       "octets": 75
     },
     {
-      "fichier": "views/appliquer-ajustements.js",
+      "fichier": "utils/appliquer-ajustements.js",
       "debut": 322698,
       "octets": 77
     },
     {
-      "fichier": "views/pv-depuis.js",
+      "fichier": "utils/pv-depuis.js",
       "debut": 322773,
       "octets": 83
     },
     {
-      "fichier": "views/san-depuis.js",
+      "fichier": "utils/san-depuis.js",
       "debut": 322848,
       "octets": 97
     },
     {
-      "fichier": "views/bonus-dommages-de.js",
+      "fichier": "utils/bonus-dommages-de.js",
       "debut": 322925,
       "octets": 71
     },
     {
-      "fichier": "views/modulation-age.js",
+      "fichier": "utils/modulation-age.js",
       "debut": 322994,
       "octets": 79
     },
     {
-      "fichier": "views/trouver-classe-sociale.js",
+      "fichier": "utils/trouver-classe-sociale.js",
       "debut": 323068,
       "octets": 3499
     },
