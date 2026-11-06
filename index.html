@@ -795,7 +795,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
         pseudo: compte && compte.pseudo || meta.pseudo || "Joueur",
         tag: compte && compte.tag || "JR-????",
         email: user.email,
-        avatarId: compte && compte.avatar_ref || meta.avatar_ref || "crane",
+        avatarId: compte && compte.avatar_ref || meta.avatar_ref || "tombe",
         statut: compte && compte.statut || "actif",
         memoire: {}
       };
@@ -817,7 +817,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
             compte_id: user.id,
             pseudo: meta.pseudo || "Joueur",
             email: user.email,
-            avatar_ref: meta.avatar_ref || "crane"
+            avatar_ref: meta.avatar_ref || "tombe"
           }
         }).then(function (cree) {
           return cree && cree[0];
@@ -2092,7 +2092,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.83";
+const BUILD = "0.84";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3804,43 +3804,144 @@ function etapesChargement(p, role) {
 })();
 
 /* La liste d'images de compte : dans le vrai launcher, choisie dans le profil.
-   En alpha : des glyphes déclinés sur les palettes des packs. */
+   V0.84 : 20 IMAGES — 15 générées par IA (un style sombre et épique par
+   univers) + 5 gravures du domaine public pour les neutres. Servies depuis
+   avatars/ dans le dépôt ; le SW les cache au premier affichage. */
 const AVATARS = [{
   id: "tombe",
-  glyph: "⟁",
-  label: "Glyphe de tombe",
-  fond: "#0f2620",
+  univers: "neutre",
+  label: "Vanitas — Jan de Groot (domaine public)",
+  img: "avatars/av-neutre-1.jpg",
+  bord: "#a8adb8"
+}, {
+  id: "des",
+  univers: "neutre",
+  label: "Dés — manuscrit de Jean de Mauléon (domaine public)",
+  img: "avatars/av-neutre-2.jpg",
+  bord: "#a8adb8"
+}, {
+  id: "chevalier",
+  univers: "neutre",
+  label: "Le Chevalier, la Mort et le Diable — Dürer (domaine public)",
+  img: "avatars/av-neutre-3.jpg",
+  bord: "#a8adb8"
+}, {
+  id: "chouette",
+  univers: "neutre",
+  label: "Chouette — gravure du XIXe (domaine public)",
+  img: "avatars/av-neutre-4.jpg",
+  bord: "#a8adb8"
+}, {
+  id: "tarot",
+  univers: "neutre",
+  label: "Tarot de Grimaud 1898 (domaine public)",
+  img: "avatars/av-neutre-5.jpg",
+  bord: "#a8adb8"
+}, {
+  id: "omega-sentinelle",
+  univers: "omega",
+  label: "La sentinelle de la tombe",
+  img: "avatars/av-omega-1.jpg",
   bord: "#2ee6c9"
 }, {
-  id: "crane",
-  glyph: "💀",
-  label: "Crâne en os",
-  fond: "#26200f",
-  bord: "#f0b24a"
+  id: "omega-couloir",
+  univers: "omega",
+  label: "Le couloir sans fin",
+  img: "avatars/av-omega-2.jpg",
+  bord: "#2ee6c9"
 }, {
-  id: "epee",
-  glyph: "⚔",
-  label: "Lames croisées",
-  fond: "#1f1226",
+  id: "omega-machine",
+  univers: "omega",
+  label: "Le cœur-machine",
+  img: "avatars/av-omega-3.jpg",
+  bord: "#2ee6c9"
+}, {
+  id: "omega-scarabee",
+  univers: "omega",
+  label: "Le scarabée d'or",
+  img: "avatars/av-omega-4.jpg",
+  bord: "#2ee6c9"
+}, {
+  id: "omega-cite",
+  univers: "omega",
+  label: "La cité des Hommes de fer",
+  img: "avatars/av-omega-5.jpg",
+  bord: "#2ee6c9"
+}, {
+  id: "sb-epee",
+  univers: "stormbringer",
+  label: "L'épée noire",
+  img: "avatars/av-stormbringer-1.jpg",
   bord: "#9d86e8"
 }, {
-  id: "de",
-  glyph: "🎲",
-  label: "D6 rituel",
-  fond: "#0f1a26",
-  bord: "#7dd3fc"
+  id: "sb-albinos",
+  univers: "stormbringer",
+  label: "L'albinos de Melniboné",
+  img: "avatars/av-stormbringer-2.jpg",
+  bord: "#9d86e8"
 }, {
-  id: "arc",
-  glyph: "⚡",
-  label: "Arc vivant",
-  fond: "#26140f",
-  bord: "#fb923c"
+  id: "sb-dragon",
+  univers: "stormbringer",
+  label: "Le dragon des mers bouillantes",
+  img: "avatars/av-stormbringer-3.jpg",
+  bord: "#9d86e8"
 }, {
-  id: "oeil",
-  glyph: "👁",
-  label: "Œil du MJ",
-  fond: "#261017",
-  bord: "#fb7185"
+  id: "sb-navire",
+  univers: "stormbringer",
+  label: "Le navire de l'orage",
+  img: "avatars/av-stormbringer-4.jpg",
+  bord: "#9d86e8"
+}, {
+  id: "sb-balance",
+  univers: "stormbringer",
+  label: "La balance de la Loi et du Chaos",
+  img: "avatars/av-stormbringer-5.jpg",
+  bord: "#9d86e8"
+}, {
+  id: "bl-arme",
+  univers: "bloodlust",
+  label: "L'Arme-Dieu qui veille",
+  img: "avatars/av-bloodlust-1.jpg",
+  bord: "#e0524d"
+}, {
+  id: "bl-guerriere",
+  univers: "bloodlust",
+  label: "La porteuse élue",
+  img: "avatars/av-bloodlust-2.jpg",
+  bord: "#e0524d"
+}, {
+  id: "bl-forge",
+  univers: "bloodlust",
+  label: "La forge des immortels",
+  img: "avatars/av-bloodlust-3.jpg",
+  bord: "#e0524d"
+}, {
+  id: "bl-gemme",
+  univers: "bloodlust",
+  label: "La gemme de Tanæphis",
+  img: "avatars/av-bloodlust-4.jpg",
+  bord: "#e0524d"
+}, {
+  id: "bl-duel",
+  univers: "bloodlust",
+  label: "Le duel des champions",
+  img: "avatars/av-bloodlust-5.jpg",
+  bord: "#e0524d"
+}];
+
+/* Les groupes du sélecteur : neutres, puis un par univers du pack. */
+const GROUPES_AVATARS = [{
+  titre: "NEUTRES",
+  univers: "neutre"
+}, {
+  titre: "PROTOCOLE Ω",
+  univers: "omega"
+}, {
+  titre: "STORMBRINGER",
+  univers: "stormbringer"
+}, {
+  titre: "BLOODLUST",
+  univers: "bloodlust"
 }];
 
 /* ══════════ Le moteur : la primitive de test, paramétrée par le noyau ══════════ */
@@ -4206,21 +4307,10 @@ function RootConsole({
     }
   }, "IMAGES DE COMPTE DISPONIBLES"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2 mb-4"
-  }, AVATARS.map(a => /*#__PURE__*/React.createElement("div", {
-    key: a.id,
-    className: "flex flex-col items-center gap-1",
-    style: {
-      width: 68
-    }
-  }, /*#__PURE__*/React.createElement(Avatar, {
-    a: a,
-    size: 38
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "text-center text-xs leading-tight",
-    style: {
-      color: "#71717a"
-    }
-  }, a.label)))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(ChoixAvatars, {
+    avatarId: null,
+    taille: 38
+  })), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold tracking-widest mb-2",
     style: {
       color: "#71717a"
@@ -4429,17 +4519,55 @@ function Avatar({
   halo = null
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: "rounded-full flex items-center justify-center shrink-0",
+    className: "rounded-full flex items-center justify-center shrink-0 overflow-hidden",
     style: {
       width: size,
       height: size,
-      background: a.fond,
+      background: a.fond || "#16181d",
       border: (halo ? 2.5 : selectionne ? 2.5 : 1.5) + "px solid " + (halo || (selectionne ? a.bord : "#3f3f46")),
       boxShadow: halo ? "0 0 10px " + halo + "66" : "none",
       fontSize: Math.round(size * 0.5),
       lineHeight: 1
     }
-  }, /*#__PURE__*/React.createElement("span", null, a.glyph));
+  }, a.img ? /*#__PURE__*/React.createElement("img", {
+    src: a.img,
+    alt: a.label,
+    title: a.label,
+    draggable: false,
+    className: "w-full h-full object-cover"
+  }) : /*#__PURE__*/React.createElement("span", null, a.glyph || "⟁"));
+}
+
+/* V0.84 — LE SÉLECTEUR D'AVATARS GROUPÉ : neutres puis un groupe par
+   univers ; on choisit en un clic, le titre de chaque vignette dit l'œuvre. */
+function ChoixAvatars({
+  avatarId,
+  onChoix,
+  taille = 38
+}) {
+  return /*#__PURE__*/React.createElement("div", null, GROUPES_AVATARS.map(g => /*#__PURE__*/React.createElement("div", {
+    key: g.univers,
+    className: "mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold tracking-widest mb-1",
+    style: {
+      color: "#52525b"
+    }
+  }, g.titre), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, AVATARS.filter(a => a.univers === g.univers).map(a => /*#__PURE__*/React.createElement("button", {
+    key: a.id,
+    onClick: () => onChoix && onChoix(a.id),
+    title: a.label,
+    className: "transition-transform",
+    style: {
+      transform: a.id === avatarId ? "scale(1.12)" : "none"
+    }
+  }, /*#__PURE__*/React.createElement(Avatar, {
+    a: a,
+    size: taille,
+    selectionne: a.id === avatarId
+  })))))));
 }
 function CompteJoueur({
   joueur,
@@ -4515,21 +4643,10 @@ function CompteJoueur({
     style: {
       color: "#c8c8ce"
     }
-  }, "Image de compte \u2014 choisie dans la liste :"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2"
-  }, AVATARS.map(a => /*#__PURE__*/React.createElement("button", {
-    key: a.id,
-    onClick: () => onAvatar(a.id),
-    title: a.label,
-    className: "transition-transform",
-    style: {
-      transform: a.id === avatar.id ? "scale(1.12)" : "none"
-    }
-  }, /*#__PURE__*/React.createElement(Avatar, {
-    a: a,
-    size: 38,
-    selectionne: a.id === avatar.id
-  })))), /*#__PURE__*/React.createElement("div", {
+  }, "Image de compte \u2014 choisie dans la liste :"), /*#__PURE__*/React.createElement(ChoixAvatars, {
+    avatarId: avatar.id,
+    onChoix: onAvatar
+  }), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-4",
     style: {
       color: "#71717a"
@@ -4553,7 +4670,7 @@ function EcranCreation({
   const [pseudo, setPseudo] = useState("");
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
-  const [avatarId, setAvatarId] = useState("crane");
+  const [avatarId, setAvatarId] = useState("tombe");
   const pret = pseudo.trim() && email.trim().includes("@") && mdp.length >= 4;
   const [enCours, setEnCours] = useState(false);
   const [erreurCreation, setErreurCreation] = useState(null);
@@ -4655,20 +4772,11 @@ function EcranCreation({
       color: "#c8c8ce"
     }
   }, "Image de compte :"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2 mb-4"
-  }, AVATARS.map(a => /*#__PURE__*/React.createElement("button", {
-    key: a.id,
-    onClick: () => setAvatarId(a.id),
-    title: a.label,
-    className: "transition-transform",
-    style: {
-      transform: a.id === avatarId ? "scale(1.12)" : "none"
-    }
-  }, /*#__PURE__*/React.createElement(Avatar, {
-    a: a,
-    size: 38,
-    selectionne: a.id === avatarId
-  })))), /*#__PURE__*/React.createElement("div", {
+    className: "mb-4"
+  }, /*#__PURE__*/React.createElement(ChoixAvatars, {
+    avatarId: avatarId,
+    onChoix: setAvatarId
+  })), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-5",
     style: {
       color: "#71717a"
