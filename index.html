@@ -110,7 +110,7 @@ window.LARCHIVISTE_CLOUD = (function () {
       pseudo: (compte && compte.pseudo) || meta.pseudo || "Joueur",
       tag: (compte && compte.tag) || "JR-????",
       email: user.email,
-      avatarId: (compte && compte.avatar_ref) || meta.avatar_ref || "crane",
+      avatarId: (compte && compte.avatar_ref) || meta.avatar_ref || "tombe",
       statut: (compte && compte.statut) || "actif",
       memoire: {}
     };
@@ -129,7 +129,7 @@ window.LARCHIVISTE_CLOUD = (function () {
             compte_id: user.id,
             pseudo: meta.pseudo || "Joueur",
             email: user.email,
-            avatar_ref: meta.avatar_ref || "crane"
+            avatar_ref: meta.avatar_ref || "tombe"
           }
         }).then(function (cree) { return cree && cree[0]; });
       });
@@ -421,13 +421,35 @@ window.LARCHIVISTE_CLOUD = (function () {
 
     /* Ouvrir une aventure : le créateur en devient le MJ (policy : on ne
        crée que SOI MJ d'une partie OUVERTE). */
-    creerPartie: function (jeu, nom, compteId) {
+    creerPartie: function (jeu, nom, compteId, mod) {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve(null);
       return api("/rest/v1/archiviste_parties", {
         method: "POST", token: m.access_token, prefer: "return=representation",
-        body: { jeu: jeu, nom: nom || "Aventure sans nom", mj_compte_id: compteId }
+        /* V0.79 : l'aventure NAÎT sous un MOD (live/ldvelh/open_world) —
+           le magasin du hub lit cette vérité pour dire quels mods vivent
+           dans chaque jeu. Défaut : live (le jeu de table, avec MJ). */
+        body: { jeu: jeu, nom: nom || "Aventure sans nom", mj_compte_id: compteId, mod: mod || "live" }
       }).then(function (l) { return (l && l[0]) || null; });
+    },
+
+    /* V0.79 : LES MODS DU MAGASIN — la Tombe dit quels mods vivent dans
+       chaque jeu (aventures non supprimées portant un mod) ; le pied des
+       cartes du MAGASIN affiche cette vérité, pas une liste figée. */
+    chargerModsParJeu: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve({});
+      return api("/rest/v1/archiviste_parties?select=jeu,mod&supprime_le=is.null&mod=not.is.null", { token: m.access_token })
+        .then(function (l) {
+          var carte = {};
+          (l || []).forEach(function (p) {
+            if (!p.jeu || !p.mod) return;
+            if (!carte[p.jeu]) carte[p.jeu] = {};
+            carte[p.jeu][p.mod] = true;
+          });
+          return carte;
+        })
+        .catch(function () { return {}; });
     },
 
     /* Le lobby : les aventures OUVERTES du jeu — via la VUE lobby (le
@@ -676,6 +698,7 @@ window.LARCHIVISTE_CLOUD = (function () {
         method: "POST", token: m.access_token, prefer: "return=representation",
         body: { compte_id: compteId, jeu: jeu, nom: nom, contenu: contenu, maj_le: new Date().toISOString() }
       });
+
     },
     supprimerPersonnage: function (id) {
       var m = lire();
@@ -685,13 +708,36 @@ window.LARCHIVISTE_CLOUD = (function () {
         body: { supprime_le: new Date().toISOString() }
       });
     },
+    /* V0.74 — LA FICHE VIVANTE : la grande fiche OUVERTE depuis le
+       registre grave ses changements — la physicalisation de
+       l'équipement (équiper, déséquiper) écrit DANS la Tombe, pas
+       seulement à l'écran. Le contenu part EN ENTIER : la fiche est
+       la seule souveraine du perso, pas de fusion à demi-mot. */
+    majPersonnage: function (id, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.reject(new Error("hors session"));
+      return api("/rest/v1/archiviste_personnages?id=eq." + id, {
+        method: "PATCH", token: m.access_token,
+        body: { contenu: contenu, maj_le: new Date().toISOString() }
+      });
+    },
+
+    /* V0.85 : LE COFFRE DES ICÔNES — la liste publique du bucket « avatars ».
+       Lecture ANONYME (aucune session requise) : les icônes se choisissent
+       dès la création de compte. Michael les verse depuis l'Archivisterium. */
+    listerIconesCoffre: function () {
+      return api("/storage/v1/object/list/avatars", {
+        method: "POST",
+        body: { prefix: "", limit: 200, offsets: [], sortBy: { column: "name", order: "asc" } }
+      }).then(function (l) { return l || []; })
+        .catch(function () { return []; });
+    },
 
     /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
        la synchro devient de la poussée, pas du polling. */
     tempsReel: tempsReel
   };
 })();
-
   </script>
 
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
@@ -1353,6 +1399,7 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           body: {
             p_id: id
           }
+
         });
       },
       /* Lire une partie et ses joueurs (la vue lobby porte mj_pseudo —
@@ -2053,6 +2100,7 @@ const fondrePresents = (precedent, diff) => {
    ARMURES descend en BANDEAU sous le S.F.T, ses ARMES à gauche
    et ses ARMURES à droite ; POSSESSION et NOTES ferment la
    fiche en BANDEAUX pleine largeur ; tout le reste — les
+
    familles de compétences, les pouvoirs du repli, les désirs —
    se répartit sur les deux colonnes du milieu ; l'espace entre
    les jauges PV/SAN/S.F.T resserre (Michael trouve la fiche
@@ -2753,6 +2801,7 @@ const REGLES_SB = {
   feuSauveur(jet100, pou, plaque) {
     return jet100 <= (plaque ? 5 : 3) * pou;
   },
+
   maladieExposition(jet100, con) {
     return jet100 <= 2 * con;
   },
@@ -3453,6 +3502,7 @@ const REGLES_SB = {
   loiCollegeAssimilation(jet100, int) {
     return jet100 <= 5 * int;
   },
+
   loiCollegeDureeJours(points) {
     return 2 * points;
   },
@@ -4152,6 +4202,7 @@ function CibleJeu({
     transform: "rotate(180)"
   })));
 }
+
 
 /* ════════ V0.59 — Les Flèches du Chaos, ICÔNE DE STORMBRINGER ════════
    Validé par Michael (04/11/2026) : les huit flèches du Chaos — le
@@ -4853,6 +4904,7 @@ function EcranCreation({
 
 /* ══════════ Connexion — écran réel : email + mot de passe (Supabase Auth) ══════════
    L'Archiviste ne garde jamais les mots de passe — la vérification est
+
    DÉLÉGUÉE à Supabase Auth. « Mot de passe perdu » = lien magique par email
    (réinitialisation gérée par Supabase). */
 function AuthModal({
@@ -5553,6 +5605,7 @@ function ConsoleGlobale({
       borderTop: "1px solid #27272a"
     }
   }, ["d3", "d6", "d20", "d100"].map(d => /*#__PURE__*/React.createElement("button", {
+
     key: d,
     onClick: () => onEnvoyer("/de " + d),
     disabled: enEnvoi,
@@ -6253,6 +6306,7 @@ function EcranPartie({
         background: "#0c0d10",
         border: "1px dashed #3f3f46"
       }
+
     }, partie.visibilite === "publique" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "text-xs mb-1",
       style: {
@@ -6953,6 +7007,7 @@ function EcranPartie({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl p-6 w-full max-w-md",
+
     style: {
       background: "#14161b",
       border: "1px solid #f0b24a44"
@@ -7653,6 +7708,7 @@ function VueNoyau40k({
     className: "px-4 py-2 text-sm font-bold tracking-wider",
     style: {
       background: onglet === id ? "#ffffff0d" : "transparent",
+
       border: "none",
       borderBottom: "2px solid " + (onglet === id ? T.accent : "transparent"),
       color: onglet === id ? T.accent : "#71717a",
@@ -8353,6 +8409,7 @@ function EcranCreationPorteur({
       color: "#a1a1aa"
     }
   }, "FO ", p.caracs.FO, " \xB7 EN ", p.caracs.EN, " \xB7 Ag ", p.caracs.Ag, " \xB7 RA ", p.caracs.RA, " \xB7 PE ", p.caracs.PE, " \xB7 VO ", p.caracs.VO)))), peuple && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+
     className: "text-xs mt-4 mb-1.5",
     style: {
       color: "#71717a"
@@ -9053,6 +9110,7 @@ function EcranCreationAventurier({
       [comp.nom]: optionsArme(comp).find(w => w.nom === e.target.value)
     }),
     className: "rounded px-2 py-1 text-xs",
+
     style: {
       background: "#14161b",
       color: "#e8e4d8",
@@ -9753,6 +9811,7 @@ function VueNoyauD100({
     const a = Math.floor(Math.random() * 10),
       b = Math.floor(Math.random() * 10);
     setForge({
+
       a,
       b,
       tableId
@@ -10453,6 +10512,7 @@ function VueNoyauD100({
   }, "L'\xE2me dort encore dans le m\xE9tal \u2014 tirez le d% sur une table, puis choisissez l'ordre des chiffres") : /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-1.5 mb-3"
   }, acquis.map(p => /*#__PURE__*/React.createElement("div", {
+
     key: p.tableId + "-" + p.cle,
     className: "flex justify-between items-center rounded px-2 py-1 text-xs",
     style: {
@@ -11153,6 +11213,7 @@ function App() {
        salle est déjà tenue ou qu'un SCELLÉ PRIVÉ a été gravé par
        l'écrou — LANCER respecte alors le cadenas et ouvre privée. */
     CLOUD.lancerPartie(p.id, !(p.salle_ouverte_le || p.visibilite === "privee")).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
+
     /* RIEN d'autre ici : l'entrée se fait par la POUSSÉE, le même chemin
        pour le MJ et les joueurs — un seul code, une seule vérité. */
   };
