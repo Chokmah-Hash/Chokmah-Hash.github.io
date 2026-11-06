@@ -546,7 +546,7 @@ const {
    GM-0003 (Bloodlust). Les stats du magasin retrouvent les
    installations et favoris : la Tombe dit déjà GM-0001 depuis
    le chantier V0.55 du launcher. ── */
-const BUILD = "0.44";
+const BUILD = "0.45";
 
 /* ══════════ Le thème du scrolling — la barre d'ambre de l'institution ══════════
    L'Archivistère n'est pas une vitrine : il n'y a pas de packs ici, la
@@ -1286,7 +1286,7 @@ function Porte({
     style: {
       color: "#f0b24a"
     }
-  }, "u2699 ARCHIVISTERIUM"), /*#__PURE__*/React.createElement("div", {
+  }, "ARCHIVISTERIUM"), /*#__PURE__*/React.createElement("div", {
     className: "text-center text-xs mb-5 tracking-widest",
     style: {
       color: "#a1a1aa"
@@ -1630,7 +1630,7 @@ function Salle({
     style: {
       color: "#f0b24a"
     }
-  }, "u2699 ARCHIVISTERIUM"), /*#__PURE__*/React.createElement("div", {
+  }, "ARCHIVISTERIUM"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa"
@@ -1646,7 +1646,9 @@ function Salle({
   }, "Sortir"))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 mb-6",
     style: {
-      borderBottom: "1px solid #27272a"
+      borderBottom: "1px solid #27272a",
+      overflowX: "auto",
+      WebkitOverflowScrolling: "touch"
     }
   }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["parties", "PARTIES"], ["corbeille", "CORBEILLE"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
@@ -1656,7 +1658,9 @@ function Salle({
       background: onglet === id ? "#f0b24a12" : "transparent",
       color: onglet === id ? "#f0b24a" : "#71717a",
       borderBottom: onglet === id ? "2px solid #f0b24a" : "2px solid transparent",
-      marginBottom: -1
+      marginBottom: -1,
+      flexShrink: 0,
+      whiteSpace: "nowrap"
     }
   }, lbl, id === "comptes" && visibles.length ? /*#__PURE__*/React.createElement("span", {
     style: {
