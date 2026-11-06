@@ -2055,8 +2055,20 @@ const fondrePresents = (precedent, diff) => {
    AFFICHE LA FICHE : la grande fiche dans le noyau d100, la fiche
    du registre dans le lobby. Le branchement réel à la table (le
    d100 adopte le perso choisi plutôt que le premier) viendra d'un
-   protocole futur. ── */
-const BUILD = "0.76";
+   protocole futur. ──
+   V0.77 — LE BRANCHEMENT À LA TABLE (Michael) : la sélection NE
+   MARQUE PLUS, elle AGIT. Le noyau d100 adopte le perso PRIS POUR
+   L'AVENTURE (sinon le premier de la liste, comme avant) et la
+   fiche SUIT la sélection en direct — changer de prise écrase la
+   fiche affichée, même née du rituel de création ; seule une
+   création qui ne touche pas la sélection garde sa fiche vivante.
+   La porte du 40k se branche aussi : l'unité PRIS entre d'elle-même
+   dans la Tombe dès l'arrivée à la porte (la fiche de partie
+   existante prime, le choix manuel reste pour changer d'avis, le
+   bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
+   quitte le registre (suppression) rend sa place : la sélection
+   se dépose. ── */
+const BUILD = "0.77";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -7234,7 +7246,8 @@ function VueNoyau40k({
   consolePartie,
   versionBase,
   onAvatar,
-  onLogout
+  onLogout,
+  persoChoisi
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack : fiche, arsenal… */
@@ -7267,6 +7280,24 @@ function VueNoyau40k({
       setPvSigna(typeof ma.contenu.pv === "number" ? ma.contenu.pv : ma.contenu.perso.pvMax);
     }
   }, [table && table.partieId]); /* eslint-disable-line */
+
+  /* ════════ V0.77 — LE BRANCHEMENT DE LA PORTE 40K ════════
+     L'unité PRIS POUR L'AVENTURE entre d'elle-même dans la Tombe
+     dès l'arrivée à la porte. La fiche de partie existante PRIME
+     (elle porte les blessures en cours) ; une création locale
+     aussi ; le choix manuel à la porte reste pour changer d'avis. */
+  useEffect(() => {
+    if (!table || !table.fiches || persoCree) return;
+    const ma = table.fiches.find(f => f.compte_id === table.monCompteId);
+    if (ma) return;
+    const liste = (table.persos || []).filter(p => p && p.contenu);
+    if (!liste.length || !persoChoisi) return;
+    const prise = liste.find(p => p.id === persoChoisi);
+    if (!prise) return;
+    setPersoCree(prise.contenu);
+    setPvSigna(prise.contenu.pvMax || C.perso.pvMax);
+    logEvent("perso.adoption", `${prise.contenu.nom} entre dans la Tombe — PRIS POUR L'AVENTURE · ${resumePerso(prise.contenu)} · PV au complet`);
+  }, [table && table.partieId, persoChoisi]); /* eslint-disable-line */
 
   /* V43 — GRAVURE LIVE : chaque battement de l'unité part dans la
      Tombe (upsert silencieux — la poussée temps réel l'annonce à la
@@ -7685,20 +7716,25 @@ function VueNoyau40k({
     className: "w-full text-left rounded-lg px-3 py-2 mb-1.5",
     style: {
       background: "#14161b",
-      border: "1px solid #3f3f46",
+      border: "1px solid " + (persoChoisi === p.id ? T.or : "#3f3f46"),
       cursor: "pointer"
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold text-sm",
     style: {
-      color: "#e8e4d8"
+      color: persoChoisi === p.id ? T.or : "#e8e4d8"
     }
-  }, p.nom), /*#__PURE__*/React.createElement("span", {
+  }, persoChoisi === p.id ? "● " : "", p.nom), /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, " \u2014 ", resumePerso(p.contenu)))), /*#__PURE__*/React.createElement("div", {
+  }, " \u2014 ", resumePerso(p.contenu)), persoChoisi === p.id && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: T.or
+    }
+  }, " \xB7 PRIS POUR L'AVENTURE"))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-1",
     style: {
       color: "#71717a"
@@ -9183,7 +9219,18 @@ function VueNoyauD100({
   const [onglet, setOnglet] = useState("lobby"); /* MJ et joueur y atterrissent */
   const [compteOuvert, setCompteOuvert] = useState(false);
   const [dernierDe, setDernierDe] = useState(null); /* la face du dernier d100, en chiffres */
-  const [persoCree, setPersoCree] = useState(null); /* perso né de la création (remplace la fiche démo) */
+  /* V0.77 — LE BRANCHEMENT À LA TABLE, DÈS LE PREMIER RENDU : la fiche
+     NAÎT sur la prise (ou le premier du registre) — le rendu serveur
+     montre déjà LE BON perso, et l'effet d'adoption ci-dessous ne garde
+     la main que sur les CHANGEMENTS de prise (la fiche vivante garde
+     la main sur le reste). Registre vide : null → fiche démo du pack. */
+  const [persoCree, setPersoCree] = useState(() => {
+    const liste0 = persos || [];
+    const pris0 = persoChoisi || null;
+    const ligne0 = (pris0 ? liste0.find(q => q.id === pris0) : null) || liste0[0];
+    const p0 = ligne0 ? ligne0.contenu || ligne0 : null;
+    return p0 && p0.caracs ? p0 : null;
+  }); /* perso né de la création ou du registre (remplace la fiche démo) */
   /* V0.74 — LE PERSO OUVERT DE LA TOMBE : quand la grande fiche vient
      du registre, ses gestes se gravent dans la pierre — sinon (fiche
      démo, création fraîche) l'équipement ne vit qu'à l'écran. */
@@ -9409,15 +9456,28 @@ function VueNoyauD100({
      ne survit que si la Tombe ne connaît personne. Le noyau 40k restaure
      depuis la table de partie ; le d100, lui, adopte son registre :
      solo ou en partie, la fiche de la Tombe est la sienne. */
+  /* ════════ V0.77 — LE BRANCHEMENT À LA TABLE (d100) ════════
+     Le perso PRIS POUR L'AVENTURE devient la fiche : l'adoption
+     suit la sélection (Michael a tranché : changer de prise ÉCRASE
+     la fiche affichée, même née du rituel). Un changement qui ne
+     touche pas la sélection (le registre s'allonge d'une création)
+     n'écrase RIEN — la fiche vivante garde la main. Registre vide :
+     la fiche démo ou la création reste. Sans prise : le premier de
+     la liste, comme toujours. */
+  const dernierPrisRef = useRef(undefined);
   useEffect(() => {
-    if (persoCree) return;
     const liste = persos || [];
+    const pris = persoChoisi || null;
+    const prisAChange = dernierPrisRef.current !== pris;
+    dernierPrisRef.current = pris;
+    if (!prisAChange && persoCree) return;
     if (!liste.length) return;
-    const p = liste[0].contenu || liste[0];
+    const ligne = (pris ? liste.find(q => q.id === pris) : null) || liste[0];
+    const p = ligne.contenu || ligne;
     if (!p || !p.caracs) return;
     setPersoCree(p);
     setSan(p.san != null ? p.san : p.sanMax || 0);
-  }, [persos && persos.length]); /* eslint-disable-line */
+  }, [persos && persos.length, persoChoisi]); /* eslint-disable-line */
 
   /* — la forge de l'Arme vivante (si le pack en déclare une) — */
   const [pts, setPts] = useState(C.forge ? C.forge.base : 0);
@@ -10660,6 +10720,12 @@ function App() {
   const supprimerPersonnageRegistre = (packId, p) => {
     if (!CLOUD || !p) return;
     CLOUD.supprimerPersonnage(p.id).then(() => {
+      /* V0.77 — le perso PRIS qui quitte le registre rend sa place :
+         la sélection se dépose (la fiche retombera sur le premier). */
+      if (persoChoisi[packId] === p.id) setPersoChoisi({
+        ...persoChoisi,
+        [packId]: null
+      });
       showToast("« " + p.nom + " » quitte le registre — la Tombe garde sa trace.");
       return rechargerListes().then(() => rechargerPersonnages(packId));
     }).catch(() => showToast("La Tombe a refusé — le personnage reste au registre."));
