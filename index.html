@@ -698,7 +698,6 @@ window.LARCHIVISTE_CLOUD = (function () {
         method: "POST", token: m.access_token, prefer: "return=representation",
         body: { compte_id: compteId, jeu: jeu, nom: nom, contenu: contenu, maj_le: new Date().toISOString() }
       });
-
     },
     supprimerPersonnage: function (id) {
       var m = lire();
@@ -1399,7 +1398,6 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           body: {
             p_id: id
           }
-
         });
       },
       /* Lire une partie et ses joueurs (la vue lobby porte mj_pseudo —
@@ -2100,7 +2098,6 @@ const fondrePresents = (precedent, diff) => {
    ARMURES descend en BANDEAU sous le S.F.T, ses ARMES à gauche
    et ses ARMURES à droite ; POSSESSION et NOTES ferment la
    fiche en BANDEAUX pleine largeur ; tout le reste — les
-
    familles de compétences, les pouvoirs du repli, les désirs —
    se répartit sur les deux colonnes du milieu ; l'espace entre
    les jauges PV/SAN/S.F.T resserre (Michael trouve la fiche
@@ -2161,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.85";
+const BUILD = "0.86";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2801,7 +2798,6 @@ const REGLES_SB = {
   feuSauveur(jet100, pou, plaque) {
     return jet100 <= (plaque ? 5 : 3) * pou;
   },
-
   maladieExposition(jet100, con) {
     return jet100 <= 2 * con;
   },
@@ -3502,7 +3498,6 @@ const REGLES_SB = {
   loiCollegeAssimilation(jet100, int) {
     return jet100 <= 5 * int;
   },
-
   loiCollegeDureeJours(points) {
     return 2 * points;
   },
@@ -4202,7 +4197,6 @@ function CibleJeu({
     transform: "rotate(180)"
   })));
 }
-
 
 /* ════════ V0.59 — Les Flèches du Chaos, ICÔNE DE STORMBRINGER ════════
    Validé par Michael (04/11/2026) : les huit flèches du Chaos — le
@@ -4904,7 +4898,6 @@ function EcranCreation({
 
 /* ══════════ Connexion — écran réel : email + mot de passe (Supabase Auth) ══════════
    L'Archiviste ne garde jamais les mots de passe — la vérification est
-
    DÉLÉGUÉE à Supabase Auth. « Mot de passe perdu » = lien magique par email
    (réinitialisation gérée par Supabase). */
 function AuthModal({
@@ -5605,7 +5598,6 @@ function ConsoleGlobale({
       borderTop: "1px solid #27272a"
     }
   }, ["d3", "d6", "d20", "d100"].map(d => /*#__PURE__*/React.createElement("button", {
-
     key: d,
     onClick: () => onEnvoyer("/de " + d),
     disabled: enEnvoi,
@@ -5798,6 +5790,15 @@ const resumePerso = p => {
   return p.origine || p.peuple || "";
 };
 
+/* V0.86 — LE SOUFFLE DU PERSONNAGE : « nom - nationalité - culte »
+   vit à côté du nom dans la ligne du registre (rien si vide). */
+const suffixePerso = p => {
+  const c = p && p.contenu || {};
+  const nat = c.nationalite || c.identite && c.identite.nationalite || "";
+  const cul = c.culte || c.identite && c.identite.culte || "";
+  return [nat, cul].filter(Boolean).join(" - ");
+};
+
 /* ══════════ V0.67 — LE REGISTRE DES PERSONNAGES, COMPOSANT COMMUN ══════════
    La structure commune des pages de jeu donne au JOUEUR l'onglet
    PERSONNAGES ; son cadre est le REGISTRE du compte pour CE jeu — éveil
@@ -5815,24 +5816,23 @@ function RegistrePersonnages({
   onOuvrir,
   livre,
   persoChoisi,
-  onChoisir
+  onChoisir,
+  accent
 }) {
+  const couleurAccent = accent || "#a8adb8";
   const [enCreationPerso, setEnCreationPerso] = useState(false);
-  const [detailPerso, setDetailPerso] = useState(null);
-  const [enSuppressionPerso, setEnSuppressionPerso] = useState(false);
+  const [persoFlottant, setPersoFlottant] = useState(null);
   const [motSupprPerso, setMotSupprPerso] = useState("");
   const EcranCreationPerso = {
     unite: EcranCreationUnite,
     aventurier: EcranCreationAventurier,
     porteur: EcranCreationPorteur
   }[(pack.contenu || {}).creation];
-  const cDetail = detailPerso && detailPerso.contenu ? detailPerso.contenu : null;
-  const stDetail = cDetail && cDetail.st ? cDetail.st : null;
   return /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-5",
+    className: "rounded-xl p-5 relative",
     style: {
-      background: "#14161b",
-      border: "1px solid #27272a"
+      background: "#ffffff08",
+      border: "1px solid " + couleurAccent + "33"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-3"
@@ -5844,7 +5844,6 @@ function RegistrePersonnages({
   }, "MES PERSONNAGES \u2014 ", pack.nom.toUpperCase(), " (", persos.length, ")"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnCreationPerso(true);
-      setDetailPerso(null);
     },
     className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
     style: {
@@ -5862,191 +5861,14 @@ function RegistrePersonnages({
       onCreer && onCreer(p);
     },
     onAnnule: () => setEnCreationPerso(false)
-  })) : detailPerso ?
-  /*#__PURE__*/
-  /* L'écrou : la fiche complète + la sentence */
-  React.createElement("div", {
-    className: "rounded-lg p-4",
-    style: {
-      background: "#0c0d10",
-      border: "1px solid #3f3f46"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between mb-1"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold",
-    style: {
-      color: "#e8e4d8"
-    }
-  }, detailPerso.nom), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setDetailPerso(null);
-      setEnSuppressionPerso(false);
-      setMotSupprPerso("");
-    },
-    className: "text-xs font-bold",
-    style: {
-      color: "#71717a",
-      cursor: "pointer"
-    }
-  }, "\u2190 retour au registre")), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-3",
-    style: {
-      color: "#52525b"
-    }
-  }, "cr\xE9\xE9 le ", new Date(detailPerso.cree_le).toLocaleDateString("fr-FR"), " \xB7 ", resumePerso(cDetail)), onOuvrir && /*#__PURE__*/React.createElement("button", {
-    onClick: () => onOuvrir(detailPerso),
-    className: "w-full px-4 py-2 rounded-lg text-xs font-bold mb-3",
-    style: {
-      background: "#f0b24a",
-      color: "#0c0d10",
-      cursor: "pointer"
-    }
-  }, "OUVRIR LA GRANDE FICHE"), stDetail ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
-  }, [["CC", stDetail.cc], ["CT", stDetail.ct], ["F", stDetail.f], ["E", stDetail.e], ["Sv", stDetail.sv], ["Cd", stDetail.cd]].concat(stDetail.a ? [["A", stDetail.a]] : []).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "rounded py-1.5",
-    style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-2",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, "PV ", cDetail.pvMax, " \xB7 Rfx +", cDetail.rfx, " \xB7 ", cDetail.armeDef ? cDetail.armeDef.nom : "arme inconnue"), cDetail.apt && /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-2 rounded p-2",
-    style: {
-      background: "#ffffff08",
-      color: "#c8c8ce"
-    }
-  }, /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#e8e4d8"
-    }
-  }, "Aptitude de ch\xE2ssis \u2014 "), cDetail.apt), cDetail.comps && /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-1 mb-2"
-  }, cDetail.comps.map(c => /*#__PURE__*/React.createElement("span", {
-    key: c,
-    className: "text-xs px-1.5 py-0.5 rounded",
-    style: {
-      background: "#f0b24a22",
-      color: "#f0b24a"
-    }
-  }, c)))) : cDetail && cDetail.caracs ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-3 gap-2 text-center text-sm mb-2"
-  }, Object.entries(cDetail.caracs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
-    key: k,
-    className: "rounded py-1.5",
-    style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, k, " "), v))), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-2",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, "SAN ", cDetail.sanMax || (cDetail.caracs.POU || 0) * 5)) : /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-2",
-    style: {
-      color: "#71717a"
-    }
-  }, "Fiche de forme inconnue \u2014 la Tombe la garde telle quelle."), !enSuppressionPerso ? /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setEnSuppressionPerso(true);
-      setMotSupprPerso("");
-    },
-    className: "w-full px-4 py-2 rounded-lg text-xs font-bold",
-    style: {
-      background: "#fb718510",
-      color: "#fb7185",
-      border: "1px solid #fb718544",
-      cursor: "pointer"
-    }
-  }, "\u2715 SUPPRIMER CE PERSONNAGE") : /*#__PURE__*/React.createElement("div", {
-    className: "pt-3",
-    style: {
-      borderTop: "1px solid #27272a"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mb-2 leading-relaxed",
-    style: {
-      color: "#fb7185"
-    }
-  }, "\xAB ", detailPerso.nom, " \xBB quittera le registre. La Tombe garde sa trace \u2014 \xE9crivez \xAB suppression \xBB pour consacrer la sentence."), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2"
-  }, /*#__PURE__*/React.createElement("input", {
-    value: motSupprPerso,
-    onChange: e => setMotSupprPerso(e.target.value),
-    placeholder: "suppression",
-    type: "text",
-    autoComplete: "off",
-    maxLength: 12,
-    className: "flex-1 rounded-lg px-3 py-2 text-sm",
-    style: {
-      background: "#14161b",
-      border: "1px solid #3f3f46",
-      color: "#e8e4d8",
-      outline: "none"
-    }
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setEnSuppressionPerso(false);
-      setMotSupprPerso("");
-    },
-    className: "px-4 py-2 rounded-lg text-xs font-bold",
-    style: {
-      background: "#a8adb814",
-      color: "#a8adb8",
-      border: "1px solid #27272a",
-      cursor: "pointer"
-    }
-  }, "ANNULER")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      onSupprimer && onSupprimer(detailPerso);
-      setDetailPerso(null);
-      setEnSuppressionPerso(false);
-      setMotSupprPerso("");
-    },
-    disabled: motSupprPerso !== "suppression",
-    className: "w-full px-4 py-2 rounded-lg text-xs font-bold mt-2",
-    style: {
-      background: motSupprPerso === "suppression" ? "#fb7185" : "#fb718522",
-      color: motSupprPerso === "suppression" ? "#0c0d10" : "#71717a",
-      border: "1px solid #fb718544",
-      cursor: "pointer",
-      opacity: motSupprPerso === "suppression" ? 1 : 0.5
-    }
-  }, "\u2715 EFFACER"))) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  })) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-sm",
     style: {
       color: "#a1a1aa"
     }
   }, "Aucun personnage pour ", pack.nom, ". Cr\xE9ez votre premier personnage avec \xAB + CR\xC9ER \xBB \u2014 il rejoindra le registre, pr\xEAt \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
     className: "w-full text-sm"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, /*#__PURE__*/React.createElement("th", {
-    className: "text-left px-1 py-2"
-  }, "PERSONNAGE"), /*#__PURE__*/React.createElement("th", {
-    className: "text-right px-1 py-2 w-10"
-  }))), /*#__PURE__*/React.createElement("tbody", null, persos.map(p => /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("tbody", null, persos.map(p => /*#__PURE__*/React.createElement("tr", {
     key: p.id,
     style: {
       borderTop: "1px solid #ffffff08"
@@ -6058,24 +5880,17 @@ function RegistrePersonnages({
     style: {
       color: persoChoisi === p.id ? "#f0b24a" : "#e8e4d8"
     }
-  }, persoChoisi === p.id ? "● " : "", p.nom), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
+  }, persoChoisi === p.id ? "● " : "", p.nom, suffixePerso(p) ? /*#__PURE__*/React.createElement("span", {
+    className: "font-normal",
     style: {
-      color: "#52525b"
+      color: "#a1a1aa"
     }
-  }, resumePerso(p.contenu), " \xB7 cr\xE9\xE9 le ", new Date(p.cree_le).toLocaleDateString("fr-FR"))), /*#__PURE__*/React.createElement("td", {
+  }, " - " + suffixePerso(p)) : null)), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5 text-right"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-end gap-1.5"
   }, onChoisir && /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      if (persoChoisi !== p.id) {
-        setDetailPerso(p);
-        setEnCreationPerso(false);
-        setEnSuppressionPerso(false);
-        setMotSupprPerso("");
-        if (onOuvrir) onOuvrir(p);
-      }
       onChoisir(p);
     },
     className: "px-2 py-1 rounded-lg text-xs font-bold",
@@ -6089,11 +5904,9 @@ function RegistrePersonnages({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, persoChoisi === p.id ? "PRIS POUR L'AVENTURE" : "PRENDRE"), /*#__PURE__*/React.createElement("button", {
+  }, persoChoisi === p.id ? "SÉLECTIONNÉ" : "PRENDRE"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setDetailPerso(p);
-      setEnCreationPerso(false);
-      setEnSuppressionPerso(false);
+      setPersoFlottant(p);
       setMotSupprPerso("");
     },
     className: "px-2 py-1 rounded-lg text-xs font-bold",
@@ -6103,7 +5916,80 @@ function RegistrePersonnages({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, "\u2699"))))))));
+  }, "\u2699"))))))), persoFlottant ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    onClick: () => {
+      setPersoFlottant(null);
+      setMotSupprPerso("");
+    },
+    className: "absolute inset-0",
+    style: {
+      zIndex: 19
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "absolute rounded-xl p-4",
+    style: {
+      right: 16,
+      top: 56,
+      width: 300,
+      zIndex: 20,
+      background: "#14161b",
+      border: "1px solid #fb718544",
+      boxShadow: "0 8px 24px #000000cc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-2",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, persoFlottant.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2 leading-relaxed",
+    style: {
+      color: "#fb7185"
+    }
+  }, "\xAB ", persoFlottant.nom, " \xBB quittera le registre. La Tombe garde sa trace \u2014 \xE9crivez \xAB suppression \xBB pour consacrer la sentence."), /*#__PURE__*/React.createElement("input", {
+    value: motSupprPerso,
+    onChange: e => setMotSupprPerso(e.target.value),
+    placeholder: "suppression",
+    type: "text",
+    autoComplete: "off",
+    maxLength: 12,
+    className: "w-full rounded-lg px-3 py-2 text-sm mb-2",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setPersoFlottant(null);
+      setMotSupprPerso("");
+    },
+    className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "ANNULER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      onSupprimer && onSupprimer(persoFlottant);
+      setPersoFlottant(null);
+      setMotSupprPerso("");
+    },
+    disabled: motSupprPerso !== "suppression",
+    className: "flex-1 px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      background: motSupprPerso === "suppression" ? "#fb7185" : "#fb718522",
+      color: motSupprPerso === "suppression" ? "#0c0d10" : "#71717a",
+      border: "1px solid #fb718544",
+      cursor: "pointer",
+      opacity: motSupprPerso === "suppression" ? 1 : 0.5
+    }
+  }, "\u2715 EFFACER")))) : null);
 }
 
 /* ══════════ V48.6 — LE PIED VIBE : « Powered by Vibe · N° 0.XX »
@@ -6306,7 +6192,6 @@ function EcranPartie({
         background: "#0c0d10",
         border: "1px dashed #3f3f46"
       }
-
     }, partie.visibilite === "publique" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "text-xs mb-1",
       style: {
@@ -6888,7 +6773,8 @@ function EcranPartie({
     onCreer: onCreerPersonnage,
     onSupprimer: onSupprimerPersonnage,
     persoChoisi: persoChoisi,
-    onChoisir: onChoisirPerso
+    onChoisir: onChoisirPerso,
+    accent: "#f0b24a"
   }), ")}", onglet === "regles" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
@@ -7007,7 +6893,6 @@ function EcranPartie({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl p-6 w-full max-w-md",
-
     style: {
       background: "#14161b",
       border: "1px solid #f0b24a44"
@@ -7708,7 +7593,6 @@ function VueNoyau40k({
     className: "px-4 py-2 text-sm font-bold tracking-wider",
     style: {
       background: onglet === id ? "#ffffff0d" : "transparent",
-
       border: "none",
       borderBottom: "2px solid " + (onglet === id ? T.accent : "transparent"),
       color: onglet === id ? T.accent : "#71717a",
@@ -8409,7 +8293,6 @@ function EcranCreationPorteur({
       color: "#a1a1aa"
     }
   }, "FO ", p.caracs.FO, " \xB7 EN ", p.caracs.EN, " \xB7 Ag ", p.caracs.Ag, " \xB7 RA ", p.caracs.RA, " \xB7 PE ", p.caracs.PE, " \xB7 VO ", p.caracs.VO)))), peuple && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-
     className: "text-xs mt-4 mb-1.5",
     style: {
       color: "#71717a"
@@ -9110,7 +8993,6 @@ function EcranCreationAventurier({
       [comp.nom]: optionsArme(comp).find(w => w.nom === e.target.value)
     }),
     className: "rounded px-2 py-1 text-xs",
-
     style: {
       background: "#14161b",
       color: "#e8e4d8",
@@ -9811,7 +9693,6 @@ function VueNoyauD100({
     const a = Math.floor(Math.random() * 10),
       b = Math.floor(Math.random() * 10);
     setForge({
-
       a,
       b,
       tableId
@@ -10023,7 +9904,8 @@ function VueNoyauD100({
     onOuvrir: ouvrirPersoDuRegistre,
     livre: livreSb,
     persoChoisi: persoChoisi,
-    onChoisir: onChoisirPerso
+    onChoisir: onChoisirPerso,
+    accent: T.accent
   })), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
   }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
@@ -10049,17 +9931,7 @@ function VueNoyauD100({
     style: {
       color: T.accent
     }
-  }, perso.nom), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#71717a"
-    }
-  }, perso.origine || perso.peuple)), /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] font-bold tracking-widest mb-1",
-    style: {
-      color: T.accent
-    }
-  }, "PERSONNAGE"), /*#__PURE__*/React.createElement("div", {
+  }, perso.nom)), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-x-4 text-xs mb-3"
   }, [["Sexe", perso.identite ? perso.identite.sexe : null], ["Age", perso.identite && perso.identite.age != null ? perso.identite.age : null], ["Yeux", perso.identite ? perso.identite.yeux : null], ["Cheveux", perso.identite ? perso.identite.cheveux : null], ["Nationalité", perso.nationalite || (perso.identite ? perso.identite.nationalite : null)], ["Culte", perso.culte || (perso.identite ? perso.identite.culte : null)]].map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -10144,7 +10016,7 @@ function VueNoyauD100({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || ""))))), perso.armes && perso.armes.length > 0 || perso.armures && perso.armures.length > 0 ? /*#__PURE__*/React.createElement("div", {
+  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || ""))))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -10157,7 +10029,7 @@ function VueNoyauD100({
     }
   }, themesComps ? "ARMES - ARMURES" + (bonusFamilles ? " — ATTAQUE +" + bonusFamilles.attaque + " · PARADE +" + bonusFamilles.parade : "") : "Armes - Armures"), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-2"
-  }, perso.armes && perso.armes.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] mb-1",
     style: {
       color: "#71717a"
@@ -10188,7 +10060,7 @@ function VueNoyauD100({
       background: "#ffffff08",
       color: "#71717a"
     }
-  }, "\xC0 mains nues \u2014 le fer est rang\xE9 dans le sac.")), perso.armures && perso.armures.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, (perso.armes || []).length === 0 ? "À mains nues — aucune arme au registre." : "À mains nues — le fer est rangé dans le sac.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] mb-1",
     style: {
       color: "#71717a"
@@ -10224,7 +10096,7 @@ function VueNoyauD100({
       background: "#ffffff08",
       color: "#71717a"
     }
-  }, "Sans armure \u2014 la protection est rang\xE9e dans le sac.")))) : null, perso.competences || perso.desirs || perso.pouvoirs && perso.pouvoirs.length > 0 ? /*#__PURE__*/React.createElement("div", {
+  }, (perso.armures || []).length === 0 ? "Sans armure — aucune protection au registre." : "Sans armure — la protection est rangée dans le sac.")))), perso.competences || perso.desirs || perso.pouvoirs && perso.pouvoirs.length > 0 ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -10512,7 +10384,6 @@ function VueNoyauD100({
   }, "L'\xE2me dort encore dans le m\xE9tal \u2014 tirez le d% sur une table, puis choisissez l'ordre des chiffres") : /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-1.5 mb-3"
   }, acquis.map(p => /*#__PURE__*/React.createElement("div", {
-
     key: p.tableId + "-" + p.cle,
     className: "flex justify-between items-center rounded px-2 py-1 text-xs",
     style: {
@@ -11213,7 +11084,6 @@ function App() {
        salle est déjà tenue ou qu'un SCELLÉ PRIVÉ a été gravé par
        l'écrou — LANCER respecte alors le cadenas et ouvre privée. */
     CLOUD.lancerPartie(p.id, !(p.salle_ouverte_le || p.visibilite === "privee")).catch(() => showToast("La Tombe refuse le lancement — réessayez."));
-
     /* RIEN d'autre ici : l'entrée se fait par la POUSSÉE, le même chemin
        pour le MJ et les joueurs — un seul code, une seule vérité. */
   };
