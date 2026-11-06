@@ -1653,6 +1653,7 @@ function Salle({
       overflowX: "auto",
       WebkitOverflowScrolling: "touch",
       scrollbarWidth: "none"
+    }
   }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["parties", "PARTIES"], ["corbeille", "CORBEILLE"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
