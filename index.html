@@ -9416,10 +9416,10 @@ function VueNoyauD100({
      equipe vit sur l'objet ; une armure en chaîne de la Tombe (une
      simple string « Nom — reste ») se convertit en objet au premier
      geste. Le perso OUVERT grave chaque geste dans la Tombe. */
-  const armesEquipees = (perso.armes || []).filter(a => a.equipe !== false);
-  const armesRangees = (perso.armes || []).filter(a => a.equipe === false);
-  const armuresEquipees = (perso.armures || []).filter(a => typeof a === "object" ? a.equipe !== false : true);
-  const armuresRangees = (perso.armures || []).filter(a => typeof a === "object" && a.equipe === false);
+  const armesEquipees = (perso && perso.armes || []).filter(a => a.equipe !== false);
+  const armesRangees = (perso && perso.armes || []).filter(a => a.equipe === false);
+  const armuresEquipees = (perso && perso.armures || []).filter(a => typeof a === "object" ? a.equipe !== false : true);
+  const armuresRangees = (perso && perso.armures || []).filter(a => typeof a === "object" && a.equipe === false);
   const majPersoAffiche = changement => {
     const nouveau = {
       ...perso,
@@ -9494,7 +9494,7 @@ function VueNoyauD100({
      le livre d'un pack qui en déclare un n'est pas chargé, on
      n'affiche rien plutôt que de flasher les pouvoirs maison. */
   const pouvoirsGagnes = function () {
-    const ps = perso.pouvoirs || [];
+    const ps = perso && perso.pouvoirs || [];
     if (livreSb && livreSb.sorcellerie) {
       const S = livreSb.sorcellerie;
       const noms = new Set();
@@ -9542,7 +9542,7 @@ function VueNoyauD100({
      double (2 %/pt d'INT au-dessus de 12) et grandit avec l'âge : 1 %/an
      au-delà de 25 ans (Nobles 2, Prêtres 3 — la fiche porte son taux dans
      bonusConnaissanceAge). Si la fiche change, les bonus suivent. */
-  const bonusFamilles = C.bonusCompetences === "stormbringer-v2" && perso.caracs ? (() => {
+  const bonusFamilles = C.bonusCompetences === "stormbringer-v2" && perso && perso.caracs ? (() => {
     const cr = perso.caracs;
     const plus = k => cr[k] > 12 ? cr[k] - 12 : cr[k] < 9 ? 9 - cr[k] : 0;
     const inv = k => cr[k] > 12 ? 12 - cr[k] : cr[k] < 9 ? 9 - cr[k] : 0; /* TAI inversée */
@@ -9568,7 +9568,7 @@ function VueNoyauD100({
   const departDe = themesComps && C.departCompetences ? C.departCompetences : null;
   const modeComplet = !!(departDe && bonusFamilles);
   const seuilComp = k => {
-    const v = (perso.competences || {})[k];
+    const v = (perso && perso.competences || {})[k];
     if (v != null && v > 0) return v;
     /* V0.68 — LA RÈGLE DE LA TABLE : tout 0 % se joue à 0 + bonus de
        famille — même les compétences que le livre disait « à enseigner
@@ -9580,13 +9580,13 @@ function VueNoyauD100({
     }
     return v != null && v > 0 ? v : null;
   };
-  const compsBruts = Object.keys(perso.competences || {});
+  const compsBruts = Object.keys(perso && perso.competences || {});
   /* V0.62 — LE CATALOGUE ENTRE EN SCÈNE : toutes les compétences du manuel
      non apprises rejoignent la liste — « bonus »/« 10+ » se tirent sur le
      seuil de leur famille et s'affichent discrètement ; les « 0 % »
      restent visibles sur la fiche (« — », l'entraînement d'abord) mais ne
      tirent jamais. */
-  const extrasCatalogue = modeComplet ? ordreThemes.flatMap(t => themesComps[t]).filter(k => !(k in (perso.competences || {})) && (departDe[k] === "bonus" || departDe[k] === "10+" || departDe[k] === "0")) : [];
+  const extrasCatalogue = modeComplet ? ordreThemes.flatMap(t => themesComps[t]).filter(k => !(k in (perso && perso.competences || {})) && (departDe[k] === "bonus" || departDe[k] === "10+" || departDe[k] === "0")) : [];
   const comps = themesComps ? [...compsBruts.filter(k => familleDe[k]).sort((a, b) => ordreThemes.indexOf(familleDe[a]) - ordreThemes.indexOf(familleDe[b]) || themesComps[familleDe[a]].indexOf(a) - themesComps[familleDe[b]].indexOf(b)), ...compsBruts.filter(k => !familleDe[k]), ...extrasCatalogue] : compsBruts;
   /* V0.62/V0.68 — au jet, une compétence non apprise se joue sur le
      bonus de sa famille (tout 0 % sert) ; seule une compétence sans
@@ -9600,7 +9600,7 @@ function VueNoyauD100({
     label: `${m.carac}×${m.mult} — ${m.label} (${c[m.carac] * m.mult} %)`,
     seuil: c[m.carac] * m.mult
   })), ...compsJet.map(k => {
-    const s = modeComplet ? seuilComp(k) : perso.competences[k];
+    const s = modeComplet ? seuilComp(k) : (perso && perso.competences || {})[k];
     return {
       label: `${k} (${s} %)`,
       seuil: s
