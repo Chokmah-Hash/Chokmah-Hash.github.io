@@ -1,0 +1,21 @@
+{
+  "name": "Archivisterium",
+  "short_name": "Archivisterium",
+  "id": "/archivisterium/",
+  "lang": "fr",
+  "description": "La salle d'administration de L'Archiviste — comptes, installations, registre.",
+  "start_url": "/archivisterium/",
+  "scope": "/archivisterium/",
+  "display": "standalone",
+  "orientation": "any",
+  "categories": ["games", "utilities"],
+  "theme_color": "#0c0d10",
+  "background_color": "#0c0d10",
+  "icons": [
+    { "src": "/archivisterium/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/archivisterium/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/archivisterium/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/archivisterium/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/archivisterium/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
