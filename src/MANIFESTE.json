@@ -1,0 +1,532 @@
+{
+  "generePar": "scinder.js",
+  "description": "Projection du manuscrit CANVAS.md : la concaténation des fichiers, dans cet ordre, redonne le corps du manuscrit bit pour bit. Vérité unique : le manuscrit. Se régénère par « node scinder.js », se prouve par « node test-projection.js ».",
+  "totalOctets": 477707,
+  "fichiers": [
+    {
+      "fichier": "header.js",
+      "debut": 0,
+      "octets": 61
+    },
+    {
+      "fichier": "cloud/cle-publique.js",
+      "debut": 61,
+      "octets": 84
+    },
+    {
+      "fichier": "cloud/pose-larchiviste-cloud.js",
+      "debut": 138,
+      "octets": 32968
+    },
+    {
+      "fichier": "core/cloud.js",
+      "debut": 32482,
+      "octets": 169
+    },
+    {
+      "fichier": "core/fondre-presents.js",
+      "debut": 32647,
+      "octets": 1095
+    },
+    {
+      "fichier": "core/build.js",
+      "debut": 33712,
+      "octets": 29757
+    },
+    {
+      "fichier": "core/packs.js",
+      "debut": 62056,
+      "octets": 1810
+    },
+    {
+      "fichier": "core/packs-charges.js",
+      "debut": 63829,
+      "octets": 661
+    },
+    {
+      "fichier": "data/noyau.js",
+      "debut": 64473,
+      "octets": 402
+    },
+    {
+      "fichier": "data/surcharges.js",
+      "debut": 64866,
+      "octets": 273
+    },
+    {
+      "fichier": "data/signa.js",
+      "debut": 65125,
+      "octets": 84
+    },
+    {
+      "fichier": "data/ork.js",
+      "debut": 65198,
+      "octets": 480
+    },
+    {
+      "fichier": "data/armes.js",
+      "debut": 65670,
+      "octets": 401
+    },
+    {
+      "fichier": "data/pe-chassis.js",
+      "debut": 66057,
+      "octets": 82
+    },
+    {
+      "fichier": "data/pe-codes.js",
+      "debut": 66133,
+      "octets": 2945
+    },
+    {
+      "fichier": "data/pe-armes.js",
+      "debut": 69012,
+      "octets": 2541
+    },
+    {
+      "fichier": "data/noyau-d100.js",
+      "debut": 71462,
+      "octets": 683
+    },
+    {
+      "fichier": "data/sb-perso.js",
+      "debut": 72096,
+      "octets": 77
+    },
+    {
+      "fichier": "data/sb-demon.js",
+      "debut": 72164,
+      "octets": 19
+    },
+    {
+      "fichier": "data/sb-7.js",
+      "debut": 72183,
+      "octets": 684
+    },
+    {
+      "fichier": "data/bl-porteur.js",
+      "debut": 72847,
+      "octets": 88
+    },
+    {
+      "fichier": "data/bl-arme.js",
+      "debut": 72928,
+      "octets": 1014
+    },
+    {
+      "fichier": "data/bl-desirs-peuples.js",
+      "debut": 73920,
+      "octets": 434
+    },
+    {
+      "fichier": "data/bl-peuples.js",
+      "debut": 74348,
+      "octets": 1063
+    },
+    {
+      "fichier": "data/desirs-bl.js",
+      "debut": 75406,
+      "octets": 136
+    },
+    {
+      "fichier": "data/bl-base-combat.js",
+      "debut": 75539,
+      "octets": 73
+    },
+    {
+      "fichier": "data/bl-base-secondaires.js",
+      "debut": 75609,
+      "octets": 666
+    },
+    {
+      "fichier": "data/t-principaux.js",
+      "debut": 76265,
+      "octets": 3435
+    },
+    {
+      "fichier": "data/t-secondaires.js",
+      "debut": 79673,
+      "octets": 3361
+    },
+    {
+      "fichier": "data/t-conditionnels.js",
+      "debut": 82989,
+      "octets": 3847
+    },
+    {
+      "fichier": "data/t-exotiques.js",
+      "debut": 86815,
+      "octets": 6179
+    },
+    {
+      "fichier": "data/t-limitations.js",
+      "debut": 92925,
+      "octets": 3684
+    },
+    {
+      "fichier": "data/bl-tables.js",
+      "debut": 96560,
+      "octets": 82
+    },
+    {
+      "fichier": "data/paliers-bl.js",
+      "debut": 96640,
+      "octets": 79
+    },
+    {
+      "fichier": "data/noyaux.js",
+      "debut": 96719,
+      "octets": 1569
+    },
+    {
+      "fichier": "data/contenu.js",
+      "debut": 98230,
+      "octets": 12361
+    },
+    {
+      "fichier": "core/charger-pack.js",
+      "debut": 110230,
+      "octets": 915
+    },
+    {
+      "fichier": "core/rendre-gabarit.js",
+      "debut": 111121,
+      "octets": 3301
+    },
+    {
+      "fichier": "engine/regles-sb.js",
+      "debut": 113767,
+      "octets": 52574
+    },
+    {
+      "fichier": "engine/pose-regles-sb.js",
+      "debut": 164299,
+      "octets": 67
+    },
+    {
+      "fichier": "engine/livres.js",
+      "debut": 164366,
+      "octets": 76
+    },
+    {
+      "fichier": "engine/livres-charges.js",
+      "debut": 164440,
+      "octets": 74
+    },
+    {
+      "fichier": "engine/charger-livre.js",
+      "debut": 164512,
+      "octets": 746
+    },
+    {
+      "fichier": "engine/etapes-chargement.js",
+      "debut": 165253,
+      "octets": 3279
+    },
+    {
+      "fichier": "engine/avatars.js",
+      "debut": 168392,
+      "octets": 704
+    },
+    {
+      "fichier": "engine/d100.js",
+      "debut": 169079,
+      "octets": 128
+    },
+    {
+      "fichier": "engine/fmt-d100.js",
+      "debut": 169165,
+      "octets": 163
+    },
+    {
+      "fichier": "engine/resoudre-d100.js",
+      "debut": 169326,
+      "octets": 761
+    },
+    {
+      "fichier": "engine/d6.js",
+      "debut": 170066,
+      "octets": 52
+    },
+    {
+      "fichier": "engine/cible-num.js",
+      "debut": 170118,
+      "octets": 67
+    },
+    {
+      "fichier": "engine/resoudre-test.js",
+      "debut": 170185,
+      "octets": 382
+    },
+    {
+      "fichier": "engine/cible-blessure.js",
+      "debut": 170561,
+      "octets": 165
+    },
+    {
+      "fichier": "engine/cible-sauvegarde.js",
+      "debut": 170726,
+      "octets": 81
+    },
+    {
+      "fichier": "engine/pe-arme-combat.js",
+      "debut": 170807,
+      "octets": 746
+    },
+    {
+      "fichier": "engine/cible.js",
+      "debut": 171536,
+      "octets": 714
+    },
+    {
+      "fichier": "engine/cible-jeu.js",
+      "debut": 172206,
+      "octets": 1233
+    },
+    {
+      "fichier": "engine/fleches-chaos.js",
+      "debut": 173386,
+      "octets": 1103
+    },
+    {
+      "fichier": "engine/gemme-demon.js",
+      "debut": 174439,
+      "octets": 919
+    },
+    {
+      "fichier": "engine/glyphe-pack.js",
+      "debut": 175309,
+      "octets": 711
+    },
+    {
+      "fichier": "engine/root-console.js",
+      "debut": 176013,
+      "octets": 5724
+    },
+    {
+      "fichier": "engine/icosaedre-sommet.js",
+      "debut": 181654,
+      "octets": 1547
+    },
+    {
+      "fichier": "engine/icosaedre.js",
+      "debut": 183147,
+      "octets": 1040
+    },
+    {
+      "fichier": "engine/avatar.js",
+      "debut": 184140,
+      "octets": 655
+    },
+    {
+      "fichier": "engine/compte-joueur.js",
+      "debut": 184754,
+      "octets": 3155
+    },
+    {
+      "fichier": "components/ecran-creation.js",
+      "debut": 187848,
+      "octets": 4648
+    },
+    {
+      "fichier": "components/auth-modal.js",
+      "debut": 192457,
+      "octets": 7354
+    },
+    {
+      "fichier": "components/choix-role.js",
+      "debut": 199689,
+      "octets": 2353
+    },
+    {
+      "fichier": "components/choix-mode-partie.js",
+      "debut": 201977,
+      "octets": 2445
+    },
+    {
+      "fichier": "components/vignette.js",
+      "debut": 204360,
+      "octets": 111
+    },
+    {
+      "fichier": "components/ligne-console.js",
+      "debut": 204430,
+      "octets": 7157
+    },
+    {
+      "fichier": "components/console-globale.js",
+      "debut": 211423,
+      "octets": 2750
+    },
+    {
+      "fichier": "components/chat-salon.js",
+      "debut": 214154,
+      "octets": 5218
+    },
+    {
+      "fichier": "components/resume-perso.js",
+      "debut": 219287,
+      "octets": 1038
+    },
+    {
+      "fichier": "components/registre-personnages.js",
+      "debut": 220223,
+      "octets": 12422
+    },
+    {
+      "fichier": "components/pied-vibe.js",
+      "debut": 232516,
+      "octets": 705
+    },
+    {
+      "fichier": "components/ecran-partie.js",
+      "debut": 233181,
+      "octets": 41087
+    },
+    {
+      "fichier": "components/hub.js",
+      "debut": 273774,
+      "octets": 4936
+    },
+    {
+      "fichier": "components/pv-barre.js",
+      "debut": 278649,
+      "octets": 596
+    },
+    {
+      "fichier": "components/bloc-doc.js",
+      "debut": 279198,
+      "octets": 1562
+    },
+    {
+      "fichier": "views/lecteur-documents.js",
+      "debut": 280711,
+      "octets": 3119
+    },
+    {
+      "fichier": "views/entete-partie.js",
+      "debut": 283777,
+      "octets": 1905
+    },
+    {
+      "fichier": "views/de-face.js",
+      "debut": 285619,
+      "octets": 824
+    },
+    {
+      "fichier": "views/de-face100.js",
+      "debut": 286403,
+      "octets": 594
+    },
+    {
+      "fichier": "views/vue-noyau40k.js",
+      "debut": 286957,
+      "octets": 20367
+    },
+    {
+      "fichier": "views/ecran-mj-fiches.js",
+      "debut": 307047,
+      "octets": 4251
+    },
+    {
+      "fichier": "views/use-journal.js",
+      "debut": 311222,
+      "octets": 1072
+    },
+    {
+      "fichier": "views/barre-pct.js",
+      "debut": 312243,
+      "octets": 694
+    },
+    {
+      "fichier": "views/journal-bloc.js",
+      "debut": 312933,
+      "octets": 2233
+    },
+    {
+      "fichier": "views/ecran-creation-porteur.js",
+      "debut": 315157,
+      "octets": 7429
+    },
+    {
+      "fichier": "views/lancer-des.js",
+      "debut": 322466,
+      "octets": 124
+    },
+    {
+      "fichier": "views/borne-plage.js",
+      "debut": 322549,
+      "octets": 79
+    },
+    {
+      "fichier": "views/trouver-nation.js",
+      "debut": 322626,
+      "octets": 75
+    },
+    {
+      "fichier": "views/appliquer-ajustements.js",
+      "debut": 322698,
+      "octets": 77
+    },
+    {
+      "fichier": "views/pv-depuis.js",
+      "debut": 322773,
+      "octets": 83
+    },
+    {
+      "fichier": "views/san-depuis.js",
+      "debut": 322848,
+      "octets": 97
+    },
+    {
+      "fichier": "views/bonus-dommages-de.js",
+      "debut": 322925,
+      "octets": 71
+    },
+    {
+      "fichier": "views/modulation-age.js",
+      "debut": 322994,
+      "octets": 79
+    },
+    {
+      "fichier": "views/trouver-classe-sociale.js",
+      "debut": 323068,
+      "octets": 3499
+    },
+    {
+      "fichier": "views/ecran-creation-aventurier.js",
+      "debut": 326493,
+      "octets": 23492
+    },
+    {
+      "fichier": "views/ecran-creation-unite.js",
+      "debut": 349726,
+      "octets": 6044
+    },
+    {
+      "fichier": "views/vue-noyau-d100.js",
+      "debut": 355642,
+      "octets": 57400
+    },
+    {
+      "fichier": "app/vues.js",
+      "debut": 412016,
+      "octets": 644
+    },
+    {
+      "fichier": "app/vue-inconnue.js",
+      "debut": 412576,
+      "octets": 1153
+    },
+    {
+      "fichier": "app/interpreter-console.js",
+      "debut": 413713,
+      "octets": 1016
+    },
+    {
+      "fichier": "app/app.js",
+      "debut": 414705,
+      "octets": 52475
+    }
+  ]
+}
