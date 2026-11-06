@@ -1,7 +1,7 @@
 /* L'Archivisterium — service worker : network-first avec repli hors ligne.
    Portée : /archivisterium/ uniquement. La salle s'ouvre même sans connexion
    (le registre des comptes, lui, vit dans le nuage et reste en ligne). */
-var CACHE = "archivisterium-v2";
+var CACHE = "archivisterium-v3";
 var PRECACHE = [
   "/archivisterium/",
   "/archivisterium/index.html",

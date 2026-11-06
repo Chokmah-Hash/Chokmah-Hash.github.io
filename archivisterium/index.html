@@ -28,6 +28,9 @@
     body { margin: 0; background: #0c0d10; font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif; }
     #racine { min-height: 100vh; }
     #attente { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #71717a; font-size: 14px; letter-spacing: 2px; }
+    /* Barre d'onglets : glisse au doigt, SANS scrollbar visible */
+    .barre-onglets { scrollbar-width: none; -ms-overflow-style: none; }
+    .barre-onglets::-webkit-scrollbar { display: none; height: 0; }
   </style>
 </head>
 <body>
@@ -546,7 +549,7 @@ const {
    GM-0003 (Bloodlust). Les stats du magasin retrouvent les
    installations et favoris : la Tombe dit déjà GM-0001 depuis
    le chantier V0.55 du launcher. ── */
-const BUILD = "0.45";
+const BUILD = "0.46";
 
 /* ══════════ Le thème du scrolling — la barre d'ambre de l'institution ══════════
    L'Archivistère n'est pas une vitrine : il n'y a pas de packs ici, la
@@ -1644,12 +1647,12 @@ function Salle({
       background: "#a8adb8"
     }
   }, "Sortir"))), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-1 mb-6",
+    className: "flex gap-1 mb-6 barre-onglets",
     style: {
       borderBottom: "1px solid #27272a",
       overflowX: "auto",
-      WebkitOverflowScrolling: "touch"
-    }
+      WebkitOverflowScrolling: "touch",
+      scrollbarWidth: "none"
   }, [["stat", "STAT"], ["bibliotheque", "BIBLIOTHÈQUE"], ["comptes", "COMPTES"], ["parties", "PARTIES"], ["corbeille", "CORBEILLE"], ["console", "CONSOLE"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
