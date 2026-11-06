@@ -1228,20 +1228,44 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
 
       /* Ouvrir une aventure : le créateur en devient le MJ (policy : on ne
          crée que SOI MJ d'une partie OUVERTE). */
-      creerPartie: function (jeu, nom, compteId) {
+      creerPartie: function (jeu, nom, compteId, mod) {
         var m = lire();
         if (!m || !m.access_token) return Promise.resolve(null);
         return api("/rest/v1/archiviste_parties", {
           method: "POST",
           token: m.access_token,
           prefer: "return=representation",
+          /* V0.79 : l'aventure NAÎT sous un MOD (live/ldvelh/open_world) —
+             le magasin du hub lit cette vérité pour dire quels mods vivent
+             dans chaque jeu. Défaut : live (le jeu de table, avec MJ). */
           body: {
             jeu: jeu,
             nom: nom || "Aventure sans nom",
-            mj_compte_id: compteId
+            mj_compte_id: compteId,
+            mod: mod || "live"
           }
         }).then(function (l) {
           return l && l[0] || null;
+        });
+      },
+      /* V0.79 : LES MODS DU MAGASIN — la Tombe dit quels mods vivent dans
+         chaque jeu (aventures non supprimées portant un mod) ; le pied des
+         cartes du MAGASIN affiche cette vérité, pas une liste figée. */
+      chargerModsParJeu: function () {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve({});
+        return api("/rest/v1/archiviste_parties?select=jeu,mod&supprime_le=is.null&mod=not.is.null", {
+          token: m.access_token
+        }).then(function (l) {
+          var carte = {};
+          (l || []).forEach(function (p) {
+            if (!p.jeu || !p.mod) return;
+            if (!carte[p.jeu]) carte[p.jeu] = {};
+            carte[p.jeu][p.mod] = true;
+          });
+          return carte;
+        }).catch(function () {
+          return {};
         });
       },
       /* Le lobby : les aventures OUVERTES du jeu — via la VUE lobby (le
@@ -2068,7 +2092,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.78";
+const BUILD = "0.79";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5085,7 +5109,8 @@ function Vignette({
   contexte = "magasin",
   installe = false,
   enInstallation = false,
-  connecte = true
+  connecte = true,
+  mods = null
 }) {
   const dispo = pack.statut === "disponible";
   return /*#__PURE__*/React.createElement("div", {
@@ -5138,7 +5163,7 @@ function Vignette({
     style: {
       color: "#71717a"
     }
-  }, /*#__PURE__*/React.createElement("span", null, "v", pack.version, pack.visibilite === "prive" && " · privé", " \xB7 ", pack.taille)), contexte === "bibliotheque" ?
+  }, /*#__PURE__*/React.createElement("span", null, "Mods : " + (mods && Object.keys(mods).length ? [["live", "Live"], ["ldvelh", "LDVELH"], ["open_world", "Open World"]].filter(([k]) => mods[k]).map(([, l]) => l) : ["Live", "LDVELH", "Open World"]).join(" - "))), contexte === "bibliotheque" ?
   /*#__PURE__*/
   /* V48.3 — L'ÉPURE : lancer, ou désinstaller — les données du
      compte (personnages, aventures) restent dans la Tombe. */
@@ -5914,6 +5939,7 @@ function EcranPartie({
   mobile
 }) {
   const [nom, setNom] = useState("");
+  const [modChoisi, setModChoisi] = useState("live"); // V0.79 : sous quel MOD l'aventure naît (chips de création)
   const [mdpTexte, setMdpTexte] = useState(""); // V48.3 : le mot de passe d'une salle privée (demandé DANS la ligne)
   const [mdpPour, setMdpPour] = useState(null); // V48.3 : la salle privée dont on tape le mot de passe
   const [enCreer, setEnCreer] = useState(false);
@@ -6340,6 +6366,7 @@ function EcranPartie({
   }, "MES AVENTURES (", mesAv.length, ")"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setNom("");
+      setModChoisi("live");
       setEnCreation(true);
     },
     className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
@@ -6778,6 +6805,24 @@ function EcranPartie({
       outline: "none"
     }
   }), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "MOD"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mb-4"
+  }, [["live", "LIVE"], ["ldvelh", "LDVELH"], ["open_world", "OPEN WORLD"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    type: "button",
+    onClick: () => setModChoisi(id),
+    className: "px-3 py-1.5 rounded-lg font-bold text-xs tracking-wider",
+    style: {
+      background: modChoisi === id ? "#a8adb8" : "transparent",
+      color: modChoisi === id ? "#0c0d10" : "#a8adb8",
+      border: "1px solid " + (modChoisi === id ? "#a8adb8" : "#27272a"),
+      cursor: "pointer"
+    }
+  }, lbl))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 justify-end"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setEnCreation(false),
@@ -6791,7 +6836,7 @@ function EcranPartie({
   }, "ANNULER"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnCreer(true);
-      onCreer(nom).finally(() => {
+      onCreer(nom, modChoisi).finally(() => {
         setEnCreer(false);
         setEnCreation(false);
       });
@@ -6830,7 +6875,8 @@ function Hub({
   installes,
   enInstallation,
   symbole,
-  versionBase
+  versionBase,
+  modsParJeu
 }) {
   const [onglet, setOnglet] = useState("magasin");
   const [compteOuvert, setCompteOuvert] = useState(false);
@@ -6913,7 +6959,8 @@ function Hub({
     contexte: "magasin",
     installe: installes.includes(p.id),
     enInstallation: enInstallation === p.id,
-    connecte: !!joueur
+    connecte: !!joueur,
+    mods: modsParJeu ? modsParJeu[p.id] || null : null
   }))), onglet === "bibliotheque" && (packsInstalles.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-4 text-sm",
     style: {
@@ -10458,6 +10505,8 @@ function App() {
      Tous les comptes sont joueurs ; le rôle (MJ ou joueur) se choisit pack
      par pack, au lancement. L'Archiviste ne garde jamais les mots de passe. */
   const [session, setSession] = useState(null);
+  const [modsParJeu, setModsParJeu] = useState({}); /* V0.79 : mods vivants par jeu — vérité de la Tombe pour le MAGASIN */
+
   const seConnecter = p => {
     /* La double porte : un compte « en_attente » ne franchit pas le seuil —
        il attend le sceau de l'Archiviste (apposé dans l'Archivisterium,
@@ -10474,6 +10523,8 @@ function App() {
     setRolesPacks(memo.rolesPacks || {});
     setPersoChoisi(memo.persoChoisi || {});
     setSession(p);
+    /* V0.79 : le MAGASIN lit la Tombe — quels mods vivent dans chaque jeu. */
+    if (CLOUD) CLOUD.chargerModsParJeu().then(setModsParJeu).catch(() => {});
     showToast((memo.installes || []).length ? `Bienvenue, ${p.pseudo} — bibliothèque restaurée (${memo.installes.length} pack${memo.installes.length > 1 ? "s" : ""})` : `Bienvenue, ${p.pseudo} — compte connecté`);
   };
   const seDeconnecter = () => {
@@ -10488,6 +10539,7 @@ function App() {
     if (CLOUD) CLOUD.deconnexion().catch(() => {});
     setVue("hub");
     setSession(null);
+    setModsParJeu({});
     setInstalles([]);
     setFavoris([]);
     setRolesPacks({});
@@ -10819,15 +10871,17 @@ function App() {
   };
 
   /* ── Les gestes de LA PARTIE : tous génériques, tous pour le moteur ── */
-  const creerAventure = nomAventure => {
+  const creerAventure = (nomAventure, mod) => {
     if (!CLOUD || !session || !packPartie) return Promise.resolve();
-    return CLOUD.creerPartie(packPartie.id, (nomAventure || "").trim(), session.compteId).then(p => {
+    return CLOUD.creerPartie(packPartie.id, (nomAventure || "").trim(), session.compteId, mod).then(p => {
       /* V46b : l'aventure NAIT sans lancer la salle — le MJ reste dans le
          moteur d'aventure, la ligne apparaît dans MES AVENTURES, et le
          lancement se fait depuis la liste (⚙ → OUVRIR LA SALLE). */
       if (p) {
         showToast("Aventure « " + p.nom + " » créée — ouvrez-la quand vous voulez dans AVENTURES (⚙ → OUVRIR LA SALLE).");
         rechargerListes();
+        /* V0.79 : le pied du MAGASIN change — la Tombe connaît un mod de plus. */
+        CLOUD.chargerModsParJeu().then(setModsParJeu).catch(() => {});
       }
     }).catch(() => showToast("La Tombe n'a pas ouvert l'aventure — réessayez."));
   };
@@ -11349,7 +11403,8 @@ function App() {
     installes: installes,
     enInstallation: enInstallation,
     symbole: symbole,
-    versionBase: versionBase
+    versionBase: versionBase,
+    modsParJeu: modsParJeu
   }), vue === "attente" && session && /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen flex items-center justify-center p-4",
     style: {
@@ -11583,4 +11638,3 @@ Promise.all(_PACKS.map(function (id) {
   </script>
 </body>
 </html>
-

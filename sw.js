@@ -1,10 +1,10 @@
 /* L'Archiviste — service worker : network-first avec repli hors ligne.
    L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */
-var CACHE = "archiviste-a0-v81";
+var CACHE = "archiviste-a0-v82";
 var PRECACHE = [
   "/",
   "/index.html",
-      "/app.css",
+  "/app.css",
   "/react.production.min.js",
   "/react-dom.production.min.js",
   "/manifest.webmanifest",
@@ -32,7 +32,7 @@ self.addEventListener("install", function (e) {
 self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys()
-      .then(function (ks) { return Promise.all(ks.map(function (k) { return k === CACHE ? null : caches.delete(k); })); })
+      .then(function (ks) { return Promise.all(ks.map(function (k) { return k === CACHE ? null : caches.delete(k); }); }))
       .then(function () { return self.clients.claim(); })
   );
 });
