@@ -49,37 +49,37 @@
       "octets": 402
     },
     {
-      "fichier": "data/surcharges.js",
+      "fichier": "data/gm-0001/surcharges.js",
       "debut": 64866,
       "octets": 273
     },
     {
-      "fichier": "data/signa.js",
+      "fichier": "data/gm-0001/signa.js",
       "debut": 65125,
       "octets": 84
     },
     {
-      "fichier": "data/ork.js",
+      "fichier": "data/gm-0001/ork.js",
       "debut": 65198,
       "octets": 480
     },
     {
-      "fichier": "data/armes.js",
+      "fichier": "data/gm-0001/armes.js",
       "debut": 65670,
       "octets": 401
     },
     {
-      "fichier": "data/pe-chassis.js",
+      "fichier": "data/gm-0001/pe-chassis.js",
       "debut": 66057,
       "octets": 82
     },
     {
-      "fichier": "data/pe-codes.js",
+      "fichier": "data/gm-0001/pe-codes.js",
       "debut": 66133,
       "octets": 2945
     },
     {
-      "fichier": "data/pe-armes.js",
+      "fichier": "data/gm-0001/pe-armes.js",
       "debut": 69012,
       "octets": 2541
     },
@@ -89,87 +89,87 @@
       "octets": 683
     },
     {
-      "fichier": "data/sb-perso.js",
+      "fichier": "data/gm-0002/sb-perso.js",
       "debut": 72096,
       "octets": 77
     },
     {
-      "fichier": "data/sb-demon.js",
+      "fichier": "data/gm-0002/sb-demon.js",
       "debut": 72164,
       "octets": 19
     },
     {
-      "fichier": "data/sb-7.js",
+      "fichier": "data/gm-0002/sb-7.js",
       "debut": 72183,
       "octets": 684
     },
     {
-      "fichier": "data/bl-porteur.js",
+      "fichier": "data/gm-0003/bl-porteur.js",
       "debut": 72847,
       "octets": 88
     },
     {
-      "fichier": "data/bl-arme.js",
+      "fichier": "data/gm-0003/bl-arme.js",
       "debut": 72928,
       "octets": 1014
     },
     {
-      "fichier": "data/bl-desirs-peuples.js",
+      "fichier": "data/gm-0003/bl-desirs-peuples.js",
       "debut": 73920,
       "octets": 434
     },
     {
-      "fichier": "data/bl-peuples.js",
+      "fichier": "data/gm-0003/bl-peuples.js",
       "debut": 74348,
       "octets": 1063
     },
     {
-      "fichier": "data/desirs-bl.js",
+      "fichier": "data/gm-0003/desirs-bl.js",
       "debut": 75406,
       "octets": 136
     },
     {
-      "fichier": "data/bl-base-combat.js",
+      "fichier": "data/gm-0003/bl-base-combat.js",
       "debut": 75539,
       "octets": 73
     },
     {
-      "fichier": "data/bl-base-secondaires.js",
+      "fichier": "data/gm-0003/bl-base-secondaires.js",
       "debut": 75609,
       "octets": 666
     },
     {
-      "fichier": "data/t-principaux.js",
+      "fichier": "data/gm-0003/t-principaux.js",
       "debut": 76265,
       "octets": 3435
     },
     {
-      "fichier": "data/t-secondaires.js",
+      "fichier": "data/gm-0003/t-secondaires.js",
       "debut": 79673,
       "octets": 3361
     },
     {
-      "fichier": "data/t-conditionnels.js",
+      "fichier": "data/gm-0003/t-conditionnels.js",
       "debut": 82989,
       "octets": 3847
     },
     {
-      "fichier": "data/t-exotiques.js",
+      "fichier": "data/gm-0003/t-exotiques.js",
       "debut": 86815,
       "octets": 6179
     },
     {
-      "fichier": "data/t-limitations.js",
+      "fichier": "data/gm-0003/t-limitations.js",
       "debut": 92925,
       "octets": 3684
     },
     {
-      "fichier": "data/bl-tables.js",
+      "fichier": "data/gm-0003/bl-tables.js",
       "debut": 96560,
       "octets": 82
     },
     {
-      "fichier": "data/paliers-bl.js",
+      "fichier": "data/gm-0003/paliers-bl.js",
       "debut": 96640,
       "octets": 79
     },
