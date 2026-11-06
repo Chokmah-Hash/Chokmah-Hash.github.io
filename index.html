@@ -1624,6 +1624,27 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           }
         });
       },
+      /* V0.85 : LE COFFRE DES ICÔNES — la liste publique du bucket « avatars ».
+         Lecture ANONYME (aucune session requise) : les icônes se choisissent
+         dès la création de compte. Michael les verse depuis l'Archivisterium. */
+      listerIconesCoffre: function () {
+        return api("/storage/v1/object/list/avatars", {
+          method: "POST",
+          body: {
+            prefix: "",
+            limit: 200,
+            offsets: [],
+            sortBy: {
+              column: "name",
+              order: "asc"
+            }
+          }
+        }).then(function (l) {
+          return l || [];
+        }).catch(function () {
+          return [];
+        });
+      },
       /* Le canal temps réel : la Tombe pousse ses changements à l'écran —
          la synchro devient de la poussée, pas du polling. */
       tempsReel: tempsReel
@@ -2092,7 +2113,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.84";
+const BUILD = "0.85";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -3944,6 +3965,18 @@ const GROUPES_AVATARS = [{
   univers: "bloodlust"
 }];
 
+/* ══════════ V0.85 — LE COFFRE DES ICÔNES DU SERVEUR ══════════
+   Michael grave ses propres icônes depuis l'Archivisterium (bucket
+   Supabase Storage « avatars », lecture publique). Le launcher lit la
+   liste au boot, SANS session : les icônes se choisissent dès la
+   création de compte. Le coffre PRIME : quand il répond, ses icônes
+   sont LA liste ; tant qu'il est vide ou injoignable, les 20 gravures
+   de la v0.84 restent le repli. Un avatar_ref « coffre/<nom> » vit
+   dans la Tombe comme n'importe quel id. */
+const URL_AVATARS = "https://dnbnkdakmobufqcrqzpq.supabase.co/storage/v1/object/public/avatars";
+let ICONES_COFFRE = []; /* rempli par App au boot ; le state force le rafraîchissement */
+const avatarDepuis = id => ICONES_COFFRE.length ? ICONES_COFFRE.find(a => a.id === id) || ICONES_COFFRE[0] : AVATARS.find(a => a.id === id) || AVATARS[0];
+
 /* ══════════ Le moteur : la primitive de test, paramétrée par le noyau ══════════ */
 const d100 = () => 1 + Math.floor(Math.random() * 100); /* 1-100 ; 100 se lit « 00 » */
 const fmtD100 = r => r === 100 ? "00" : String(r).padStart(2, "0");
@@ -4538,15 +4571,23 @@ function Avatar({
   }) : /*#__PURE__*/React.createElement("span", null, a.glyph || "⟁"));
 }
 
-/* V0.84 — LE SÉLECTEUR D'AVATARS GROUPÉ : neutres puis un groupe par
-   univers ; on choisit en un clic, le titre de chaque vignette dit l'œuvre. */
+/* V0.84 — LE SÉLECTEUR D'AVATARS GROUPÉ. V0.85 : quand le COFFRE DU
+   SERVEUR a répondu, il est LA liste (un seul groupe, les icônes de
+   Michael) ; sinon les groupes des 20 gravures font le repli. */
 function ChoixAvatars({
   avatarId,
   onChoix,
   taille = 38
 }) {
-  return /*#__PURE__*/React.createElement("div", null, GROUPES_AVATARS.map(g => /*#__PURE__*/React.createElement("div", {
-    key: g.univers,
+  const groupes = ICONES_COFFRE.length ? [{
+    titre: "LE COFFRE DU SERVEUR",
+    liste: ICONES_COFFRE
+  }] : GROUPES_AVATARS.map(g => ({
+    titre: g.titre,
+    liste: AVATARS.filter(a => a.univers === g.univers)
+  }));
+  return /*#__PURE__*/React.createElement("div", null, groupes.map(g => /*#__PURE__*/React.createElement("div", {
+    key: g.titre,
     className: "mb-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-bold tracking-widest mb-1",
@@ -4555,7 +4596,7 @@ function ChoixAvatars({
     }
   }, g.titre), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, AVATARS.filter(a => a.univers === g.univers).map(a => /*#__PURE__*/React.createElement("button", {
+  }, g.liste.map(a => /*#__PURE__*/React.createElement("button", {
     key: a.id,
     onClick: () => onChoix && onChoix(a.id),
     title: a.label,
@@ -6134,7 +6175,7 @@ function EcranPartie({
       seul (EntetePartie) — le bandeau « L'ARCHIVISTE » quitte l'écran de
       partie ; l'icône du compte vit dans l'entête, le halo du mode
       murmure le rôle (or = MJ, bleu = joueur). */
-  const avatarCompte = session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null;
+  const avatarCompte = session ? avatarDepuis(session.avatarId) : null;
   const compteEntete = session && avatarCompte ? /*#__PURE__*/React.createElement(CompteJoueur, {
     joueur: session,
     avatar: avatarCompte,
@@ -10626,6 +10667,23 @@ function App() {
   const [vue, setVue] = useState("hub");
   const [packActif, setPackActif] = useState(null);
   const [livreSb, setLivreSb] = useState(null); /* V0.63 : le livre gravé du pack actif (invisible) */
+  /* V0.85 : le coffre d'icônes du serveur — lu au boot, sans session.
+     La valeur ne sert qu'à FORCER le rafraîchissement quand la liste
+     arrive (les pickers lisent ICONES_COFFRE directement). */
+  const [, setIconesCoffreVersion] = useState(0);
+  useEffect(() => {
+    if (CLOUD && CLOUD.listerIconesCoffre) {
+      CLOUD.listerIconesCoffre().then(l => {
+        ICONES_COFFRE = (l || []).filter(o => o.name && /\.(jpe?g|png|webp)$/i.test(o.name)).map(o => ({
+          id: "coffre/" + o.name,
+          label: o.name.replace(/\.[^.]+$/, "").replace(/-+/g, " "),
+          img: URL_AVATARS + "/" + encodeURIComponent(o.name),
+          bord: "#a8adb8"
+        }));
+        setIconesCoffreVersion(ICONES_COFFRE.length);
+      }).catch(() => {});
+    }
+  }, []);
   const [favoris, setFavoris] = useState([]);
   const [installes, setInstalles] = useState([]);
   const [enInstallation, setEnInstallation] = useState(null);
@@ -11531,7 +11589,7 @@ function App() {
     onDesinstaller: desinstallerPack,
     showToast: showToast,
     joueur: session,
-    avatar: session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null,
+    avatar: session ? avatarDepuis(session.avatarId) : null,
     onAvatar: changerAvatar,
     onLogout: seDeconnecter,
     onLogin: seConnecter,
@@ -11694,7 +11752,7 @@ function App() {
       },
       onJournal: journalVersConsole,
       joueur: session,
-      avatar: session ? AVATARS.find(a => a.id === session.avatarId) || AVATARS[0] : null,
+      avatar: session ? avatarDepuis(session.avatarId) : null,
       consolePartie: enPartie ? {
         fil: consoleFil,
         onEnvoyer: envoyerConsoleMessage,
