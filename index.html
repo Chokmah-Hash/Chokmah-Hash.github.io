@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.87";
+const BUILD = "0.88";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -9542,7 +9542,7 @@ function VueNoyauD100({
      double (2 %/pt d'INT au-dessus de 12) et grandit avec l'âge : 1 %/an
      au-delà de 25 ans (Nobles 2, Prêtres 3 — la fiche porte son taux dans
      bonusConnaissanceAge). Si la fiche change, les bonus suivent. */
-  const bonusFamilles = C.bonusCompetences === "stormbringer-v2" && perso && perso.caracs ? (() => {
+  const bonusFamilles = C.bonusCompetences === "stormbringer-v2" && perso.caracs ? (() => {
     const cr = perso.caracs;
     const plus = k => cr[k] > 12 ? cr[k] - 12 : cr[k] < 9 ? 9 - cr[k] : 0;
     const inv = k => cr[k] > 12 ? 12 - cr[k] : cr[k] < 9 ? 9 - cr[k] : 0; /* TAI inversée */
@@ -9600,7 +9600,7 @@ function VueNoyauD100({
     label: `${m.carac}×${m.mult} — ${m.label} (${c[m.carac] * m.mult} %)`,
     seuil: c[m.carac] * m.mult
   })), ...compsJet.map(k => {
-    const s = modeComplet ? seuilComp(k) : (perso && perso.competences || {})[k];
+    const s = modeComplet ? seuilComp(k) : perso && perso.competences ? perso.competences[k] : null;
     return {
       label: `${k} (${s} %)`,
       seuil: s
