@@ -2092,7 +2092,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.80";
+const BUILD = "0.81";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2124,7 +2124,9 @@ const PACKS = [{
     accent: "#2ee6c9",
     or: "#f0b24a"
   },
-  resume: "Gardiens royaux amnésiques dans la chair d'une tombe qui murmure. Version light light : fiche, dés, combat, journal.",
+  accroche: "K-BoT - Les Hommes de fer",
+  /* V0.81 : la ligne-sous-titre de la carte du magasin */
+  resume: "Commencez votre aventure au 23e millénaire, à l'époque des Hommes de fer — gardiens royaux amnésiques dans la chair d'une tombe qui murmure. Version light : fiche, dés, combat, journal.",
   glyphs: "⟁"
 }, {
   format: 1,
@@ -2148,7 +2150,9 @@ const PACKS = [{
     accent: "#9d86e8",
     or: "#cbb26b"
   },
-  resume: "L'épée noire, Law et Chaos. Squelette alpha : fiche D100, jets sous carac ×multiplicateur, lutte de POU, Santé Mentale.",
+  accroche: "Elric de Melniboné",
+  /* V0.81 : la ligne-sous-titre de la carte du magasin */
+  resume: "Les Jeunes Royaumes s'éveillent : l'empire de Melniboné vacille, Elric l'albinos porte l'épée noire, et Law et Chaos se disputent le monde. Fiche D100, jets sous carac ×multiplicateur, lutte de POU, Santé Mentale.",
   glyphs: "⚔"
 }, {
   format: 1,
@@ -2170,7 +2174,9 @@ const PACKS = [{
     accent: "#e0524d",
     or: "#d4a24e"
   },
-  resume: "Les porteurs d'Armes vivantes de Tanæphis. Squelette alpha : désirs, forge de l'arme (budget 100 points), contrôle VO×5, paliers de difficulté.",
+  accroche: "les Armes-Dieux choisissent leurs champions",
+  /* V0.81 : la ligne-sous-titre de la carte du magasin */
+  resume: "Dans les terres sauvages de Tanæphis, où dieux, empires et barbares s'affrontent sans répit, les Armes-Dieux immortelles choisissent leurs champions pour graver leur légende dans le sang et le destin.",
   glyphs: "🗡"
 }];
 
@@ -5149,7 +5155,7 @@ function Vignette({
     style: {
       color: "#a1a1aa"
     }
-  }, pack.type, " \xB7 d\xE9pend de ", pack.depend_de.map(d => `${d.id}@${d.format_min}`).join(", ")))), /*#__PURE__*/React.createElement("button", {
+  }, pack.accroche || pack.type + " · dépend de " + pack.depend_de.map(d => `${d.id}@${d.format_min}`).join(", ")))), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       onFavori(pack.id);
       showToast(favori ? "Retiré des favoris" : "Ajouté à la bibliothèque ★");
@@ -5174,12 +5180,14 @@ function Vignette({
   }, modsCarte.map(m => /*#__PURE__*/React.createElement("span", {
     key: m[0],
     title: m[2],
-    className: "px-2 py-0.5 rounded-md font-bold tracking-wider",
+    className: "px-1.5 py-px rounded font-bold tracking-wider",
     style: {
       background: "#a8adb812",
       color: "#a1a1aa",
       border: "1px solid #27272a",
-      cursor: "help"
+      cursor: "help",
+      fontSize: "10px",
+      lineHeight: "16px"
     }
   }, m[1]))), contexte === "bibliotheque" ?
   /*#__PURE__*/
