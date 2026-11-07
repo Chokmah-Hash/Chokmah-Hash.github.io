@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.95";
+const BUILD = "0.96";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -2205,6 +2205,8 @@ const PACKS = [{
     id: "noyau-d100",
     format_min: 1
   }],
+  multijoueur: true,
+  /* V0.96 : se lance par LA PARTIE — lobby, code, MJ et joueurs (le patron du Protocole Ω) */
   livre: "sb-v2",
   /* V0.63 : le livre gravé (données v7.0) fetché à l'entrée du pack */
   statut: "disponible",
@@ -2231,6 +2233,8 @@ const PACKS = [{
     id: "noyau-d100",
     format_min: 1
   }],
+  multijoueur: true,
+  /* V0.96 : se lance par LA PARTIE — lobby, code, MJ et joueurs (le patron du Protocole Ω) */
   statut: "disponible",
   visibilite: "prive",
   taille: "12 Mo",
@@ -8276,13 +8280,41 @@ function EcranCreationPorteur({
   contenu,
   accent,
   onValide,
-  onAnnule
+  onAnnule,
+  cleSauvegarde,
+  reprise
 }) {
-  const [peuple, setPeuple] = useState(null);
-  const [nom, setNom] = useState("");
-  const [ajust, setAjust] = useState({}); /* désir → −2..+2 (un PJ ajuste de ±1 à ±2) */
-  const [bonus, setBonus] = useState({}); /* compétence → multiple de 5 */
-
+  /* V0.96 — LA SAUVEGARDE DE CRÉATION (le patron v0.92 de l'Aventurier,
+     SANS mode Auto/Manuel : la création du porteur est 100 % sans dés).
+     L'état vit dans le navigateur ; le registre l'affiche en À COMPLÉTER. */
+  const CLE_ETAT = "larchiviste_creation_" + (cleSauvegarde || "d100");
+  const etatSauve = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(CLE_ETAT) || "null");
+    } catch (e) {
+      return null;
+    }
+  })();
+  /* V0.96 — LA REPRISE DIRECTE : les états NAISSENT restaurés quand le
+     registre rouvre la création (À COMPLÉTER → reprise={true}) — pas
+     d'effet, pas de flash, le premier rendu montre déjà le travail. */
+  const [peuple, setPeuple] = useState(() => reprise && etatSauve ? (contenu.peuples || []).find(p => p.id === etatSauve.peupleId) || null : null);
+  const [nom, setNom] = useState(() => reprise && etatSauve ? etatSauve.nom || "" : "");
+  const [ajust, setAjust] = useState(() => reprise && etatSauve ? etatSauve.ajust || {} : {}); /* désir → −2..+2 */
+  const [bonus, setBonus] = useState(() => reprise && etatSauve ? etatSauve.bonus || {} : {}); /* compétence → multiple de 5 */
+  const [confirmeSauvegarde, setConfirmeSauvegarde] = useState(false);
+  const sauvegarder = () => {
+    if (!nom.trim()) return;
+    try {
+      localStorage.setItem(CLE_ETAT, JSON.stringify({
+        nom,
+        peupleId: peuple && peuple.id,
+        ajust,
+        bonus
+      }));
+      setConfirmeSauvegarde(true);
+    } catch (e) {/* stockage plein ou privé : la création continue sans filet */}
+  };
   const listeCombat = contenu.baseCombat,
     listeSec = contenu.baseSecondaires;
   const nomsDesirs = contenu.desirsNoms;
@@ -8299,6 +8331,9 @@ function EcranCreationPorteur({
   };
   const peutValider = peuple && nom.trim().length > 0;
   const valider = () => {
+    try {
+      localStorage.removeItem(CLE_ETAT);
+    } catch (e) {} /* gravé : la création s'efface */
     const competences = {};
     [...listeCombat, ...listeSec].forEach(([k, base]) => {
       competences[k] = base + (bonus[k] || 0);
@@ -8329,12 +8364,31 @@ function EcranCreationPorteur({
     style: {
       color: accent
     }
-  }, "\uD83E\uDDEC Cr\xE9er un porteur"), /*#__PURE__*/React.createElement("div", {
+  }, "Cr\xE9ation de personnage"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, confirmeSauvegarde ? /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
-      color: "#71717a"
+      color: "#a1a1aa"
     }
-  }, "livre p. 81-88")), /*#__PURE__*/React.createElement("div", {
+  }, "\u2713 sauvegard\xE9") : null, nom.trim() ? /*#__PURE__*/React.createElement("button", {
+    onClick: sauvegarder,
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      cursor: "pointer"
+    }
+  }, "Sauvegarder") : null, /*#__PURE__*/React.createElement("button", {
+    onClick: onAnnule,
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#0c0d10",
+      color: "#a1a1aa",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "Annuler"))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-4",
     style: {
       color: "#a1a1aa"
@@ -10332,7 +10386,7 @@ function VueNoyauD100({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, (role === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, (role === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]]).concat(consolePartie ? [["table", "TABLE"]] : []).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -10384,7 +10438,67 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "Coming soon \u2014 le manuel du jeu s'ouvrira ici.")), onglet === "personnages" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Coming soon \u2014 le manuel du jeu s'ouvrira ici.")), onglet === "table" && consolePartie && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement(ConsoleGlobale, {
+    fil: consolePartie.fil,
+    onEnvoyer: consolePartie.onEnvoyer,
+    joueur: consolePartie.joueur || joueur,
+    enEnvoi: consolePartie.enEnvoi
+  }), role === "mj" && table && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-3",
+    style: {
+      color: T.accent
+    }
+  }, "FICHES DE LA TABLE"), (table.fiches || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#71717a"
+    }
+  }, "Aucune fiche pouss\xE9e \u2014 les joueurs PRENNENT un personnage (PRENDRE au lobby) pour qu'il paraisse ici.") : (table.fiches || []).map((f, i) => {
+    const j = (table.joueurs || []).find(q => q.compte_id === f.compte_id) || {};
+    const pc = f.contenu || {};
+    const p = pc.perso || null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: f.compte_id || i,
+      className: "mb-1 rounded p-2 text-sm flex items-center justify-between gap-2",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: T.or
+      }
+    }, j.pseudo || "?"), p ? /*#__PURE__*/React.createElement("span", null, " \u2014 ", /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, p.nom), p.peuple ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#a1a1aa"
+      }
+    }, " · " + p.peuple) : null, p.nation ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#a1a1aa"
+      }
+    }, " · " + p.nation) : null) : /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#71717a"
+      }
+    }, " \u2014 sans personnage")), typeof pc.pv === "number" && p ? /*#__PURE__*/React.createElement("span", {
+      className: "shrink-0 text-xs font-bold",
+      style: {
+        color: pc.pv > 0 ? T.accent : "#fb7185"
+      }
+    }, pc.pv, " PV") : null);
+  }))), onglet === "personnages" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "mb-5"
   }, /*#__PURE__*/React.createElement(RegistrePersonnages, {
     pack: pack,
