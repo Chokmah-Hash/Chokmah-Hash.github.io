@@ -1635,7 +1635,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.99.3";
+const BUILD = "0.99.4";
 const PACKS = [{
   format: 1,
   id: "GM-0001",
@@ -9551,13 +9551,24 @@ function VueNoyauD100({
     halo: haloRole
   }) : null;
   return React.createElement("div", {
-    className: "min-h-screen flex flex-col",
-    style: {
+    className: onglet === "lobby" ? "flex flex-col" : "min-h-screen flex flex-col",
+    style: onglet === "lobby" ? {
+      background: T.fond,
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif",
+      height: "100vh",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column"
+    } : {
       background: T.fond,
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5 py-6 w-full flex flex-col flex-1"
+    className: "max-w-4xl mx-auto px-5 py-6 w-full flex flex-col flex-1",
+    style: onglet === "lobby" ? {
+      flex: "1 1 0%",
+      minHeight: 0
+    } : undefined
   }, React.createElement(EntetePartie, {
     pack: pack,
     role: role,
@@ -9599,7 +9610,13 @@ function VueNoyauD100({
   }, lbl))), onglet === "lobby" && ((() => {
     const canal = enLive ? consolePartie : salonJeu;
     return React.createElement("div", {
-      className: "space-y-4"
+      className: "space-y-4",
+      style: {
+        flex: "1 1 0%",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column"
+      }
     }, React.createElement(ChatSalon, {
       titre: (enLive ? "TABLE — " : "SALON — ") + pack.nom,
       fil: canal && canal.fil || [],
