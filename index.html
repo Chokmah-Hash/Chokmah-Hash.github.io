@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.94";
+const BUILD = "0.95";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5892,38 +5892,38 @@ function RegistrePersonnages({
       setEnCreationPerso(false);
       setRepriseDemandee(false);
     }
-  })) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  })) : persos.length === 0 && !encours ? /*#__PURE__*/React.createElement("div", {
     className: "text-sm",
     style: {
       color: "#a1a1aa"
     }
-  }, "Aucun personnage pour ", pack.nom, ". Cr\xE9ez votre premier personnage avec \xAB + CR\xC9ER \xBB \u2014 il rejoindra le registre, pr\xEAt \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
-    className: "w-full text-sm"
-  }, /*#__PURE__*/React.createElement("tbody", null, encours && /*#__PURE__*/React.createElement("tr", {
+  }, "Aucun personnage pour ", pack.nom, ". Cr\xE9ez votre premier personnage avec \xAB Cr\xE9er un personnage \xBB \u2014 il rejoindra le registre, pr\xEAt \xE0 entrer dans n'importe quelle aventure du pack.") :
+  /*#__PURE__*/
+  /* V0.95 — LE STYLE DES CARTES DE LA FICHE : un personnage = une
+     carte autonome (fond #ffffff08, coins arrondis, nom en gras),
+     les boutons au style discret DÉSÉQUIPER à droite. */
+  React.createElement("div", null, encours && /*#__PURE__*/React.createElement("div", {
+    className: "mb-1 rounded p-2 text-sm flex items-center justify-between gap-2",
     style: {
-      borderTop: "1px solid #ffffff08"
+      background: "#ffffff08",
+      color: "#c8c8ce"
     }
-  }, /*#__PURE__*/React.createElement("td", {
-    className: "px-1 py-2.5"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold",
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
     style: {
       color: "#a8adb8"
     }
-  }, encours.nom || "Sans nom")), /*#__PURE__*/React.createElement("td", {
-    className: "px-1 py-2.5 text-right"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-end gap-1.5"
+  }, encours.nom || "Sans nom")), /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1.5 shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setRepriseDemandee(true);
       setEnCreationPerso(true);
     },
-    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    className: "px-2 py-1 rounded text-[10px] font-bold shrink-0",
     style: {
       background: "#a8adb814",
       color: "#a8adb8",
-      border: "1px solid #27272a",
+      border: "1px solid #3f3f46",
       cursor: "pointer"
     }
   }, "\xC0 COMPL\xC9TER"), /*#__PURE__*/React.createElement("button", {
@@ -5934,39 +5934,37 @@ function RegistrePersonnages({
       });
       setMotSupprPerso("");
     },
-    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    className: "px-2 py-1 rounded text-[10px] font-bold shrink-0",
     style: {
       background: "#a8adb814",
       color: "#a8adb8",
-      border: "1px solid #27272a",
+      border: "1px solid #3f3f46",
       cursor: "pointer"
     }
-  }, "\u2699")))), persos.map(p => /*#__PURE__*/React.createElement("tr", {
+  }, "\u2699"))), persos.map(p => /*#__PURE__*/React.createElement("div", {
     key: p.id,
+    className: "mb-1 rounded p-2 text-sm flex items-center justify-between gap-2",
     style: {
-      borderTop: "1px solid #ffffff08"
+      background: "#ffffff08",
+      color: "#c8c8ce",
+      border: persoChoisi === p.id ? "1px solid #f0b24a44" : "none"
     }
-  }, /*#__PURE__*/React.createElement("td", {
-    className: "px-1 py-2.5"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold",
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
     style: {
       color: persoChoisi === p.id ? "#f0b24a" : "#e8e4d8"
     }
-  }, p.nom, suffixePerso(p) ? /*#__PURE__*/React.createElement("span", {
+  }, p.nom), suffixePerso(p) ? /*#__PURE__*/React.createElement("span", {
     className: "font-normal",
     style: {
       color: "#a1a1aa"
     }
-  }, " - " + suffixePerso(p)) : null)), /*#__PURE__*/React.createElement("td", {
-    className: "px-1 py-2.5 text-right"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-end gap-1.5"
+  }, " - " + suffixePerso(p)) : null), /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1.5 shrink-0"
   }, onChoisir && /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       onChoisir(p);
     },
-    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    className: "px-2 py-1 rounded text-[10px] font-bold shrink-0",
     style: persoChoisi === p.id ? {
       background: "#f0b24a",
       color: "#0c0d10",
@@ -5974,7 +5972,7 @@ function RegistrePersonnages({
     } : {
       background: "#a8adb814",
       color: "#a8adb8",
-      border: "1px solid #27272a",
+      border: "1px solid #3f3f46",
       cursor: "pointer"
     }
   }, persoChoisi === p.id ? "SÉLECTIONNÉ" : "PRENDRE"), /*#__PURE__*/React.createElement("button", {
@@ -5982,14 +5980,14 @@ function RegistrePersonnages({
       setPersoFlottant(p);
       setMotSupprPerso("");
     },
-    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    className: "px-2 py-1 rounded text-[10px] font-bold shrink-0",
     style: {
       background: "#a8adb814",
       color: "#a8adb8",
-      border: "1px solid #27272a",
+      border: "1px solid #3f3f46",
       cursor: "pointer"
     }
-  }, "\u2699"))))))), persoFlottant ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "\u2699"))))), persoFlottant ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     onClick: () => {
       setPersoFlottant(null);
       setMotSupprPerso("");
