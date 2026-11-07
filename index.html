@@ -2156,7 +2156,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.98.1";
+const BUILD = "0.99";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5815,7 +5815,8 @@ function FicheApercuD100({
   perso,
   pv,
   accent,
-  titre
+  titre,
+  onMaj
 }) {
   if (!perso || !perso.caracs) return null;
   const a = accent || "#f0b24a";
@@ -5857,6 +5858,61 @@ function FicheApercuD100({
   const pvNow = (typeof pv === "number" ? pv : perso.pv != null ? perso.pv : pv) || 0;
   const pvMax = perso.pvMax || perso.pv || pvNow || 0;
   const sanNow = perso.san != null ? perso.san : perso.sanMax;
+  /* V0.99 — L'APERÇU DEVIENT LA VRAIE FICHE QUAND onMaj EST LÀ (Michael) :
+     au lobby de l'écran de partie, le portrait n'est plus en lecture
+     seule — DÉSÉQUIPER range le fer dans le sac, ÉQUIPER ne se prend que
+     la main vide (une arme, une armure), et chaque geste part à la Tombe
+     par onMaj (gravure + poussée à la table). Sans onMaj (l'onglet
+     JOUEURS du MJ), le portrait en lecture reste — le MJ ne touche pas
+     à la fiche du joueur. Mêmes lois que la grande fiche V0.74. */
+  const majPersoAffiche = onMaj ? changement => onMaj({
+    ...perso,
+    ...changement
+  }) : null;
+  const desequiperArme = onMaj ? x => majPersoAffiche({
+    armes: (perso.armes || []).map(a => a === x ? {
+      ...a,
+      equipe: false
+    } : a)
+  }) : null;
+  const equiperArme = onMaj ? x => {
+    if (armesEquipees.length === 0) majPersoAffiche({
+      armes: (perso.armes || []).map(a => a === x ? {
+        ...a,
+        equipe: true
+      } : a)
+    });
+  } : null;
+  const desequiperArmure = onMaj ? x => {
+    /* une armure de la Tombe peut être une simple string : au premier
+       geste elle devient objet — nom, reste, drapeau. */
+    const objet = typeof x === "object" ? x : function () {
+      const sep = String(x).indexOf(" — ");
+      return sep > 0 ? {
+        nom: String(x).slice(0, sep),
+        reste: String(x).slice(sep + 3),
+        equipe: false
+      } : {
+        nom: String(x),
+        reste: "",
+        equipe: false
+      };
+    }();
+    majPersoAffiche({
+      armures: (perso.armures || []).map(a => a === x ? {
+        ...objet,
+        equipe: false
+      } : a)
+    });
+  } : null;
+  const equiperArmure = onMaj ? x => {
+    if (armuresEquipees.length === 0) majPersoAffiche({
+      armures: (perso.armures || []).map(a => a === x ? {
+        ...a,
+        equipe: true
+      } : a)
+    });
+  } : null;
   return /*#__PURE__*/React.createElement("div", {
     className: "fiche-impression space-y-4"
   }, titre ? /*#__PURE__*/React.createElement("div", {
@@ -5986,7 +6042,27 @@ function FicheApercuD100({
     style: {
       color: "#71717a"
     }
-  }, "ARMES"), armesEquipees.map(x => /*#__PURE__*/React.createElement("div", {
+  }, "ARMES"), armesEquipees.map(x => onMaj ? /*#__PURE__*/React.createElement("div", {
+    key: x.nom,
+    className: "mt-1 rounded p-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), " \xB7 ", x.seuil, x.degats ? " · " + x.degats : "", x.bonus ? " · +" + x.bonus : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: () => desequiperArme(x),
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "\u2193 D\xC9S\xC9QUIPER")) : /*#__PURE__*/React.createElement("div", {
     key: x.nom,
     className: "mt-1 rounded p-2 text-xs",
     style: {
@@ -6012,7 +6088,27 @@ function FicheApercuD100({
     const sep = String(x).indexOf(" — ");
     const nom = typeof x === "object" ? x.nom : sep > 0 ? String(x).slice(0, sep) : String(x);
     const reste = typeof x === "object" ? x.reste || "" : sep > 0 ? String(x).slice(sep + 3) : "";
-    return /*#__PURE__*/React.createElement("div", {
+    return onMaj ? /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "mt-1 rounded p-2 text-xs flex items-center justify-between gap-2",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, nom), reste ? " · " + reste : ""), /*#__PURE__*/React.createElement("button", {
+      onClick: () => desequiperArmure(x),
+      className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+      style: {
+        background: "#a8adb814",
+        color: "#a8adb8",
+        border: "1px solid #3f3f46",
+        cursor: "pointer"
+      }
+    }, "\u2193 D\xC9S\xC9QUIPER")) : /*#__PURE__*/React.createElement("div", {
       key: i,
       className: "mt-1 rounded p-2 text-xs",
       style: {
@@ -6167,7 +6263,29 @@ function FicheApercuD100({
     }
   }, "\xC9QUIPEMENT RANG\xC9 \u2014 \xE0 port\xE9e de main"), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-1"
-  }, armesRangees.map(x => /*#__PURE__*/React.createElement("div", {
+  }, armesRangees.map(x => onMaj ? /*#__PURE__*/React.createElement("div", {
+    key: "r-" + x.nom,
+    className: "rounded p-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), " \xB7 ", x.seuil, x.degats ? " · " + x.degats : "", x.bonus ? " · +" + x.bonus : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: () => equiperArme(x),
+    disabled: armesEquipees.length > 0,
+    title: armesEquipees.length > 0 ? "Une arme à la fois — déséquipez la tenue d'abord" : "",
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+    style: {
+      background: armesEquipees.length > 0 ? "#a8adb80d" : a + "22",
+      color: armesEquipees.length > 0 ? "#52525b" : a,
+      border: "1px solid " + (armesEquipees.length > 0 ? "#27272a" : a + "44"),
+      cursor: armesEquipees.length > 0 ? "default" : "pointer"
+    }
+  }, "\u2191 \xC9QUIPER")) : /*#__PURE__*/React.createElement("div", {
     key: "r-" + x.nom,
     className: "rounded p-2 text-xs",
     style: {
@@ -6178,7 +6296,29 @@ function FicheApercuD100({
     style: {
       color: "#e8e4d8"
     }
-  }, x.nom), " \xB7 ", x.seuil, x.degats ? " · " + x.degats : "", x.bonus ? " · +" + x.bonus : "")), armuresRangees.map((x, i) => /*#__PURE__*/React.createElement("div", {
+  }, x.nom), " \xB7 ", x.seuil, x.degats ? " · " + x.degats : "", x.bonus ? " · +" + x.bonus : "")), armuresRangees.map((x, i) => onMaj ? /*#__PURE__*/React.createElement("div", {
+    key: "ra-" + i,
+    className: "rounded p-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), x.reste ? " · " + x.reste : ""), /*#__PURE__*/React.createElement("button", {
+    onClick: () => equiperArmure(x),
+    disabled: armuresEquipees.length > 0,
+    title: armuresEquipees.length > 0 ? "Une armure à la fois — déséquipez la tenue d'abord" : "",
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold shrink-0",
+    style: {
+      background: armuresEquipees.length > 0 ? "#a8adb80d" : a + "22",
+      color: armuresEquipees.length > 0 ? "#52525b" : a,
+      border: "1px solid " + (armuresEquipees.length > 0 ? "#27272a" : a + "44"),
+      cursor: armuresEquipees.length > 0 ? "default" : "pointer"
+    }
+  }, "\u2191 \xC9QUIPER")) : /*#__PURE__*/React.createElement("div", {
     key: "ra-" + i,
     className: "rounded p-2 text-xs",
     style: {
@@ -6541,6 +6681,7 @@ function EcranPartie({
   onRelireSalon,
   onCreerPersonnage,
   onSupprimerPersonnage,
+  onModifierPersonnage,
   persoChoisi,
   onChoisirPerso,
   onCreer,
@@ -6597,6 +6738,15 @@ function EcranPartie({
       commun RegistrePersonnages (l'éveil, l'écrou, la sentence y vivent) ;
       l'écran de partie ne garde que la liste. — */
   const persos = mesPersonnages || [];
+  /* V0.99 — LA FICHE DU LOBBY DEVIENT VIVANTE (Michael) : au lobby de
+     l'écran de partie, les gestes d'équipement du portrait pris se
+     voient IMMÉDIATEMENT (état optimiste) et se GRAVENT dans la Tombe
+     (onModifierPersonnage) ; changer de prise remet le portrait de la
+     pierre. */
+  const [persoEdite, setPersoEdite] = useState(null);
+  useEffect(() => {
+    setPersoEdite(null);
+  }, [persoChoisi]);
   /* V49 — GRAVER LE SCELLE : vide = porte libre (publique), texte = cadenassée
      (privée). La ligne lobby revient de la RPC, le cadre se rafraîchit seul.
      V0.39 : le champ ne s'efface plus après gravure — l'effet de souvenir
@@ -7283,7 +7433,7 @@ function EcranPartie({
     accent: "#f0b24a"
   }), (() => {
     const pris = (persos || []).find(q => q.id === persoChoisi);
-    const pp = pris ? pris.contenu || pris : null;
+    const pp = persoEdite || (pris ? pris.contenu || pris : null);
     return pp && pp.caracs ? /*#__PURE__*/React.createElement("div", {
       className: "mt-4"
     }, /*#__PURE__*/React.createElement(FicheApercuD100, {
@@ -7291,7 +7441,14 @@ function EcranPartie({
       perso: pp,
       pv: pp.pv,
       accent: "#f0b24a",
-      titre: "LE PERSONNAGE DE L'AVENTURE"
+      titre: "LE PERSONNAGE DE L'AVENTURE",
+      onMaj: p => {
+        setPersoEdite(p);
+        if (pris && onModifierPersonnage) onModifierPersonnage({
+          ...pris,
+          contenu: p
+        });
+      }
     })) : null;
   })()), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
@@ -10407,8 +10564,13 @@ function VueNoyauD100({
       ...changement
     };
     setPersoCree(nouveau);
-    if (persoOuvert && onModifierPersonnage) onModifierPersonnage({
-      ...persoOuvert,
+    /* V0.99 — LA TOMBE GRAVE AUSSI EN AVENTURE : en live, la fiche naît
+       de l'adoption (V0.77) et persoOuvert reste vide — le geste se
+       grave par la ligne PRIS du registre ; rien ne se perd au
+       rechargement, la poussée à la table suit (l'effet onFiche). */
+    const ligne = persoOuvert || (persos || []).find(q => q.id === persoChoisi) || null;
+    if (ligne && onModifierPersonnage) onModifierPersonnage({
+      ...ligne,
       contenu: nouveau
     });
   };
@@ -12747,6 +12909,7 @@ function App() {
     onRelireSalon: relireConsole,
     onCreerPersonnage: p => creerPersonnageRegistre(packPartie.id, p),
     onSupprimerPersonnage: p => supprimerPersonnageRegistre(packPartie.id, p),
+    onModifierPersonnage: p => modifierPersonnageRegistre(packPartie.id, p) /* V0.99 : les gestes d'équipement du lobby se gravent */,
     persoChoisi: persoChoisi[packPartie.id],
     onChoisirPerso: p => choisirPersoAventure(packPartie.id, p),
     onCreer: creerAventure,
