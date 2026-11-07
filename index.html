@@ -2156,7 +2156,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.99.1";
+const BUILD = "0.99.2";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -6166,9 +6166,7 @@ function FicheApercuD100({
       background: "#ffffff08",
       border: "1px solid " + a + "33"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "md:columns-2 print:columns-2 gap-4"
-  }, perso.competences && themesComps ? /*#__PURE__*/React.createElement(React.Fragment, null, [...ordreThemes.map(t => ({
+  }, /*#__PURE__*/React.createElement("div", null, perso.competences && themesComps ? /*#__PURE__*/React.createElement(React.Fragment, null, [...ordreThemes.map(t => ({
     theme: t,
     items: comps.filter(k => familleDe[k] === t).map(k => ({
       k,
@@ -11402,9 +11400,7 @@ function VueNoyauD100({
       background: "#ffffff08",
       border: "1px solid " + T.accent + "33"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "md:columns-2 print:columns-2 gap-4"
-  }, perso.competences && themesComps ?
+  }, /*#__PURE__*/React.createElement("div", null, perso.competences && themesComps ?
   /*#__PURE__*/
   /* V0.62 — LE CATALOGUE COMPLET : chaque compétence rangée sous
      sa famille, dans l'ordre du manuel — les apprises pleines,
