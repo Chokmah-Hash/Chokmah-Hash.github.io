@@ -2156,7 +2156,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.98";
+const BUILD = "0.98.1";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5801,14 +5801,17 @@ const suffixePerso = p => {
   return [nat, cul].filter(Boolean).join(" - ");
 };
 
-/* ════════ V0.98 — L'APERÇU DE FICHE (d100), EN LECTURE SEULE ════════
-   Le portrait du personnage SANS la mécanique : ni forge, ni jets,
-   ni équipement vivant. Il se lit partout où la fiche n'a pas à être
-   JOUÉE : l'onglet JOUEURS du MJ (la fiche d'un joueur de la table) et
-   l'écran de partie (le perso PRIS — Michael : « quand je sélectionne
-   un personnage, la fiche ne s'affiche pas » — la prise au lobby
-   affiche désormais le portrait). Hors d100 (pas de caracs) : rien. */
+/* ════════ V0.98.1 — L'APERÇU DE FICHE (d100) : LA VRAIE FICHE, EN LECTURE
+   SEULE ════════
+   Michael : « les fiches ne sont pas comme on avait fait » — l'aperçu v0.98
+   était un portrait simplifié ; il redevient LA FICHE EN CINQ BLOCS de la
+   V0.73, byte-compatible dans le style (mêmes cadres #ffffff08, mêmes
+   légendes, PV en cases, colonnes équilibrées, POSSESSION, NOTES), SEULE
+   la mécanique est retirée : pas de boutons ÉQUIPER/DÉSÉQUIPER, pas de
+   forge, pas de jets — le MJ regarde la fiche d'un joueur, le joueur
+   relit la sienne avant le lancement. Hors d100 (pas de caracs) : rien. */
 function FicheApercuD100({
+  pack,
   perso,
   pv,
   accent,
@@ -5816,23 +5819,59 @@ function FicheApercuD100({
 }) {
   if (!perso || !perso.caracs) return null;
   const a = accent || "#f0b24a";
+  const C = pack && pack.contenu || {};
+  const c = perso.caracs;
   const ident = perso.identite || {};
-  const pvMax = perso.pvMax || perso.pv || pv || 0;
-  const pvNow = (typeof pv === "number" ? pv : perso.pv) || 0;
+  const themesComps = C.themesCompetences || null;
+  const ordreThemes = themesComps ? Object.keys(themesComps) : [];
+  const familleDe = {};
+  if (themesComps) ordreThemes.forEach(t => themesComps[t].forEach(k => {
+    familleDe[k] = t;
+  }));
+  /* V0.62 — les bonus de famille du livre v2 (§2.5), mêmes formules que la fiche */
+  const bonusFamilles = C.bonusCompetences === "stormbringer-v2" ? (() => {
+    const plus = k => c[k] > 12 ? c[k] - 12 : c[k] < 9 ? 9 - c[k] : 0;
+    const inv = k => c[k] > 12 ? 12 - c[k] : c[k] < 9 ? 9 - c[k] : 0;
+    const age = ident && ident.age || 25;
+    const tauxAge = perso.bonusConnaissanceAge || 1;
+    return {
+      "DISCRÉTION": plus("INT") + plus("DEX") + inv("TAI"),
+      "AGILITÉ": plus("FOR") + plus("POU") + plus("DEX") + inv("TAI"),
+      "MANIPULATION": plus("FOR") + plus("INT") + plus("POU") + plus("DEX"),
+      "PERCEPTION": plus("INT") + plus("POU"),
+      "CONNAISSANCE": Math.max(0, c.INT - 12) * 2 + Math.max(0, age - 25) * tauxAge,
+      "COMMUNICATION": plus("CHA") + plus("INT") + plus("POU"),
+      attaque: plus("FOR") + plus("INT") + plus("POU") + plus("DEX"),
+      parade: plus("FOR") + plus("POU") + plus("DEX") + inv("TAI")
+    };
+  })() : null;
+  const departDe = themesComps ? C.departCompetences || null : null;
+  const modeComplet = !!(departDe && bonusFamilles);
+  const compsBruts = Object.keys(perso.competences || {});
+  const extrasCatalogue = modeComplet ? ordreThemes.flatMap(t => themesComps[t]).filter(k => !(k in (perso.competences || {})) && (departDe[k] === "bonus" || departDe[k] === "10+" || departDe[k] === "0")) : [];
+  const comps = themesComps ? [...compsBruts.filter(k => familleDe[k]).sort((x, y) => ordreThemes.indexOf(familleDe[x]) - ordreThemes.indexOf(familleDe[y]) || themesComps[familleDe[x]].indexOf(x) - themesComps[familleDe[y]].indexOf(y)), ...compsBruts.filter(k => !familleDe[k]), ...extrasCatalogue] : compsBruts;
+  const armesEquipees = (perso.armes || []).filter(x => x.equipe !== false);
+  const armesRangees = (perso.armes || []).filter(x => x.equipe === false);
+  const armuresEquipees = (perso.armures || []).filter(x => typeof x === "object" ? x.equipe !== false : true);
+  const armuresRangees = (perso.armures || []).filter(x => typeof x === "object" && x.equipe === false);
+  const pvNow = (typeof pv === "number" ? pv : perso.pv != null ? perso.pv : pv) || 0;
+  const pvMax = perso.pvMax || perso.pv || pvNow || 0;
   const sanNow = perso.san != null ? perso.san : perso.sanMax;
   return /*#__PURE__*/React.createElement("div", {
+    className: "fiche-impression space-y-4"
+  }, titre ? /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest",
+    style: {
+      color: a
+    }
+  }, titre) : null, /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
       border: "1px solid " + a + "33"
     }
-  }, titre ? /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] font-bold tracking-widest mb-2",
-    style: {
-      color: a
-    }
-  }, titre) : null, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline justify-between mb-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg",
     style: {
@@ -5861,9 +5900,14 @@ function FicheApercuD100({
     style: {
       color: "#e8e4d8"
     }
-  }, v != null && v !== "" ? v : "—")))), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-7 gap-1.5 mb-2"
-  }, Object.entries(perso.caracs).map(([k, v]) => /*#__PURE__*/React.createElement("fieldset", {
+  }, v != null && v !== "" ? v : "—")))), themesComps && /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: a
+    }
+  }, "CARACT\xC9RISTIQUES"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-7 gap-1.5"
+  }, Object.entries(c).map(([k, v]) => /*#__PURE__*/React.createElement("fieldset", {
     key: k,
     className: "rounded text-center",
     style: {
@@ -5883,14 +5927,14 @@ function FicheApercuD100({
     style: {
       color: "#e8e4d8"
     }
-  }, v)))), pvMax > 0 && /*#__PURE__*/React.createElement("div", {
+  }, v)))), perso.pv != null && /*#__PURE__*/React.createElement("div", {
     className: "mt-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-1",
     style: {
       color: "#71717a"
     }
-  }, "Points de Vie \u2014 ", pvNow, " / ", pvMax, " PV"), pvMax > 40 ? /*#__PURE__*/React.createElement(BarrePct, {
+  }, "Points de Vie \u2014 ", pvNow, " / ", pvMax, " PV \u2014 blessure majeure \xE0 ", perso.blessureMajeure || Math.floor(pvMax / 2)), pvMax > 40 ? /*#__PURE__*/React.createElement(BarrePct, {
     valeur: pvNow,
     max: pvMax,
     accent: "#e0524d"
@@ -5905,24 +5949,72 @@ function FicheApercuD100({
     style: {
       color: "#71717a"
     }
-  }, "Sant\xE9 Mentale \u2014 ", sanNow, " / ", perso.sanMax), /*#__PURE__*/React.createElement(BarrePct, {
+  }, "Sant\xE9 Mentale \u2014 POU\xD75 (", perso.sanMax, ")"), /*#__PURE__*/React.createElement(BarrePct, {
     valeur: sanNow,
     max: perso.sanMax,
-    accent: a
-  })) : null, (perso.armes || []).length + (perso.armures || []).length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] font-bold tracking-widest mb-1",
+    accent: a,
+    label: `${sanNow} / ${perso.sanMax} SAN`
+  })) : null, perso.sft != null && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mt-1",
     style: {
-      color: a
+      color: "#a1a1aa"
     }
-  }, "ARMES \xB7 ARMURES"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col gap-1"
-  }, [].concat(perso.armes || [], perso.armures || []).map((x, i) => {
-    const nom = typeof x === "object" ? x.nom : String(x);
+  }, "S.F.T \u2014 ", perso.sft), C.derivees && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mt-2 text-center text-xs"
+  }, C.derivees.map(d => /*#__PURE__*/React.createElement("div", {
+    key: d.label,
+    className: "flex-1 rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, d.label, " ", /*#__PURE__*/React.createElement("b", null, c[d.source] * d.mult, d.suffixe || ""))))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
+    style: {
+      color: themesComps ? a : "#71717a"
+    }
+  }, themesComps ? "ARMES - ARMURES" + (bonusFamilles ? " — ATTAQUE +" + bonusFamilles.attaque + " · PARADE +" + bonusFamilles.parade : "") : "Armes - Armures"), /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-2"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "ARMES"), armesEquipees.map(x => /*#__PURE__*/React.createElement("div", {
+    key: x.nom,
+    className: "mt-1 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), " \xB7 ", x.seuil, x.degats ? " · " + x.degats : "", x.bonus ? " · +" + x.bonus : "")), armesEquipees.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#71717a"
+    }
+  }, (perso.armes || []).length === 0 ? "À mains nues — aucune arme au registre." : "À mains nues — le fer est rangé dans le sac.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "ARMURES"), armuresEquipees.map((x, i) => {
+    const sep = String(x).indexOf(" — ");
+    const nom = typeof x === "object" ? x.nom : sep > 0 ? String(x).slice(0, sep) : String(x);
+    const reste = typeof x === "object" ? x.reste || "" : sep > 0 ? String(x).slice(sep + 3) : "";
     return /*#__PURE__*/React.createElement("div", {
       key: i,
-      className: "rounded px-2 py-1 text-xs",
+      className: "mt-1 rounded p-2 text-xs",
       style: {
         background: "#ffffff08",
         color: "#c8c8ce"
@@ -5931,26 +6023,118 @@ function FicheApercuD100({
       style: {
         color: "#e8e4d8"
       }
-    }, nom), typeof x === "object" && x.rest != null ? /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "#a1a1aa"
-      }
-    }, " · reste " + x.rest) : null);
-  }))), Object.keys(perso.competences || {}).length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
+    }, nom), reste ? " · " + reste : "");
+  }), armuresEquipees.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#71717a"
+    }
+  }, (perso.armures || []).length === 0 ? "Sans armure — aucune protection au registre." : "Sans armure — la protection est rangée dans le sac.")))), perso.competences || perso.desirs || perso.pouvoirs && perso.pouvoirs.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "md:columns-2 print:columns-2 gap-4"
+  }, perso.competences && themesComps ? /*#__PURE__*/React.createElement(React.Fragment, null, [...ordreThemes.map(t => ({
+    theme: t,
+    items: comps.filter(k => familleDe[k] === t).map(k => ({
+      k,
+      v: perso.competences[k]
+    }))
+  })), ...(comps.filter(k => !familleDe[k]).length ? [{
+    theme: "AUTRES",
+    items: comps.filter(k => !familleDe[k]).map(k => ({
+      k,
+      v: perso.competences[k]
+    }))
+  }] : [])].filter(g => g.items.length > 0).map(g => /*#__PURE__*/React.createElement("div", {
+    key: g.theme,
+    className: "mb-3 break-inside-avoid"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-bold tracking-widest mb-1",
     style: {
       color: a
     }
-  }, "COMP\xC9TENCES"), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-x-4 text-xs"
+  }, g.theme, bonusFamilles && g.theme in bonusFamilles ? " — BONUS " + (bonusFamilles[g.theme] >= 0 ? "+" + bonusFamilles[g.theme] : bonusFamilles[g.theme]) : ""), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-1.5 text-xs"
+  }, g.items.map(it => {
+    const v = it.v != null && it.v > 0 ? it.v : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: it.k,
+      className: "flex justify-between rounded px-2 py-1",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, it.k), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, v, " %"));
+  }), g.theme === "INVOCATION" && (perso.pouvoirs || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "col-span-2 mt-1.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1 tracking-widest",
+    style: {
+      color: "#71717a"
+    }
+  }, "POUVOIRS D'INVOCATION GAGN\xC9S"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 gap-1"
+  }, (perso.pouvoirs || []).map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex justify-between rounded px-2 py-1",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, p), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "3\xD7POU \xB7 ", 3 * (c.POU || 0), " %"))))))))) : perso.competences ? /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-1.5 text-xs mb-3 break-inside-avoid"
   }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
-    className: "flex justify-between py-0.5",
+    className: "flex justify-between rounded px-2 py-1",
     style: {
-      borderBottom: "1px solid #ffffff08"
+      background: "#ffffff08",
+      color: "#c8c8ce"
     }
+  }, /*#__PURE__*/React.createElement("span", null, k), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v, " %")))) : null, (perso.pouvoirs || []).length > 0 && !(themesComps && themesComps.INVOCATION) && /*#__PURE__*/React.createElement("div", {
+    className: "mb-3 break-inside-avoid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Pouvoirs"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1"
+  }, (perso.pouvoirs || []).map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: a + "22",
+      color: a
+    }
+  }, p)))), perso.desirs && /*#__PURE__*/React.createElement("div", {
+    className: "mb-3 break-inside-avoid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "D\xE9sirs du peuple ", perso.peuple, " (livre p. 88 \u2014 un PJ ajuste de \xB11 \xE0 \xB12 par d\xE9sir)"), Object.entries(perso.desirs).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "mb-1.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between text-xs mb-0.5"
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#c8c8ce"
@@ -5959,23 +6143,89 @@ function FicheApercuD100({
     style: {
       color: "#e8e4d8"
     }
-  }, v, " %"))))), (perso.possessions || []).length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] font-bold tracking-widest mb-1",
+  }, v, "/10", v >= 9 ? " 🔥" : "")), /*#__PURE__*/React.createElement(PvBarre, {
+    pv: v,
+    pvMax: 10,
+    accent: v >= 8 ? a : "#a8adb8"
+  })))))) : null, perso.possessions && perso.possessions.length > 0 || armesRangees.length > 0 || armuresRangees.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
     style: {
-      color: a
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
     }
-  }, "POSSESSION"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mb-1 " + (themesComps ? "text-[11px] font-bold tracking-widest" : "text-xs"),
+    style: {
+      color: themesComps ? a : "#71717a"
+    }
+  }, themesComps ? "POSSESSION" : "Possessions"), (armesRangees.length > 0 || armuresRangees.length > 0) && /*#__PURE__*/React.createElement("div", {
+    className: "mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "\xC9QUIPEMENT RANG\xC9 \u2014 \xE0 port\xE9e de main"), /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-1"
-  }, (perso.possessions || []).map((p, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
+  }, armesRangees.map(x => /*#__PURE__*/React.createElement("div", {
+    key: "r-" + x.nom,
     className: "rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
       color: "#c8c8ce"
     }
-  }, p)))));
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), " \xB7 ", x.seuil, x.degats ? " · " + x.degats : "", x.bonus ? " · +" + x.bonus : "")), armuresRangees.map((x, i) => /*#__PURE__*/React.createElement("div", {
+    key: "ra-" + i,
+    className: "rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), x.reste ? " · " + x.reste : "")))), perso.possessions && perso.possessions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-1"
+  }, (perso.possessions || []).map((p, i) => {
+    const po = String(p).indexOf(" (");
+    const nom = po > 0 ? String(p).slice(0, po) : String(p);
+    const detail = po > 0 ? String(p).slice(po + 2, String(p).length - 1) : "";
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "rounded p-2 text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, nom), detail ? " · " + detail : "");
+  }))) : null, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: a
+    }
+  }, "NOTES"), [0, 1, 2, 3, 4, 5].map(i => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "notes-ligne",
+    style: {
+      height: "20px",
+      borderBottom: "1px solid #ffffff08"
+    }
+  }))));
 }
 
 /* ══════════ V0.67 — LE REGISTRE DES PERSONNAGES, COMPOSANT COMMUN ══════════
@@ -7037,6 +7287,7 @@ function EcranPartie({
     return pp && pp.caracs ? /*#__PURE__*/React.createElement("div", {
       className: "mt-4"
     }, /*#__PURE__*/React.createElement(FicheApercuD100, {
+      pack: pack,
       perso: pp,
       pv: pp.pv,
       accent: "#f0b24a",
@@ -10707,6 +10958,7 @@ function VueNoyauD100({
         }
       }, joueurOuvert === j.compte_id ? "FERMER" : "OUVRIR") : null);
     })), ouvert && ouvertP.perso ? /*#__PURE__*/React.createElement(FicheApercuD100, {
+      pack: pack,
       perso: ouvertP.perso,
       pv: ouvertP.pv,
       accent: T.accent
