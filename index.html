@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.93";
+const BUILD = "0.94";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5865,7 +5865,7 @@ function RegistrePersonnages({
       padding: 0
     }
   }, "MES PERSONNAGES ", registreOuvert ? "▾" : "▸", " (", persos.length, ")")), registreOuvert ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-end mb-3"
+    className: "flex items-center justify-start mb-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEnCreationPerso(true);
@@ -5875,7 +5875,7 @@ function RegistrePersonnages({
       background: "#f0b24a",
       cursor: "pointer"
     }
-  }, "+ CR\xC9ER")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
+  }, "Cr\xE9er un personnage")), enCreationPerso && EcranCreationPerso ? /*#__PURE__*/React.createElement("div", {
     className: "mb-4"
   }, /*#__PURE__*/React.createElement(EcranCreationPerso, {
     contenu: pack.contenu,
@@ -5910,12 +5910,7 @@ function RegistrePersonnages({
     style: {
       color: "#a8adb8"
     }
-  }, encours.nom || "Sans nom"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, "cr\xE9ation en cours \u2014 \xE9tape ", encours.etape, "/6 \xB7 ", encours.mode === "manuel" ? "dés manuels" : "dés en ligne")), /*#__PURE__*/React.createElement("td", {
+  }, encours.nom || "Sans nom")), /*#__PURE__*/React.createElement("td", {
     className: "px-1 py-2.5 text-right"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-end gap-1.5"
@@ -5926,8 +5921,9 @@ function RegistrePersonnages({
     },
     className: "px-2 py-1 rounded-lg text-xs font-bold",
     style: {
-      background: "#f0b24a",
-      color: "#0c0d10",
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
       cursor: "pointer"
     }
   }, "\xC0 COMPL\xC9TER"), /*#__PURE__*/React.createElement("button", {
@@ -8947,15 +8943,7 @@ function EcranCreationAventurier({
       border: "1px solid #3f3f46",
       cursor: "pointer"
     }
-  }, "Annuler")), etatSauve ? /*#__PURE__*/React.createElement("button", {
-    onClick: reprendre,
-    className: "w-full py-2.5 rounded-lg font-bold mb-3",
-    style: {
-      background: "#f0b24a",
-      color: "#0c0d10",
-      cursor: "pointer"
-    }
-  }, "REPRENDRE \xAB ", etatSauve.nom, " \xBB \u2014 cr\xE9ation sauvegard\xE9e (\xE9tape ", etatSauve.etape, "/6)") : null, /*#__PURE__*/React.createElement("div", {
+  }, "Annuler")), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#71717a"
