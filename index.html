@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.96";
+const BUILD = "0.97";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -9910,10 +9910,15 @@ function VueNoyauD100({
   onModifierPersonnage,
   livreSb,
   persoChoisi,
-  onChoisirPerso
+  onChoisirPerso,
+  partie
 }) {
   const T = pack.theme;
   const C = pack.contenu; /* le sac de données du pack */
+  /* V0.97 — L'AVENTURE EN LIVE : le joueur a PRIS un personnage avant
+     d'entrer ; ici on ne crée plus, on ne change plus, la TABLE porte
+     la console, et le titre de l'aventure vit au-dessus des onglets. */
+  const enLive = !!consolePartie;
   const {
     journal,
     log,
@@ -10381,12 +10386,28 @@ function VueNoyauD100({
     joueur: joueur,
     avatar: avatar,
     compte: compte
-  }), /*#__PURE__*/React.createElement("div", {
+  }), enLive && partie ? /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold tracking-wide truncate",
+    style: {
+      color: T.or
+    }
+  }, "\u2694 ", partie.nom), /*#__PURE__*/React.createElement("button", {
+    onClick: onRetour,
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold shrink-0",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "\u23CF Quitter l'aventure")) : null, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 mb-5",
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, (role === "mj" ? [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]]).concat(consolePartie ? [["table", "TABLE"]] : []).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, (role === "mj" ? [["lobby", enLive ? "TABLE" : "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", enLive ? "TABLE" : "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -10397,16 +10418,79 @@ function VueNoyauD100({
       color: onglet === id ? T.accent : "#71717a",
       cursor: "pointer"
     }
-  }, lbl))), onglet === "lobby" && /*#__PURE__*/React.createElement(ChatSalon, {
-    titre: "SALON — " + pack.nom,
-    fil: salonJeu && salonJeu.fil || [],
-    onEnvoyer: salonJeu && salonJeu.onEnvoyer || (() => {}),
-    joueur: salonJeu && salonJeu.joueur || joueur,
-    enEnvoi: salonJeu && salonJeu.enEnvoi,
-    presents: salonJeu && salonJeu.presents || [],
-    remplir: true,
-    accent: T.accent
-  }), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+  }, lbl))), onglet === "lobby" && (
+  /* V0.97 — LA FUSION SALON/CONSOLE : en aventure live, l'onglet
+     (rebaptisé TABLE) porte la CONSOLE de l'aventure — le salon
+     du jeu et elle faisaient double emploi ; hors partie, le
+     SALON du jeu reste le canal du pack, comme avant. */
+  (() => {
+    const canal = enLive ? consolePartie : salonJeu;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-4"
+    }, /*#__PURE__*/React.createElement(ChatSalon, {
+      titre: (enLive ? "TABLE — " : "SALON — ") + pack.nom,
+      fil: canal && canal.fil || [],
+      onEnvoyer: canal && canal.onEnvoyer || (() => {}),
+      joueur: canal && canal.joueur || joueur,
+      enEnvoi: canal && canal.enEnvoi,
+      presents: canal && canal.presents || [],
+      remplir: true,
+      accent: T.accent
+    }), enLive && role === "mj" && table ? /*#__PURE__*/React.createElement("div", {
+      className: "rounded-xl p-4",
+      style: {
+        background: "#ffffff08",
+        border: "1px solid " + T.accent + "33"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold tracking-widest mb-3",
+      style: {
+        color: T.accent
+      }
+    }, "FICHES DE LA TABLE"), (table.fiches || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+      className: "text-sm",
+      style: {
+        color: "#71717a"
+      }
+    }, "Aucune fiche pouss\xE9e \u2014 les joueurs PRENNENT un personnage (PRENDRE au lobby) pour qu'il paraisse ici.") : (table.fiches || []).map((f, i) => {
+      const j = (table.joueurs || []).find(q => q.compte_id === f.compte_id) || {};
+      const pc = f.contenu || {};
+      const p = pc.perso || null;
+      return /*#__PURE__*/React.createElement("div", {
+        key: f.compte_id || i,
+        className: "mb-1 rounded p-2 text-sm flex items-center justify-between gap-2",
+        style: {
+          background: "#ffffff08",
+          color: "#c8c8ce"
+        }
+      }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
+        style: {
+          color: T.or
+        }
+      }, j.pseudo || "?"), p ? /*#__PURE__*/React.createElement("span", null, " \u2014 ", /*#__PURE__*/React.createElement("b", {
+        style: {
+          color: "#e8e4d8"
+        }
+      }, p.nom), p.peuple ? /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: "#a1a1aa"
+        }
+      }, " · " + p.peuple) : null, p.nation ? /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: "#a1a1aa"
+        }
+      }, " · " + p.nation) : null) : /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: "#71717a"
+        }
+      }, " \u2014 sans personnage")), typeof pc.pv === "number" && p ? /*#__PURE__*/React.createElement("span", {
+        className: "shrink-0 text-xs font-bold",
+        style: {
+          color: pc.pv > 0 ? T.accent : "#fb7185"
+        }
+      }, pc.pv, " PV") : null);
+    })) : null);
+  })()), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-6 text-center",
     style: {
       background: "#ffffff08",
@@ -10438,67 +10522,7 @@ function VueNoyauD100({
     style: {
       color: "#71717a"
     }
-  }, "Coming soon \u2014 le manuel du jeu s'ouvrira ici.")), onglet === "table" && consolePartie && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-4"
-  }, /*#__PURE__*/React.createElement(ConsoleGlobale, {
-    fil: consolePartie.fil,
-    onEnvoyer: consolePartie.onEnvoyer,
-    joueur: consolePartie.joueur || joueur,
-    enEnvoi: consolePartie.enEnvoi
-  }), role === "mj" && table && /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid " + T.accent + "33"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold tracking-widest mb-3",
-    style: {
-      color: T.accent
-    }
-  }, "FICHES DE LA TABLE"), (table.fiches || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
-    className: "text-sm",
-    style: {
-      color: "#71717a"
-    }
-  }, "Aucune fiche pouss\xE9e \u2014 les joueurs PRENNENT un personnage (PRENDRE au lobby) pour qu'il paraisse ici.") : (table.fiches || []).map((f, i) => {
-    const j = (table.joueurs || []).find(q => q.compte_id === f.compte_id) || {};
-    const pc = f.contenu || {};
-    const p = pc.perso || null;
-    return /*#__PURE__*/React.createElement("div", {
-      key: f.compte_id || i,
-      className: "mb-1 rounded p-2 text-sm flex items-center justify-between gap-2",
-      style: {
-        background: "#ffffff08",
-        color: "#c8c8ce"
-      }
-    }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", {
-      style: {
-        color: T.or
-      }
-    }, j.pseudo || "?"), p ? /*#__PURE__*/React.createElement("span", null, " \u2014 ", /*#__PURE__*/React.createElement("b", {
-      style: {
-        color: "#e8e4d8"
-      }
-    }, p.nom), p.peuple ? /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "#a1a1aa"
-      }
-    }, " · " + p.peuple) : null, p.nation ? /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "#a1a1aa"
-      }
-    }, " · " + p.nation) : null) : /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "#71717a"
-      }
-    }, " \u2014 sans personnage")), typeof pc.pv === "number" && p ? /*#__PURE__*/React.createElement("span", {
-      className: "shrink-0 text-xs font-bold",
-      style: {
-        color: pc.pv > 0 ? T.accent : "#fb7185"
-      }
-    }, pc.pv, " PV") : null);
-  }))), onglet === "personnages" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Coming soon \u2014 le manuel du jeu s'ouvrira ici.")), onglet === "personnages" && /*#__PURE__*/React.createElement(React.Fragment, null, !enLive ? /*#__PURE__*/React.createElement("div", {
     className: "mb-5"
   }, /*#__PURE__*/React.createElement(RegistrePersonnages, {
     pack: pack,
@@ -10510,9 +10534,9 @@ function VueNoyauD100({
     persoChoisi: persoChoisi,
     onChoisir: onChoisirPerso,
     accent: T.accent
-  })), /*#__PURE__*/React.createElement("div", {
+  })) : null, /*#__PURE__*/React.createElement("div", {
     className: "grid md:grid-cols-2 gap-4 mb-5"
-  }, enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
+  }, !enLive && enCreation && EcranCreation ? /*#__PURE__*/React.createElement("div", {
     className: "md:col-span-2"
   }, /*#__PURE__*/React.createElement(EcranCreation, {
     contenu: C,
@@ -10955,7 +10979,28 @@ function VueNoyauD100({
       height: "20px",
       borderBottom: "1px solid #ffffff08"
     }
-  })))) : null, C.forge ? /*#__PURE__*/React.createElement("div", {
+  })))) :
+  /*#__PURE__*/
+  /* V0.97 — L'ÉTAT VIDE : sans perso pris, un conseil au lieu
+     du néant — en aventure live (pas de registre à l'onglet),
+     il rappelle que la prise vit au LOBBY, avant le lancement. */
+  React.createElement("div", {
+    className: "md:col-span-2 rounded-xl p-6 text-center",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + T.accent + "33"
+    }
+  }, enLive ? /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Aucun personnage pris pour cette aventure \u2014 revenez au lobby avant le lancement pour PRENDRE un personnage du registre.") : /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Aucun personnage pris \u2014 ouvrez le registre ci-dessus et PRENEZ un personnage pour faire vivre sa fiche.")), C.forge ? /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 md:col-span-2",
     style: {
       background: "#ffffff08",
@@ -12296,6 +12341,7 @@ function App() {
         enEnvoi: consoleEnvoi,
         presents: Object.values(presents).filter(j => j && j.jeu === packActif.id)
       } : null,
+      partie: enPartie ? partie : null /* V0.97 : le titre de l'aventure vit au-dessus des onglets de la Vue */,
       salonJeu: {
         fil: salonJeuFil,
         onEnvoyer: envoyerSalonJeu,
