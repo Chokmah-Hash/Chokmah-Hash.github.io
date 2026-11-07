@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.92";
+const BUILD = "0.93";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5824,6 +5824,17 @@ function RegistrePersonnages({
   const [persoFlottant, setPersoFlottant] = useState(null);
   const [motSupprPerso, setMotSupprPerso] = useState("");
   const [registreOuvert, setRegistreOuvert] = useState(true); /* V0.91 — le cadre se replie */
+  const [repriseDemandee, setRepriseDemandee] = useState(false); /* V0.93 — À COMPLÉTER : reprendre le rituel */
+  /* V0.93 — LA CRÉATION EN COURS vit dans le registre : la sauvegarde du
+     rituel apparaît comme un personnage, non sélectionnable, complétée d'un clic. */
+  const CLE_ENCOURS = "larchiviste_creation_" + (pack.id || "d100");
+  const encours = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(CLE_ENCOURS) || "null");
+    } catch (e) {
+      return null;
+    }
+  })();
   const EcranCreationPerso = {
     unite: EcranCreationUnite,
     aventurier: EcranCreationAventurier,
@@ -5871,11 +5882,16 @@ function RegistrePersonnages({
     accent: "#f0b24a",
     livre: livre,
     cleSauvegarde: pack.id,
+    reprise: repriseDemandee,
     onValide: p => {
       setEnCreationPerso(false);
+      setRepriseDemandee(false);
       onCreer && onCreer(p);
     },
-    onAnnule: () => setEnCreationPerso(false)
+    onAnnule: () => {
+      setEnCreationPerso(false);
+      setRepriseDemandee(false);
+    }
   })) : persos.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-sm",
     style: {
@@ -5883,7 +5899,53 @@ function RegistrePersonnages({
     }
   }, "Aucun personnage pour ", pack.nom, ". Cr\xE9ez votre premier personnage avec \xAB + CR\xC9ER \xBB \u2014 il rejoindra le registre, pr\xEAt \xE0 entrer dans n'importe quelle aventure du pack.") : /*#__PURE__*/React.createElement("table", {
     className: "w-full text-sm"
-  }, /*#__PURE__*/React.createElement("tbody", null, persos.map(p => /*#__PURE__*/React.createElement("tr", {
+  }, /*#__PURE__*/React.createElement("tbody", null, encours && /*#__PURE__*/React.createElement("tr", {
+    style: {
+      borderTop: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: "#a8adb8"
+    }
+  }, encours.nom || "Sans nom"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "cr\xE9ation en cours \u2014 \xE9tape ", encours.etape, "/6 \xB7 ", encours.mode === "manuel" ? "dés manuels" : "dés en ligne")), /*#__PURE__*/React.createElement("td", {
+    className: "px-1 py-2.5 text-right"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-end gap-1.5"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setRepriseDemandee(true);
+      setEnCreationPerso(true);
+    },
+    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      cursor: "pointer"
+    }
+  }, "\xC0 COMPL\xC9TER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setPersoFlottant({
+        __enCours: true,
+        nom: encours.nom || "Sans nom"
+      });
+      setMotSupprPerso("");
+    },
+    className: "px-2 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, "\u2699")))), persos.map(p => /*#__PURE__*/React.createElement("tr", {
     key: p.id,
     style: {
       borderTop: "1px solid #ffffff08"
@@ -5991,7 +6053,13 @@ function RegistrePersonnages({
     }
   }, "ANNULER"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      onSupprimer && onSupprimer(persoFlottant);
+      if (persoFlottant.__enCours) {
+        try {
+          localStorage.removeItem(CLE_ENCOURS);
+        } catch (e) {}
+      } else {
+        onSupprimer && onSupprimer(persoFlottant);
+      }
       setPersoFlottant(null);
       setMotSupprPerso("");
     },
@@ -8550,7 +8618,8 @@ function EcranCreationAventurier({
   livre,
   onValide,
   onAnnule,
-  cleSauvegarde
+  cleSauvegarde,
+  reprise
 }) {
   const L = livre || {};
   const ORDRE = contenu.ordreCaracs || L.caracteristiques && L.caracteristiques.liste || ["FOR", "CON", "TAI", "INT", "POU", "DEX", "CHA"];
@@ -8633,6 +8702,10 @@ function EcranCreationAventurier({
     } catch (e) {/* stockage plein ou privé : le rituel continue sans filet */}
   };
   const [mode, setMode] = useState(null); /* null = le choix AUTO/MANUEL ; "auto" | "manuel" */
+  /* V0.93 — À COMPLÉTER (registre) : la reprise est directe, sans bannière */
+  useEffect(() => {
+    if (reprise && etatSauve) reprendre();
+  }, []);
   const [etape, setEtape] = useState(1);
   const [nom, setNom] = useState("");
   const [sexe, setSexe] = useState(null);
