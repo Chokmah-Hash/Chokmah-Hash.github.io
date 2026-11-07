@@ -740,9 +740,7 @@ window.LARCHIVISTE_CLOUD = (function () {
   </script>
 
   <!-- L'APP est PRÉ-COMPILÉE au build : plus de Babel 2,9 Mo à télécharger -->
-  <script>
-/*__APP__*/
-const {
+  <script>const {
   useState,
   useRef,
   useEffect
@@ -5803,6 +5801,183 @@ const suffixePerso = p => {
   return [nat, cul].filter(Boolean).join(" - ");
 };
 
+/* ════════ V0.98 — L'APERÇU DE FICHE (d100), EN LECTURE SEULE ════════
+   Le portrait du personnage SANS la mécanique : ni forge, ni jets,
+   ni équipement vivant. Il se lit partout où la fiche n'a pas à être
+   JOUÉE : l'onglet JOUEURS du MJ (la fiche d'un joueur de la table) et
+   l'écran de partie (le perso PRIS — Michael : « quand je sélectionne
+   un personnage, la fiche ne s'affiche pas » — la prise au lobby
+   affiche désormais le portrait). Hors d100 (pas de caracs) : rien. */
+function FicheApercuD100({
+  perso,
+  pv,
+  accent,
+  titre
+}) {
+  if (!perso || !perso.caracs) return null;
+  const a = accent || "#f0b24a";
+  const ident = perso.identite || {};
+  const pvMax = perso.pvMax || perso.pv || pv || 0;
+  const pvNow = (typeof pv === "number" ? pv : perso.pv) || 0;
+  const sanNow = perso.san != null ? perso.san : perso.sanMax;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, titre ? /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-2",
+    style: {
+      color: a
+    }
+  }, titre) : null, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline justify-between gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-lg",
+    style: {
+      color: a
+    }
+  }, perso.nom), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, suffixePerso({
+    contenu: perso
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-x-4 text-xs mb-3"
+  }, [["Sexe", ident.sexe], ["Age", ident.age != null ? ident.age : null], ["Yeux", ident.yeux], ["Cheveux", ident.cheveux], ["Nationalité", perso.nationalite || ident.nationalite], ["Culte", perso.culte || ident.culte]].map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "flex justify-between py-1",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, k, " :"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v != null && v !== "" ? v : "—")))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-7 gap-1.5 mb-2"
+  }, Object.entries(perso.caracs).map(([k, v]) => /*#__PURE__*/React.createElement("fieldset", {
+    key: k,
+    className: "rounded text-center",
+    style: {
+      border: "1px solid " + a + "33",
+      borderRadius: 8,
+      padding: "6px 2px 4px",
+      margin: 0
+    }
+  }, /*#__PURE__*/React.createElement("legend", {
+    className: "text-[10px] tracking-widest",
+    style: {
+      color: "#a1a1aa",
+      padding: "0 4px"
+    }
+  }, k), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v)))), pvMax > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Points de Vie \u2014 ", pvNow, " / ", pvMax, " PV"), pvMax > 40 ? /*#__PURE__*/React.createElement(BarrePct, {
+    valeur: pvNow,
+    max: pvMax,
+    accent: "#e0524d"
+  }) : /*#__PURE__*/React.createElement(PvBarre, {
+    pv: pvNow,
+    pvMax: pvMax,
+    accent: "#e0524d"
+  })), perso.sanMax ? /*#__PURE__*/React.createElement("div", {
+    className: "mt-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "Sant\xE9 Mentale \u2014 ", sanNow, " / ", perso.sanMax), /*#__PURE__*/React.createElement(BarrePct, {
+    valeur: sanNow,
+    max: perso.sanMax,
+    accent: a
+  })) : null, (perso.armes || []).length + (perso.armures || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: a
+    }
+  }, "ARMES \xB7 ARMURES"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-1"
+  }, [].concat(perso.armes || [], perso.armures || []).map((x, i) => {
+    const nom = typeof x === "object" ? x.nom : String(x);
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "rounded px-2 py-1 text-xs",
+      style: {
+        background: "#ffffff08",
+        color: "#c8c8ce"
+      }
+    }, /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#e8e4d8"
+      }
+    }, nom), typeof x === "object" && x.rest != null ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#a1a1aa"
+      }
+    }, " · reste " + x.rest) : null);
+  }))), Object.keys(perso.competences || {}).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: a
+    }
+  }, "COMP\xC9TENCES"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-x-4 text-xs"
+  }, Object.entries(perso.competences).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "flex justify-between py-0.5",
+    style: {
+      borderBottom: "1px solid #ffffff08"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#c8c8ce"
+    }
+  }, k), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, v, " %"))))), (perso.possessions || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-1",
+    style: {
+      color: a
+    }
+  }, "POSSESSION"), /*#__PURE__*/React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-1"
+  }, (perso.possessions || []).map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, p)))));
+}
+
 /* ══════════ V0.67 — LE REGISTRE DES PERSONNAGES, COMPOSANT COMMUN ══════════
    La structure commune des pages de jeu donne au JOUEUR l'onglet
    PERSONNAGES ; son cadre est le REGISTRE du compte pour CE jeu — éveil
@@ -6848,7 +7023,7 @@ function EcranPartie({
       border: "1px solid #27272a",
       cursor: "pointer"
     }
-  }, "Annuler"))))))), onglet === "personnages" && /*#__PURE__*/React.createElement(RegistrePersonnages, {
+  }, "Annuler"))))))), onglet === "personnages" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(RegistrePersonnages, {
     pack: pack,
     persos: persos,
     onCreer: onCreerPersonnage,
@@ -6856,7 +7031,18 @@ function EcranPartie({
     persoChoisi: persoChoisi,
     onChoisir: onChoisirPerso,
     accent: "#f0b24a"
-  }), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
+  }), (() => {
+    const pris = (persos || []).find(q => q.id === persoChoisi);
+    const pp = pris ? pris.contenu || pris : null;
+    return pp && pp.caracs ? /*#__PURE__*/React.createElement("div", {
+      className: "mt-4"
+    }, /*#__PURE__*/React.createElement(FicheApercuD100, {
+      perso: pp,
+      pv: pp.pv,
+      accent: "#f0b24a",
+      titre: "LE PERSONNAGE DE L'AVENTURE"
+    })) : null;
+  })()), onglet === "regles" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-5",
     style: {
       background: "#14161b",
@@ -9931,6 +10117,7 @@ function VueNoyauD100({
      L'AVENTURE (la future page d'aventure). */
   const [onglet, setOnglet] = useState("lobby"); /* MJ et joueur y atterrissent */
   const [compteOuvert, setCompteOuvert] = useState(false);
+  const [joueurOuvert, setJoueurOuvert] = useState(null); /* V0.98 — l'onglet JOUEURS du MJ : le compte du joueur dont la fiche est ouverte */
   const [dernierDe, setDernierDe] = useState(null); /* la face du dernier d100, en chiffres */
   /* V0.77 — LE BRANCHEMENT À LA TABLE, DÈS LE PREMIER RENDU : la fiche
      NAÎT sur la prise (ou le premier du registre) — le rendu serveur
@@ -10195,6 +10382,19 @@ function VueNoyauD100({
     setSan(p.san != null ? p.san : p.sanMax || 0);
   }, [persos && persos.length, persoChoisi]); /* eslint-disable-line */
 
+  /* V0.98 — LA FICHE POUSSÉE À LA TABLE (d100) : comme le noyau 40k, le
+     perso PRIS part à la table — le MJ l'ouvre dans l'onglet JOUEURS.
+     Pousse à la prise, à chaque changement de la fiche (pv, san,
+     équipement) ; la Tombe grave, la table suit. */
+  const pvTable = perso ? perso.pv != null ? perso.pv : null : null;
+  useEffect(() => {
+    if (!table || !table.partieId || !table.onFiche || !perso) return;
+    table.onFiche({
+      perso: perso,
+      pv: pvTable
+    });
+  }, [table && table.partieId, perso, pvTable]); /* eslint-disable-line */
+
   /* — la forge de l'Arme vivante (si le pack en déclare une) — */
   const [pts, setPts] = useState(C.forge ? C.forge.base : 0);
   const [acquis, setAcquis] = useState([]);
@@ -10389,11 +10589,11 @@ function VueNoyauD100({
   }), enLive && partie ? /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-3 mb-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold tracking-wide truncate",
+    className: "text-lg font-bold tracking-wide truncate",
     style: {
       color: T.or
     }
-  }, "\u2694 ", partie.nom), /*#__PURE__*/React.createElement("button", {
+  }, partie.nom), /*#__PURE__*/React.createElement("button", {
     onClick: onRetour,
     className: "px-3 py-1.5 rounded-lg text-xs font-bold shrink-0",
     style: {
@@ -10407,7 +10607,7 @@ function VueNoyauD100({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, (role === "mj" ? [["lobby", enLive ? "TABLE" : "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", enLive ? "TABLE" : "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, (role === "mj" ? enLive ? [["lobby", "TABLE"], ["joueurs", "JOUEURS"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", "LOBBY"], ["aventures", "AVENTURES"], ["regles", "RÈGLES"]] : [["lobby", enLive ? "TABLE" : "LOBBY"], ["aventures", "AVENTURES"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]]).map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -10435,8 +10635,17 @@ function VueNoyauD100({
       enEnvoi: canal && canal.enEnvoi,
       presents: canal && canal.presents || [],
       remplir: true,
-      accent: T.accent
-    }), enLive && role === "mj" && table ? /*#__PURE__*/React.createElement("div", {
+      accent: enLive ? null : T.accent
+    }));
+  })()), onglet === "joueurs" && enLive && role === "mj" && table ? (() => {
+    const joueurs = (table.joueurs || []).filter(j => j && j.compte_id);
+    const fiches = table.fiches || [];
+    const ficheDe = cid => fiches.find(f => f && f.compte_id === cid) || null;
+    const ouvert = joueurOuvert ? ficheDe(joueurOuvert) : null;
+    const ouvertP = ouvert ? ouvert.contenu || {} : {};
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-4"
+    }, /*#__PURE__*/React.createElement("div", {
       className: "rounded-xl p-4",
       style: {
         background: "#ffffff08",
@@ -10447,17 +10656,17 @@ function VueNoyauD100({
       style: {
         color: T.accent
       }
-    }, "FICHES DE LA TABLE"), (table.fiches || []).length === 0 ? /*#__PURE__*/React.createElement("div", {
+    }, "JOUEURS DE L'AVENTURE"), joueurs.length === 0 ? /*#__PURE__*/React.createElement("div", {
       className: "text-sm",
       style: {
         color: "#71717a"
       }
-    }, "Aucune fiche pouss\xE9e \u2014 les joueurs PRENNENT un personnage (PRENDRE au lobby) pour qu'il paraisse ici.") : (table.fiches || []).map((f, i) => {
-      const j = (table.joueurs || []).find(q => q.compte_id === f.compte_id) || {};
-      const pc = f.contenu || {};
+    }, "Aucun joueur pour l'instant \u2014 la salle attend ses convi\xE9s.") : joueurs.map(j => {
+      const f = ficheDe(j.compte_id);
+      const pc = f && f.contenu || {};
       const p = pc.perso || null;
       return /*#__PURE__*/React.createElement("div", {
-        key: f.compte_id || i,
+        key: j.compte_id,
         className: "mb-1 rounded p-2 text-sm flex items-center justify-between gap-2",
         style: {
           background: "#ffffff08",
@@ -10483,14 +10692,26 @@ function VueNoyauD100({
         style: {
           color: "#71717a"
         }
-      }, " \u2014 sans personnage")), typeof pc.pv === "number" && p ? /*#__PURE__*/React.createElement("span", {
-        className: "shrink-0 text-xs font-bold",
-        style: {
-          color: pc.pv > 0 ? T.accent : "#fb7185"
+      }, " \u2014 sans personnage")), p ? /*#__PURE__*/React.createElement("button", {
+        onClick: () => setJoueurOuvert(joueurOuvert === j.compte_id ? null : j.compte_id),
+        className: "px-2 py-1 rounded text-[10px] font-bold shrink-0",
+        style: joueurOuvert === j.compte_id ? {
+          background: T.accent,
+          color: "#0c0d10",
+          cursor: "pointer"
+        } : {
+          background: "#a8adb814",
+          color: "#a8adb8",
+          border: "1px solid #3f3f46",
+          cursor: "pointer"
         }
-      }, pc.pv, " PV") : null);
-    })) : null);
-  })()), onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
+      }, joueurOuvert === j.compte_id ? "FERMER" : "OUVRIR") : null);
+    })), ouvert && ouvertP.perso ? /*#__PURE__*/React.createElement(FicheApercuD100, {
+      perso: ouvertP.perso,
+      pv: ouvertP.pv,
+      accent: T.accent
+    }) : null);
+  })() : null, onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-6 text-center",
     style: {
       background: "#ffffff08",
@@ -12375,6 +12596,7 @@ function App() {
     }
   }, toast));
 }
+
 var _PACKS = ["noyau-40k", "noyau-d100", "GM-0001", "GM-0002", "GM-0003"];
 Promise.all(_PACKS.map(function (id) {
   return fetch("packs/" + id + ".json", {
