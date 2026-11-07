@@ -2156,7 +2156,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.99";
+const BUILD = "0.99.1";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5816,7 +5816,8 @@ function FicheApercuD100({
   pv,
   accent,
   titre,
-  onMaj
+  onMaj,
+  livre
 }) {
   if (!perso || !perso.caracs) return null;
   const a = accent || "#f0b24a";
@@ -5858,6 +5859,39 @@ function FicheApercuD100({
   const pvNow = (typeof pv === "number" ? pv : perso.pv != null ? perso.pv : pv) || 0;
   const pvMax = perso.pvMax || perso.pv || pvNow || 0;
   const sanNow = perso.san != null ? perso.san : perso.sanMax;
+  /* V0.99.1 — MÊME FILTRE DE POUVOIRS QUE LA GRANDE FICHE (V0.69) :
+     seuls les pouvoirs OFFICIELS du livre (sb-v2, livre.sorcellerie)
+     ont droit à la bande POUVOIRS D'INVOCATION GAGNÉS — les pouvoirs
+     gagnés en aventure (les extensions maison) attendent leur gravure
+     dans le livre avant de paraître. Byte-pour-byte la grande fiche. */
+  const pouvoirsGagnes = function () {
+    const ps = perso.pouvoirs || [];
+    if (livre && livre.sorcellerie) {
+      const S = livre.sorcellerie;
+      const noms = new Set();
+      const ajouter = n => {
+        if (n) noms.add(String(n).trim().toLowerCase());
+      };
+      [].concat(S.pouvoirsDemoniaques && S.pouvoirsDemoniaques.defenseurs || [], S.pouvoirsDemoniaques && S.pouvoirsDemoniaques.offensifs || [], S.pouvoirsDeplacement || [], S.pouvoirsPerception || [], S.pouvoirsDivers || []).forEach(function (p) {
+        ajouter(p.nom);
+      });
+      Object.values(S.elementaires && S.elementaires.esprits || {}).forEach(function (e) {
+        const pluriel = String(e).toLowerCase();
+        noms.add(pluriel);
+        noms.add(pluriel.replace(/s$/, ""));
+      });
+      (S.seigneursElementaires && S.seigneursElementaires.seigneurs || []).forEach(function (s) {
+        ajouter(s.nom);
+      });
+      (S.seigneursDesBetes && S.seigneursDesBetes.table || []).forEach(function (s) {
+        ajouter(s.nom);
+      });
+      return ps.filter(function (p) {
+        return noms.has(String(p).trim().toLowerCase());
+      });
+    }
+    return pack && pack.livre ? [] : ps;
+  }();
   /* V0.99 — L'APERÇU DEVIENT LA VRAIE FICHE QUAND onMaj EST LÀ (Michael) :
      au lobby de l'écran de partie, le portrait n'est plus en lecture
      seule — DÉSÉQUIPER range le fer dans le sac, ÉQUIPER ne se prend que
@@ -6170,7 +6204,7 @@ function FicheApercuD100({
         color: "#e8e4d8"
       }
     }, v, " %"));
-  }), g.theme === "INVOCATION" && (perso.pouvoirs || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }), g.theme === "INVOCATION" && pouvoirsGagnes.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "col-span-2 mt-1.5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] mb-1 tracking-widest",
@@ -6179,7 +6213,7 @@ function FicheApercuD100({
     }
   }, "POUVOIRS D'INVOCATION GAGN\xC9S"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 gap-1"
-  }, (perso.pouvoirs || []).map((p, i) => /*#__PURE__*/React.createElement("div", {
+  }, pouvoirsGagnes.map((p, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     className: "flex justify-between rounded px-2 py-1",
     style: {
@@ -6675,6 +6709,7 @@ function EcranPartie({
   mdpsClairs,
   mesPersonnages,
   versionBase,
+  livreSb,
   filSalon,
   onEnvoyerSalon,
   salonEnvoi,
@@ -7441,7 +7476,7 @@ function EcranPartie({
       perso: pp,
       pv: pp.pv,
       accent: "#f0b24a",
-      titre: "LE PERSONNAGE DE L'AVENTURE",
+      livre: livreSb,
       onMaj: p => {
         setPersoEdite(p);
         if (pris && onModifierPersonnage) onModifierPersonnage({
@@ -11123,7 +11158,8 @@ function VueNoyauD100({
       pack: pack,
       perso: ouvertP.perso,
       pv: ouvertP.pv,
-      accent: T.accent
+      accent: T.accent,
+      livre: livreSb
     }) : null);
   })() : null, onglet === "aventures" && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-6 text-center",
@@ -12903,6 +12939,7 @@ function App() {
     mdpSalle: mdpSalle,
     mesPersonnages: mesPersonnages,
     versionBase: versionBase,
+    livreSb: livreSb,
     filSalon: consoleFil,
     onEnvoyerSalon: envoyerConsoleMessage,
     salonEnvoi: consoleEnvoi,
