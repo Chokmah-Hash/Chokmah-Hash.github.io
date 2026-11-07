@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.91";
+const BUILD = "0.92";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5870,6 +5870,7 @@ function RegistrePersonnages({
     contenu: pack.contenu,
     accent: "#f0b24a",
     livre: livre,
+    cleSauvegarde: pack.id,
     onValide: p => {
       setEnCreationPerso(false);
       onCreer && onCreer(p);
@@ -8548,7 +8549,8 @@ function EcranCreationAventurier({
   accent,
   livre,
   onValide,
-  onAnnule
+  onAnnule,
+  cleSauvegarde
 }) {
   const L = livre || {};
   const ORDRE = contenu.ordreCaracs || L.caracteristiques && L.caracteristiques.liste || ["FOR", "CON", "TAI", "INT", "POU", "DEX", "CHA"];
@@ -8574,6 +8576,63 @@ function EcranCreationAventurier({
     pretre: 3,
     noble: 2
   };
+
+  /* V0.92 — LA SAUVEGARDE DE RITUEL : l'état de la création vit dans le
+     navigateur (localStorage) — on la reprend plus tard, mode compris. */
+  const CLE_ETAT = "larchiviste_creation_" + (cleSauvegarde || "d100");
+  const etatSauve = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(CLE_ETAT) || "null");
+    } catch (e) {
+      return null;
+    }
+  })();
+  const reprendre = () => {
+    if (!etatSauve) return;
+    setMode(etatSauve.mode);
+    setEtape(etatSauve.etape || 1);
+    setNom(etatSauve.nom || "");
+    setSexe(etatSauve.sexe || null);
+    setJets(etatSauve.jets || null);
+    setCaracs(etatSauve.caracs || null);
+    setTraceAjust(etatSauve.traceAjust || null);
+    setJetNation(etatSauve.jetNation || null);
+    setNation(etatSauve.nation || null);
+    setJetClasse(etatSauve.jetClasse || null);
+    setClasse(etatSauve.classe || null);
+    setAge(etatSauve.age || 25);
+    setNbSupp(etatSauve.nbSupp != null ? etatSauve.nbSupp : null);
+    setSuppChoisis(etatSauve.suppChoisis || []);
+    setArmesChoisies(etatSauve.armesChoisies || {});
+    setSaisieComps(etatSauve.saisieComps || {});
+    setSaisieSupp(etatSauve.saisieSupp || {});
+  };
+  const sauvegarder = () => {
+    if (!nom.trim()) return;
+    try {
+      localStorage.setItem(CLE_ETAT, JSON.stringify({
+        mode,
+        etape,
+        nom,
+        sexe,
+        jets,
+        caracs,
+        traceAjust,
+        jetNation,
+        nation,
+        jetClasse,
+        classe,
+        age,
+        nbSupp,
+        suppChoisis,
+        armesChoisies,
+        saisieComps,
+        saisieSupp
+      }));
+      setConfirmeSauvegarde(true);
+    } catch (e) {/* stockage plein ou privé : le rituel continue sans filet */}
+  };
+  const [mode, setMode] = useState(null); /* null = le choix AUTO/MANUEL ; "auto" | "manuel" */
   const [etape, setEtape] = useState(1);
   const [nom, setNom] = useState("");
   const [sexe, setSexe] = useState(null);
@@ -8588,7 +8647,15 @@ function EcranCreationAventurier({
   const [nbSupp, setNbSupp] = useState(null); /* le 1D6+2 du Chaos */
   const [suppChoisis, setSuppChoisis] = useState([]); /* [{ nom, famille }] */
   const [armesChoisies, setArmesChoisies] = useState({}); /* slot → arme du livre */
-
+  /* V0.92 — LES CHAMPS DU MODE MANUEL : les vrais dés de Michael entrent ici */
+  const [saisieNaissance, setSaisieNaissance] = useState(null); /* { FOR: [d,d,d], … } */
+  const [d100Nation, setD100Nation] = useState("");
+  const [d100Classe, setD100Classe] = useState("");
+  const [d10Assassin, setD10Assassin] = useState("");
+  const [d6Chaos, setD6Chaos] = useState("");
+  const [saisieComps, setSaisieComps] = useState({}); /* compétence → 1D100 entré */
+  const [saisieSupp, setSaisieSupp] = useState({}); /* supplémentaire → 1D100 entré */
+  const [confirmeSauvegarde, setConfirmeSauvegarde] = useState(false);
   const caracsNaissance = jets ? Object.fromEntries(ORDRE.map(k => [k, jets[k][0] + jets[k][1] + jets[k][2]])) : null;
   const totalNaissance = caracsNaissance ? ORDRE.reduce((s, k) => s + caracsNaissance[k], 0) : 0;
   const pitie = !!caracsNaissance && totalNaissance <= 52;
@@ -8599,8 +8666,29 @@ function EcranCreationAventurier({
     });
     setJets(j);
   };
-  const tirerNation = () => {
-    const j = lancerDes("1D100");
+  /* V0.92 — MODE MANUEL : les dés de la table entrent dans les champs */
+  const majSaisieNaissance = (k, i, v) => {
+    const n = Math.max(1, Math.min(6, parseInt(v, 10) || 0));
+    const cur = (saisieNaissance || {})[k] || ["", "", ""];
+    const nv = cur.slice();
+    nv[i] = v === "" ? "" : n;
+    setSaisieNaissance({
+      ...(saisieNaissance || {}),
+      [k]: nv
+    });
+  };
+  const saisieNaissanceComplete = !!saisieNaissance && ORDRE.every(k => (saisieNaissance[k] || []).length === 3 && saisieNaissance[k].every(d => d !== "" && d >= 1 && d <= 6));
+  const validerSaisieNaissance = () => {
+    if (!saisieNaissanceComplete) return;
+    const j = {};
+    ORDRE.forEach(k => {
+      j[k] = saisieNaissance[k].map(Number);
+    });
+    setJets(j);
+  };
+  const tirerNation = v => {
+    const j = v != null ? Math.max(1, Math.min(100, parseInt(v, 10) || 0)) : lancerDes("1D100");
+    if (!j) return;
     const n = trouverNation(j, nations);
     if (!n) return;
     const fait = appliquerAjustements(caracsNaissance, n.ajustements, sexe);
@@ -8609,7 +8697,7 @@ function EcranCreationAventurier({
     setCaracs(fait.caracs);
     setTraceAjust(fait.trace);
   };
-  const tirerClasse = () => {
+  const tirerClasse = (v, v10) => {
     const forcees = (nation.classesForcees || []).map(nom => ({
       id: nom.toLowerCase(),
       nom
@@ -8621,20 +8709,25 @@ function EcranCreationAventurier({
     }
     if (forcees.length >= 2) {
       /* la nation n'admet que ses classes : le Chaos tranche entre elles */
-      const j = lancerDes("1D100");
+      const j = v != null ? Math.max(1, Math.min(100, parseInt(v, 10) || 0)) : lancerDes("1D100");
+      if (!j) return;
       setJetClasse(j);
       setClasse(forcees[j <= 50 ? 0 : 1]);
       return;
     }
-    const j = lancerDes("1D100");
+    const j = v != null ? Math.max(1, Math.min(100, parseInt(v, 10) || 0)) : lancerDes("1D100");
+    if (!j) return;
     const r = trouverClasseSociale(j, tableSociale);
     if (!r) return;
     let id = r.classe.toLowerCase(),
       nomC = r.classe;
     /* le Guerrier social porte la marque du livre : 1D10, 9-10 → Assassin */
-    if (id === "guerrier" && r.special && r.special.includes("Assassin") && lancerDes("1D10") >= 9) {
-      id = "assassin";
-      nomC = "Assassin";
+    if (id === "guerrier" && r.special && r.special.includes("Assassin")) {
+      const d10 = v10 != null ? Math.max(1, Math.min(10, parseInt(v10, 10) || 0)) : lancerDes("1D10");
+      if (d10 >= 9) {
+        id = "assassin";
+        nomC = "Assassin";
+      }
     }
     setJetClasse(j);
     setClasse({
@@ -8691,8 +8784,11 @@ function EcranCreationAventurier({
       degats: (w.degats || "") + (dom && dom.startsWith("−") ? " " + dom : ""),
       bonus: dom && dom.startsWith("+") ? dom.slice(1) : ""
     });
+    try {
+      localStorage.removeItem(CLE_ETAT);
+    } catch (e) {} /* gravé : le rituel s'efface */
     compsClasse.forEach(comp => {
-      const base = typeof comp.base === "number" ? comp.base : lancerDes(comp.base) || 0;
+      const base = typeof comp.base === "number" ? comp.base : mode === "manuel" ? Math.max(0, parseInt(saisieComps[comp.nom], 10) || 0) : lancerDes(comp.base) || 0;
       if (estSlotArme(comp)) {
         const w = armesChoisies[comp.nom];
         if (w) armesGravees.push(armeGravee(w, base));
@@ -8709,7 +8805,8 @@ function EcranCreationAventurier({
       compsGravees[u] = Math.max(0, 10 + modulationAge(age, physique(fam)));
     });
     suppChoisis.forEach(s => {
-      compsGravees[s.nom] = Math.max(0, 10 + Math.ceil((1 + Math.floor(Math.random() * 100)) / 2) + modulationAge(age, physique(s.famille)));
+      const d100 = mode === "manuel" ? parseInt(saisieSupp[s.nom], 10) || 1 : 1 + Math.floor(Math.random() * 100);
+      compsGravees[s.nom] = Math.max(0, 10 + Math.ceil(d100 / 2) + modulationAge(age, physique(s.famille)));
     });
     const pv = pvDepuis(caracs);
     const sanMax = sanDepuis(caracs.POU, nation.san);
@@ -8743,6 +8840,96 @@ function EcranCreationAventurier({
     });
   };
   const ETAPES = [["NAISSANCE"], ["LES DÉS"], ["NATIONALITÉ"], ["ORIGINE SOCIALE"], ["COMPÉTENCES"], ["GRAVURE"]];
+  /* V0.92 — en mode manuel, la gravure attend les dés de la table */
+  const compsADes = compsClasse.filter(c => typeof c.base !== "number");
+  const gravableManuel = mode !== "manuel" || compsADes.every(c => {
+    const v = Number(saisieComps[c.nom]);
+    return v >= 1 && v <= 100;
+  }) && suppChoisis.every(sp => {
+    const v = Number(saisieSupp[sp.nom]);
+    return v >= 1 && v <= 100;
+  });
+
+  /* V0.92 — LE CHOIX DU MODE : les dés en ligne, ou vos vrais dés entrés
+     à la main. Une création sauvegardée se reprend d'un clic. */
+  if (mode == null) return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "33"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-baseline justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-lg",
+    style: {
+      color: accent
+    }
+  }, "Cr\xE9ation de personnage"), /*#__PURE__*/React.createElement("button", {
+    onClick: onAnnule,
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#0c0d10",
+      color: "#a1a1aa",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "Annuler")), etatSauve ? /*#__PURE__*/React.createElement("button", {
+    onClick: reprendre,
+    className: "w-full py-2.5 rounded-lg font-bold mb-3",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      cursor: "pointer"
+    }
+  }, "REPRENDRE \xAB ", etatSauve.nom, " \xBB \u2014 cr\xE9ation sauvegard\xE9e (\xE9tape ", etatSauve.etape, "/6)") : null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "Comment lance-t-on les d\xE9s ?"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setMode("auto");
+      setEtape(1);
+    },
+    className: "w-full text-left rounded-lg p-3 mb-2",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + accent + "44",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-sm mb-0.5",
+    style: {
+      color: accent
+    }
+  }, "AUTOMATIQUE"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Les jets se font en ligne \u2014 le rituel roule ses propres d\xE9s.")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setMode("manuel");
+      setEtape(1);
+    },
+    className: "w-full text-left rounded-lg p-3",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid " + accent + "44",
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-sm mb-0.5",
+    style: {
+      color: accent
+    }
+  }, "MANUEL"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Vos vrais d\xE9s sur la table \u2014 vous entrez chaque r\xE9sultat quand le livre le demande.")));
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
@@ -8756,12 +8943,31 @@ function EcranCreationAventurier({
     style: {
       color: accent
     }
-  }, "L'\xC9VEIL D'UN AVENTURIER"), /*#__PURE__*/React.createElement("div", {
+  }, "Cr\xE9ation de personnage"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, confirmeSauvegarde ? /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
-      color: "#71717a"
+      color: "#a1a1aa"
     }
-  }, "rituel s\xE9quentiel \u2014 le livre fait loi")), /*#__PURE__*/React.createElement("div", {
+  }, "\u2713 sauvegard\xE9") : null, mode && nom.trim() ? /*#__PURE__*/React.createElement("button", {
+    onClick: sauvegarder,
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#f0b24a",
+      color: "#0c0d10",
+      cursor: "pointer"
+    }
+  }, "Sauvegarder") : null, /*#__PURE__*/React.createElement("button", {
+    onClick: onAnnule,
+    className: "px-2.5 py-1 rounded-lg text-xs font-bold",
+    style: {
+      background: "#0c0d10",
+      color: "#a1a1aa",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "Annuler"))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 mb-4 flex-wrap"
   }, ETAPES.map(([lbl], i) => /*#__PURE__*/React.createElement("div", {
     key: lbl,
@@ -8801,13 +9007,51 @@ function EcranCreationAventurier({
     style: {
       color: "#a1a1aa"
     }
-  }, "Les d\xE9s de naissance (\xA72.1) : 3D6 pour chacune des 7 caract\xE9ristiques."), !jets && /*#__PURE__*/React.createElement("button", {
+  }, "Les d\xE9s de naissance (\xA72.1) : 3D6 pour chacune des 7 caract\xE9ristiques."), !jets && mode !== "manuel" && /*#__PURE__*/React.createElement("button", {
     onClick: lancerDesNaissance,
     className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
     style: {
       background: accent
     }
-  }, "LANCER LES D\xC9S DE NAISSANCE (7 \xD7 3D6)"), jets && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "LANCER LES D\xC9S DE NAISSANCE (7 \xD7 3D6)"), !jets && mode === "manuel" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-4 gap-2 mb-3"
+  }, ORDRE.map(k => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    className: "rounded-lg p-2",
+    style: {
+      background: "#ffffff0d"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs mb-1",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " \u2014 3D6"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1"
+  }, [0, 1, 2].map(i => /*#__PURE__*/React.createElement("input", {
+    key: i,
+    type: "number",
+    min: 1,
+    max: 6,
+    value: ((saisieNaissance || {})[k] || ["", "", ""])[i],
+    onChange: e => majSaisieNaissance(k, i, e.target.value),
+    className: "w-full rounded px-1 py-1 text-sm text-center",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  })))))), /*#__PURE__*/React.createElement("button", {
+    onClick: validerSaisieNaissance,
+    disabled: !saisieNaissanceComplete,
+    className: "w-full py-2.5 rounded-lg font-bold mb-3",
+    style: {
+      background: saisieNaissanceComplete ? accent : "#27272a",
+      color: saisieNaissanceComplete ? "#0c0d10" : "#71717a",
+      cursor: "pointer"
+    }
+  }, "GRAVER LES D\xC9S DE NAISSANCE (vos d\xE9s)")), jets && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 md:grid-cols-4 gap-2 text-center mb-2"
   }, ORDRE.map(k => /*#__PURE__*/React.createElement("div", {
     key: k,
@@ -8864,13 +9108,40 @@ function EcranCreationAventurier({
     style: {
       color: "#a1a1aa"
     }
-  }, "La nationalit\xE9 (\xA72.2) : 1D100 sur la table des Jeunes Royaumes \u2014 le Chaos d\xE9cide."), !nation && /*#__PURE__*/React.createElement("button", {
-    onClick: tirerNation,
+  }, "La nationalit\xE9 (\xA72.2) : 1D100 sur la table des Jeunes Royaumes \u2014 le Chaos d\xE9cide."), !nation && mode !== "manuel" && /*#__PURE__*/React.createElement("button", {
+    onClick: () => tirerNation(null),
     className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
     style: {
       background: accent
     }
-  }, "TIRER LA NATIONALIT\xC9 (1D100)"), nation && /*#__PURE__*/React.createElement("div", {
+  }, "TIRER LA NATIONALIT\xC9 (1D100)"), !nation && mode === "manuel" && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "1D100"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: 1,
+    max: 100,
+    value: d100Nation,
+    onChange: e => setD100Nation(e.target.value),
+    className: "w-24 rounded px-3 py-2 text-sm",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => tirerNation(d100Nation),
+    className: "flex-1 py-2 rounded-lg font-bold text-black",
+    style: {
+      background: accent,
+      cursor: "pointer"
+    }
+  }, "TIRER LA NATIONALIT\xC9")), nation && /*#__PURE__*/React.createElement("div", {
     className: "rounded-lg p-3",
     style: {
       background: "#0c0d10",
@@ -8916,13 +9187,62 @@ function EcranCreationAventurier({
     style: {
       color: "#a1a1aa"
     }
-  }, "L'origine sociale (\xA72.3) : la classe vient de la table \u2014 l'\xE2ge, de vous (base 25)."), !classe && /*#__PURE__*/React.createElement("button", {
-    onClick: tirerClasse,
+  }, "L'origine sociale (\xA72.3) : la classe vient de la table \u2014 l'\xE2ge, de vous (base 25)."), !classe && mode !== "manuel" && /*#__PURE__*/React.createElement("button", {
+    onClick: () => tirerClasse(null, null),
     className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
     style: {
       background: accent
     }
-  }, "TIRER L'ORIGINE SOCIALE (1D100)"), classe && /*#__PURE__*/React.createElement("div", {
+  }, "TIRER L'ORIGINE SOCIALE (1D100)"), !classe && mode === "manuel" && /*#__PURE__*/React.createElement("div", {
+    className: "mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "1D100"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: 1,
+    max: 100,
+    value: d100Classe,
+    onChange: e => setD100Classe(e.target.value),
+    className: "w-24 rounded px-3 py-2 text-sm",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => tirerClasse(d100Classe, d10Assassin),
+    className: "flex-1 py-2 rounded-lg font-bold text-black",
+    style: {
+      background: accent,
+      cursor: "pointer"
+    }
+  }, "TIRER L'ORIGINE SOCIALE")), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center mt-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs flex-1",
+    style: {
+      color: "#71717a"
+    }
+  }, "1D10 \u2014 l'exception de l'Assassin (si le tirage dit Guerrier : 9-10 \u2192 Assassin)"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: 1,
+    max: 10,
+    value: d10Assassin,
+    onChange: e => setD10Assassin(e.target.value),
+    className: "w-20 rounded px-2 py-1.5 text-sm text-center",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }))), classe && /*#__PURE__*/React.createElement("div", {
     className: "rounded-lg p-3 mb-3",
     style: {
       background: "#0c0d10",
@@ -8979,13 +9299,43 @@ function EcranCreationAventurier({
     style: {
       color: "#a1a1aa"
     }
-  }, "Les comp\xE9tences (\xA72.4) : celles de la classe, les universelles \xE0 10 % \u2014 et ", nbSupp == null ? "le Chaos va compter" : nbSupp + " choisies", " par vous."), nbSupp == null && /*#__PURE__*/React.createElement("button", {
+  }, "Les comp\xE9tences (\xA72.4) : celles de la classe, les universelles \xE0 10 % \u2014 et ", nbSupp == null ? "le Chaos va compter" : nbSupp + " choisies", " par vous."), nbSupp == null && mode !== "manuel" && /*#__PURE__*/React.createElement("button", {
     onClick: () => setNbSupp((lancerDes("1D6") || 1) + 2),
     className: "w-full py-2.5 rounded-lg font-bold text-black mb-3",
     style: {
       background: accent
     }
-  }, "LE CHAOS COMPTE (1D6+2)"), nbSupp != null && /*#__PURE__*/React.createElement("div", null, slotsArmes.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "LE CHAOS COMPTE (1D6+2)"), nbSupp == null && mode === "manuel" && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "1D6"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: 1,
+    max: 6,
+    value: d6Chaos,
+    onChange: e => setD6Chaos(e.target.value),
+    className: "w-20 rounded px-3 py-2 text-sm",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const v = parseInt(d6Chaos, 10);
+      if (v >= 1 && v <= 6) setNbSupp(v + 2);
+    },
+    className: "flex-1 py-2 rounded-lg font-bold text-black",
+    style: {
+      background: accent,
+      cursor: "pointer"
+    }
+  }, "LE CHAOS COMPTE (votre 1D6 + 2)")), nbSupp != null && /*#__PURE__*/React.createElement("div", null, slotsArmes.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mb-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] mb-1 tracking-widest",
@@ -9047,7 +9397,69 @@ function EcranCreationAventurier({
     const pv = pvDepuis(caracs);
     const sanMax = sanDepuis(caracs.POU, nation.san);
     const dom = bonusDommagesDe(caracs.FOR, caracs.TAI);
-    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/React.createElement("div", null, mode === "manuel" && compsADes.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px] mb-1 tracking-widest",
+      style: {
+        color: "#71717a"
+      }
+    }, "VOS D\xC9S \u2014 LES COMP\xC9TENCES TIR\xC9ES DE LA CLASSE"), compsADes.map(c => /*#__PURE__*/React.createElement("div", {
+      key: c.nom,
+      className: "flex items-center gap-2 mb-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs flex-1",
+      style: {
+        color: "#c8c8ce"
+      }
+    }, c.nom, " \xB7 ", c.base), /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: 1,
+      max: 100,
+      value: saisieComps[c.nom] || "",
+      onChange: e => setSaisieComps({
+        ...saisieComps,
+        [c.nom]: e.target.value
+      }),
+      className: "w-24 rounded px-2 py-1 text-sm text-center",
+      style: {
+        background: "#0c0d10",
+        border: "1px solid #3f3f46",
+        color: "#e8e4d8",
+        outline: "none"
+      }
+    })))), mode === "manuel" && suppChoisis.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px] mb-1 tracking-widest",
+      style: {
+        color: "#71717a"
+      }
+    }, "VOS D\xC9S \u2014 LES SUPPL\xC9MENTAIRES (1D100 CHACUNE)"), suppChoisis.map(sp => /*#__PURE__*/React.createElement("div", {
+      key: sp.nom,
+      className: "flex items-center gap-2 mb-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs flex-1",
+      style: {
+        color: "#c8c8ce"
+      }
+    }, sp.nom, " \xB7 1D100"), /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: 1,
+      max: 100,
+      value: saisieSupp[sp.nom] || "",
+      onChange: e => setSaisieSupp({
+        ...saisieSupp,
+        [sp.nom]: e.target.value
+      }),
+      className: "w-24 rounded px-2 py-1 text-sm text-center",
+      style: {
+        background: "#0c0d10",
+        border: "1px solid #3f3f46",
+        color: "#e8e4d8",
+        outline: "none"
+      }
+    })))), /*#__PURE__*/React.createElement("div", {
       className: "grid grid-cols-2 md:grid-cols-4 gap-2 text-center mb-3"
     }, /*#__PURE__*/React.createElement("div", {
       className: "rounded-lg py-2",
@@ -9155,10 +9567,12 @@ function EcranCreationAventurier({
     }
   }, "VALIDER \u2014 ", ETAPES[etape - 1][0]), etape === 6 && /*#__PURE__*/React.createElement("button", {
     onClick: graver,
+    disabled: !gravableManuel,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
     style: {
-      background: accent,
-      color: "#0c0d10"
+      background: gravableManuel ? accent : "#27272a",
+      color: gravableManuel ? "#0c0d10" : "#71717a",
+      cursor: gravableManuel ? "pointer" : "not-allowed"
     }
   }, "GRAVER ", nom.trim() || "L'AVENTURIER")));
 }
@@ -9931,6 +10345,7 @@ function VueNoyauD100({
     contenu: C,
     accent: T.accent,
     livre: livreSb,
+    cleSauvegarde: "partie-d100",
     onValide: validerCreation,
     onAnnule: () => setEnCreation(false)
   })) : /*#__PURE__*/React.createElement(React.Fragment, null, perso ? /*#__PURE__*/React.createElement("div", {
