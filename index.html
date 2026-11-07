@@ -2158,7 +2158,7 @@ const fondrePresents = (precedent, diff) => {
    bouton du pris porte l'or et la pastille ●). Le perso PRIS qui
    quitte le registre (suppression) rend sa place : la sélection
    se dépose. ── */
-const BUILD = "0.90";
+const BUILD = "0.91";
 
 /* ════════════════════════════════════════════════════════════════
    ALPHA ZÉRO — le launcher lit des PACKS (données), il ne code rien.
@@ -5823,6 +5823,7 @@ function RegistrePersonnages({
   const [enCreationPerso, setEnCreationPerso] = useState(false);
   const [persoFlottant, setPersoFlottant] = useState(null);
   const [motSupprPerso, setMotSupprPerso] = useState("");
+  const [registreOuvert, setRegistreOuvert] = useState(true); /* V0.91 — le cadre se replie */
   const EcranCreationPerso = {
     unite: EcranCreationUnite,
     aventurier: EcranCreationAventurier,
@@ -5842,7 +5843,17 @@ function RegistrePersonnages({
       color: "#a8adb8",
       padding: "0 6px"
     }
-  }, "MES PERSONNAGES \u2014 ", pack.nom.toUpperCase(), " (", persos.length, ")"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRegistreOuvert(o => !o),
+    className: "text-xs font-bold tracking-widest",
+    style: {
+      color: "#a8adb8",
+      cursor: "pointer",
+      background: "none",
+      border: "none",
+      padding: 0
+    }
+  }, "MES PERSONNAGES ", registreOuvert ? "▾" : "▸", " (", persos.length, ")")), registreOuvert ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-end mb-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => {
@@ -5992,7 +6003,7 @@ function RegistrePersonnages({
       cursor: "pointer",
       opacity: motSupprPerso === "suppression" ? 1 : 0.5
     }
-  }, "\u2715 EFFACER")))) : null);
+  }, "\u2715 EFFACER")))) : null) : null);
 }
 
 /* ══════════ V48.6 — LE PIED VIBE : « Powered by Vibe · N° 0.XX »
@@ -7786,7 +7797,7 @@ function VueNoyau40k({
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg",
     style: {
-      color: T.accent
+      color: "#f0b24a"
     }
   }, perso.nom), /*#__PURE__*/React.createElement("div", {
     className: "text-xs",
@@ -9935,7 +9946,7 @@ function VueNoyauD100({
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-lg",
     style: {
-      color: T.accent
+      color: "#f0b24a"
     }
   }, perso.nom)), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-x-4 text-xs mb-3"
