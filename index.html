@@ -1635,7 +1635,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.106";
+const BUILD = "0.107";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -1721,6 +1721,47 @@ const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   glyphs: "🗡"
 }];
 const PACKS_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_PACKS || null;
+const OBJETS_SB = [{
+  nom: "Nourriture (1 repas)"
+}, {
+  nom: "Potion de soin"
+}, {
+  nom: "Outre d'eau"
+}, {
+  nom: "Corde en chanvre (10 m)"
+}, {
+  nom: "Grapin"
+}, {
+  nom: "Échelle de corde (6 m)"
+}, {
+  nom: "Lanterne"
+}, {
+  nom: "Flasque d'huile"
+}, {
+  nom: "Torche"
+}, {
+  nom: "Silex et amorce"
+}, {
+  nom: "Sac de couchage"
+}, {
+  nom: "Manteau de voyage"
+}, {
+  nom: "Vêtements de rechange"
+}, {
+  nom: "Besace"
+}, {
+  nom: "Bourse vide"
+}, {
+  nom: "Menottes"
+}, {
+  nom: "Couteau"
+}, {
+  nom: "Grimoire vierge"
+}, {
+  nom: "Encre et plume"
+}, {
+  nom: "Étoile à huit branches (symbole)"
+}];
 const NOYAUX = PACKS_CHARGES && PACKS_CHARGES.noyaux || {};
 const CONTENU = PACKS_CHARGES && PACKS_CHARGES.packs || {};
 const NOYAU = NOYAUX["noyau-40k"] || {};
@@ -4384,7 +4425,7 @@ function Vignette({
   mods = null
 }) {
   const dispo = pack.statut === "disponible";
-  const MODS = [["live", "Live", "Aventure autour d'une table avec un MJ"], ["ldvelh", "LDVELH", "Livre dont vous êtes le Héro"], ["open_world", "Open World", "Monde ouvert, aventure en ligne sans MJ"]];
+  const MODS = [["live", "Live", "Aventure autour d'une table avec un MJ"], ["ldvelh", "LDVELH", "Livre dont vous êtes le Héro"], ["open_world", "Open World", "Monde ouvert, aventure en ligne sans MJ"], ["solo", "Solo", "MJ papier — l'APP comme fiche personnelle"]];
   const modsCarte = mods && Object.keys(mods).length ? MODS.filter(m => mods[m[0]]) : MODS;
   return React.createElement("div", {
     className: "rounded-2xl border overflow-hidden flex flex-col transition-transform duration-200",
@@ -4687,7 +4728,8 @@ function ChatSalon({
   presents,
   remplir,
   accent,
-  des
+  des,
+  ligneJet
 }) {
   const [texte, setTexte] = useState("");
   const [presentsOuverts, setPresentsOuverts] = useState(false);
@@ -4842,7 +4884,7 @@ function ChatSalon({
     style: {
       color: "#52525b"
     }
-  }, "la Tombe roule et signe")) : null);
+  }, "la Tombe roule et signe")) : null, ligneJet ? React.createElement("div", null, ligneJet) : null);
 }
 const resumePerso = p => {
   if (!p) return "";
@@ -4856,6 +4898,592 @@ const suffixePerso = p => {
   const cul = c.culte || c.identite && c.identite.culte || "";
   return [nat, cul].filter(Boolean).join(" - ");
 };
+const croixFamille = (perso, famille) => perso && perso.croix && perso.croix[famille] || {};
+function basculerCroix(perso, famille, nom) {
+  const croix = {
+    ...(perso.croix || {})
+  };
+  croix[famille] = {
+    ...(croix[famille] || {})
+  };
+  if (croix[famille][nom]) delete croix[famille][nom];else croix[famille][nom] = true;
+  return {
+    croix
+  };
+}
+const MarqueCroix = ({
+  cochee,
+  onBascule,
+  accent,
+  interactive
+}) => interactive ? React.createElement("button", {
+  onClick: onBascule,
+  title: "Jet r\xE9ussi pendant l'aventure \u2014 croix d'exp\xE9rience",
+  className: "px-1 rounded text-[10px] font-bold shrink-0 print:hidden",
+  style: {
+    background: cochee ? "#f0b24a22" : "transparent",
+    color: cochee ? accent : "#52525b",
+    border: "1px solid " + (cochee ? accent + "44" : "transparent"),
+    cursor: "pointer"
+  }
+}, "\u2717") : cochee ? React.createElement("span", {
+  className: "text-[10px] font-bold shrink-0",
+  style: {
+    color: accent
+  }
+}, "\u2717") : null;
+function jetsFinAventure(perso) {
+  const lignes = [];
+  const croix = perso.croix || {};
+  const comps = {
+    ...(perso.competences || {})
+  };
+  const caracs = {
+    ...(perso.caracs || {})
+  };
+  const armes = (perso.armes || []).map(x => ({
+    ...x
+  }));
+  const bonusInt = caracs.INT > 12 ? caracs.INT - 12 : 0;
+  Object.keys(croix.comps || {}).sort().forEach(k => {
+    const niv = comps[k] || 0;
+    const de = lancerDes("1D100");
+    const modifie = de + bonusInt;
+    const reussi = modifie > niv;
+    const gain = reussi ? lancerDes("1D10") || 1 : 0;
+    if (reussi) comps[k] = Math.min(100, niv + gain);
+    lignes.push({
+      nom: k,
+      jet: "1D100+" + bonusInt,
+      de: modifie,
+      seuil: niv,
+      reussi,
+      gain,
+      apres: comps[k]
+    });
+  });
+  Object.keys(croix.armes || {}).sort().forEach(nom => {
+    const arme = armes.find(x => x.nom === nom);
+    if (!arme) return;
+    const morceaux = String(arme.seuil || "0").split("/");
+    const niv = parseInt(morceaux[0], 10) || 0;
+    const de = lancerDes("1D100");
+    const modifie = de + bonusInt;
+    const reussi = modifie > niv;
+    const gain = reussi ? lancerDes("1D10") || 1 : 0;
+    if (reussi) {
+      const nouvel = Math.min(100, niv + gain);
+      arme.seuil = morceaux.length > 1 ? nouvel + "/" + morceaux[1] : String(nouvel);
+    }
+    lignes.push({
+      nom: "Attaque — " + nom,
+      jet: "1D100+" + bonusInt,
+      de: modifie,
+      seuil: niv,
+      reussi,
+      gain,
+      apres: morceaux.length > 1 ? arme.seuil.split("/")[0] : arme.seuil
+    });
+  });
+  Object.keys(croix.caracs || {}).sort().forEach(k => {
+    const avant = caracs[k] || 0;
+    const deux = lancerDes("2D6");
+    let delta = 0;
+    if (deux === 7) delta = 1;else if (deux === 2) delta = -1;
+    caracs[k] = Math.max(1, avant + delta);
+    lignes.push({
+      nom: k + " (jet sauveur)",
+      jet: "2D6",
+      de: deux,
+      seuil: 7,
+      reussi: deux === 7,
+      gain: delta,
+      apres: caracs[k]
+    });
+  });
+  return {
+    competences: comps,
+    caracs,
+    armes,
+    croix: {},
+    lignes
+  };
+}
+function PanneauCroixD100({
+  perso,
+  onMaj,
+  accent
+}) {
+  const a = accent || "#f0b24a";
+  const croix = perso.croix || {};
+  const nbCroix = Object.keys(croix.comps || {}).length + Object.keys(croix.armes || {}).length + Object.keys(croix.caracs || {}).length;
+  const [resultat, setResultat] = useState(null);
+  const [panneau, setPanneau] = useState(false);
+  return React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest",
+    style: {
+      color: a
+    }
+  }, "EXP\xC9RIENCE DE L'AVENTURE"), React.createElement("span", {
+    className: "flex items-center gap-2 shrink-0"
+  }, React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: nbCroix ? a : "#52525b"
+    }
+  }, nbCroix, " croix"), onMaj ? React.createElement("button", {
+    onClick: () => setPanneau(p => !p),
+    className: "print:hidden px-2 py-1 rounded text-[10px] font-bold",
+    style: {
+      background: panneau ? a : "#a8adb814",
+      color: panneau ? "#0c0d10" : "#a8adb8",
+      border: "1px solid " + (panneau ? a : "#3f3f46"),
+      cursor: "pointer"
+    }
+  }, panneau ? "FERMER" : "FIN D'AVENTURE") : null)), nbCroix === 0 && !panneau ? React.createElement("div", {
+    className: "text-xs mt-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "Les jets r\xE9ussis de l'aventure se marquent d'une croix (\u2717) \u2014 la fin d'aventure tire alors les jets d'exp\xE9rience du livre (1D100 modifi\xE9 par l'INT sup\xE9rieur au niveau \u2192 +1D10 ; caract\xE9ristiques : 2D6, 7 = +1).") : null, panneau && onMaj ? React.createElement("div", {
+    className: "mt-2 space-y-2"
+  }, React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Chaque croix tire son jet d'exp\xE9rience officiel \u2014 le d\xE9 se lit jet par jet, la fiche grave le r\xE9sultat."), nbCroix === 0 ? React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, "Aucune croix \u2014 rien \xE0 tirer. Refermez et revenez avec des r\xE9ussites coch\xE9es.") : React.createElement("button", {
+    onClick: () => {
+      const r = jetsFinAventure(perso);
+      onMaj({
+        competences: r.competences,
+        caracs: r.caracs,
+        armes: r.armes,
+        croix: r.croix
+      });
+      setResultat(r.lignes);
+    },
+    className: "w-full py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: a,
+      cursor: "pointer"
+    }
+  }, "TIRER LES JETS D'EXP\xC9RIENCE (", nbCroix, ")"), resultat ? React.createElement("div", {
+    className: "grid gap-1"
+  }, resultat.map((l, i) => React.createElement("div", {
+    key: i,
+    className: "rounded p-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("span", null, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, l.nom), " \xB7 ", l.jet, " : ", React.createElement("b", {
+    style: {
+      color: l.reussi ? a : "#e0524d"
+    }
+  }, l.de), " ", l.reussi ? ">" : "≤", " ", l.seuil), React.createElement("span", {
+    style: {
+      color: l.reussi ? a : "#71717a"
+    }
+  }, l.jet === "2D6" ? l.de === 2 ? "−1 point (limite dépassée)" : l.de === 7 ? "+1 point" : "rien" : l.reussi ? "+" + l.gain + " → " + l.apres : "pas cette fois")))) : null) : null, !panneau && croix.comps && Object.keys(croix.comps).length || croix.armes && Object.keys(croix.armes).length || croix.caracs && Object.keys(croix.caracs).length ? React.createElement("div", {
+    className: "flex flex-wrap gap-1 mt-2"
+  }, [...Object.keys(croix.comps || {}), ...Object.keys(croix.armes || {}).map(n => "Attaque — " + n), ...Object.keys(croix.caracs || {})].map(n => React.createElement("span", {
+    key: n,
+    className: "text-[10px] px-1.5 py-0.5 rounded",
+    style: {
+      background: a + "22",
+      color: a
+    }
+  }, n))) : null);
+}
+function BlocVieD100({
+  perso,
+  onMaj,
+  accent,
+  livre
+}) {
+  const a = accent || "#f0b24a";
+  const bourse = perso.bourse || {
+    gb: 0,
+    go: 0
+  };
+  const vivres = perso.vivres || {
+    nourriture: 0,
+    potions: 0
+  };
+  const sac = perso.sac || [];
+  const [objetChoisi, setObjetChoisi] = useState("");
+  const graver = onMaj || null;
+  const catalogue = Array.from(new Set([...OBJETS_SB.map(o => o.nom), ...(livre && livre.armes && [].concat(livre.armes.melee || [], livre.armes.boucliers || [], livre.armes.jet || []) || []).map(x => x && x.nom).filter(Boolean), ...(livre && livre.armures && livre.armures.types || []).map(x => x && x.nom).filter(Boolean)]));
+  const poseDouce = {
+    fontSize: 10,
+    color: "#71717a"
+  };
+  const bouton = {
+    background: "#a8adb814",
+    color: "#a8adb8",
+    border: "1px solid #3f3f46",
+    cursor: "pointer"
+  };
+  return React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, React.createElement("div", {
+    className: "text-[11px] font-bold tracking-widest mb-2",
+    style: {
+      color: a
+    }
+  }, "BOURSE \xB7 VIVRES \xB7 SAC \xC0 DOS"), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-2"
+  }, React.createElement("div", {
+    className: "rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08"
+    }
+  }, React.createElement("div", {
+    style: poseDouce,
+    className: "mb-1"
+  }, "BOURSE \u2014 Gen de Bronze \xB7 Gen d'Or"), graver ? React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement("label", {
+    className: "flex items-center gap-1",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "GB", React.createElement("input", {
+    type: "number",
+    min: "0",
+    value: bourse.gb || 0,
+    onChange: e => graver({
+      bourse: {
+        ...bourse,
+        gb: Math.max(0, parseInt(e.target.value, 10) || 0)
+      }
+    }),
+    className: "w-24 px-2 py-1 rounded text-xs",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  })), React.createElement("label", {
+    className: "flex items-center gap-1",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "GO", React.createElement("input", {
+    type: "number",
+    min: "0",
+    value: bourse.go || 0,
+    onChange: e => graver({
+      bourse: {
+        ...bourse,
+        go: Math.max(0, parseInt(e.target.value, 10) || 0)
+      }
+    }),
+    className: "w-24 px-2 py-1 rounded text-xs",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }))) : React.createElement("div", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, bourse.gb || 0, " GB \xB7 ", bourse.go || 0, " GO")), React.createElement("div", {
+    className: "rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08"
+    }
+  }, React.createElement("div", {
+    style: poseDouce,
+    className: "mb-1"
+  }, "VIVRES \u2014 nourriture \xB7 potions de soin"), React.createElement("div", {
+    className: "flex items-center gap-4"
+  }, [["nourriture", "Nourriture"], ["potions", "Potions"]].map(([cle, lbl]) => React.createElement("span", {
+    key: cle,
+    className: "flex items-center gap-1.5",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, lbl, graver ? React.createElement("button", {
+    onClick: () => graver({
+      vivres: {
+        ...vivres,
+        [cle]: Math.max(0, (vivres[cle] || 0) - 1)
+      }
+    }),
+    className: "px-1.5 rounded text-[10px] font-bold",
+    style: bouton
+  }, "\u2212") : null, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, vivres[cle] || 0), graver ? React.createElement("button", {
+    onClick: () => graver({
+      vivres: {
+        ...vivres,
+        [cle]: (vivres[cle] || 0) + 1
+      }
+    }),
+    className: "px-1.5 rounded text-[10px] font-bold",
+    style: bouton
+  }, "+") : null))))), React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08"
+    }
+  }, React.createElement("div", {
+    style: poseDouce,
+    className: "mb-1"
+  }, "SAC \xC0 DOS", graver ? " — puiser dans la base d'objets" : ""), sac.length === 0 && !graver ? React.createElement("div", {
+    style: {
+      color: "#71717a"
+    }
+  }, "Le sac est vide.") : React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-1"
+  }, (graver ? sac : sac).map((x, i) => React.createElement("div", {
+    key: i,
+    className: "rounded p-2 flex items-center justify-between gap-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("span", null, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, x.nom), x.qte > 1 ? " ×" + x.qte : ""), graver ? React.createElement("span", {
+    className: "flex items-center gap-1 shrink-0"
+  }, React.createElement("button", {
+    onClick: () => {
+      const apres = sac.map(y => y.nom === x.nom ? {
+        ...y,
+        qte: Math.max(0, (y.qte || 1) - 1)
+      } : y).filter(y => (y.qte || 1) > 0);
+      graver({
+        sac: apres
+      });
+    },
+    className: "px-1.5 rounded text-[10px] font-bold",
+    style: bouton
+  }, "\u2212"), React.createElement("button", {
+    onClick: () => graver({
+      sac: sac.map(y => y.nom === x.nom ? {
+        ...y,
+        qte: (y.qte || 1) + 1
+      } : y)
+    }),
+    className: "px-1.5 rounded text-[10px] font-bold",
+    style: bouton
+  }, "+")) : null))), graver ? React.createElement("div", {
+    className: "flex items-center gap-2 mt-2"
+  }, React.createElement("select", {
+    value: objetChoisi,
+    onChange: e => setObjetChoisi(e.target.value),
+    className: "flex-1 px-2 py-1 rounded text-xs",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none"
+    }
+  }, React.createElement("option", {
+    value: ""
+  }, "\u2014 choisir un objet de la base \u2014"), catalogue.map(n => React.createElement("option", {
+    key: n,
+    value: n
+  }, n))), React.createElement("button", {
+    disabled: !objetChoisi,
+    onClick: () => {
+      const existant = sac.find(x => x.nom === objetChoisi);
+      graver({
+        sac: existant ? sac.map(x => x.nom === objetChoisi ? {
+          ...x,
+          qte: (x.qte || 1) + 1
+        } : x) : [...sac, {
+          nom: objetChoisi,
+          qte: 1
+        }]
+      });
+      setObjetChoisi("");
+    },
+    className: "px-3 py-1 rounded text-[10px] font-bold shrink-0",
+    style: objetChoisi ? {
+      background: a + "22",
+      color: a,
+      border: "1px solid " + a + "44",
+      cursor: "pointer"
+    } : {
+      background: "#a8adb80d",
+      color: "#52525b",
+      border: "1px solid #27272a",
+      cursor: "default"
+    }
+  }, "AJOUTER")) : null));
+}
+function LigneJetD100({
+  perso,
+  onMaj,
+  accent
+}) {
+  const a = accent || "#f0b24a";
+  const [cat, setCat] = useState("");
+  const [cible, setCible] = useState("");
+  const [tirage, setTirage] = useState(null);
+  const onCoche = onMaj || null;
+  const armes = perso && perso.armes || [];
+  const caracs = perso && perso.caracs || {};
+  const comps = perso && perso.competences || {};
+  const cibles = cat === "attaque" ? armes.flatMap(x => {
+    const m = String(x.seuil || "").split("/");
+    const lignes = [];
+    if (m[0]) lignes.push({
+      nom: x.nom + " — attaque",
+      val: parseInt(m[0], 10) || 0,
+      famille: "armes",
+      cle: x.nom,
+      coche: true
+    });
+    if (m[1]) lignes.push({
+      nom: x.nom + " — parade",
+      val: parseInt(m[1], 10) || 0,
+      famille: null
+    });
+    return lignes;
+  }) : cat === "caracteristique" ? Object.entries(caracs).map(([k, v]) => ({
+    nom: k,
+    val: v,
+    famille: "caracs",
+    cle: k,
+    coche: true
+  })) : cat === "competence" ? Object.entries(comps).filter(([, v]) => v > 0).map(([k, v]) => ({
+    nom: k,
+    val: v,
+    famille: "comps",
+    cle: k,
+    coche: true
+  })) : [];
+  const cibleChoisie = cibles.find(x => x.nom === cible) || null;
+  const champ = valeur => ({
+    background: "#0c0d10",
+    border: "1px solid #3f3f46",
+    color: "#e8e4d8",
+    outline: "none",
+    fontSize: 11,
+    padding: "4px 6px",
+    borderRadius: 4,
+    flex: 1,
+    minWidth: 0
+  });
+  return React.createElement("fieldset", {
+    className: "mx-2 mb-2 rounded-lg px-2 py-1.5",
+    style: {
+      border: "1px solid #27272a",
+      borderRadius: 8,
+      margin: "0 8px 8px"
+    }
+  }, React.createElement("legend", {
+    className: "text-[10px] font-bold tracking-widest",
+    style: {
+      color: "#a1a1aa",
+      padding: "0 6px"
+    }
+  }, "FAIRE UN JET"), React.createElement("div", {
+    className: "flex items-center gap-1.5"
+  }, React.createElement("select", {
+    value: cat,
+    onChange: e => {
+      setCat(e.target.value);
+      setCible("");
+      setTirage(null);
+    },
+    style: champ(),
+    className: "text-xs"
+  }, React.createElement("option", {
+    value: ""
+  }, "\u2014 cat\xE9gorie \u2014"), React.createElement("option", {
+    value: "attaque"
+  }, "Attaque / d\xE9fense"), React.createElement("option", {
+    value: "caracteristique"
+  }, "Caract\xE9ristique"), React.createElement("option", {
+    value: "competence"
+  }, "Comp\xE9tences")), React.createElement("select", {
+    value: cible,
+    onChange: e => {
+      setCible(e.target.value);
+      setTirage(null);
+    },
+    disabled: !cat,
+    style: {
+      ...champ(),
+      ...(cat ? {} : {
+        color: "#52525b"
+      })
+    },
+    className: "text-xs"
+  }, React.createElement("option", {
+    value: ""
+  }, "\u2014 cible \u2014"), cibles.map(x => React.createElement("option", {
+    key: x.nom,
+    value: x.nom
+  }, x.nom, " (", x.val, ")"))), React.createElement("button", {
+    disabled: !cibleChoisie,
+    onClick: () => {
+      const de = lancerDes("1D100");
+      const reussi = de <= (cibleChoisie.val || 0);
+      if (reussi && cibleChoisie.coche && onCoche) onCoche(basculerCroix(perso, cibleChoisie.famille, cibleChoisie.cle));
+      setTirage({
+        de,
+        reussi,
+        cible: cibleChoisie
+      });
+    },
+    className: "px-3 py-1 rounded text-xs font-bold shrink-0",
+    style: cibleChoisie ? {
+      background: a,
+      color: "#0c0d10",
+      cursor: "pointer"
+    } : {
+      background: "#a8adb80d",
+      color: "#52525b",
+      border: "1px solid #27272a",
+      cursor: "default"
+    }
+  }, "JET")), tirage ? React.createElement("div", {
+    className: "mt-1 text-[11px]",
+    style: {
+      color: tirage.reussi ? a : "#a1a1aa"
+    }
+  }, "1D100 : ", React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, String(tirage.de).padStart(2, "0")), " ", tirage.reussi ? "≤" : ">", " ", tirage.cible.val, " \u2014 ", tirage.reussi ? "RÉUSSI" + (tirage.cible.coche ? " — croix d'expérience cochée" : "") : " raté") : null);
+}
 function FicheApercuD100({
   pack,
   perso,
@@ -5044,11 +5672,16 @@ function FicheApercuD100({
       padding: "0 4px"
     }
   }, k), React.createElement("div", {
-    className: "text-sm",
+    className: "text-sm flex items-center justify-center gap-0.5",
     style: {
       color: "#e8e4d8"
     }
-  }, v)))), perso.pv != null && React.createElement("div", {
+  }, v, React.createElement(MarqueCroix, {
+    cochee: !!croixFamille(perso, "caracs")[k],
+    onBascule: () => majPersoAffiche(basculerCroix(perso, "caracs", k)),
+    accent: a,
+    interactive: !!majPersoAffiche
+  }))))), perso.pv != null && React.createElement("div", {
     className: "mt-2"
   }, React.createElement("div", {
     className: "text-xs mb-1",
@@ -5228,7 +5861,14 @@ function FicheApercuD100({
         background: "#ffffff08",
         color: "#c8c8ce"
       }
-    }, React.createElement("span", null, it.k), React.createElement("span", {
+    }, React.createElement("span", {
+      className: "flex items-center gap-0.5"
+    }, it.k, React.createElement(MarqueCroix, {
+      cochee: !!croixFamille(perso, "comps")[it.k],
+      onBascule: () => majPersoAffiche(basculerCroix(perso, "comps", it.k)),
+      accent: a,
+      interactive: !!majPersoAffiche
+    })), React.createElement("span", {
       style: {
         color: "#e8e4d8"
       }
@@ -5262,7 +5902,14 @@ function FicheApercuD100({
       background: "#ffffff08",
       color: "#c8c8ce"
     }
-  }, React.createElement("span", null, k), React.createElement("span", {
+  }, React.createElement("span", {
+    className: "flex items-center gap-0.5"
+  }, k, React.createElement(MarqueCroix, {
+    cochee: !!croixFamille(perso, "comps")[k],
+    onBascule: () => majPersoAffiche(basculerCroix(perso, "comps", k)),
+    accent: a,
+    interactive: !!majPersoAffiche
+  })), React.createElement("span", {
     style: {
       color: "#e8e4d8"
     }
@@ -5410,7 +6057,16 @@ function FicheApercuD100({
         color: "#e8e4d8"
       }
     }, nom), detail ? " · " + detail : "");
-  }))) : null, React.createElement("div", {
+  }))) : null, React.createElement(BlocVieD100, {
+    perso: perso,
+    onMaj: majPersoAffiche,
+    accent: a,
+    livre: livre
+  }), React.createElement(PanneauCroixD100, {
+    perso: perso,
+    onMaj: majPersoAffiche,
+    accent: a
+  }), React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -5421,7 +6077,27 @@ function FicheApercuD100({
     style: {
       color: a
     }
-  }, "NOTES"), [0, 1, 2, 3, 4, 5].map(i => React.createElement("div", {
+  }, "NOTES"), majPersoAffiche ? React.createElement("textarea", {
+    value: perso && perso.notes || "",
+    onChange: e => majPersoAffiche({
+      notes: e.target.value
+    }),
+    placeholder: "Notes de l'aventure \u2014 alliances, dettes, qu\xEAtes\u2026",
+    className: "w-full text-xs rounded p-2",
+    rows: "4",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none",
+      resize: "vertical"
+    }
+  }) : null, perso && perso.notes ? React.createElement("div", {
+    className: "text-xs whitespace-pre-wrap",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, perso.notes) : [0, 1, 2, 3, 4, 5].map(i => React.createElement("div", {
     key: i,
     className: "notes-ligne",
     style: {
@@ -6568,7 +7244,7 @@ function EcranPartie({
     }
   }, "MOD"), React.createElement("div", {
     className: "flex gap-2 mb-4"
-  }, [["live", "LIVE"], ["ldvelh", "LDVELH"], ["open_world", "OPEN WORLD"]].map(([id, lbl]) => React.createElement("button", {
+  }, [["live", "LIVE"], ["ldvelh", "LDVELH"], ["open_world", "OPEN WORLD"], ["solo", "SOLO"]].map(([id, lbl]) => React.createElement("button", {
     key: id,
     type: "button",
     onClick: () => setModChoisi(id),
@@ -9783,7 +10459,12 @@ function VueNoyauD100({
       presents: canal && canal.presents || [],
       remplir: true,
       accent: enLive ? null : T.accent,
-      des: enLive ? [100, 20, 10, 8, 6, 4, 3] : undefined
+      des: enLive ? [100, 20, 10, 8, 6, 4, 3] : undefined,
+      ligneJet: enLive && perso ? React.createElement(LigneJetD100, {
+        perso: perso,
+        onMaj: majPersoAffiche,
+        accent: T.accent
+      }) : null
     }));
   })()), onglet === "joueurs" && enLive && role === "mj" && table ? (() => {
     const joueurs = (table.joueurs || []).filter(j => j && j.compte_id);
@@ -9957,11 +10638,16 @@ function VueNoyauD100({
       padding: "0 4px"
     }
   }, k), React.createElement("div", {
-    className: "text-sm",
+    className: "text-sm flex items-center justify-center gap-0.5",
     style: {
       color: "#e8e4d8"
     }
-  }, v)))), perso.pv != null && React.createElement("div", {
+  }, v, React.createElement(MarqueCroix, {
+    cochee: !!croixFamille(perso, "caracs")[k],
+    onBascule: () => majPersoAffiche(basculerCroix(perso, "caracs", k)),
+    accent: T.accent,
+    interactive: !!majPersoAffiche
+  }))))), perso.pv != null && React.createElement("div", {
     className: "mt-2"
   }, React.createElement("div", {
     className: "text-xs mb-1",
@@ -10115,7 +10801,14 @@ function VueNoyauD100({
         background: "#ffffff08",
         color: "#c8c8ce"
       }
-    }, React.createElement("span", null, it.k), React.createElement("span", {
+    }, React.createElement("span", {
+      className: "flex items-center gap-0.5"
+    }, it.k, React.createElement(MarqueCroix, {
+      cochee: !!croixFamille(perso, "comps")[it.k],
+      onBascule: () => majPersoAffiche(basculerCroix(perso, "comps", it.k)),
+      accent: T.accent,
+      interactive: !!majPersoAffiche
+    })), React.createElement("span", {
       style: {
         color: "#e8e4d8"
       }
@@ -10149,7 +10842,14 @@ function VueNoyauD100({
       background: "#ffffff08",
       color: "#c8c8ce"
     }
-  }, React.createElement("span", null, k), React.createElement("span", {
+  }, React.createElement("span", {
+    className: "flex items-center gap-0.5"
+  }, k, React.createElement(MarqueCroix, {
+    cochee: !!croixFamille(perso, "comps")[k],
+    onBascule: () => majPersoAffiche(basculerCroix(perso, "comps", k)),
+    accent: T.accent,
+    interactive: !!majPersoAffiche
+  })), React.createElement("span", {
     style: {
       color: "#e8e4d8"
     }
@@ -10275,7 +10975,16 @@ function VueNoyauD100({
         color: "#e8e4d8"
       }
     }, nom), detail ? " · " + detail : "");
-  }))) : null, React.createElement("div", {
+  }))) : null, React.createElement(BlocVieD100, {
+    perso: perso,
+    onMaj: majPersoAffiche,
+    accent: T.accent,
+    livre: livreSb
+  }), React.createElement(PanneauCroixD100, {
+    perso: perso,
+    onMaj: majPersoAffiche,
+    accent: T.accent
+  }), React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
@@ -10286,7 +10995,27 @@ function VueNoyauD100({
     style: {
       color: T.accent
     }
-  }, "NOTES"), [0, 1, 2, 3, 4, 5].map(i => React.createElement("div", {
+  }, "NOTES"), React.createElement("textarea", {
+    value: perso && perso.notes || "",
+    onChange: e => majPersoAffiche({
+      notes: e.target.value
+    }),
+    placeholder: "Notes de l'aventure \u2014 alliances, dettes, qu\xEAtes\u2026",
+    className: "w-full text-xs rounded p-2 print:hidden",
+    rows: "4",
+    style: {
+      background: "#0c0d10",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8",
+      outline: "none",
+      resize: "vertical"
+    }
+  }), perso && perso.notes ? React.createElement("div", {
+    className: "text-xs whitespace-pre-wrap",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, perso.notes) : [0, 1, 2, 3, 4, 5].map(i => React.createElement("div", {
     key: i,
     className: "notes-ligne",
     style: {
