@@ -1,6 +1,6 @@
 /* L'Archiviste — service worker : network-first avec repli hors ligne.
    L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */
-var CACHE = "archiviste-a0-v111";
+var CACHE = "archiviste-a0-v112";
 var PRECACHE = [
   "/",
   "/index.html",
@@ -13,12 +13,19 @@ var PRECACHE = [
   "/icons/icon-512.png",
   "/icons/icon-192-maskable.png",
   "/icons/icon-512-maskable.png",
-  "/packs/noyau-40k.json",
-  "/packs/noyau-d100.json",
-  "/packs/GM-0001.json",
-  "/packs/GM-0002.json",
-  "/packs/GM-0003.json",
-  "/packs/livre-sb-v2.json"
+  /* V0.99.6 — le dossier game/ : un pack = un dossier au squelette commun */
+  "/game/index.json",
+  "/game/noyau-40k/manifeste.json",
+  "/game/noyau-40k/regles.json",
+  "/game/noyau-d100/manifeste.json",
+  "/game/noyau-d100/regles.json",
+  "/game/GM-0001/manifeste.json",
+  "/game/GM-0001/regles.json",
+  "/game/GM-0002/manifeste.json",
+  "/game/GM-0002/regles.json",
+  "/game/GM-0002/livre.json",
+  "/game/GM-0003/manifeste.json",
+  "/game/GM-0003/regles.json"
 ];
 
 self.addEventListener("install", function (e) {

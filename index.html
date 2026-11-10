@@ -1635,8 +1635,9 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.99.5";
-const PACKS = [{
+const BUILD = "0.106";
+const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
+const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
   id: "GM-0001",
   version: "0.1.0-alpha",
@@ -1651,6 +1652,9 @@ const PACKS = [{
   statut: "disponible",
   visibilite: "prive",
   taille: "18 Mo",
+  fichiers: {
+    regles: "regles.json"
+  },
   theme: {
     nom: "nécroderme",
     fond: "#0a120f",
@@ -1673,6 +1677,9 @@ const PACKS = [{
   }],
   multijoueur: true,
   livre: "sb-v2",
+  fichiers: {
+    livre: "livre.json"
+  },
   statut: "disponible",
   visibilite: "prive",
   taille: "9 Mo",
@@ -1700,6 +1707,9 @@ const PACKS = [{
   statut: "disponible",
   visibilite: "prive",
   taille: "12 Mo",
+  fichiers: {
+    regles: "regles.json"
+  },
   theme: {
     nom: "de Tanæphis",
     fond: "#190b0e",
@@ -2974,15 +2984,26 @@ const REGLES_SB = {
   }
 };
 if (typeof window !== "undefined") window.REGLES_SB = REGLES_SB;
-const LIVRES = {
-  "sb-v2": {
-    fichier: "packs/livre-sb-v2.json"
+function defLivre(idLivre) {
+  for (const m of PACKS) {
+    if (m.livre === idLivre) {
+      return {
+        fichier: "game/" + m.id + "/" + (m.fichiers && m.fichiers.livre || "livre.json")
+      };
+    }
   }
-};
+  return null;
+}
 const LIVRES_CHARGES = {};
 function chargerLivre(idLivre) {
   if (LIVRES_CHARGES[idLivre]) return LIVRES_CHARGES[idLivre];
-  const def = LIVRES[idLivre];
+  const precharges = typeof window !== "undefined" && window.LARCHIVISTE_LIVRES || null;
+  if (precharges && precharges[idLivre]) {
+    if (typeof REGLES_SB !== "undefined" && REGLES_SB.charger) REGLES_SB.charger(precharges[idLivre]);
+    LIVRES_CHARGES[idLivre] = Promise.resolve(precharges[idLivre]);
+    return LIVRES_CHARGES[idLivre];
+  }
+  const def = defLivre(idLivre);
   if (!def) return Promise.resolve(null);
   LIVRES_CHARGES[idLivre] = fetch(def.fichier, {
     cache: "no-store"
@@ -11391,26 +11412,78 @@ function App() {
     }
   }, toast));
 }
-var _PACKS = ["noyau-40k", "noyau-d100", "GM-0001", "GM-0002", "GM-0003"];
-Promise.all(_PACKS.map(function (id) {
-  return fetch("packs/" + id + ".json", {
-    cache: "no-store"
-  }).then(function (r) {
+/* ════════════════════════════════════════════════════════════════════
+   LE CHARGEUR DU DOSSIER game/ — V0.99.6
+   Chaque pack de jeu est un DOSSIER au squelette commun :
+     game/<id>/manifeste.json   → l'enveloppe unique (identité, version,
+                                  depend_de, theme, fichiers du pack)
+     game/<id>/regles.json      → le contenu mécanique
+     game/<id>/livre.json       → (optionnel) le livre gravé du pack
+   game/index.json = le REGISTRE : déposer un dossier complet dans game/
+   et l'y inscrire = installer le pack. La moulinette couche 1 valide :
+   registre lisible, manifeste présent et honnête (m.id === dossier),
+   fichiers déclarés présents, dépendances résolues — tout écart est
+   refusé avec un message clair, jamais un écran noir.
+   ════════════════════════════════════════════════════════════════════ */
+function __lireJson(chemin) {
+  return fetch(chemin, { cache: "no-store" }).then(function (r) {
     return r.ok ? r.json() : null;
   });
-})).then(function (res) {
-  window.LARCHIVISTE_PACKS = {
-    noyaux: {},
-    packs: {}
-  };
-  res.forEach(function (d, i) {
-    if (!d) return;
-    var id = _PACKS[i];
-    if (id.indexOf("noyau-") === 0) window.LARCHIVISTE_PACKS.noyaux[id] = d;else window.LARCHIVISTE_PACKS.packs[id] = d;
-  });
-  if (!window.LARCHIVISTE_PACKS.packs["GM-0001"] || !window.LARCHIVISTE_PACKS.noyaux["noyau-40k"]) {
-    throw new Error("packs manquants");
+}
+
+__lireJson("game/index.json").then(function (index) {
+  if (!index || !Array.isArray(index.packs) || index.packs.length === 0) {
+    throw new Error("le registre game/index.json est illisible ou vide");
   }
+  return Promise.all(index.packs.map(function (id) {
+    return __lireJson("game/" + id + "/manifeste.json").then(function (m) {
+      if (!m) throw new Error("manifeste absent : game/" + id + "/manifeste.json");
+      if (m.id !== id) throw new Error("manifeste mensonger : le dossier " + id + " contient le pack " + m.id);
+      var f = m.fichiers || {};
+      var regles = f.regles || "regles.json";
+      var jobs = [__lireJson("game/" + id + "/" + regles).then(function (d) {
+        if (!d) throw new Error("regles introuvables : game/" + id + "/" + regles);
+        return d;
+      })];
+      if (f.livre) {
+        jobs.push(__lireJson("game/" + id + "/" + f.livre).then(function (d) {
+          return d; /* un livre absent laisse le pack jouable (repli null) */
+        }));
+      }
+      return Promise.all(jobs).then(function (res) {
+        return { manifeste: m, regles: res[0], livre: res[1] || null };
+      });
+    });
+  }));
+}).then(function (charges) {
+  /* La moulinette couche 1 AVANT toute pose : si un pack est refusé,
+     la fenêtre reste VIERGE — jamais d'état partiel à moitié chargé. */
+  charges.forEach(function (c) {
+    var deps = c.manifeste.depend_de || [];
+    deps.forEach(function (d) {
+      var noyauPresent = charges.some(function (q) { return q.manifeste.id === d.id && q.manifeste.type === "noyau"; });
+      if (!noyauPresent) {
+        throw new Error("dépendance manquante : " + c.manifeste.id + " dépend de " + d.id + ", absent du dossier game/");
+      }
+    });
+  });
+  var packsDeJeu = charges.filter(function (c) { return c.manifeste.type !== "noyau"; });
+  if (packsDeJeu.length === 0) {
+    throw new Error("aucun pack de jeu dans game/ — déposez un dossier GM-XXXX complet");
+  }
+  window.LARCHIVISTE_PACKS = { noyaux: {}, packs: {} };
+  window.LARCHIVISTE_MANIFESTES = { packs: [] };
+  window.LARCHIVISTE_LIVRES = {};
+  charges.forEach(function (c) {
+    var m = c.manifeste;
+    if (m.type === "noyau") {
+      window.LARCHIVISTE_PACKS.noyaux[m.id] = c.regles;
+    } else {
+      window.LARCHIVISTE_PACKS.packs[m.id] = c.regles;
+      window.LARCHIVISTE_MANIFESTES.packs.push(m);
+      if (m.livre && c.livre) window.LARCHIVISTE_LIVRES[m.livre] = c.livre;
+    }
+  });
 }).then(function () {
   var _attente = document.getElementById("attente");
   if (_attente) _attente.remove();
