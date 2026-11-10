@@ -1,0 +1,15 @@
+{
+  "id": "noyau-d100",
+  "version": "0.1.0",
+  "tests": {
+    "de": {
+      "nb": 1,
+      "faces": 100
+    },
+    "lecture": "inferieur_ou_egal",
+    "exceptions": {
+      "plancher_reussite": 5,
+      "echec_auto": 100
+    }
+  }
+}

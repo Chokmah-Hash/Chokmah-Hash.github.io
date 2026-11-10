@@ -1,0 +1,592 @@
+{
+  "surcharges": [
+    "combat.initiative.bonus = rfx",
+    "combat.hors_combat = protocole_de_secours (5+)",
+    "fiche.eveil = 10 châssis × 6 codes de fabrique × arsenal neutre"
+  ],
+  "salon": "CANTINA",
+  "primitive": "resoudreTest(cible, modificateur) — 1D6 ≥ cible",
+  "perso": {
+    "id": "signa-3",
+    "nom": "Signa-3",
+    "chassis": "Vétéran · code Solaire",
+    "st": {
+      "cc": "3+",
+      "ct": "3+",
+      "f": 5,
+      "e": 5,
+      "sv": "3+",
+      "cd": "7+"
+    },
+    "rfx": 2,
+    "pvMax": 3,
+    "arme": "blaster-gauss",
+    "apt": "Élite : vos touches critiques infligent +1 dégât.",
+    "comps": [
+      "Athlétisme",
+      "Perception"
+    ]
+  },
+  "adversaire": {
+    "id": "ork-boy",
+    "nom": "Ork Boy",
+    "chassis": "Kass Krane (bientôt :D)",
+    "st": {
+      "cc": "3+",
+      "ct": "5+",
+      "f": 4,
+      "e": 5,
+      "sv": "5+",
+      "cd": "7+"
+    },
+    "ini": 2,
+    "pvMax": 3,
+    "arme": "choppa"
+  },
+  "armes": {
+    "blaster-gauss": {
+      "nom": "Blaster gauss",
+      "type": "tir",
+      "portee": "48 m",
+      "attaques": 2,
+      "bs_ws": "3+",
+      "f": 5,
+      "pa": -1,
+      "degats": 1,
+      "mot": "Lethal Hits (ignoré en light)"
+    },
+    "choppa": {
+      "nom": "Choppa",
+      "type": "mêlée",
+      "attaques": 1,
+      "bs_ws": "3+",
+      "f": 4,
+      "pa": -1,
+      "degats": 1,
+      "mot": "1 attaque en light"
+    }
+  },
+  "chassis": [
+    {
+      "n": "Fantassin programmé",
+      "m": "10",
+      "cc": "4+",
+      "ct": "4+",
+      "f": "4",
+      "e": "4",
+      "pv": "3",
+      "a": "1",
+      "cd": "7+",
+      "sv": "4+",
+      "rfx": "+0",
+      "mem": "1",
+      "cal": "1",
+      "apt": "Discipline sans faille : relancez 1 test de Commandement raté par scène.",
+      "cp": [
+        "Athlétisme",
+        "Technologie"
+      ]
+    },
+    {
+      "n": "Vétéran",
+      "m": "10",
+      "cc": "3+",
+      "ct": "3+",
+      "f": "5",
+      "e": "5",
+      "pv": "3",
+      "a": "1",
+      "cd": "8+",
+      "sv": "3+",
+      "rfx": "+1",
+      "mem": "1",
+      "cal": "1",
+      "apt": "Élite : vos touches critiques infligent +1 dégât.",
+      "cp": [
+        "Athlétisme",
+        "Perception"
+      ]
+    },
+    {
+      "n": "Traqueur",
+      "m": "10",
+      "cc": "3+",
+      "ct": "3+",
+      "f": "5",
+      "e": "5",
+      "pv": "3",
+      "a": "1",
+      "cd": "8+",
+      "sv": "3+",
+      "rfx": "+2",
+      "mem": "2",
+      "cal": "1",
+      "apt": "Embuscade : 1×/scène, apparaissez dans un rayon de 6 m (après 1 round de délai).",
+      "cp": [
+        "Furtivité",
+        "Perception",
+        "Pilotage"
+      ]
+    },
+    {
+      "n": "Ombre",
+      "m": "10",
+      "cc": "3+",
+      "ct": "6+",
+      "f": "5",
+      "e": "4",
+      "pv": "3",
+      "a": "3",
+      "cd": "8+",
+      "sv": "4+",
+      "rfx": "+2",
+      "mem": "2",
+      "cal": "1",
+      "apt": "Peau d'ombre : Furtivité 3+ ; ennemis qui vous voient −1 Cd.",
+      "cp": [
+        "Furtivité",
+        "Intimidation"
+      ]
+    },
+    {
+      "n": "Sentinelle",
+      "m": "10",
+      "cc": "3+",
+      "ct": "4+",
+      "f": "6",
+      "e": "5",
+      "pv": "6",
+      "a": "2",
+      "cd": "8+",
+      "sv": "3+",
+      "rfx": "+1",
+      "mem": "1",
+      "cal": "1",
+      "apt": "Écran : 1×/round, prenez une frappe destinée à un allié à 2 m.",
+      "cp": [
+        "Athlétisme",
+        "Intimidation"
+      ]
+    },
+    {
+      "n": "Officier de garde",
+      "m": "10",
+      "cc": "3+",
+      "ct": "3+",
+      "f": "5",
+      "e": "5",
+      "pv": "12",
+      "a": "3",
+      "cd": "8+",
+      "sv": "3+",
+      "rfx": "+1",
+      "mem": "2",
+      "cal": "2",
+      "apt": "Ordre de secours : 1×/scène, forcez un allié à relancer son Protocole de Secours.",
+      "cp": [
+        "Commandement",
+        "Technologie"
+      ]
+    },
+    {
+      "n": "Artificier",
+      "m": "10",
+      "cc": "3+",
+      "ct": "3+",
+      "f": "4",
+      "e": "5",
+      "pv": "12",
+      "a": "2",
+      "cd": "8+",
+      "sv": "4+",
+      "rfx": "+1",
+      "mem": "3",
+      "cal": "2",
+      "apt": "Essaim réparateur : 1×/scène, soignez D3 PV d'une unité à 6 m.",
+      "cp": [
+        "Technologie",
+        "Érudition",
+        "Perception"
+      ]
+    },
+    {
+      "n": "Énergicien",
+      "m": "10",
+      "cc": "3+",
+      "ct": "3+",
+      "f": "5",
+      "e": "5",
+      "pv": "12",
+      "a": "3",
+      "cd": "8+",
+      "sv": "3+",
+      "rfx": "+1",
+      "mem": "3",
+      "cal": "2",
+      "apt": "Décharge : 1×/scène, attaque F7 PA −2 D 2 à tous les ennemis à 3 m.",
+      "cp": [
+        "Technologie",
+        "Érudition"
+      ]
+    },
+    {
+      "n": "Commandant",
+      "m": "10",
+      "cc": "3+",
+      "ct": "3+",
+      "f": "6",
+      "e": "6",
+      "pv": "15",
+      "a": "4",
+      "cd": "9+",
+      "sv": "3+",
+      "rfx": "+1",
+      "mem": "4",
+      "cal": "2",
+      "apt": "Aura de commandement : les alliés à 6 m relancent les 1 au toucher.",
+      "cp": [
+        "Commandement",
+        "Intimidation",
+        "Érudition"
+      ]
+    },
+    {
+      "n": "Seigneur de guerre",
+      "m": "10",
+      "cc": "2+",
+      "ct": "2+",
+      "f": "6",
+      "e": "6",
+      "pv": "18",
+      "a": "5",
+      "cd": "10+",
+      "sv": "3+",
+      "rfx": "+1",
+      "mem": "5",
+      "cal": "3",
+      "apt": "Volonté inflexible : relancez 1 échec par round.",
+      "cp": [
+        "Commandement",
+        "Érudition",
+        "Intimidation",
+        "Technologie"
+      ]
+    }
+  ],
+  "codes": [
+    "Éternel",
+    "Pragmatique",
+    "Sanguinaire",
+    "Solaire",
+    "Tutélaire",
+    "Fondateur"
+  ],
+  "arsenal": [
+    {
+      "id": "fusil",
+      "nom": "Fusil magnétique",
+      "taille": 2,
+      "portee": "48 m",
+      "att": "1",
+      "f": "5",
+      "pa": "−1",
+      "d": "1",
+      "regle": "Perforation",
+      "tir": true
+    },
+    {
+      "id": "canonmag",
+      "nom": "Canon magnétique",
+      "taille": 3,
+      "portee": "48 m",
+      "att": "1",
+      "f": "6",
+      "pa": "−1",
+      "d": "1",
+      "regle": "Perforation",
+      "tir": true
+    },
+    {
+      "id": "mitrailleur",
+      "nom": "Mitrailleur magnétique",
+      "taille": 3,
+      "portee": "36 m",
+      "att": "2",
+      "f": "6",
+      "pa": "−2",
+      "d": "1",
+      "regle": "Perforation",
+      "tir": true
+    },
+    {
+      "id": "longuee",
+      "nom": "Canon longue-portée",
+      "taille": 4,
+      "portee": "72 m",
+      "att": "1",
+      "f": "7",
+      "pa": "−2",
+      "d": "2",
+      "regle": "Précis : ignore le couvert",
+      "tir": true
+    },
+    {
+      "id": "carabine",
+      "nom": "Carabine à arcs",
+      "taille": 2,
+      "portee": "28 m",
+      "att": "2",
+      "f": "5",
+      "pa": "−1",
+      "d": "1",
+      "regle": "Arc : critique = 1 dégât irréversible en plus",
+      "tir": true
+    },
+    {
+      "id": "batonnrj",
+      "nom": "Bâton d'énergie",
+      "taille": 1,
+      "portee": "24 m",
+      "att": "1",
+      "f": "5",
+      "pa": "−2",
+      "d": "2",
+      "regle": "Aussi utilisable en mêlée",
+      "tir": true
+    },
+    {
+      "id": "sceptretac",
+      "nom": "Sceptre tactique",
+      "taille": 2,
+      "portee": "18 m",
+      "att": "1",
+      "f": "6",
+      "pa": "−1",
+      "d": "2",
+      "regle": "Relance 1 au toucher, 1×/bataille",
+      "tir": true
+    },
+    {
+      "id": "pistolets",
+      "nom": "Pistolets jumelés ×6",
+      "taille": 1,
+      "portee": "12 m",
+      "att": "3",
+      "f": "5",
+      "pa": "−2",
+      "d": "1",
+      "regle": "Tir défensif sur un ennemi qui approche",
+      "tir": true
+    },
+    {
+      "id": "batonmel",
+      "nom": "Bâton d'énergie (mêlée)",
+      "taille": 1,
+      "portee": "Mêlée",
+      "att": "A",
+      "f": "F+1",
+      "pa": "−2",
+      "d": "2",
+      "regle": "—",
+      "tir": false
+    },
+    {
+      "id": "lame",
+      "nom": "Lame désagrégatrice",
+      "taille": 1,
+      "portee": "Mêlée",
+      "att": "A",
+      "f": "F+1",
+      "pa": "−3",
+      "d": "2",
+      "regle": "—",
+      "tir": false
+    },
+    {
+      "id": "jumelles",
+      "nom": "Lames jumelles (paire)",
+      "taille": 1,
+      "portee": "Mêlée",
+      "att": "A+1",
+      "f": "F+1",
+      "pa": "−2",
+      "d": "2",
+      "regle": "+1 A si deux lames",
+      "tir": false
+    },
+    {
+      "id": "faucheuse",
+      "nom": "Faucheuse lourde",
+      "taille": 3,
+      "portee": "Mêlée",
+      "att": "A",
+      "f": "F+2",
+      "pa": "−4",
+      "d": "D3",
+      "regle": "Lourde : −1 à l'initiative",
+      "tir": false
+    },
+    {
+      "id": "grappins",
+      "nom": "Grappins déchiqueteurs",
+      "taille": 2,
+      "portee": "Mêlée",
+      "att": "A+1",
+      "f": "F+1",
+      "pa": "−2",
+      "d": "1",
+      "regle": "Terreur : Cd −1 en face",
+      "tir": false
+    },
+    {
+      "id": "sceptreduel",
+      "nom": "Sceptre de duel",
+      "taille": 2,
+      "portee": "Mêlée",
+      "att": "A",
+      "f": "F+2",
+      "pa": "−3",
+      "d": "2",
+      "regle": "Critique sur 5+ en duel",
+      "tir": false
+    }
+  ],
+  "creation": "unite",
+  "textes": {
+    "creer": "⚙ Créer une unité",
+    "recreer": "↺ Créer une nouvelle unité"
+  },
+  "journalCreation": "Éveil de {nom} — {chassis} · code {code} · PV {pvMax} (W×3) · Rfx +{rfx} · {arme}",
+  "documents": [
+    {
+      "id": "regles-pe",
+      "titre": "Livret des règles (extraits)",
+      "sections": [
+        {
+          "titre": "Les tests",
+          "blocs": [
+            {
+              "type": "para",
+              "texte": "Tout test se résout par un jet de 1D6 contre une cible fixe, ajustée par la situation (±1). Un 6 naturel réussit toujours ; un 1 naturel échoue toujours."
+            },
+            {
+              "type": "liste",
+              "items": [
+                "Cible 2+ : trivial",
+                "Cible 3+ : aisé",
+                "Cible 4+ : ordinaire",
+                "Cible 5+ : difficile",
+                "Cible 6+ : héroïque"
+              ]
+            }
+          ]
+        },
+        {
+          "titre": "Le combat",
+          "blocs": [
+            {
+              "type": "para",
+              "texte": "La séquence du noyau : toucher → blesser (F vs E) → sauvegarde (PA) → dégâts. L'arme porte tout : attaques, Force, PA, dégâts."
+            },
+            {
+              "type": "table",
+              "entetes": [
+                "F vs E",
+                "Cible de blessure"
+              ],
+              "lignes": [
+                [
+                  "F ≥ E×2",
+                  "2+"
+                ],
+                [
+                  "F > E",
+                  "3+"
+                ],
+                [
+                  "F = E",
+                  "4+"
+                ],
+                [
+                  "F < E",
+                  "5+"
+                ],
+                [
+                  "F ≤ E/2",
+                  "6+"
+                ]
+              ]
+            },
+            {
+              "type": "para",
+              "texte": "Initiative : 1D6 + Rfx (surcharge du mod). À 0 PV, le Protocole de Secours se déclenche : sur 5+, l'unité se redresse avec 1 PV ; sinon, extraction d'urgence hors scène."
+            }
+          ]
+        },
+        {
+          "titre": "L'éveil — créer une unité",
+          "blocs": [
+            {
+              "type": "para",
+              "texte": "Chaque unité naît de l'union d'un châssis (10 profils du manuel joueur) et d'un code de fabrique ; l'arsenal neutre arme le tout."
+            },
+            {
+              "type": "liste",
+              "items": [
+                "Châssis : profil de base, PV (W×3), Rfx, Mémoire/Calcul, aptitude de châssis, compétences offertes",
+                "Codes de fabrique : Éternel, Pragmatique, Sanguinaire, Solaire, Tutélaire, Fondateur",
+                "Arsenal : « A » et « F+1 » se résolvent contre les stats de l'unité"
+              ]
+            }
+          ]
+        },
+        {
+          "titre": "Progression (règles maison)",
+          "blocs": [
+            {
+              "type": "para",
+              "texte": "Le pack fait la loi des prix : les dépenses se font en fenêtre de progression sanctifiée (HUB) ; le moteur refuse gentiment au-delà du plafond de gains MJ (1 à 3 XP par séance)."
+            },
+            {
+              "type": "table",
+              "entetes": [
+                "Amélioration",
+                "Coût"
+              ],
+              "lignes": [
+                [
+                  "+1 PV (max base×2)",
+                  "5 XP"
+                ],
+                [
+                  "CC / CT un cran",
+                  "10 XP"
+                ],
+                [
+                  "+1 Réflexes",
+                  "10 XP"
+                ],
+                [
+                  "Compétence",
+                  "8 XP"
+                ],
+                [
+                  "Aptitude",
+                  "12 XP"
+                ],
+                [
+                  "+1 Attaque",
+                  "12 XP"
+                ],
+                [
+                  "Wargear",
+                  "15-25 XP"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "id": "GM-0003",
+  "version": "0.1.0-alpha",
+  "type": "mod",
+  "nom": "Bloodlust",
+  "sousTitre": "Les armes-dieux",
+  "depend_de": [
+    {
+      "id": "noyau-d100",
+      "format_min": 1
+    }
+  ],
+  "multijoueur": true,
+  "statut": "disponible",
+  "visibilite": "prive",
+  "taille": "12 Mo",
+  "fichiers": {
+    "regles": "regles.json"
+  },
+  "theme": {
+    "nom": "de Tanæphis",
+    "fond": "#190b0e",
+    "accent": "#e0524d",
+    "or": "#d4a24e"
+  },
+  "accroche": "les Armes-Dieux choisissent leurs champions",
+  "resume": "Dans les terres sauvages de Tanaephis, où dieux, empires et barbares s'affrontent sans répit, les Armes-Dieux immortelles choisissent leurs champions pour graver leur légende dans le sang et le destin.",
+  "glyphs": "🗡"
+}

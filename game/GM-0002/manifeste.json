@@ -1,0 +1,31 @@
+{
+  "format": 1,
+  "id": "GM-0002",
+  "version": "0.1.0-alpha",
+  "type": "mod",
+  "nom": "Stormbringer",
+  "sousTitre": "Cycle d'Elric",
+  "depend_de": [
+    {
+      "id": "noyau-d100",
+      "format_min": 1
+    }
+  ],
+  "multijoueur": true,
+  "livre": "sb-v2",
+  "fichiers": {
+    "livre": "livre.json"
+  },
+  "statut": "disponible",
+  "visibilite": "prive",
+  "taille": "9 Mo",
+  "theme": {
+    "nom": "des Jeunes Royaumes",
+    "fond": "#141021",
+    "accent": "#9d86e8",
+    "or": "#cbb26b"
+  },
+  "accroche": "Elric de Melniboné",
+  "resume": "Dans les Jeunes Royaumes voués au Chaos et à la Loi, des héros tragiques luttent contre un destin cruel tandis que les dieux jouent avec le monde comme avec un échiquier cosmique.",
+  "glyphs": "⚔"
+}

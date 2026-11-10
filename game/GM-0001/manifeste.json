@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "id": "GM-0001",
+  "version": "0.1.0-alpha",
+  "type": "mod",
+  "nom": "Protocole Ω",
+  "sousTitre": "K-BoT",
+  "multijoueur": true,
+  "depend_de": [
+    {
+      "id": "noyau-40k",
+      "format_min": 1
+    }
+  ],
+  "statut": "disponible",
+  "visibilite": "prive",
+  "taille": "18 Mo",
+  "fichiers": {
+    "regles": "regles.json"
+  },
+  "theme": {
+    "nom": "nécroderme",
+    "fond": "#0a120f",
+    "accent": "#2ee6c9",
+    "or": "#f0b24a"
+  },
+  "accroche": "K-BoT - Les Hommes de fer",
+  "resume": "À l'apogée de l'Âge d'Or de la Technologie, l'Humanité règne sur des millions de mondes grâce à des intelligences artificielles divines et des merveilles scientifiques si puissantes qu'elles font passer les futurs dieux pour de simples mortels.",
+  "glyphs": "⟁"
+}

@@ -1,0 +1,9 @@
+{
+  "format": 1,
+  "id": "noyau-40k",
+  "type": "noyau",
+  "version": "1.0",
+  "fichiers": {
+    "regles": "regles.json"
+  }
+}

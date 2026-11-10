@@ -1,0 +1,9 @@
+{
+  "format": 1,
+  "id": "noyau-d100",
+  "type": "noyau",
+  "version": "1.0",
+  "fichiers": {
+    "regles": "regles.json"
+  }
+}
