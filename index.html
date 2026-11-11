@@ -841,6 +841,54 @@
         return [];
       });
     },
+    listerLivresLdvelh: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_ldvelh_livres?select=*&order=titre.asc", {
+        token: m.access_token
+      }).then(function (l) {
+        return l || [];
+      }).catch(function () {
+        return [];
+      });
+    },
+    lireParagrapheLdvelh: function (livreId, numero) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/archiviste_ldvelh_paragraphes?select=numero,texte,donnees&livre_id=eq." + encodeURIComponent(livreId) + "&numero=eq." + numero, {
+        token: m.access_token
+      }).then(function (l) {
+        return l && l[0] || null;
+      }).catch(function () {
+        return null;
+      });
+    },
+    lireMesPartiesLdvelh: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_ldvelh_parties?select=livre_code,etat&order=maj_le.desc", {
+        token: m.access_token
+      }).then(function (l) {
+        return l || [];
+      }).catch(function () {
+        return [];
+      });
+    },
+    sauverPartieLdvelh: function (livreCode, etat) {
+      var m = lire();
+      if (!m || !m.access_token || !compteCourant) return Promise.resolve();
+      return api("/rest/v1/archiviste_ldvelh_parties", {
+        method: "POST",
+        token: m.access_token,
+        prefer: "resolution=merge-duplicates",
+        body: {
+          compte_id: compteCourant,
+          livre_code: livreCode,
+          etat: etat,
+          maj_le: new Date().toISOString()
+        }
+      });
+    },
     tempsReel: tempsReel
   };
 }();</script>
@@ -1669,7 +1717,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.108";
+const BUILD = "0.109";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -1753,6 +1801,33 @@ const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   accroche: "les Armes-Dieux choisissent leurs champions",
   resume: "Dans les terres sauvages de Tanaephis, où dieux, empires et barbares s'affrontent sans répit, les Armes-Dieux immortelles choisissent leurs champions pour graver leur légende dans le sang et le destin.",
   glyphs: "🗡"
+}, {
+  format: 1,
+  id: "GM-0004",
+  version: "0.1.0-alpha",
+  type: "mod",
+  nom: "Livre dont vous êtes le Héros",
+  sousTitre: "La bibliothèque des Défis Fantastiques",
+  depend_de: [{
+    id: "noyau-ldvelh",
+    format_min: 1
+  }],
+  multijoueur: false,
+  statut: "disponible",
+  visibilite: "prive",
+  taille: "2 Mo",
+  fichiers: {
+    regles: "regles.json"
+  },
+  theme: {
+    nom: "de la Forêt",
+    fond: "#0d130b",
+    accent: "#7fbf5f",
+    or: "#d8b04c"
+  },
+  accroche: "Un livre, un dés, un héros",
+  resume: "La bibliothèque des Livres dont vous êtes le Héros : les tomes de la série Défis Fantastiques, lisibles et jouables dans L'Archiviste — feuille d'aventure, combats et dés automatisés, sauvegarde au fil des paragraphes.",
+  glyphs: "📖"
 }];
 const PACKS_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_PACKS || null;
 const OBJETS_SB = [{
@@ -1850,6 +1925,7 @@ const REGLES_SB = {
     const san = 5 * pou + (modNationalite || 0);
     return {
       san,
+
       sft: Math.floor(san / 2)
     };
   },
@@ -3850,6 +3926,7 @@ function CompteJoueur({
   }, React.createElement("div", {
     className: "font-bold text-white text-sm"
   }, joueur.pseudo), React.createElement("div", {
+
     className: "text-xs flex items-center gap-1",
     style: {
       color: "#a8adb8"
@@ -5799,6 +5876,7 @@ function FicheApercuD100({
     className: "mt-1 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
+
       color: "#c8c8ce"
     }
   }, React.createElement("b", {
@@ -7644,6 +7722,7 @@ function ReglesSB({
   if (cp && cp.progression) sec("La progression des compétences (§" + cp.progression.section + ")", [par("Condition : " + cp.progression.condition + "."), par("Jet : " + cp.progression.jet + " → gain : " + cp.progression.gain + " ; maximum : " + cp.progression.maximum + "."), par("Exemple : " + cp.progression.exemple + ".")]);
   if (rdm) sec("Le round de mêlée (§" + rdm.section + ")", [par("Le round dure " + rdm.duree + " " + rdm.unite + " (" + rdm.roundsParMinute + " rounds par minute). " + rdm.attaques + "."), lis(rdm.sequence.slice()), par("Changement d'arme : " + rdm.changementArme + ".")]);
   if (bl) sec("Les blessures", [par("Blessure mineure : " + bl.mineure + "."), par("Blessure majeure : DEX " + bl.majeure.dex + " ; " + bl.majeure.rounds + "."), par("Premiers soins : " + bl.majeure.aide + ".")]);
+
   if (arm.melee && arm.melee.length) sec("Les armes de mêlée", [tab(["Arme", "FOR", "DEX", "Dégâts"], arm.melee.map(a => [a.nom, a.for == null ? "—" : a.for, a.dex == null ? "—" : a.dex, a.degats]))]);
   if (aru.types && aru.types.length) sec("Les armures", [tab(["Armure", "Protection"], aru.types.map(a => [a.nom, a.protection]))]);
   if (so && so.tableResistance) sec("La Table de Résistance (§" + so.tableResistance.section + ")", [par(so.tableResistance.formule + "."), par("Usage : " + so.tableResistance.usage + ".")]);
@@ -9525,6 +9604,7 @@ function EcranCreationAventurier({
     style: {
       color: "#a1a1aa"
     }
+
   }, traceAjust.map(t => t.c + " " + t.avant + "→" + t.apres).join(" · ")), React.createElement("div", {
     className: "text-xs",
     style: {
@@ -11243,6 +11323,7 @@ function VueNoyauD100({
       border: "1px solid " + T.or + "44"
     }
   }, React.createElement("div", {
+
     className: "text-xs mb-2",
     style: {
       color: "#c8c8ce"
@@ -11306,9 +11387,868 @@ function VueNoyauD100({
     versionBase: versionBase
   }));
 }
+function ldvelhDe6() {
+  return 1 + Math.floor(Math.random() * 6);
+}
+function ldvelh2D6() {
+  return ldvelhDe6() + ldvelhDe6();
+}
+function VueNoyauLDVELH({
+  pack,
+  onRetour,
+  joueur
+}) {
+  const T = pack.theme || {
+    fond: "#0d130b",
+    accent: "#7fbf5f",
+    or: "#d8b04c"
+  };
+  const N = pack.noyau || {};
+  const [onglet, setOnglet] = useState("bibliotheque");
+  const [livres, setLivres] = useState(null);
+  const [sauvegardes, setSauvegardes] = useState({});
+  const [etat, setEtat] = useState(null);
+  const [paragraphe, setParagraphe] = useState(null);
+  const [combat, setCombat] = useState(null);
+  const [testChance, setTestChance] = useState(null);
+  const [creation, setCreation] = useState(null);
+  const [notice, setNotice] = useState("");
+  const cacheParagraphes = useRef({});
+  useEffect(() => {
+    if (!joueur || !CLOUD || !CLOUD.listerLivresLdvelh) return;
+    let vivant = true;
+    CLOUD.listerLivresLdvelh().then(l => {
+      if (vivant) setLivres(l || []);
+    }).catch(() => setLivres([]));
+    if (CLOUD.lireMesPartiesLdvelh) {
+      CLOUD.lireMesPartiesLdvelh().then(rows => {
+        if (!vivant || !rows) return;
+        const carte = {};
+        rows.forEach(r => {
+          if (r && r.livre_code && r.etat) carte[r.livre_code] = r.etat;
+        });
+        setSauvegardes(carte);
+      }).catch(() => {});
+    }
+    return () => {
+      vivant = false;
+    };
+  }, [joueur && joueur.compteId]);
+  const majEtat = nouveau => {
+    setEtat(nouveau);
+    if (CLOUD && CLOUD.sauverPartieLdvelh) CLOUD.sauverPartieLdvelh(nouveau.livreCode, nouveau).catch(() => {});
+  };
+  const herosBlesse = (e, delta) => Math.max(0, e + delta);
+  const ouvrirParagraphe = (numero, base) => {
+    const E = base || etat;
+    if (!E) return;
+    setTestChance(null);
+    setCombat(null);
+    const cache = cacheParagraphes.current;
+    const cle = E.livreId + ":" + numero;
+    const appliquer = p => {
+      setParagraphe(p);
+      const journal = (E.journal || []).concat([p.numero]).slice(-40);
+      majEtat({
+        ...E,
+        position: numero,
+        journal,
+        visites: (E.visites || []).concat([numero]).slice(-400)
+      });
+    };
+    if (cache[cle]) {
+      appliquer(cache[cle]);
+      return;
+    }
+    CLOUD.lireParagrapheLdvelh(E.livreId, numero).then(p => {
+      if (!p) {
+        setNotice("Le paragraphe " + numero + " est introuvable dans la Tombe.");
+        return;
+      }
+      cache[cle] = p;
+      appliquer(p);
+    }).catch(() => setNotice("La Tombe reste injoignable — reconnectez-vous."));
+  };
+  const lancerCreation = livre => {
+    setCreation({
+      livre,
+      habilete: ldvelhDe6() + 6,
+      endurance: ldvelh2D6() + 12,
+      chance: ldvelhDe6() + 6
+    });
+  };
+  const ouvrirParagrapheDepuis = s => {
+    setTestChance(null);
+    setCombat(null);
+    const cache = cacheParagraphes.current;
+    const cle = s.livreId + ":" + s.position;
+    const appliquer = p => setParagraphe(p);
+    if (cache[cle]) {
+      appliquer(cache[cle]);
+      return;
+    }
+    CLOUD.lireParagrapheLdvelh(s.livreId, s.position).then(p => {
+      if (p) {
+        cache[cle] = p;
+        appliquer(p);
+      } else setNotice("Le paragraphe " + s.position + " est introuvable dans la Tombe.");
+    }).catch(() => setNotice("La Tombe reste injoignable — reconnectez-vous."));
+  };
+  const commencerAventure = () => {
+    const c = creation;
+    const nouveau = {
+      livreCode: c.livre.code,
+      livreId: c.livre.id,
+      titre: c.livre.titre,
+      position: 1,
+      heros: {
+        habilete: c.habilete,
+        habileteDep: c.habilete,
+        endurance: c.endurance,
+        enduranceDep: c.endurance,
+        chance: c.chance,
+        chanceDep: c.chance,
+        provisions: N.heros && N.heros.provisions || 10,
+        or: 0,
+        bijoux: [],
+        equipement: (N.heros && N.heros.equipementDepart || ["épée", "bouclier", "lanterne"]).slice(),
+        potions: {
+          adresse: 0,
+          vigueur: 0,
+          bonneFortune: 0
+        }
+      },
+      journal: [1],
+      visites: [1]
+    };
+    setCreation(null);
+    setEtat(nouveau);
+    setOnglet("lecture");
+    if (CLOUD && CLOUD.sauverPartieLdvelh) CLOUD.sauverPartieLdvelh(nouveau.livreCode, nouveau).catch(() => {});
+    cacheParagraphes.current = {};
+    ouvrirParagraphe(1, nouveau);
+  };
+  const demarrerCombat = () => {
+    const monstres = paragraphe.donnees && paragraphe.donnees.monstres || [];
+    if (!monstres.length) return;
+    setCombat({
+      monstres,
+      index: 0,
+      mH: monstres[0].habilete,
+      mE: monstres[0].endurance,
+      journal: [],
+      chanceUtilisee: false,
+      dernier: null
+    });
+  };
+  const assaut = () => {
+    if (!combat || !etat) return;
+    const h = etat.heros;
+    const faH = ldvelh2D6() + h.habilete;
+    const faM = ldvelh2D6() + combat.mH;
+    const lignes = combat.journal.slice();
+    let mE = combat.mE,
+      endurance = h.endurance;
+    let dernier = null;
+    if (faH > faM) {
+      mE = Math.max(0, mE - 2);
+      lignes.push("Assaut : votre Force d'Attaque " + faH + " contre " + faM + " — vous blessez (" + (combat.monstres[combat.index] ? combat.monstres[combat.index].nom : "la créature") + " : " + mE + " END)");
+      dernier = {
+        type: "blessure",
+        mE
+      };
+    } else if (faM > faH) {
+      endurance = herosBlesse(h, -2);
+      lignes.push("Assaut : votre Force d'Attaque " + faH + " contre " + faM + " — vous êtes blessé (" + endurance + " END)");
+      dernier = {
+        type: "blesse",
+        endurance
+      };
+    } else {
+      lignes.push("Assaut : " + faH + " contre " + faM + " — assaut nul, on recommence.");
+    }
+    const nouveauCombat = {
+      ...combat,
+      mE,
+      journal: lignes.slice(-12),
+      chanceUtilisee: false,
+      dernier
+    };
+    setCombat(nouveauCombat);
+    const herosApres = {
+      ...h,
+      endurance
+    };
+    majEtat({
+      ...etat,
+      heros: herosApres
+    });
+    if (mE <= 0) {
+      const suivant = combat.index + 1 < combat.monstres.length;
+      lignes.push(suivant ? "La créature s'effondre — l'ennemi suivant fonde sur vous !" : "VICTOIRE ! La créature s'effondre, morte.");
+      setCombat({
+        ...nouveauCombat,
+        journal: lignes.slice(-12),
+        vaincu: true,
+        ennemiSuivant: suivant
+      });
+    }
+  };
+  const tenterChanceCombat = camp => {
+    if (!combat || combat.chanceUtilisee || !combat.dernier || !etat) return;
+    const jet = ldvelh2D6();
+    const chanceux = jet <= etat.heros.chance;
+    const h = {
+      ...etat.heros,
+      chance: Math.max(0, etat.heros.chance - 1)
+    };
+    let mE = combat.mE,
+      endurance = h.endurance;
+    const lignes = combat.journal.slice();
+    if (combat.dernier.type === "blessure" && camp === "blessure") {
+      if (chanceux) {
+        mE = Math.max(0, mE - 2);
+        lignes.push("Chance (" + jet + ") : CHANCEUX — blessure grave, 2 END de plus (créature : " + mE + " END)");
+      } else {
+        mE = mE + 1;
+        lignes.push("Chance (" + jet + ") : MALCHANCEUX — simple écorchure (créature : " + mE + " END)");
+      }
+    } else if (combat.dernier.type === "blesse" && camp === "blesse") {
+      if (chanceux) {
+        endurance = herosBlesse(h, 1);
+        lignes.push("Chance (" + jet + ") : CHANCEUX — coup atténué (" + endurance + " END)");
+      } else {
+        endurance = herosBlesse(h, -1);
+        lignes.push("Chance (" + jet + ") : MALCHANCEUX — coup plus grave (" + endurance + " END)");
+      }
+    } else return;
+    const herosApres = {
+      ...h,
+      endurance
+    };
+    const nouveauCombat = {
+      ...combat,
+      mE,
+      journal: lignes.slice(-12),
+      chanceUtilisee: true,
+      dernier: null
+    };
+    setCombat(nouveauCombat);
+    majEtat({
+      ...etat,
+      heros: herosApres
+    });
+    if (mE <= 0) {
+      const suivant = combat.index + 1 < combat.monstres.length;
+      lignes.push(suivant ? "La créature s'effondre — l'ennemi suivant fonde sur vous !" : "VICTOIRE ! La créature s'effondre, morte.");
+      setCombat({
+        ...nouveauCombat,
+        journal: lignes.slice(-12),
+        vaincu: true,
+        ennemiSuivant: suivant
+      });
+    }
+  };
+  const ennemiSuivant = () => {
+    if (!combat) return;
+    const i = combat.index + 1;
+    const m = combat.monstres[i];
+    setCombat({
+      monstres: combat.monstres,
+      index: i,
+      mH: m.habilete,
+      mE: m.endurance,
+      journal: combat.journal.slice(),
+      chanceUtilisee: false,
+      dernier: null
+    });
+  };
+  const fuir = () => {
+    if (!etat || !combat) return;
+    const h = etat.heros;
+    const endurance = herosBlesse(h, -2);
+    setCombat(null);
+    majEtat({
+      ...etat,
+      heros: {
+        ...h,
+        endurance
+      }
+    });
+    setNotice("Vous prenez la fuite (−2 END) — suivez le renvoi de fuite du paragraphe.");
+  };
+  const quitterCombat = () => setCombat(null);
+  const tenterChance = () => {
+    if (!etat) return;
+    const jet = ldvelh2D6();
+    const chanceux = jet <= etat.heros.chance;
+    const h = {
+      ...etat.heros,
+      chance: Math.max(0, etat.heros.chance - 1)
+    };
+    majEtat({
+      ...etat,
+      heros: h
+    });
+    setTestChance({
+      jet,
+      chanceux
+    });
+  };
+  const ajuster = (champ, delta) => {
+    if (!etat) return;
+    majEtat({
+      ...etat,
+      heros: {
+        ...etat.heros,
+        [champ]: Math.max(0, etat.heros[champ] + delta)
+      }
+    });
+  };
+  const manger = () => {
+    if (!etat || etat.heros.provisions <= 0) return;
+    const h = etat.heros;
+    majEtat({
+      ...etat,
+      heros: {
+        ...h,
+        provisions: h.provisions - 1,
+        endurance: Math.min(h.enduranceDep, h.endurance + 4)
+      }
+    });
+    setNotice("Un repas : +4 END, −1 provision.");
+  };
+  const boirePotion = p => {
+    if (!etat || !etat.heros.potions[p]) return;
+    const h = etat.heros;
+    const potions = {
+      ...h.potions,
+      [p]: h.potions[p] - 1
+    };
+    let heros = {
+      ...h,
+      potions
+    };
+    if (p === "adresse") heros.habilete = h.habileteDep;
+    if (p === "vigueur") heros.endurance = h.enduranceDep;
+    if (p === "bonneFortune") {
+      heros.chanceDep = h.chanceDep + 1;
+      heros.chance = heros.chanceDep;
+    }
+    majEtat({
+      ...etat,
+      heros
+    });
+    setNotice("Potion bue : " + p + ".");
+  };
+  const trouverPotion = p => {
+    if (!etat) return;
+    const h = etat.heros;
+    majEtat({
+      ...etat,
+      heros: {
+        ...h,
+        potions: {
+          ...h.potions,
+          [p]: (h.potions[p] || 0) + 1
+        }
+      }
+    });
+  };
+  const ajouterEquipement = nom => {
+    if (!etat || !nom || !nom.trim()) return;
+    majEtat({
+      ...etat,
+      heros: {
+        ...etat.heros,
+        equipement: etat.heros.equipement.concat([nom.trim()])
+      }
+    });
+  };
+  const retirerEquipement = i => {
+    if (!etat) return;
+    majEtat({
+      ...etat,
+      heros: {
+        ...etat.heros,
+        equipement: etat.heros.equipement.filter((_, j) => j !== i)
+      }
+    });
+  };
+  if (!joueur) {
+    return React.createElement("div", {
+      className: "min-h-screen flex flex-col items-center justify-center gap-4",
+      style: {
+        background: T.fond
+      }
+    }, React.createElement("div", {
+      className: "text-5xl"
+    }, "\uD83D\uDCD6"), React.createElement("p", {
+      className: "text-zinc-400"
+    }, "La biblioth\xE8que vit dans la Tombe \u2014 connectez-vous pour lire."), React.createElement("button", {
+      onClick: onRetour,
+      className: "px-4 py-2 rounded-lg text-sm font-bold text-black",
+      style: {
+        background: T.or
+      }
+    }, "Retour"));
+  }
+  const h = etat && etat.heros;
+  const monstresP = paragraphe && paragraphe.donnees && paragraphe.donnees.monstres || [];
+  return React.createElement("div", {
+    className: "min-h-screen",
+    style: {
+      background: T.fond
+    }
+  }, React.createElement("div", {
+    className: "max-w-3xl mx-auto px-4 pt-5 pb-24"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between mb-4"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-xs tracking-[3px] uppercase",
+    style: {
+      color: T.accent
+    }
+  }, "Livre dont vous \xEAtes le H\xE9ros"), React.createElement("div", {
+    className: "text-xl font-bold text-zinc-100"
+  }, pack.sousTitre || "Défis Fantastiques")), React.createElement("button", {
+    onClick: onRetour,
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "\u2190 Hub")), React.createElement("div", {
+    className: "flex gap-2 mb-5 flex-wrap"
+  }, [["bibliotheque", "📚 BIBLIOTHÈQUE"], ["lecture", "📜 LECTURE"], ["feuille", "✒️ FEUILLE D'AVENTURE"], ["regles", "⚖️ RÈGLES"]].map(([id, label]) => React.createElement("button", {
+    key: id,
+    onClick: () => setOnglet(id),
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold border",
+    style: onglet === id ? {
+      background: T.accent,
+      color: "#0c0d10",
+      borderColor: T.accent
+    } : {
+      color: "#a1a1aa",
+      borderColor: "#3f3f46",
+      background: "transparent"
+    }
+  }, label))), notice && React.createElement("div", {
+    className: "mb-4 px-3 py-2 rounded-lg text-sm",
+    style: {
+      background: "#1c1c22",
+      color: T.or,
+      border: "1px solid #3f3f46"
+    }
+  }, notice, " ", React.createElement("button", {
+    onClick: () => setNotice(""),
+    className: "ml-2 text-zinc-500"
+  }, "\xD7")), onglet === "bibliotheque" && React.createElement("div", {
+    className: "space-y-3"
+  }, livres === null && React.createElement("p", {
+    className: "text-zinc-500 text-sm"
+  }, "La biblioth\xE8que ouvre ses rayonnages\u2026"), (livres || []).map(l => {
+    const sauve = sauvegardes[l.code];
+    return React.createElement("div", {
+      key: l.code,
+      className: "rounded-xl border border-zinc-800 p-4",
+      style: {
+        background: "#12140f"
+      }
+    }, React.createElement("div", {
+      className: "flex items-center justify-between gap-3"
+    }, React.createElement("div", null, React.createElement("div", {
+      className: "text-lg font-bold text-zinc-100"
+    }, l.titre), React.createElement("div", {
+      className: "text-xs text-zinc-500"
+    }, l.auteur || "", " \xB7 ", l.nb_paragraphes, " paragraphes"), sauve && React.createElement("div", {
+      className: "text-xs mt-1",
+      style: {
+        color: T.accent
+      }
+    }, "Lecture au paragraphe ", sauve.position)), React.createElement("div", {
+      className: "flex flex-col gap-2"
+    }, React.createElement("button", {
+      onClick: () => {
+        lancerCreation(l);
+      },
+      className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+      style: {
+        background: T.or
+      }
+    }, "\uD83D\uDCD6 NOUVELLE AVENTURE"), sauve && React.createElement("button", {
+      onClick: () => {
+        setEtat(sauve);
+        cacheParagraphes.current = {};
+        setOnglet("lecture");
+        ouvrirParagrapheDepuis(sauve);
+      },
+      className: "px-3 py-2 rounded-lg text-xs font-bold",
+      style: {
+        background: "transparent",
+        color: T.accent,
+        border: "1px solid " + T.accent
+      }
+    }, "\u21BA REPRENDRE"))));
+  }), livres && !livres.length && React.createElement("p", {
+    className: "text-zinc-500 text-sm"
+  }, "Aucun tome dans la biblioth\xE8que \u2014 l'Archiviste n'a encore rien vers\xE9.")), onglet === "lecture" && !etat && React.createElement("p", {
+    className: "text-zinc-500 text-sm"
+  }, "Ouvrez un livre depuis la BIBLIOTH\xC8QUE."), onglet === "lecture" && etat && React.createElement("div", null, React.createElement("div", {
+    className: "text-xs text-zinc-500 mb-2"
+  }, etat.titre, " \xB7 paragraphe ", React.createElement("span", {
+    style: {
+      color: T.or
+    }
+  }, "\xA7 ", paragraphe ? paragraphe.numero : etat.position)), React.createElement("div", {
+    className: "rounded-xl border border-zinc-800 p-5 text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap",
+    style: {
+      background: "#12140f"
+    }
+  }, paragraphe ? paragraphe.texte : "Le paragraphe s'ouvre…"), paragraphe && paragraphe.donnees && paragraphe.donnees.chance && !combat && React.createElement("div", {
+    className: "mt-4 px-4 py-3 rounded-xl border",
+    style: {
+      background: "#12140f",
+      borderColor: T.accent
+    }
+  }, React.createElement("div", {
+    className: "text-sm text-zinc-300 mb-2"
+  }, "Ce paragraphe demande de ", React.createElement("b", null, "Tenter votre Chance"), " :"), React.createElement("button", {
+    onClick: tenterChance,
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "\uD83C\uDFB2 TENTER SA CHANCE"), testChance && React.createElement("div", {
+    className: "mt-2 text-sm font-bold",
+    style: {
+      color: testChance.chanceux ? T.accent : "#e0524d"
+    }
+  }, "2D6 = ", testChance.jet, " \u2014 vous \xEAtes ", testChance.chanceux ? "CHANCEUX" : "MALCHANCEUX", " (suivez le renvoi correspondant).")), combat && React.createElement("div", {
+    className: "mt-4 rounded-xl border p-4",
+    style: {
+      background: "#12140f",
+      borderColor: "#e0524d"
+    }
+  }, React.createElement("div", {
+    className: "flex items-center justify-between mb-2"
+  }, React.createElement("div", {
+    className: "font-bold",
+    style: {
+      color: "#e0524d"
+    }
+  }, "\u2694 ", combat.monstres[combat.index].nom, " \u2014 HAB ", combat.mH, " \xB7 END ", combat.mE), !combat.vaincu && React.createElement("button", {
+    onClick: quitterCombat,
+    className: "text-xs text-zinc-500"
+  }, "\xD7")), React.createElement("div", {
+    className: "text-xs text-zinc-400 mb-3"
+  }, "Vous : HAB ", h.habilete, " \xB7 END ", h.endurance, " \xB7 CHANCE ", h.chance), !combat.vaincu && React.createElement("div", {
+    className: "flex gap-2 flex-wrap"
+  }, React.createElement("button", {
+    onClick: assaut,
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "\u2694 ASSAUT"), combat.dernier && combat.dernier.type === "blessure" && !combat.chanceUtilisee && React.createElement("button", {
+    onClick: () => tenterChanceCombat("blessure"),
+    className: "px-3 py-2 rounded-lg text-xs font-bold",
+    style: {
+      color: T.accent,
+      border: "1px solid " + T.accent
+    }
+  }, "\uD83C\uDFB2 TENTER SA CHANCE (blessure)"), combat.dernier && combat.dernier.type === "blesse" && !combat.chanceUtilisee && React.createElement("button", {
+    onClick: () => tenterChanceCombat("blesse"),
+    className: "px-3 py-2 rounded-lg text-xs font-bold",
+    style: {
+      color: T.accent,
+      border: "1px solid " + T.accent
+    }
+  }, "\uD83C\uDFB2 TENTER SA CHANCE (bless\xE9)"), paragraphe && paragraphe.donnees && paragraphe.donnees.fuite && React.createElement("button", {
+    onClick: fuir,
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-zinc-300",
+    style: {
+      border: "1px solid #3f3f46"
+    }
+  }, "FUIR (\u22122 END)")), combat.vaincu && combat.ennemiSuivant && React.createElement("button", {
+    onClick: ennemiSuivant,
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "ENNEMI SUIVANT"), combat.vaincu && !combat.ennemiSuivant && React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: T.accent
+    }
+  }, "VICTOIRE \u2014 reprenez la lecture ci-dessous."), combat.journal.length > 0 && React.createElement("div", {
+    className: "mt-3 space-y-1 text-xs text-zinc-400"
+  }, combat.journal.map((l, i) => React.createElement("div", {
+    key: i
+  }, "\xB7 ", l)))), !combat && monstresP.length > 0 && h && h.endurance > 0 && React.createElement("div", {
+    className: "mt-4 rounded-xl border p-4",
+    style: {
+      background: "#12140f",
+      borderColor: "#e0524d"
+    }
+  }, React.createElement("div", {
+    className: "text-sm text-zinc-300 mb-2"
+  }, "RENCONTRE : ", monstresP.map(m => m.nom + " (HAB " + m.habilete + " · END " + m.endurance + ")").join(", ")), React.createElement("button", {
+    onClick: demarrerCombat,
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: "#e0524d"
+    }
+  }, "\u2694 COMBATTRE")), paragraphe && paragraphe.donnees && paragraphe.donnees.renvois && paragraphe.donnees.renvois.length > 0 && React.createElement("div", {
+    className: "mt-4 space-y-2"
+  }, paragraphe.donnees.renvois.map((r, i) => React.createElement("button", {
+    key: i,
+    onClick: () => ouvrirParagraphe(r.vers),
+    className: "w-full text-left px-4 py-3 rounded-xl border text-sm",
+    style: {
+      background: "#161a12",
+      borderColor: "#3f3f46",
+      color: "#d4d4d8"
+    }
+  }, React.createElement("span", {
+    className: "text-zinc-400"
+  }, r.label), " ", React.createElement("span", {
+    className: "font-bold",
+    style: {
+      color: T.accent
+    }
+  }, "\u2192 ", r.vers)))), paragraphe && (!paragraphe.donnees || !paragraphe.donnees.renvois || !paragraphe.donnees.renvois.length) && React.createElement("div", {
+    className: "mt-4 text-sm font-bold",
+    style: {
+      color: T.or
+    }
+  }, "Votre aventure s'arr\xEAte \xE0 ce paragraphe."), h && h.endurance <= 0 && React.createElement("div", {
+    className: "mt-4 text-sm font-bold",
+    style: {
+      color: "#e0524d"
+    }
+  }, "Votre ENDURANCE est tomb\xE9e \xE0 z\xE9ro \u2014 votre aventure se termine ici.")), onglet === "feuille" && !etat && React.createElement("p", {
+    className: "text-zinc-500 text-sm"
+  }, "Aucune feuille ouverte \u2014 commencez un livre."), onglet === "feuille" && etat && h && React.createElement("div", {
+    className: "space-y-4"
+  }, [["habilete", "HABILETÉ", h.habileteDep], ["endurance", "ENDURANCE", h.enduranceDep], ["chance", "CHANCE", h.chanceDep]].map(([champ, label, dep]) => React.createElement("div", {
+    key: champ,
+    className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500"
+  }, label, " (d\xE9part : ", dep, ")"), React.createElement("div", {
+    className: "text-2xl font-bold",
+    style: {
+      color: T.or
+    }
+  }, h[champ])), React.createElement("div", {
+    className: "flex gap-2"
+  }, React.createElement("button", {
+    onClick: () => ajuster(champ, -1),
+    className: "w-9 h-9 rounded-lg font-bold text-black",
+    style: {
+      background: "#a8adb8"
+    }
+  }, "\u2212"), React.createElement("button", {
+    onClick: () => ajuster(champ, 1),
+    className: "w-9 h-9 rounded-lg font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "+")))), React.createElement("div", {
+    className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500"
+  }, "PROVISIONS"), React.createElement("div", {
+    className: "text-2xl font-bold",
+    style: {
+      color: T.or
+    }
+  }, h.provisions)), React.createElement("div", {
+    className: "flex gap-2"
+  }, React.createElement("button", {
+    onClick: () => ajuster("provisions", -1),
+    className: "w-9 h-9 rounded-lg font-bold text-black",
+    style: {
+      background: "#a8adb8"
+    }
+  }, "\u2212"), React.createElement("button", {
+    onClick: manger,
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.accent
+    }
+  }, "MANGER (+4 END)"), React.createElement("button", {
+    onClick: () => ajuster("provisions", 1),
+    className: "w-9 h-9 rounded-lg font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "+"))), React.createElement("div", {
+    className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500"
+  }, "OR"), React.createElement("div", {
+    className: "text-2xl font-bold",
+    style: {
+      color: T.or
+    }
+  }, h.or)), React.createElement("div", {
+    className: "flex gap-2"
+  }, React.createElement("button", {
+    onClick: () => ajuster("or", -1),
+    className: "w-9 h-9 rounded-lg font-bold text-black",
+    style: {
+      background: "#a8adb8"
+    }
+  }, "\u2212"), React.createElement("button", {
+    onClick: () => ajuster("or", 1),
+    className: "w-9 h-9 rounded-lg font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "+"))), React.createElement("div", {
+    className: "rounded-xl border border-zinc-800 p-4",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500 mb-2"
+  }, "POTIONS"), React.createElement("div", {
+    className: "flex gap-3 flex-wrap"
+  }, ["adresse", "vigueur", "bonneFortune"].map(p => React.createElement("div", {
+    key: p,
+    className: "flex items-center gap-2"
+  }, React.createElement("span", {
+    className: "text-sm text-zinc-300 capitalize"
+  }, p, " \xD7 ", h.potions[p] || 0), React.createElement("button", {
+    onClick: () => trouverPotion(p),
+    className: "px-2 py-1 rounded text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "+"), React.createElement("button", {
+    onClick: () => boirePotion(p),
+    disabled: !h.potions[p],
+    className: "px-2 py-1 rounded text-xs font-bold",
+    style: {
+      background: h.potions[p] ? T.accent : "#27272a",
+      color: h.potions[p] ? "#0c0d10" : "#52525b"
+    }
+  }, "BOIRE"))))), React.createElement("div", {
+    className: "rounded-xl border border-zinc-800 p-4",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500 mb-2"
+  }, "\xC9QUIPEMENT TRANSPORT\xC9"), React.createElement("div", {
+    className: "space-y-1"
+  }, h.equipement.map((e, i) => React.createElement("div", {
+    key: i,
+    className: "flex items-center justify-between text-sm text-zinc-200"
+  }, React.createElement("span", null, e), React.createElement("button", {
+    onClick: () => retirerEquipement(i),
+    className: "text-xs text-zinc-500"
+  }, "retirer \xD7"))), !h.equipement.length && React.createElement("div", {
+    className: "text-sm text-zinc-500"
+  }, "Sac vide.")), React.createElement("form", {
+    className: "mt-3 flex gap-2",
+    onSubmit: ev => {
+      ev.preventDefault();
+      const f = ev.target.elements[0];
+      ajouterEquipement(f.value);
+      f.value = "";
+    }
+  }, React.createElement("input", {
+    placeholder: "Ajouter un objet\u2026",
+    className: "flex-1 bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
+  }), React.createElement("button", {
+    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "AJOUTER"))), React.createElement("p", {
+    className: "text-xs text-zinc-500"
+  }, "La feuille se grave dans la Tombe \xE0 chaque geste \u2014 votre lecture survit \xE0 l'appareil.")), onglet === "regles" && React.createElement("div", {
+    className: "space-y-4"
+  }, (pack.contenu && pack.contenu.documents || []).map(doc => React.createElement("div", {
+    key: doc.id,
+    className: "rounded-xl border border-zinc-800 p-4",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-zinc-100 mb-3"
+  }, doc.titre), doc.sections.map((sec, i) => React.createElement("div", {
+    key: i,
+    className: "mb-4"
+  }, React.createElement("div", {
+    className: "text-sm font-bold mb-2",
+    style: {
+      color: T.accent
+    }
+  }, sec.titre), sec.blocs.map((b, j) => b.type === "liste" ? React.createElement("ul", {
+    key: j,
+    className: "list-disc pl-5 text-sm text-zinc-300 space-y-1"
+  }, b.items.map((it, k) => React.createElement("li", {
+    key: k
+  }, it))) : React.createElement("p", {
+    key: j,
+    className: "text-sm text-zinc-300"
+  }, b.texte)))))))), creation && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.8)"
+    }
+  }, React.createElement("div", {
+    className: "rounded-2xl border p-6 w-full max-w-sm",
+    style: {
+      background: "#12140f",
+      borderColor: "#3f3f46"
+    }
+  }, React.createElement("div", {
+    className: "text-lg font-bold text-zinc-100 mb-1"
+  }, creation.livre.titre), React.createElement("div", {
+    className: "text-xs text-zinc-500 mb-4"
+  }, "Lancez vos points de d\xE9part :"), [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"]].map(([label, k]) => React.createElement("div", {
+    key: k,
+    className: "flex items-center justify-between py-2 border-b border-zinc-800"
+  }, React.createElement("span", {
+    className: "text-sm text-zinc-300"
+  }, label), React.createElement("span", {
+    className: "text-2xl font-bold",
+    style: {
+      color: T.or
+    }
+  }, creation[k]))), React.createElement("div", {
+    className: "flex gap-2 mt-4"
+  }, React.createElement("button", {
+    onClick: () => lancerCreation(creation.livre),
+    className: "flex-1 px-3 py-2 rounded-lg text-xs font-bold text-zinc-200",
+    style: {
+      border: "1px solid #3f3f46"
+    }
+  }, "\u21BA RELANCER"), React.createElement("button", {
+    onClick: commencerAventure,
+    className: "flex-1 px-3 py-2 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.accent
+    }
+  }, "COMMENCER L'AVENTURE")))));
+}
 const VUES = {
   "noyau-40k": VueNoyau40k,
-  "noyau-d100": VueNoyauD100
+  "noyau-d100": VueNoyauD100,
+  "noyau-ldvelh": VueNoyauLDVELH
 };
 function VueInconnue({
   pack,
@@ -12117,6 +13057,7 @@ function App() {
   }, React.createElement(Icosaedre, {
     size: 38,
     color: packActif.theme.accent
+
   }), React.createElement("div", null, React.createElement("div", {
     className: "font-bold text-lg",
     style: {
