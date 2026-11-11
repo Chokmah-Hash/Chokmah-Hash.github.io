@@ -1717,7 +1717,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.113";
+const BUILD = "0.114";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11454,7 +11454,11 @@ function ldvelh2D6() {
 function VueNoyauLDVELH({
   pack,
   onRetour,
-  joueur
+  joueur,
+  avatar,
+  versionBase,
+  onAvatar,
+  onLogout
 }) {
   const T = pack.theme || {
     fond: "#0d130b",
@@ -11472,6 +11476,17 @@ function VueNoyauLDVELH({
   const [creation, setCreation] = useState(null);
   const [notice, setNotice] = useState("");
   const cacheParagraphes = useRef({});
+  const [compteOuvert, setCompteOuvert] = useState(false);
+  const compte = joueur && avatar ? React.createElement(CompteJoueur, {
+    joueur: joueur,
+    avatar: avatar,
+    onAvatar: onAvatar,
+    avatarSeul: true,
+    ouvert: compteOuvert,
+    onOuvert: () => setCompteOuvert(o => !o),
+    onLogout: onLogout,
+    halo: "#2ee6c9"
+  }) : null;
   useEffect(() => {
     if (!joueur || !CLOUD || !CLOUD.listerLivresLdvelh) return;
     let vivant = true;
@@ -11587,6 +11602,13 @@ function VueNoyauLDVELH({
     if (CLOUD && CLOUD.sauverPartieLdvelh) CLOUD.sauverPartieLdvelh(nouveau.livreCode, nouveau).catch(() => {});
     cacheParagraphes.current = {};
     ouvrirParagraphe(1, nouveau);
+  };
+  const retourBibliotheque = () => {
+    setEtat(null);
+    setParagraphe(null);
+    setCombat(null);
+    setTestChance(null);
+    setOnglet("bibliotheque");
   };
   const demarrerCombat = () => {
     const monstres = paragraphe.donnees && paragraphe.donnees.monstres || [];
@@ -11841,9 +11863,11 @@ function VueNoyauLDVELH({
       style: {
         background: T.fond
       }
-    }, React.createElement("div", {
-      className: "text-5xl"
-    }, "\uD83D\uDCD6"), React.createElement("p", {
+    }, React.createElement(GlyphePack, {
+      pack: pack,
+      size: 56,
+      fond: T.fond
+    }), React.createElement("p", {
       className: "text-zinc-400"
     }, "La biblioth\xE8que vit dans la Tombe \u2014 connectez-vous pour lire."), React.createElement("button", {
       onClick: onRetour,
@@ -11856,30 +11880,25 @@ function VueNoyauLDVELH({
   const h = etat && etat.heros;
   const monstresP = paragraphe && paragraphe.donnees && paragraphe.donnees.monstres || [];
   return React.createElement("div", {
-    className: "min-h-screen",
+    className: "min-h-screen flex flex-col",
     style: {
-      background: T.fond
+      background: T.fond,
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-3xl mx-auto px-4 pt-5 pb-24"
+    className: "max-w-3xl mx-auto px-4 pt-5 pb-24 w-full flex-1"
+  }, React.createElement(EntetePartie, {
+    pack: pack,
+    role: "joueur",
+    joueur: joueur,
+    avatar: avatar,
+    compte: compte,
+    onRetour: onRetour
+  }), etat && React.createElement("div", {
+    className: "flex gap-2 mb-5 flex-wrap items-center justify-between"
   }, React.createElement("div", {
-    className: "flex items-center justify-between mb-4"
-  }, React.createElement("div", null, React.createElement("div", {
-    className: "text-xs tracking-[3px] uppercase",
-    style: {
-      color: T.accent
-    }
-  }, "Livre dont vous \xEAtes le H\xE9ros"), React.createElement("div", {
-    className: "text-xl font-bold text-zinc-100"
-  }, pack.sousTitre || "Défis Fantastiques")), React.createElement("button", {
-    onClick: onRetour,
-    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "\u2190 Hub")), React.createElement("div", {
-    className: "flex gap-2 mb-5 flex-wrap"
-  }, [["bibliotheque", "📚 BIBLIOTHÈQUE"], ["lecture", "📜 LECTURE"], ["feuille", "✒️ FEUILLE D'AVENTURE"], ["regles", "⚖️ RÈGLES"]].map(([id, label]) => React.createElement("button", {
+    className: "flex gap-2 flex-wrap"
+  }, [["lecture", "LECTURE"], ["feuille", "FEUILLE D'AVENTURE"], ["regles", "RÈGLES"]].map(([id, label]) => React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-3 py-1.5 rounded-lg text-xs font-bold border",
@@ -11892,7 +11911,16 @@ function VueNoyauLDVELH({
       borderColor: "#3f3f46",
       background: "transparent"
     }
-  }, label))), notice && React.createElement("div", {
+  }, label))), React.createElement("button", {
+    onClick: retourBibliotheque,
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "\u2302 BIBLIOTH\xC8QUE")), notice && React.createElement("div", {
     className: "mb-4 px-3 py-2 rounded-lg text-sm",
     style: {
       background: "#1c1c22",
@@ -11935,7 +11963,7 @@ function VueNoyauLDVELH({
       style: {
         background: T.or
       }
-    }, "\uD83D\uDCD6 NOUVELLE AVENTURE"), sauve && React.createElement("button", {
+    }, "NOUVELLE AVENTURE"), sauve && React.createElement("button", {
       onClick: () => {
         setEtat(sauve);
         cacheParagraphes.current = {};
@@ -11978,7 +12006,7 @@ function VueNoyauLDVELH({
     style: {
       background: T.or
     }
-  }, "\uD83C\uDFB2 TENTER SA CHANCE"), testChance && React.createElement("div", {
+  }, "TENTER SA CHANCE"), testChance && React.createElement("div", {
     className: "mt-2 text-sm font-bold",
     style: {
       color: testChance.chanceux ? T.accent : "#e0524d"
@@ -11996,7 +12024,7 @@ function VueNoyauLDVELH({
     style: {
       color: "#e0524d"
     }
-  }, "\u2694 ", combat.monstres[combat.index].nom, " \u2014 HAB ", combat.mH, " \xB7 END ", combat.mE), !combat.vaincu && React.createElement("button", {
+  }, combat.monstres[combat.index].nom, " \u2014 HAB ", combat.mH, " \xB7 END ", combat.mE), !combat.vaincu && React.createElement("button", {
     onClick: quitterCombat,
     className: "text-xs text-zinc-500"
   }, "\xD7")), React.createElement("div", {
@@ -12009,21 +12037,21 @@ function VueNoyauLDVELH({
     style: {
       background: T.or
     }
-  }, "\u2694 ASSAUT"), combat.dernier && combat.dernier.type === "blessure" && !combat.chanceUtilisee && React.createElement("button", {
+  }, "ASSAUT"), combat.dernier && combat.dernier.type === "blessure" && !combat.chanceUtilisee && React.createElement("button", {
     onClick: () => tenterChanceCombat("blessure"),
     className: "px-3 py-2 rounded-lg text-xs font-bold",
     style: {
       color: T.accent,
       border: "1px solid " + T.accent
     }
-  }, "\uD83C\uDFB2 TENTER SA CHANCE (blessure)"), combat.dernier && combat.dernier.type === "blesse" && !combat.chanceUtilisee && React.createElement("button", {
+  }, "TENTER SA CHANCE (blessure)"), combat.dernier && combat.dernier.type === "blesse" && !combat.chanceUtilisee && React.createElement("button", {
     onClick: () => tenterChanceCombat("blesse"),
     className: "px-3 py-2 rounded-lg text-xs font-bold",
     style: {
       color: T.accent,
       border: "1px solid " + T.accent
     }
-  }, "\uD83C\uDFB2 TENTER SA CHANCE (bless\xE9)"), paragraphe && paragraphe.donnees && paragraphe.donnees.fuite && React.createElement("button", {
+  }, "TENTER SA CHANCE (bless\xE9)"), paragraphe && paragraphe.donnees && paragraphe.donnees.fuite && React.createElement("button", {
     onClick: fuir,
     className: "px-3 py-2 rounded-lg text-xs font-bold text-zinc-300",
     style: {
@@ -12058,7 +12086,7 @@ function VueNoyauLDVELH({
     style: {
       background: "#e0524d"
     }
-  }, "\u2694 COMBATTRE")), paragraphe && paragraphe.donnees && paragraphe.donnees.renvois && paragraphe.donnees.renvois.length > 0 && React.createElement("div", {
+  }, "COMBATTRE")), paragraphe && paragraphe.donnees && paragraphe.donnees.renvois && paragraphe.donnees.renvois.length > 0 && React.createElement("div", {
     className: "mt-4 space-y-2"
   }, paragraphe.donnees.renvois.map((r, i) => React.createElement("button", {
     key: i,
@@ -12303,7 +12331,9 @@ function VueNoyauLDVELH({
     style: {
       background: T.accent
     }
-  }, "COMMENCER L'AVENTURE")))));
+  }, "COMMENCER L'AVENTURE")))), React.createElement(PiedVibe, {
+    versionBase: versionBase
+  }));
 }
 const VUES = {
   "noyau-40k": VueNoyau40k,
