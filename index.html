@@ -863,10 +863,10 @@
         return null;
       });
     },
-    lireMesPartiesLdvelh: function () {
+    listerMesAventuresLdvelh: function () {
       var m = lire();
       if (!m || !m.access_token) return Promise.resolve([]);
-      return api("/rest/v1/archiviste_ldvelh_parties?select=livre_code,etat&order=maj_le.desc", {
+      return api("/rest/v1/archiviste_ldvelh_aventures?select=id,livre_code,etat&order=maj_le.desc", {
         token: m.access_token
       }).then(function (l) {
         return l || [];
@@ -874,19 +874,41 @@
         return [];
       });
     },
-    sauverPartieLdvelh: function (livreCode, etat) {
+    creerAventureLdvelh: function (livreCode, etat) {
       var m = lire();
-      if (!m || !m.access_token || !compteCourant) return Promise.resolve();
-      return api("/rest/v1/archiviste_ldvelh_parties", {
+      if (!m || !m.access_token || !compteCourant) return Promise.resolve([]);
+      return api("/rest/v1/archiviste_ldvelh_aventures", {
         method: "POST",
         token: m.access_token,
-        prefer: "resolution=merge-duplicates",
+        prefer: "return=representation",
         body: {
           compte_id: compteCourant,
           livre_code: livreCode,
           etat: etat,
           maj_le: new Date().toISOString()
         }
+      }).catch(function () {
+        return [];
+      });
+    },
+    sauverAventureLdvelh: function (id, etat) {
+      var m = lire();
+      if (!m || !m.access_token || !id) return Promise.resolve();
+      return api("/rest/v1/archiviste_ldvelh_aventures?id=eq." + encodeURIComponent(id), {
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          etat: etat,
+          maj_le: new Date().toISOString()
+        }
+      });
+    },
+    supprimerAventureLdvelh: function (id) {
+      var m = lire();
+      if (!m || !m.access_token || !id) return Promise.resolve();
+      return api("/rest/v1/archiviste_ldvelh_aventures?id=eq." + encodeURIComponent(id), {
+        method: "DELETE",
+        token: m.access_token
       });
     },
     tempsReel: tempsReel
@@ -1717,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.115";
+const BUILD = "0.116";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11468,7 +11490,8 @@ function VueNoyauLDVELH({
   const N = pack.noyau || {};
   const [onglet, setOnglet] = useState("bibliotheque");
   const [livres, setLivres] = useState(null);
-  const [sauvegardes, setSauvegardes] = useState({});
+  const [aventures, setAventures] = useState(null);
+  const [suppression, setSuppression] = useState(null);
   const [etat, setEtat] = useState(null);
   const [paragraphe, setParagraphe] = useState(null);
   const [combat, setCombat] = useState(null);
@@ -11493,15 +11516,12 @@ function VueNoyauLDVELH({
     CLOUD.listerLivresLdvelh().then(l => {
       if (vivant) setLivres(l || []);
     }).catch(() => setLivres([]));
-    if (CLOUD.lireMesPartiesLdvelh) {
-      CLOUD.lireMesPartiesLdvelh().then(rows => {
-        if (!vivant || !rows) return;
-        const carte = {};
-        rows.forEach(r => {
-          if (r && r.livre_code && r.etat) carte[r.livre_code] = r.etat;
-        });
-        setSauvegardes(carte);
-      }).catch(() => {});
+    if (CLOUD.listerMesAventuresLdvelh) {
+      CLOUD.listerMesAventuresLdvelh().then(rows => {
+        if (vivant) setAventures(rows || []);
+      }).catch(() => {
+        if (vivant) setAventures([]);
+      });
     }
     return () => {
       vivant = false;
@@ -11509,7 +11529,11 @@ function VueNoyauLDVELH({
   }, [joueur && joueur.compteId]);
   const majEtat = nouveau => {
     setEtat(nouveau);
-    if (CLOUD && CLOUD.sauverPartieLdvelh) CLOUD.sauverPartieLdvelh(nouveau.livreCode, nouveau).catch(() => {});
+    setAventures(a => (a || []).map(x => x.id === nouveau.id ? {
+      ...x,
+      etat: nouveau
+    } : x));
+    if (CLOUD && CLOUD.sauverAventureLdvelh && nouveau.id) CLOUD.sauverAventureLdvelh(nouveau.id, nouveau).catch(() => {});
   };
   const herosBlesse = (e, delta) => Math.max(0, e + delta);
   const ouvrirParagraphe = (numero, base) => {
@@ -11542,12 +11566,23 @@ function VueNoyauLDVELH({
       appliquer(p);
     }).catch(() => setNotice("La Tombe reste injoignable — reconnectez-vous."));
   };
-  const lancerCreation = livre => {
-    setCreation({
-      livre,
-      habilete: ldvelhDe6() + 6,
-      endurance: ldvelh2D6() + 12,
-      chance: ldvelhDe6() + 6
+  const JETS_HEROS = [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"]];
+  const lancerCreation = livre => setCreation({
+    livre,
+    jetes: {}
+  });
+  const jeterCarac = k => {
+    setCreation(c => {
+      if (!c || c.jetes[k]) return c;
+      const valeur = k === "endurance" ? ldvelh2D6() + 12 : ldvelhDe6() + 6;
+      return {
+        ...c,
+        jetes: {
+          ...c.jetes,
+          [k]: true
+        },
+        [k]: valeur
+      };
     });
   };
   const ouvrirParagrapheDepuis = s => {
@@ -11569,6 +11604,7 @@ function VueNoyauLDVELH({
   };
   const commencerAventure = () => {
     const c = creation;
+    if (!c || !c.jetes.habilete || !c.jetes.endurance || !c.jetes.chance) return;
     const tome = (pack.contenu && pack.contenu.bibliotheque && pack.contenu.bibliotheque.tomes || []).find(t => t.code === c.livre.code) || {};
     const equipDepart = tome.equipement || N.heros.equipementDepart || ["épée"];
     const nouveau = {
@@ -11597,11 +11633,31 @@ function VueNoyauLDVELH({
       visites: [1]
     };
     setCreation(null);
-    setEtat(nouveau);
-    setOnglet("lecture");
-    if (CLOUD && CLOUD.sauverPartieLdvelh) CLOUD.sauverPartieLdvelh(nouveau.livreCode, nouveau).catch(() => {});
     cacheParagraphes.current = {};
-    ouvrirParagraphe(1, nouveau);
+    const ouvrir = avecId => {
+      setAventures(a => [{
+        id: avecId.id,
+        livre_code: avecId.livreCode,
+        etat: avecId
+      }].concat(a || []));
+      setEtat(avecId);
+      setOnglet("lecture");
+      ouvrirParagraphe(1, avecId);
+    };
+    if (CLOUD && CLOUD.creerAventureLdvelh) {
+      CLOUD.creerAventureLdvelh(nouveau.livreCode, nouveau).then(rows => {
+        const row = rows && rows[0];
+        ouvrir({
+          ...nouveau,
+          id: row ? row.id : null
+        });
+      }).catch(() => setNotice("La Tombe refuse d'ouvrir l'aventure — reconnectez-vous."));
+    } else {
+      ouvrir({
+        ...nouveau,
+        id: null
+      });
+    }
   };
   const retourBibliotheque = () => {
     setEtat(null);
@@ -11609,6 +11665,12 @@ function VueNoyauLDVELH({
     setCombat(null);
     setTestChance(null);
     setOnglet("bibliotheque");
+  };
+  const supprimerAventure = a => {
+    setSuppression(null);
+    setAventures(liste => (liste || []).filter(x => x.id !== a.id));
+    if (etat && etat.id === a.id) retourBibliotheque();
+    if (CLOUD && CLOUD.supprimerAventureLdvelh && a.id) CLOUD.supprimerAventureLdvelh(a.id).catch(() => {});
   };
   const demarrerCombat = () => {
     const monstres = paragraphe.donnees && paragraphe.donnees.monstres || [];
@@ -11878,6 +11940,7 @@ function VueNoyauLDVELH({
     }, "Retour"));
   }
   const h = etat && etat.heros;
+  const creationPrete = !!(creation && creation.jetes && creation.jetes.habilete && creation.jetes.endurance && creation.jetes.chance);
   const monstresP = paragraphe && paragraphe.donnees && paragraphe.donnees.monstres || [];
   return React.createElement("div", {
     className: "min-h-screen flex flex-col",
@@ -11935,7 +11998,7 @@ function VueNoyauLDVELH({
   }, livres === null && React.createElement("p", {
     className: "text-zinc-500 text-sm"
   }, "La biblioth\xE8que ouvre ses rayonnages\u2026"), (livres || []).map(l => {
-    const sauve = sauvegardes[l.code];
+    const mesAventures = (aventures || []).filter(a => a && a.livre_code === l.code);
     return (React.createElement("div", {
         key: l.code,
         className: "rounded-xl border p-4",
@@ -11949,12 +12012,7 @@ function VueNoyauLDVELH({
         className: "text-lg font-bold text-zinc-100"
       }, l.titre), React.createElement("div", {
         className: "text-xs text-zinc-500"
-      }, l.auteur || "", " \xB7 ", l.nb_paragraphes, " paragraphes"), sauve && React.createElement("div", {
-        className: "text-xs mt-1",
-        style: {
-          color: T.accent
-        }
-      }, "Lecture au paragraphe ", sauve.position)), React.createElement("div", {
+      }, l.auteur || "", " \xB7 ", l.nb_paragraphes, " paragraphes")), React.createElement("div", {
         className: "flex flex-col gap-2"
       }, React.createElement("button", {
         onClick: () => {
@@ -11964,20 +12022,63 @@ function VueNoyauLDVELH({
         style: {
           background: T.or
         }
-      }, "NOUVELLE AVENTURE"), sauve && React.createElement("button", {
+      }, "NOUVELLE AVENTURE"))), mesAventures.length > 0 && React.createElement("div", {
+        className: "mt-3 pt-3 border-t border-zinc-800 flex flex-col gap-2"
+      }, mesAventures.map(a => React.createElement("div", {
+        key: a.id,
+        className: "flex items-center justify-between gap-2"
+      }, suppression === a.id ? React.createElement("div", {
+        className: "flex items-center gap-2 text-xs flex-wrap"
+      }, React.createElement("span", {
+        style: {
+          color: "#e0524d"
+        }
+      }, "SUPPRIMER CETTE AVENTURE ?"), React.createElement("button", {
+        onClick: () => supprimerAventure(a),
+        className: "px-2 py-1 rounded text-xs font-bold text-black",
+        style: {
+          background: "#e0524d"
+        }
+      }, "OUI"), React.createElement("button", {
+        onClick: () => setSuppression(null),
+        className: "px-2 py-1 rounded text-xs font-bold text-zinc-300",
+        style: {
+          border: "1px solid #3f3f46"
+        }
+      }, "NON")) : React.createElement(React.Fragment, null, React.createElement("span", {
+        className: "text-xs",
+        style: {
+          color: T.accent
+        }
+      }, "Aventure au \xA7 ", a.etat && a.etat.position || 1), React.createElement("div", {
+        className: "flex items-center gap-2"
+      }, React.createElement("button", {
         onClick: () => {
-          setEtat(sauve);
+          setEtat({
+            ...(a.etat || {}),
+            id: a.id
+          });
           cacheParagraphes.current = {};
           setOnglet("lecture");
-          ouvrirParagrapheDepuis(sauve);
+          ouvrirParagrapheDepuis(a.etat);
         },
-        className: "px-3 py-2 rounded-lg text-xs font-bold",
+        className: "px-3 py-1.5 rounded-lg text-xs font-bold",
         style: {
           background: "transparent",
           color: T.accent,
           border: "1px solid " + T.accent
         }
-      }, "\u21BA REPRENDRE"))))
+      }, "\u21BA REPRENDRE"), React.createElement("button", {
+        onClick: () => setSuppression(a.id),
+        title: "Supprimer cette aventure",
+        className: "px-2 py-1.5 rounded-lg text-xs font-bold",
+        style: {
+          background: "#a8adb814",
+          color: "#a8adb8",
+          border: "1px solid #3f3f46",
+          cursor: "pointer"
+        }
+      }, "\u2699")))))))
     );
   }), livres && !livres.length && React.createElement("p", {
     className: "text-zinc-500 text-sm"
@@ -12309,29 +12410,40 @@ function VueNoyauLDVELH({
     className: "text-lg font-bold text-zinc-100 mb-1"
   }, creation.livre.titre), React.createElement("div", {
     className: "text-xs text-zinc-500 mb-4"
-  }, "Lancez vos points de d\xE9part :"), [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"]].map(([label, k]) => React.createElement("div", {
+  }, "Lancez chaque caract\xE9ristique \u2014 une seule tentative, pas de retour :"), JETS_HEROS.map(([label, k]) => React.createElement("div", {
     key: k,
     className: "flex items-center justify-between py-2 border-b border-zinc-800"
   }, React.createElement("span", {
     className: "text-sm text-zinc-300"
-  }, label), React.createElement("span", {
+  }, label), creation.jetes[k] ? React.createElement("span", {
     className: "text-2xl font-bold",
     style: {
       color: T.or
     }
-  }, creation[k]))), React.createElement("div", {
+  }, creation[k]) : React.createElement("button", {
+    onClick: () => jeterCarac(k),
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.or
+    }
+  }, "LANCER LE D\xC9"))), React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, React.createElement("button", {
-    onClick: () => lancerCreation(creation.livre),
+    onClick: () => setCreation(null),
     className: "flex-1 px-3 py-2 rounded-lg text-xs font-bold text-zinc-200",
     style: {
       border: "1px solid #3f3f46"
     }
-  }, "\u21BA RELANCER"), React.createElement("button", {
+  }, "ANNULER"), React.createElement("button", {
     onClick: commencerAventure,
+    disabled: !creationPrete,
     className: "flex-1 px-3 py-2 rounded-lg text-xs font-bold text-black",
-    style: {
+    style: creationPrete ? {
       background: T.accent
+    } : {
+      background: "#3f3f46",
+      color: "#71717a",
+      cursor: "default"
     }
   }, "COMMENCER L'AVENTURE")))), React.createElement(PiedVibe, {
     versionBase: versionBase
