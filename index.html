@@ -1717,7 +1717,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.111";
+const BUILD = "0.112";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -3532,6 +3532,62 @@ function GemmeDemon({
     fill: color
   }));
 }
+function GrimoireSorts({
+  size = 32,
+  color = "#e8e4d8"
+}) {
+  return React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "44 41 104 110",
+    style: {
+      display: "block"
+    }
+  }, React.createElement("rect", {
+    x: "44",
+    y: "41",
+    width: "104",
+    height: "110",
+    rx: "10",
+    fill: "none",
+    stroke: color,
+    strokeWidth: "8"
+  }), React.createElement("line", {
+    x1: "62",
+    y1: "41",
+    x2: "62",
+    y2: "151",
+    stroke: color,
+    strokeWidth: "6"
+  }), React.createElement("rect", {
+    x: "140",
+    y: "86",
+    width: "14",
+    height: "20",
+    rx: "4",
+    fill: color
+  }), React.createElement("g", {
+    fill: "none",
+    stroke: color,
+    strokeWidth: "3",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, React.createElement("circle", {
+    cx: "105",
+    cy: "96",
+    r: "17"
+  }), React.createElement("polygon", {
+    points: "105,81 113.8,108.1 90.7,91.4 119.3,91.4 96.2,108.1"
+  }), React.createElement("path", {
+    d: "M 76,41 A 14 14 0 0 1 62,55"
+  }), React.createElement("path", {
+    d: "M 134,41 A 14 14 0 0 0 148,55"
+  }), React.createElement("path", {
+    d: "M 148,137 A 14 14 0 0 0 134,151"
+  }), React.createElement("path", {
+    d: "M 62,137 A 14 14 0 0 1 76,151"
+  })));
+}
 function GlyphePack({
   pack,
   size = 32,
@@ -3553,6 +3609,12 @@ function GlyphePack({
   }
   if (pack.id === "GM-0003") {
     return React.createElement(GemmeDemon, {
+      size: size,
+      color: teinte
+    });
+  }
+  if (pack.id === "GM-0004") {
+    return React.createElement(GrimoireSorts, {
       size: size,
       color: teinte
     });
@@ -13278,8 +13340,6 @@ __lireJson("game/index.json").then(function (index) {
   if (_a) _a.textContent = "Echec du chargement des packs : " + err;
   throw err;
 });
-
-
   </script>
 
   <script>
