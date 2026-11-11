@@ -1925,7 +1925,6 @@ const REGLES_SB = {
     const san = 5 * pou + (modNationalite || 0);
     return {
       san,
-
       sft: Math.floor(san / 2)
     };
   },
@@ -3926,7 +3925,6 @@ function CompteJoueur({
   }, React.createElement("div", {
     className: "font-bold text-white text-sm"
   }, joueur.pseudo), React.createElement("div", {
-
     className: "text-xs flex items-center gap-1",
     style: {
       color: "#a8adb8"
@@ -5876,7 +5874,6 @@ function FicheApercuD100({
     className: "mt-1 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
-
       color: "#c8c8ce"
     }
   }, React.createElement("b", {
@@ -7722,7 +7719,6 @@ function ReglesSB({
   if (cp && cp.progression) sec("La progression des compétences (§" + cp.progression.section + ")", [par("Condition : " + cp.progression.condition + "."), par("Jet : " + cp.progression.jet + " → gain : " + cp.progression.gain + " ; maximum : " + cp.progression.maximum + "."), par("Exemple : " + cp.progression.exemple + ".")]);
   if (rdm) sec("Le round de mêlée (§" + rdm.section + ")", [par("Le round dure " + rdm.duree + " " + rdm.unite + " (" + rdm.roundsParMinute + " rounds par minute). " + rdm.attaques + "."), lis(rdm.sequence.slice()), par("Changement d'arme : " + rdm.changementArme + ".")]);
   if (bl) sec("Les blessures", [par("Blessure mineure : " + bl.mineure + "."), par("Blessure majeure : DEX " + bl.majeure.dex + " ; " + bl.majeure.rounds + "."), par("Premiers soins : " + bl.majeure.aide + ".")]);
-
   if (arm.melee && arm.melee.length) sec("Les armes de mêlée", [tab(["Arme", "FOR", "DEX", "Dégâts"], arm.melee.map(a => [a.nom, a.for == null ? "—" : a.for, a.dex == null ? "—" : a.dex, a.degats]))]);
   if (aru.types && aru.types.length) sec("Les armures", [tab(["Armure", "Protection"], aru.types.map(a => [a.nom, a.protection]))]);
   if (so && so.tableResistance) sec("La Table de Résistance (§" + so.tableResistance.section + ")", [par(so.tableResistance.formule + "."), par("Usage : " + so.tableResistance.usage + ".")]);
@@ -9604,7 +9600,6 @@ function EcranCreationAventurier({
     style: {
       color: "#a1a1aa"
     }
-
   }, traceAjust.map(t => t.c + " " + t.avant + "→" + t.apres).join(" · ")), React.createElement("div", {
     className: "text-xs",
     style: {
@@ -11323,7 +11318,6 @@ function VueNoyauD100({
       border: "1px solid " + T.or + "44"
     }
   }, React.createElement("div", {
-
     className: "text-xs mb-2",
     style: {
       color: "#c8c8ce"
@@ -13057,7 +13051,6 @@ function App() {
   }, React.createElement(Icosaedre, {
     size: 38,
     color: packActif.theme.accent
-
   }), React.createElement("div", null, React.createElement("div", {
     className: "font-bold text-lg",
     style: {
