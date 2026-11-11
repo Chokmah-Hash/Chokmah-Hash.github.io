@@ -1,0 +1,34 @@
+{
+  "id": "GM-0004",
+  "salon": "BIBLIOTHÈQUE",
+  "bibliotheque": {
+    "source": "archiviste_ldvelh_livres (la Tombe) — les textes des paragraphes vivent en base, jamais dans le dépôt public",
+    "tomes": [{ "code": "ff-foret-malediction", "titre": "La Forêt de la Malédiction", "numero": 3 }]
+  },
+  "textes": {
+    "creer": "📖 Ouvrir un nouveau livre",
+    "reprendre": "Reprendre la lecture"
+  },
+  "documents": [
+    {
+      "id": "regles-ldvelh",
+      "titre": "Comment combattre les créatures (règles du livre)",
+      "sections": [
+        {
+          "titre": "Habileté, Endurance et Chance",
+          "blocs": [
+            { "type": "para", "texte": "Lancez un dé, ajoutez 6 : c'est votre HABILETÉ. Lancez deux dés, ajoutez 12 : c'est votre ENDURANCE. Lancez un dé, ajoutez 6 : c'est votre CHANCE. Les totaux de départ ne sont jamais dépassés, sauf indication contraire d'un paragraphe." },
+            { "type": "liste", "items": ["Provisions : 10 repas, un repas = +4 END hors combat", "Fuite : −2 END, seulement si le paragraphe l'autorise", "Tenter sa Chance : 2D6 ≤ CHANCE = chanceux ; chaque tentative coûte 1 point de CHANCE"] }
+          ]
+        },
+        {
+          "titre": "Les assauts",
+          "blocs": [
+            { "type": "para", "texte": "Chaque assaut : lancez 2D6 pour vous et 2D6 pour la créature, ajoutez l'HABILETÉ de chacun — la Force d'Attaque la plus haute blesse l'adversaire : −2 END. Égalité : assaut nul. Le combat s'arrête à 0 END." },
+            { "type": "para", "texte": "Après chaque blessure, vous pouvez Tenter votre Chance : chanceux en la blessant = 2 END de plus pour la créature ; chanceux en étant blessé = 1 END de moins pour vous ; malchanceux : l'effet inverse." }
+          ]
+        }
+      ]
+    }
+  ]
+}

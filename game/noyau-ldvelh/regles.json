@@ -1,0 +1,30 @@
+{
+  "id": "noyau-ldvelh",
+  "version": "1.0",
+  "systeme": "defis-fantastiques",
+  "source": "La Forêt de la Malédiction (Ian Livingstone, trad. Gallimard 1984), pages 4-10",
+  "heros": {
+    "habilete": { "formule": "1D6 + 6", "min": 7, "max": 12 },
+    "endurance": { "formule": "2D6 + 12", "min": 14, "max": 24 },
+    "chance": { "formule": "1D6 + 6", "min": 7, "max": 12 },
+    "provisions": 10,
+    "equipementDepart": ["épée", "bouclier", "lanterne"]
+  },
+  "combat": {
+    "assaut": "chaque camp : 2D6 + HABILETÉ = Force d'Attaque",
+    "blessure": "le camp à la Force d'Attaque inférieure perd 2 points d'ENDURANCE",
+    "egalite": "assaut nul — on recommence",
+    "chanceBlessure": "Tenter sa Chance après avoir blessé : chanceux = −2 END supplémentaires pour la créature ; malchanceux = +1 END pour la créature",
+    "chanceBlesse": "Tenter sa Chance après avoir été blessé : chanceux = +1 END (coup atténué) ; malchanceux = −1 END supplémentaire",
+    "fuite": "si le paragraphe le permet : −2 END pour fuir (la chance peut atténuer)",
+    "provisions": "un repas hors combat : +4 END (jamais au-dessus du total de départ), −1 provision"
+  },
+  "chance": {
+    "test": "2D6 ≤ total de CHANCE = chanceux ; sinon malchanceux ; chaque tentative : −1 CHANCE"
+  },
+  "potions": {
+    "adresse": "rétablit l'HABILETÉ au niveau de départ",
+    "vigueur": "rétablit l'ENDURANCE au niveau de départ",
+    "bonneFortune": "rétablit la CHANCE au niveau de départ et augmente la chance de départ de 1"
+  }
+}

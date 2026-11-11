@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "id": "GM-0004",
+  "version": "0.1.0-alpha",
+  "type": "mod",
+  "nom": "Livre dont vous êtes le Héros",
+  "sousTitre": "La bibliothèque des Défis Fantastiques",
+  "depend_de": [
+    { "id": "noyau-ldvelh", "format_min": 1 }
+  ],
+  "multijoueur": false,
+  "statut": "disponible",
+  "visibilite": "prive",
+  "taille": "2 Mo",
+  "fichiers": { "regles": "regles.json" },
+  "theme": {
+    "nom": "de la Forêt",
+    "fond": "#0d130b",
+    "accent": "#7fbf5f",
+    "or": "#d8b04c"
+  },
+  "accroche": "Un livre, un dés, un héros",
+  "resume": "La bibliothèque des Livres dont vous êtes le Héros : les tomes de la série Défis Fantastiques, lisibles et jouables dans L'Archiviste — feuille d'aventure, combats et dés automatisés, sauvegarde au fil des paragraphes.",
+  "glyphs": "📖"
+}

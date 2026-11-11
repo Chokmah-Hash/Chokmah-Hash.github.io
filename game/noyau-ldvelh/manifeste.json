@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "id": "noyau-ldvelh",
+  "type": "noyau",
+  "version": "1.0",
+  "nom": "Noyau LDVELH",
+  "fichiers": { "regles": "regles.json" }
+}

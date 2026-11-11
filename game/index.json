@@ -3,8 +3,10 @@
   "packs": [
     "noyau-40k",
     "noyau-d100",
+    "noyau-ldvelh",
     "GM-0001",
     "GM-0002",
-    "GM-0003"
+    "GM-0003",
+    "GM-0004"
   ]
 }
