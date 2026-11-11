@@ -1717,7 +1717,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.112";
+const BUILD = "0.113";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -3539,10 +3539,12 @@ function GrimoireSorts({
   return React.createElement("svg", {
     width: size,
     height: size,
-    viewBox: "44 41 104 110",
+    viewBox: "30 30 132 132",
     style: {
       display: "block"
     }
+  }, React.createElement("g", {
+    transform: "translate(96,96) scale(0.9) translate(-96,-96)"
   }, React.createElement("rect", {
     x: "44",
     y: "41",
@@ -3551,14 +3553,14 @@ function GrimoireSorts({
     rx: "10",
     fill: "none",
     stroke: color,
-    strokeWidth: "8"
+    strokeWidth: "8.9"
   }), React.createElement("line", {
     x1: "62",
     y1: "41",
     x2: "62",
     y2: "151",
     stroke: color,
-    strokeWidth: "6"
+    strokeWidth: "6.7"
   }), React.createElement("rect", {
     x: "140",
     y: "86",
@@ -3569,7 +3571,7 @@ function GrimoireSorts({
   }), React.createElement("g", {
     fill: "none",
     stroke: color,
-    strokeWidth: "3",
+    strokeWidth: "3.3",
     strokeLinecap: "round",
     strokeLinejoin: "round"
   }, React.createElement("circle", {
@@ -3586,7 +3588,7 @@ function GrimoireSorts({
     d: "M 148,137 A 14 14 0 0 0 134,151"
   }), React.createElement("path", {
     d: "M 62,137 A 14 14 0 0 1 76,151"
-  })));
+  }))));
 }
 function GlyphePack({
   pack,
