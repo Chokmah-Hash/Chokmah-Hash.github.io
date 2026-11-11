@@ -1717,7 +1717,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.109";
+const BUILD = "0.110";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -3169,8 +3169,8 @@ function chargerLivre(idLivre) {
 }
 function etapesChargement(p, role) {
   const roleTxt = `rôle de session : ${role === "mj" ? "MAÎTRE DU JEU — zone ambre" : "JOUEUR — zone teal"}`;
-  const C = chargerPack(p).contenu;
-  return [`installation vérifiée — ${p.nom} présent dans la bibliothèque locale`, `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`, `dépendance résolue : ${p.depend_de.map(d => d.id + "@" + d.format_min).join(", ") || "aucune"} — primitive ${C.primitive}`, roleTxt, `surcharges appliquées : ${C.surcharges.join(" · ")}`, `thème « ${p.theme.nom} » appliqué — palette du pack`, "pack prêt."];
+  const C = chargerPack(p).contenu || {};
+  return [`installation vérifiée — ${p.nom} présent dans la bibliothèque locale`, `manifeste.json lu — ${p.id} v${p.version} (type ${p.type})`, `dépendance résolue : ${p.depend_de.map(d => d.id + "@" + d.format_min).join(", ") || "aucune"} — primitive ${C.primitive || "— (le pack porte son propre moteur)"}`, roleTxt, `surcharges appliquées : ${(C.surcharges || []).join(" · ") || "aucune"}`, `thème « ${p.theme.nom} » appliqué — palette du pack`, "pack prêt."];
 }
 (function themeScroll() {
   if (typeof document === "undefined" || !document.head || !document.createElement) return;
@@ -12946,6 +12946,10 @@ function App() {
       setModePour(p);
       return;
     }
+    if (p.depend_de && p.depend_de[0] && p.depend_de[0].id === "noyau-ldvelh") {
+      choisirRole("joueur", p);
+      return;
+    }
     setRolePour(p);
   };
   const choisirModePartie = mode => {
@@ -12958,8 +12962,8 @@ function App() {
     setPackPartie(chargerPack(p));
     setVue("partie");
   };
-  const choisirRole = role => {
-    const p = rolePour;
+  const choisirRole = (role, pDirect) => {
+    const p = pDirect || rolePour;
     setRolePour(null);
     setRolesPacks(r => ({
       ...r,
@@ -13272,6 +13276,7 @@ __lireJson("game/index.json").then(function (index) {
   if (_a) _a.textContent = "Echec du chargement des packs : " + err;
   throw err;
 });
+
 
   </script>
 
