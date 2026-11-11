@@ -1717,7 +1717,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.110";
+const BUILD = "0.111";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11490,6 +11490,8 @@ function VueNoyauLDVELH({
   };
   const commencerAventure = () => {
     const c = creation;
+    const tome = (pack.contenu && pack.contenu.bibliotheque && pack.contenu.bibliotheque.tomes || []).find(t => t.code === c.livre.code) || {};
+    const equipDepart = tome.equipement || N.heros.equipementDepart || ["épée"];
     const nouveau = {
       livreCode: c.livre.code,
       livreId: c.livre.id,
@@ -11502,10 +11504,10 @@ function VueNoyauLDVELH({
         enduranceDep: c.endurance,
         chance: c.chance,
         chanceDep: c.chance,
-        provisions: N.heros && N.heros.provisions || 10,
+        provisions: tome.provisions || N.heros && N.heros.provisions || 10,
         or: 0,
         bijoux: [],
-        equipement: (N.heros && N.heros.equipementDepart || ["épée", "bouclier", "lanterne"]).slice(),
+        equipement: equipDepart.slice(),
         potions: {
           adresse: 0,
           vigueur: 0,
