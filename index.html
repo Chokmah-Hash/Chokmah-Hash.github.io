@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.120";
+const BUILD = "0.121";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12394,7 +12394,7 @@ function VueNoyauLDVELH({
       ...etat,
       heros
     });
-    setDernierAchat("Vous achetez : " + a.nom + " (−" + a.prix + " Pièces d'Or).");
+    setDernierAchat(a.nom);
   };
   const consommerFiole = nom => {
     if (!etat || !((etat.heros.fioles || {})[nom] > 0)) return;
@@ -12449,7 +12449,7 @@ function VueNoyauLDVELH({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-3xl mx-auto px-4 pt-5 pb-24 w-full flex-1"
+    className: onglet === "feuille" ? "max-w-3xl mx-auto px-4 pt-5 w-full flex-1" : "max-w-3xl mx-auto px-4 pt-5 pb-24 w-full flex-1"
   }, React.createElement(EntetePartie, {
     pack: pack,
     role: "joueur",
@@ -12600,8 +12600,6 @@ function VueNoyauLDVELH({
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "ARTICLES DISPONIBLES"), React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500 mb-2"
-  }, "VOTRE BOURSE : ", h.or, " PI\xC8CE", h.or > 1 ? "S" : "", " D'OR"), React.createElement("div", {
     className: "space-y-1",
     style: {
       maxHeight: 176,
@@ -12627,9 +12625,16 @@ function VueNoyauLDVELH({
         color: "#0c0d10"
       }
     }, "ACHETER"));
-  })), dernierAchat && React.createElement("div", {
-    className: "mt-2 text-sm text-zinc-400"
-  }, dernierAchat)), paragraphe && paragraphe.donnees && paragraphe.donnees.texteApres && React.createElement("div", {
+  })), React.createElement("div", {
+    className: "mt-2 flex items-center gap-2 text-sm",
+    style: {
+      minHeight: 32
+    }
+  }, React.createElement("div", {
+    className: "flex-1 text-zinc-400"
+  }, dernierAchat ? "Vous achetez : " + dernierAchat : ""), React.createElement("div", {
+    className: "text-zinc-400"
+  }, "BOURSE : ", h.or, " PI\xC8CE", h.or > 1 ? "S" : "", " D'OR"))), paragraphe && paragraphe.donnees && paragraphe.donnees.texteApres && React.createElement("div", {
     className: "mt-4"
   }, paragraphe.donnees.texteApres)), annonces && annonces.length > 0 && !combat && React.createElement("div", {
     className: "mt-4 px-4 py-3 rounded-xl border",
@@ -12875,32 +12880,34 @@ function VueNoyauLDVELH({
     className: "space-y-4"
   }, React.createElement("div", {
     className: "flex gap-2"
-  }, [["habilete", "HABILETÉ"], ["endurance", "ENDURANCE"], ["chance", "CHANCE"]].map(([champ, label]) => React.createElement("div", {
+  }, [["habilete", "HABILETÉ"], ["endurance", "ENDURANCE"], ["chance", "CHANCE"]].map(([champ, label]) => React.createElement("fieldset", {
     key: champ,
-    className: "flex-1 rounded-xl border border-zinc-800 p-4",
+    className: "flex-1 rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
     }
-  }, React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500"
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
   }, label), React.createElement("div", {
-    className: "text-2xl font-bold",
+    className: "text-2xl font-bold text-center",
     style: {
       color: T.or
     }
-  }, h[champ])))), React.createElement("div", {
-    className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
+  }, h[champ])))), React.createElement("fieldset", {
+    className: "rounded-xl border border-zinc-800 px-4 pb-3 flex items-center justify-between",
     style: {
       background: "#12140f"
     }
-  }, React.createElement("div", null, React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500"
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "PROVISIONS"), React.createElement("div", {
-    className: "text-2xl font-bold",
+    className: "text-2xl"
+  }, React.createElement("span", {
+    className: "font-bold",
     style: {
       color: T.or
     }
-  }, h.provisions)), React.createElement("div", {
+  }, h.provisions, " rations")), React.createElement("div", {
     className: "flex gap-2"
   }, React.createElement("button", {
     onClick: manger,
@@ -12908,13 +12915,13 @@ function VueNoyauLDVELH({
     style: {
       background: T.accent
     }
-  }, "MANGER (+4 END)"))), React.createElement("div", {
-    className: "rounded-xl border border-zinc-800 p-4",
+  }, "MANGER (+4 END)"))), React.createElement("fieldset", {
+    className: "rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
     }
-  }, React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500 mb-2"
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "POTIONS"), React.createElement("div", {
     className: "space-y-1"
   }, [["adresse", "Potion d'Adresse"], ["vigueur", "Potion de Vigueur"], ["bonneFortune", "Potion de Bonne Fortune"]].map(([p, libelle]) => React.createElement("div", {
@@ -12944,25 +12951,23 @@ function VueNoyauLDVELH({
     }
   }, "CONSUMMER"))), !Object.keys(h.fioles || {}).length && !(h.potions.adresse || h.potions.vigueur || h.potions.bonneFortune) && React.createElement("div", {
     className: "text-sm text-zinc-500"
-  }, "Aucune potion."))), React.createElement("div", {
-    className: "rounded-xl border border-zinc-800 p-4",
+  }, "Aucune potion."))), React.createElement("fieldset", {
+    className: "rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
     }
-  }, React.createElement("div", {
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
+  }, "\xC9QUIPEMENT TRANSPORT\xC9"), React.createElement("div", {
     className: "text-sm text-zinc-200 mb-2"
   }, "BOURSE : ", h.or, " Pi\xE8ce", h.or > 1 ? "s" : "", " d'Or"), React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500 mb-2"
-  }, "\xC9QUIPEMENT TRANSPORT\xC9"), React.createElement("div", {
     className: "space-y-1"
   }, h.equipement.map((e, i) => React.createElement("div", {
     key: i,
     className: "flex items-center justify-between text-sm text-zinc-200"
   }, React.createElement("span", null, e))), !h.equipement.length && React.createElement("div", {
     className: "text-sm text-zinc-500"
-  }, "Sac vide."))), React.createElement("p", {
-    className: "text-xs text-zinc-500"
-  }, "La feuille se grave dans la Tombe \xE0 chaque geste \u2014 votre lecture survit \xE0 l'appareil.")), onglet === "regles" && React.createElement("div", {
+  }, "Sac vide.")))), onglet === "regles" && React.createElement("div", {
     className: "space-y-4"
   }, (pack.contenu && pack.contenu.documents || []).map(doc => React.createElement("div", {
     key: doc.id,
