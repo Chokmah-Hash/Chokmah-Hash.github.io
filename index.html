@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.119";
+const BUILD = "0.120";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11672,6 +11672,7 @@ function VueNoyauLDVELH({
   const [annonces, setAnnonces] = useState(null);
   const [jetsP, setJetsP] = useState(null);
   const [testP, setTestP] = useState(null);
+  const [dernierAchat, setDernierAchat] = useState(null);
   const [roueAssaut, setRoueAssaut] = useState({
     no: 0
   });
@@ -11798,6 +11799,7 @@ function VueNoyauLDVELH({
         gainsAppliques: r.gains
       });
       setAnnonces(r.lignes.length ? r.lignes : null);
+      setDernierAchat(null);
       const jets = (d.evenements || []).filter(ev => ev && ev.jet).map(ev => ({
         ...ev.jet,
         pose: false,
@@ -11898,6 +11900,7 @@ function VueNoyauLDVELH({
           vigueur: 0,
           bonneFortune: 0
         },
+        fioles: {},
         marqueurs: []
       },
       gainsAppliques: [],
@@ -12369,15 +12372,52 @@ function VueNoyauLDVELH({
     if (!etat || !a) return;
     const h = etat.heros;
     if ((h.or || 0) < a.prix) return;
-    majEtat({
-      ...etat,
-      heros: {
+    let heros;
+    if (String(a.nom).toLowerCase().startsWith("potion")) {
+      const fioles = {
+        ...(h.fioles || {})
+      };
+      fioles[a.nom] = (fioles[a.nom] || 0) + 1;
+      heros = {
+        ...h,
+        or: h.or - a.prix,
+        fioles
+      };
+    } else {
+      heros = {
         ...h,
         or: h.or - a.prix,
         equipement: (h.equipement || []).concat([a.nom])
-      }
+      };
+    }
+    majEtat({
+      ...etat,
+      heros
     });
-    setNotice("Vous achetez : " + a.nom + " (−" + a.prix + " Pièces d'Or).");
+    setDernierAchat("Vous achetez : " + a.nom + " (−" + a.prix + " Pièces d'Or).");
+  };
+  const consommerFiole = nom => {
+    if (!etat || !((etat.heros.fioles || {})[nom] > 0)) return;
+    const h = etat.heros;
+    const fioles = {
+      ...h.fioles
+    };
+    fioles[nom] -= 1;
+    if (fioles[nom] <= 0) delete fioles[nom];
+    let heros = {
+      ...h,
+      fioles
+    };
+    let annonce = "Vous buvez : " + nom + ".";
+    if (nom === "Potion de Guérison") {
+      heros.endurance = h.enduranceDep;
+      annonce = "Vous buvez la Potion de Guérison : ENDURANCE restaurée à son niveau de départ (" + h.enduranceDep + ").";
+    }
+    majEtat({
+      ...etat,
+      heros
+    });
+    setNotice(annonce);
   };
   if (!joueur) {
     return React.createElement("div", {
@@ -12555,27 +12595,18 @@ function VueNoyauLDVELH({
     style: {
       background: "#12140f"
     }
-  }, paragraphe ? paragraphe.texte : "Le paragraphe s'ouvre…"), annonces && annonces.length > 0 && !combat && React.createElement("div", {
-    className: "mt-4 px-4 py-3 rounded-xl border",
-    style: {
-      background: "#12140f",
-      borderColor: T.accent + "44"
-    }
-  }, React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500 mb-1"
-  }, "LA TOMBE APPLIQUE CE PARAGRAPHE"), annonces.map((l, i) => React.createElement("div", {
-    key: i,
-    className: "text-sm text-zinc-200"
-  }, "\xB7 ", l))), !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("div", {
-    className: "mt-4 px-4 py-3 rounded-xl border",
-    style: {
-      background: "#12140f",
-      borderColor: T.or + "44"
-    }
-  }, React.createElement("div", {
+  }, paragraphe ? paragraphe.texte : "Le paragraphe s'ouvre…", !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("fieldset", {
+    className: "mt-4 rounded-xl border border-zinc-800 px-4 pb-3"
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
+  }, "ARTICLES DISPONIBLES"), React.createElement("div", {
     className: "text-xs tracking-widest text-zinc-500 mb-2"
-  }, "ARTICLES DISPONIBLES \u2014 VOTRE BOURSE : ", h.or, " PI\xC8CES D'OR"), React.createElement("div", {
-    className: "space-y-2"
+  }, "VOTRE BOURSE : ", h.or, " PI\xC8CE", h.or > 1 ? "S" : "", " D'OR"), React.createElement("div", {
+    className: "space-y-1",
+    style: {
+      maxHeight: 176,
+      overflowY: "auto"
+    }
   }, paragraphe.donnees.boutique.map((a, i) => {
     const tropCher = h.or < a.prix;
     return React.createElement("div", {
@@ -12596,7 +12627,22 @@ function VueNoyauLDVELH({
         color: "#0c0d10"
       }
     }, "ACHETER"));
-  }))), jetsP && !combat && h && h.endurance > 0 && jetsP.map((j, i) => !j.pose && React.createElement("div", {
+  })), dernierAchat && React.createElement("div", {
+    className: "mt-2 text-sm text-zinc-400"
+  }, dernierAchat)), paragraphe && paragraphe.donnees && paragraphe.donnees.texteApres && React.createElement("div", {
+    className: "mt-4"
+  }, paragraphe.donnees.texteApres)), annonces && annonces.length > 0 && !combat && React.createElement("div", {
+    className: "mt-4 px-4 py-3 rounded-xl border",
+    style: {
+      background: "#12140f",
+      borderColor: T.accent + "44"
+    }
+  }, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500 mb-1"
+  }, "LA TOMBE APPLIQUE CE PARAGRAPHE"), annonces.map((l, i) => React.createElement("div", {
+    key: i,
+    className: "text-sm text-zinc-200"
+  }, "\xB7 ", l))), jetsP && !combat && h && h.endurance > 0 && jetsP.map((j, i) => !j.pose && React.createElement("div", {
     key: i,
     className: "mt-4 px-4 py-3 rounded-xl border",
     style: {
@@ -12827,15 +12873,17 @@ function VueNoyauLDVELH({
     className: "text-zinc-500 text-sm"
   }, "Aucune feuille ouverte \u2014 commencez un livre."), onglet === "feuille" && etat && h && React.createElement("div", {
     className: "space-y-4"
-  }, [["habilete", "HABILETÉ", h.habileteDep], ["endurance", "ENDURANCE", h.enduranceDep], ["chance", "CHANCE", h.chanceDep]].map(([champ, label, dep]) => React.createElement("div", {
+  }, React.createElement("div", {
+    className: "flex gap-2"
+  }, [["habilete", "HABILETÉ"], ["endurance", "ENDURANCE"], ["chance", "CHANCE"]].map(([champ, label]) => React.createElement("div", {
     key: champ,
-    className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
+    className: "flex-1 rounded-xl border border-zinc-800 p-4",
     style: {
       background: "#12140f"
     }
-  }, React.createElement("div", null, React.createElement("div", {
+  }, React.createElement("div", {
     className: "text-xs tracking-widest text-zinc-500"
-  }, label, " (d\xE9part : ", dep, ")"), React.createElement("div", {
+  }, label), React.createElement("div", {
     className: "text-2xl font-bold",
     style: {
       color: T.or
@@ -12861,18 +12909,6 @@ function VueNoyauLDVELH({
       background: T.accent
     }
   }, "MANGER (+4 END)"))), React.createElement("div", {
-    className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
-    style: {
-      background: "#12140f"
-    }
-  }, React.createElement("div", null, React.createElement("div", {
-    className: "text-xs tracking-widest text-zinc-500"
-  }, "OR"), React.createElement("div", {
-    className: "text-2xl font-bold",
-    style: {
-      color: T.or
-    }
-  }, h.or))), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-4",
     style: {
       background: "#12140f"
@@ -12880,26 +12916,42 @@ function VueNoyauLDVELH({
   }, React.createElement("div", {
     className: "text-xs tracking-widest text-zinc-500 mb-2"
   }, "POTIONS"), React.createElement("div", {
-    className: "flex gap-3 flex-wrap"
-  }, ["adresse", "vigueur", "bonneFortune"].map(p => React.createElement("div", {
+    className: "space-y-1"
+  }, [["adresse", "Potion d'Adresse"], ["vigueur", "Potion de Vigueur"], ["bonneFortune", "Potion de Bonne Fortune"]].map(([p, libelle]) => React.createElement("div", {
     key: p,
-    className: "flex items-center gap-2"
+    className: "flex items-center justify-between text-sm"
   }, React.createElement("span", {
-    className: "text-sm text-zinc-300 capitalize"
-  }, p, " \xD7 ", h.potions[p] || 0), React.createElement("button", {
+    className: "text-zinc-200"
+  }, libelle, " \xD7 ", h.potions[p] || 0), React.createElement("button", {
     onClick: () => boirePotion(p),
     disabled: !h.potions[p],
-    className: "px-2 py-1 rounded text-xs font-bold",
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
     style: {
       background: h.potions[p] ? T.accent : "#27272a",
       color: h.potions[p] ? "#0c0d10" : "#52525b"
     }
-  }, "BOIRE"))))), React.createElement("div", {
+  }, "BOIRE"))), Object.keys(h.fioles || {}).map(nom => React.createElement("div", {
+    key: nom,
+    className: "flex items-center justify-between text-sm"
+  }, React.createElement("span", {
+    className: "text-zinc-200"
+  }, nom, " \xD7 ", h.fioles[nom]), React.createElement("button", {
+    onClick: () => consommerFiole(nom),
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+    style: {
+      background: T.accent,
+      color: "#0c0d10"
+    }
+  }, "CONSUMMER"))), !Object.keys(h.fioles || {}).length && !(h.potions.adresse || h.potions.vigueur || h.potions.bonneFortune) && React.createElement("div", {
+    className: "text-sm text-zinc-500"
+  }, "Aucune potion."))), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-4",
     style: {
       background: "#12140f"
     }
   }, React.createElement("div", {
+    className: "text-sm text-zinc-200 mb-2"
+  }, "BOURSE : ", h.or, " Pi\xE8ce", h.or > 1 ? "s" : "", " d'Or"), React.createElement("div", {
     className: "text-xs tracking-widest text-zinc-500 mb-2"
   }, "\xC9QUIPEMENT TRANSPORT\xC9"), React.createElement("div", {
     className: "space-y-1"
