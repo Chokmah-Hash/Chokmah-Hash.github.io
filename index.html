@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.116";
+const BUILD = "0.117";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11473,6 +11473,166 @@ function ldvelhDe6() {
 function ldvelh2D6() {
   return ldvelhDe6() + ldvelhDe6();
 }
+const FACES_DE = {
+  D2: 2,
+  D4: 4,
+  D6: 6,
+  D8: 8,
+  D10: 10,
+  D12: 12,
+  D20: 20,
+  D100: 100
+};
+const delaiRoue = () => {
+  const file = typeof window !== "undefined" ? window.LDVELH_DELAIS_ROUE : null;
+  if (Array.isArray(file)) return file.length ? file.shift() : 0;
+  return 2500 + Math.random() * 1500;
+};
+function LigneJetDes({
+  label,
+  des,
+  bonus,
+  surPose,
+  T
+}) {
+  const [etats, setEtats] = useState(() => des.map(() => ({
+    phase: "attente",
+    valeur: null,
+    roulant: null
+  })));
+  const vivant = useRef(true);
+  useEffect(() => () => {
+    vivant.current = false;
+  }, []);
+  useEffect(() => {
+    if (etats.length && etats.every(e => e.phase === "bim")) surPose(etats.reduce((a, e) => a + e.valeur, 0) + bonus);
+  }, [etats]);
+  const poser = (i, v) => setEtats(prev => prev.map((e, j) => j === i ? {
+    phase: "bim",
+    valeur: v,
+    roulant: null
+  } : e));
+  const lancer = i => {
+    const faces = FACES_DE[des[i]] || parseInt(String(des[i]).replace(/\D/g, ""), 10) || 6;
+    const resultat = 1 + Math.floor(Math.random() * faces);
+    const duree = delaiRoue();
+    if (!duree) {
+      poser(i, resultat);
+      return;
+    }
+    setEtats(prev => prev.map((e, j) => j === i ? {
+      phase: "roule",
+      valeur: null,
+      roulant: resultat
+    } : e));
+    const t0 = Date.now();
+    let interval = 55;
+    const pas = () => {
+      if (!vivant.current) return;
+      const ecoule = Date.now() - t0;
+      if (ecoule >= duree) {
+        poser(i, resultat);
+        return;
+      }
+      setEtats(prev => prev.map((e, j) => j === i ? {
+        ...e,
+        roulant: 1 + Math.floor(Math.random() * faces)
+      } : e));
+      const avancement = ecoule / duree;
+      interval = 55 + avancement * avancement * 380;
+      setTimeout(pas, interval);
+    };
+    setTimeout(pas, interval);
+  };
+  const poses = etats.every(e => e.phase === "bim");
+  const legendeFond = "#12140f";
+  const cadre = bordure => ({
+    position: "relative",
+    width: 76,
+    minHeight: 45,
+    border: "1px solid " + bordure,
+    borderRadius: 12,
+    background: T.fond,
+    padding: 10,
+    textAlign: "center",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    transition: "border-color .3s"
+  });
+  const legende = {
+    position: "absolute",
+    top: -9,
+    left: 8,
+    padding: "0 5px",
+    fontSize: ".6rem",
+    fontWeight: 700,
+    letterSpacing: ".08em",
+    color: "#a1a1aa",
+    background: legendeFond
+  };
+  const chiffre = {
+    fontSize: "1.25rem",
+    fontWeight: 800,
+    lineHeight: 1.2,
+    fontVariantNumeric: "tabular-nums"
+  };
+  return React.createElement("div", {
+    className: "py-2 border-b border-zinc-800"
+  }, React.createElement("style", null, `@keyframes roueTremble { 0% { transform: translateY(0) } 50% { transform: translateY(-3px) } 100% { transform: translateY(0) } }
+@keyframes roueBim { 0% { transform: scale(2) rotate(-6deg); opacity: 0; filter: blur(3px) } 45% { transform: scale(.85) rotate(2deg); opacity: 1; filter: blur(0) } 60% { transform: scale(1.25) rotate(-2deg) } 75% { transform: scale(.95) } 100% { transform: scale(1) rotate(0) } }
+@keyframes roueEclair { 0% { background: ${T.accent}26 } 100% { background: ${T.fond} } }`), React.createElement("div", {
+    className: "text-sm text-zinc-300 mb-1.5"
+  }, label), React.createElement("div", {
+    className: "flex items-center flex-wrap",
+    style: {
+      gap: 8
+    }
+  }, etats.map((e, i) => React.createElement("div", {
+    key: i,
+    style: {
+      ...cadre(e.phase === "bim" ? T.accent : "#3f3f46"),
+      animation: e.phase === "bim" ? "roueEclair .45s ease-out both" : "none"
+    }
+  }, React.createElement("span", {
+    style: legende
+  }, des[i]), e.phase === "attente" ? React.createElement("button", {
+    onClick: () => lancer(i),
+    className: "w-full rounded-lg font-extrabold",
+    style: {
+      padding: "5px 0",
+      fontSize: ".68rem",
+      color: "#000",
+      background: T.or,
+      letterSpacing: ".03em"
+    }
+  }, "LANCER") : React.createElement("span", {
+    style: {
+      ...chiffre,
+      color: e.phase === "bim" ? T.accent : T.or,
+      animation: e.phase === "bim" ? "roueBim .55s cubic-bezier(.2,1.6,.4,1) both" : "roueTremble .12s infinite"
+    }
+  }, e.phase === "bim" ? e.valeur : e.roulant))), bonus ? React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: "#a1a1aa",
+      letterSpacing: ".04em"
+    }
+  }, "+", bonus) : null, React.createElement("div", {
+    className: "ml-auto",
+    style: cadre(poses ? T.accent : "#3f3f46")
+  }, React.createElement("span", {
+    style: legende
+  }, label), React.createElement("span", {
+    style: {
+      ...chiffre,
+      color: poses ? T.or : "#71717a",
+      visibility: poses ? "visible" : "hidden",
+      minHeight: "1.2em",
+      animation: poses ? "roueBim .55s cubic-bezier(.2,1.6,.4,1) both" : "none"
+    }
+  }, poses ? String(etats.reduce((a, e) => a + e.valeur, 0) + bonus) : "\u00a0"))));
+}
 function VueNoyauLDVELH({
   pack,
   onRetour,
@@ -11571,17 +11731,16 @@ function VueNoyauLDVELH({
     livre,
     jetes: {}
   });
-  const jeterCarac = k => {
+  const poserCarac = (k, total) => {
     setCreation(c => {
       if (!c || c.jetes[k]) return c;
-      const valeur = k === "endurance" ? ldvelh2D6() + 12 : ldvelhDe6() + 6;
       return {
         ...c,
         jetes: {
           ...c.jetes,
           [k]: true
         },
-        [k]: valeur
+        [k]: total
       };
     });
   };
@@ -12410,23 +12569,14 @@ function VueNoyauLDVELH({
     className: "text-lg font-bold text-zinc-100 mb-1"
   }, creation.livre.titre), React.createElement("div", {
     className: "text-xs text-zinc-500 mb-4"
-  }, "Lancez chaque caract\xE9ristique \u2014 une seule tentative, pas de retour :"), JETS_HEROS.map(([label, k]) => React.createElement("div", {
+  }, "Lancez chaque caract\xE9ristique \u2014 une seule tentative, pas de retour :"), JETS_HEROS.map(([label, k]) => React.createElement(LigneJetDes, {
     key: k,
-    className: "flex items-center justify-between py-2 border-b border-zinc-800"
-  }, React.createElement("span", {
-    className: "text-sm text-zinc-300"
-  }, label), creation.jetes[k] ? React.createElement("span", {
-    className: "text-2xl font-bold",
-    style: {
-      color: T.or
-    }
-  }, creation[k]) : React.createElement("button", {
-    onClick: () => jeterCarac(k),
-    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "LANCER LE D\xC9"))), React.createElement("div", {
+    label: label,
+    T: T,
+    des: k === "endurance" ? ["D6", "D6"] : ["D6"],
+    bonus: k === "endurance" ? 12 : 6,
+    surPose: total => poserCarac(k, total)
+  })), React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, React.createElement("button", {
     onClick: () => setCreation(null),
