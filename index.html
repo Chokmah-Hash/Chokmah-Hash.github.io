@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.118";
+const BUILD = "0.119";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11727,6 +11727,11 @@ function VueNoyauLDVELH({
     or: "Pièces d'Or",
     provisions: "Provisions"
   };
+  const LIBELLES_POTIONS = {
+    adresse: "d'Adresse",
+    vigueur: "de Vigueur",
+    bonneFortune: "de Bonne Fortune"
+  };
   const appliquerEffets = (evts, heros, numero, gains) => {
     let h = {
       ...heros,
@@ -11761,6 +11766,11 @@ function VueNoyauLDVELH({
       } else if (ev.viderEquipement) {
         if ((h.equipement || []).length) lignes.push("Votre sac à dos est vidé.");
         h.equipement = [];
+      } else if (ev.potion) {
+        if (dejaGagne) return;
+        h.potions[ev.potion] = (h.potions[ev.potion] || 0) + 1;
+        gl.push(numero);
+        lignes.push("Vous trouvez : Potion " + (LIBELLES_POTIONS[ev.potion] || ev.potion) + ".");
       } else if (ev.marqueur) {
         h.marqueurs = (h.marqueurs || []).indexOf(ev.marqueur) >= 0 ? h.marqueurs : (h.marqueurs || []).concat([ev.marqueur]);
       }
@@ -12319,16 +12329,6 @@ function VueNoyauLDVELH({
     }
     return false;
   };
-  const ajuster = (champ, delta) => {
-    if (!etat) return;
-    majEtat({
-      ...etat,
-      heros: {
-        ...etat.heros,
-        [champ]: Math.max(0, etat.heros[champ] + delta)
-      }
-    });
-  };
   const manger = () => {
     if (!etat || etat.heros.provisions <= 0) return;
     const h = etat.heros;
@@ -12365,39 +12365,19 @@ function VueNoyauLDVELH({
     });
     setNotice("Potion bue : " + p + ".");
   };
-  const trouverPotion = p => {
-    if (!etat) return;
+  const acquerArticle = a => {
+    if (!etat || !a) return;
     const h = etat.heros;
+    if ((h.or || 0) < a.prix) return;
     majEtat({
       ...etat,
       heros: {
         ...h,
-        potions: {
-          ...h.potions,
-          [p]: (h.potions[p] || 0) + 1
-        }
+        or: h.or - a.prix,
+        equipement: (h.equipement || []).concat([a.nom])
       }
     });
-  };
-  const ajouterEquipement = nom => {
-    if (!etat || !nom || !nom.trim()) return;
-    majEtat({
-      ...etat,
-      heros: {
-        ...etat.heros,
-        equipement: etat.heros.equipement.concat([nom.trim()])
-      }
-    });
-  };
-  const retirerEquipement = i => {
-    if (!etat) return;
-    majEtat({
-      ...etat,
-      heros: {
-        ...etat.heros,
-        equipement: etat.heros.equipement.filter((_, j) => j !== i)
-      }
-    });
+    setNotice("Vous achetez : " + a.nom + " (−" + a.prix + " Pièces d'Or).");
   };
   if (!joueur) {
     return React.createElement("div", {
@@ -12586,7 +12566,37 @@ function VueNoyauLDVELH({
   }, "LA TOMBE APPLIQUE CE PARAGRAPHE"), annonces.map((l, i) => React.createElement("div", {
     key: i,
     className: "text-sm text-zinc-200"
-  }, "\xB7 ", l))), jetsP && !combat && h && h.endurance > 0 && jetsP.map((j, i) => !j.pose && React.createElement("div", {
+  }, "\xB7 ", l))), !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("div", {
+    className: "mt-4 px-4 py-3 rounded-xl border",
+    style: {
+      background: "#12140f",
+      borderColor: T.or + "44"
+    }
+  }, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500 mb-2"
+  }, "ARTICLES DISPONIBLES \u2014 VOTRE BOURSE : ", h.or, " PI\xC8CES D'OR"), React.createElement("div", {
+    className: "space-y-2"
+  }, paragraphe.donnees.boutique.map((a, i) => {
+    const tropCher = h.or < a.prix;
+    return React.createElement("div", {
+      key: i,
+      className: "flex items-center justify-between text-sm"
+    }, React.createElement("span", {
+      className: "text-zinc-200"
+    }, a.nom, " \u2014 ", a.prix, " Pi\xE8ce", a.prix > 1 ? "s" : "", " d'Or"), React.createElement("button", {
+      onClick: () => acquerArticle(a),
+      disabled: tropCher,
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      style: tropCher ? {
+        background: "#27272a",
+        color: "#52525b",
+        cursor: "not-allowed"
+      } : {
+        background: T.or,
+        color: "#0c0d10"
+      }
+    }, "ACHETER"));
+  }))), jetsP && !combat && h && h.endurance > 0 && jetsP.map((j, i) => !j.pose && React.createElement("div", {
     key: i,
     className: "mt-4 px-4 py-3 rounded-xl border",
     style: {
@@ -12830,21 +12840,7 @@ function VueNoyauLDVELH({
     style: {
       color: T.or
     }
-  }, h[champ])), React.createElement("div", {
-    className: "flex gap-2"
-  }, React.createElement("button", {
-    onClick: () => ajuster(champ, -1),
-    className: "w-9 h-9 rounded-lg font-bold text-black",
-    style: {
-      background: "#a8adb8"
-    }
-  }, "\u2212"), React.createElement("button", {
-    onClick: () => ajuster(champ, 1),
-    className: "w-9 h-9 rounded-lg font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "+")))), React.createElement("div", {
+  }, h[champ])))), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
     style: {
       background: "#12140f"
@@ -12859,24 +12855,12 @@ function VueNoyauLDVELH({
   }, h.provisions)), React.createElement("div", {
     className: "flex gap-2"
   }, React.createElement("button", {
-    onClick: () => ajuster("provisions", -1),
-    className: "w-9 h-9 rounded-lg font-bold text-black",
-    style: {
-      background: "#a8adb8"
-    }
-  }, "\u2212"), React.createElement("button", {
     onClick: manger,
     className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
     style: {
       background: T.accent
     }
-  }, "MANGER (+4 END)"), React.createElement("button", {
-    onClick: () => ajuster("provisions", 1),
-    className: "w-9 h-9 rounded-lg font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "+"))), React.createElement("div", {
+  }, "MANGER (+4 END)"))), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-4 flex items-center justify-between",
     style: {
       background: "#12140f"
@@ -12888,21 +12872,7 @@ function VueNoyauLDVELH({
     style: {
       color: T.or
     }
-  }, h.or)), React.createElement("div", {
-    className: "flex gap-2"
-  }, React.createElement("button", {
-    onClick: () => ajuster("or", -1),
-    className: "w-9 h-9 rounded-lg font-bold text-black",
-    style: {
-      background: "#a8adb8"
-    }
-  }, "\u2212"), React.createElement("button", {
-    onClick: () => ajuster("or", 1),
-    className: "w-9 h-9 rounded-lg font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "+"))), React.createElement("div", {
+  }, h.or))), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-4",
     style: {
       background: "#12140f"
@@ -12917,12 +12887,6 @@ function VueNoyauLDVELH({
   }, React.createElement("span", {
     className: "text-sm text-zinc-300 capitalize"
   }, p, " \xD7 ", h.potions[p] || 0), React.createElement("button", {
-    onClick: () => trouverPotion(p),
-    className: "px-2 py-1 rounded text-xs font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "+"), React.createElement("button", {
     onClick: () => boirePotion(p),
     disabled: !h.potions[p],
     className: "px-2 py-1 rounded text-xs font-bold",
@@ -12942,28 +12906,9 @@ function VueNoyauLDVELH({
   }, h.equipement.map((e, i) => React.createElement("div", {
     key: i,
     className: "flex items-center justify-between text-sm text-zinc-200"
-  }, React.createElement("span", null, e), React.createElement("button", {
-    onClick: () => retirerEquipement(i),
-    className: "text-xs text-zinc-500"
-  }, "retirer \xD7"))), !h.equipement.length && React.createElement("div", {
+  }, React.createElement("span", null, e))), !h.equipement.length && React.createElement("div", {
     className: "text-sm text-zinc-500"
-  }, "Sac vide.")), React.createElement("form", {
-    className: "mt-3 flex gap-2",
-    onSubmit: ev => {
-      ev.preventDefault();
-      const f = ev.target.elements[0];
-      ajouterEquipement(f.value);
-      f.value = "";
-    }
-  }, React.createElement("input", {
-    placeholder: "Ajouter un objet\u2026",
-    className: "flex-1 bg-black/40 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
-  }), React.createElement("button", {
-    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
-    style: {
-      background: T.or
-    }
-  }, "AJOUTER"))), React.createElement("p", {
+  }, "Sac vide."))), React.createElement("p", {
     className: "text-xs text-zinc-500"
   }, "La feuille se grave dans la Tombe \xE0 chaque geste \u2014 votre lecture survit \xE0 l'appareil.")), onglet === "regles" && React.createElement("div", {
     className: "space-y-4"
