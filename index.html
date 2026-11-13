@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.121";
+const BUILD = "0.122";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11673,6 +11673,21 @@ function VueNoyauLDVELH({
   const [jetsP, setJetsP] = useState(null);
   const [testP, setTestP] = useState(null);
   const [dernierAchat, setDernierAchat] = useState(null);
+  const TAILLES_TEXTE = [["normale", "NORMALE", 15], ["grande", "GRANDE", 17], ["tres-grande", "TRÈS GRANDE", 19]];
+  const [tailleTexte, setTailleTexte] = useState((() => {
+    try {
+      return localStorage.getItem("archiviste-ldvelh-taille") || "normale";
+    } catch (e) {
+      return "normale";
+    }
+  })());
+  const choisirTaille = id => {
+    setTailleTexte(id);
+    try {
+      localStorage.setItem("archiviste-ldvelh-taille", id);
+    } catch (e) {}
+  };
+  const taillePx = (TAILLES_TEXTE.find(t => t[0] === tailleTexte) || TAILLES_TEXTE[0])[2];
   const [roueAssaut, setRoueAssaut] = useState({
     no: 0
   });
@@ -12591,9 +12606,10 @@ function VueNoyauLDVELH({
       color: T.or
     }
   }, "\xA7 ", paragraphe ? paragraphe.numero : etat.position)), React.createElement("div", {
-    className: "rounded-xl border border-zinc-800 p-5 text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap",
+    className: "rounded-xl border border-zinc-800 p-5 leading-relaxed text-zinc-200 whitespace-pre-wrap",
     style: {
-      background: "#12140f"
+      background: "#12140f",
+      fontSize: taillePx
     }
   }, paragraphe ? paragraphe.texte : "Le paragraphe s'ouvre…", !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("fieldset", {
     className: "mt-4 rounded-xl border border-zinc-800 px-4 pb-3"
@@ -12969,7 +12985,33 @@ function VueNoyauLDVELH({
     className: "text-sm text-zinc-500"
   }, "Sac vide.")))), onglet === "regles" && React.createElement("div", {
     className: "space-y-4"
-  }, (pack.contenu && pack.contenu.documents || []).map(doc => React.createElement("div", {
+  }, React.createElement("div", {
+    className: "rounded-xl border border-zinc-800 p-4",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", {
+    className: "text-xs tracking-widest text-zinc-500 mb-2"
+  }, "TAILLE DU TEXTE"), React.createElement("div", {
+    className: "flex gap-2 flex-wrap"
+  }, TAILLES_TEXTE.map(([id, label, px]) => React.createElement("button", {
+    key: id,
+    onClick: () => choisirTaille(id),
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold border",
+    style: tailleTexte === id ? {
+      background: T.accent,
+      color: "#0c0d10",
+      borderColor: T.accent,
+      cursor: "pointer"
+    } : {
+      color: "#a1a1aa",
+      borderColor: "#3f3f46",
+      background: "transparent",
+      cursor: "pointer"
+    }
+  }, label + " · " + px + " px"))), React.createElement("div", {
+    className: "text-xs text-zinc-500 mt-2"
+  }, "Le texte des paragraphes suit ce r\xE9glage \u2014 votre choix est conserv\xE9 sur cet appareil.")), (pack.contenu && pack.contenu.documents || []).map(doc => React.createElement("div", {
     key: doc.id,
     className: "rounded-xl border border-zinc-800 p-4",
     style: {
