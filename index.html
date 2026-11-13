@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.128";
+const BUILD = "0.129";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -1829,7 +1829,7 @@ const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   version: "0.1.0-alpha",
   type: "mod",
   nom: "Livre dont vous êtes le Héros",
-  sousTitre: "La bibliothèque des Défis Fantastiques",
+  sousTitre: "La bibliothèque",
   depend_de: [{
     id: "noyau-ldvelh",
     format_min: 1
@@ -8026,12 +8026,16 @@ function EntetePartie({
   }, React.createElement("div", {
     className: "text-2xl font-bold text-white tracking-wide leading-tight",
     style: {
-      overflow: "hidden"
+      overflow: "hidden",
+      textOverflow: "ellipsis"
     }
   }, React.createElement(TitreAjuste, null, titre || pack.nom)), React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
-      color: "#a1a1aa"
+      color: "#a1a1aa",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis"
     }
   }, sousTitre || pack.sousTitre || ""))), React.createElement("div", {
     className: "flex items-center gap-3",
