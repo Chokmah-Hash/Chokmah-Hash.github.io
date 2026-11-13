@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.127";
+const BUILD = "0.128";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7979,8 +7979,10 @@ function TitreAjuste({
       }
     }
     document.fonts && document.fonts.ready && document.fonts.ready.then(ajuster);
+    document.fonts && document.fonts.addEventListener && document.fonts.addEventListener("loadingdone", ajuster);
     window.addEventListener("resize", ajuster);
     return function () {
+      document.fonts && document.fonts.removeEventListener && document.fonts.removeEventListener("loadingdone", ajuster);
       window.removeEventListener("resize", ajuster);
     };
   }, [children]);
@@ -8010,7 +8012,8 @@ function EntetePartie({
   }, React.createElement("div", {
     className: "flex items-center gap-3",
     style: {
-      minWidth: 0
+      minWidth: 0,
+      flex: "1 1 0%"
     }
   }, React.createElement(GlyphePack, {
     pack: pack,
@@ -8021,14 +8024,20 @@ function EntetePartie({
       minWidth: 0
     }
   }, React.createElement("div", {
-    className: "text-2xl font-bold text-white tracking-wide leading-tight"
+    className: "text-2xl font-bold text-white tracking-wide leading-tight",
+    style: {
+      overflow: "hidden"
+    }
   }, React.createElement(TitreAjuste, null, titre || pack.nom)), React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa"
     }
   }, sousTitre || pack.sousTitre || ""))), React.createElement("div", {
-    className: "flex items-center gap-3"
+    className: "flex items-center gap-3",
+    style: {
+      flexShrink: 0
+    }
   }, menu ? React.createElement("div", {
     style: {
       position: "relative"
