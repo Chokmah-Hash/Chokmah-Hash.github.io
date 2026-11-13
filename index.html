@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.126";
+const BUILD = "0.127";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7962,6 +7962,36 @@ function LecteurDocuments({
     }
   }, "Ce pack n'embarque pas encore de documents.")))));
 }
+function TitreAjuste({
+  children
+}) {
+  const ref = useRef(null);
+  useEffect(function () {
+    const el = ref.current;
+    if (!el || !el.style || typeof getComputedStyle !== "function") return;
+    function ajuster() {
+      if (!el.parentElement) return;
+      el.style.fontSize = "";
+      const dispo = el.parentElement.clientWidth;
+      if (dispo > 0 && el.scrollWidth > dispo) {
+        const actuelle = parseFloat(getComputedStyle(el).fontSize);
+        if (actuelle > 0) el.style.fontSize = actuelle * (dispo / el.scrollWidth) * 0.98 + "px";
+      }
+    }
+    document.fonts && document.fonts.ready && document.fonts.ready.then(ajuster);
+    window.addEventListener("resize", ajuster);
+    return function () {
+      window.removeEventListener("resize", ajuster);
+    };
+  }, [children]);
+  return React.createElement("span", {
+    ref: ref,
+    style: {
+      whiteSpace: "nowrap",
+      display: "inline-block"
+    }
+  }, children);
+}
 function EntetePartie({
   pack,
   role,
@@ -7978,14 +8008,21 @@ function EntetePartie({
   return React.createElement("header", {
     className: "flex items-center justify-between mb-6"
   }, React.createElement("div", {
-    className: "flex items-center gap-3"
+    className: "flex items-center gap-3",
+    style: {
+      minWidth: 0
+    }
   }, React.createElement(GlyphePack, {
     pack: pack,
     size: 40,
     fond: T.fond
-  }), React.createElement("div", null, React.createElement("div", {
+  }), React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, React.createElement("div", {
     className: "text-2xl font-bold text-white tracking-wide leading-tight"
-  }, titre || pack.nom), React.createElement("div", {
+  }, React.createElement(TitreAjuste, null, titre || pack.nom)), React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa"
