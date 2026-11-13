@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.122";
+const BUILD = "0.123";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11647,6 +11647,12 @@ function LigneJetDes({
     }
   }, poses ? String(etats.reduce((a, e) => a + e.valeur, 0) + bonus) : "\u00a0"))));
 }
+const Alineas = ({
+  texte
+}) => (texte || "").split(/\n+/).filter(a => a.trim()).map((ali, i) => React.createElement("p", {
+  key: i,
+  className: i ? "mt-3" : ""
+}, ali));
 function VueNoyauLDVELH({
   pack,
   onRetour,
@@ -12606,12 +12612,17 @@ function VueNoyauLDVELH({
       color: T.or
     }
   }, "\xA7 ", paragraphe ? paragraphe.numero : etat.position)), React.createElement("div", {
-    className: "rounded-xl border border-zinc-800 p-5 leading-relaxed text-zinc-200 whitespace-pre-wrap",
+    className: "rounded-xl border border-zinc-800 p-5 text-zinc-200",
     style: {
       background: "#12140f",
-      fontSize: taillePx
+      fontSize: taillePx,
+      textAlign: "justify",
+      hyphens: "auto",
+      lineHeight: 1.75
     }
-  }, paragraphe ? paragraphe.texte : "Le paragraphe s'ouvre…", !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("fieldset", {
+  }, paragraphe ? React.createElement(Alineas, {
+    texte: paragraphe.texte
+  }) : "Le paragraphe s'ouvre…", !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("fieldset", {
     className: "mt-4 rounded-xl border border-zinc-800 px-4 pb-3"
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
@@ -12652,7 +12663,9 @@ function VueNoyauLDVELH({
     className: "text-zinc-400"
   }, "BOURSE : ", h.or, " PI\xC8CE", h.or > 1 ? "S" : "", " D'OR"))), paragraphe && paragraphe.donnees && paragraphe.donnees.texteApres && React.createElement("div", {
     className: "mt-4"
-  }, paragraphe.donnees.texteApres)), annonces && annonces.length > 0 && !combat && React.createElement("div", {
+  }, React.createElement(Alineas, {
+    texte: paragraphe.donnees.texteApres
+  }))), annonces && annonces.length > 0 && !combat && React.createElement("div", {
     className: "mt-4 px-4 py-3 rounded-xl border",
     style: {
       background: "#12140f",
