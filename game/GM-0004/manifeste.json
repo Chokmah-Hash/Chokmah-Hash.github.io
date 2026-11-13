@@ -4,7 +4,7 @@
   "version": "0.1.0-alpha",
   "type": "mod",
   "nom": "Livre dont vous êtes le Héros",
-  "sousTitre": "La bibliothèque des Défis Fantastiques",
+  "sousTitre": "La bibliothèque",
   "depend_de": [
     { "id": "noyau-ldvelh", "format_min": 1 }
   ],
