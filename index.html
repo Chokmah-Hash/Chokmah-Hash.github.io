@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.123";
+const BUILD = "0.124";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11703,6 +11703,7 @@ function VueNoyauLDVELH({
   const [rouesEnJeu, setRouesEnJeu] = useState(0);
   const roueEngagee = b => setRouesEnJeu(n => Math.max(0, n + (b ? 1 : -1)));
   const [creation, setCreation] = useState(null);
+  const [prologueFrais, setPrologueFrais] = useState(false);
   const [notice, setNotice] = useState("");
   const cacheParagraphes = useRef({});
   const [compteOuvert, setCompteOuvert] = useState(false);
@@ -11937,7 +11938,8 @@ function VueNoyauLDVELH({
         etat: avecId
       }].concat(a || []));
       setEtat(avecId);
-      setOnglet("lecture");
+      setPrologueFrais(true);
+      setOnglet("prologue");
       ouvrirParagraphe(1, avecId);
     };
     if (CLOUD && CLOUD.creerAventureLdvelh) {
@@ -11963,6 +11965,11 @@ function VueNoyauLDVELH({
     setJetsP(null);
     setTestP(null);
     setOnglet("bibliotheque");
+  };
+  const quitterPrologue = () => {
+    setOnglet("lecture");
+    setPrologueFrais(false);
+    if (!paragraphe && etat) ouvrirParagrapheDepuis(etat);
   };
   const supprimerAventure = a => {
     setSuppression(null);
@@ -12463,6 +12470,8 @@ function VueNoyauLDVELH({
   const h = etat && etat.heros;
   const creationPrete = !!(creation && creation.jetes && creation.jetes.habilete && creation.jetes.endurance && creation.jetes.chance);
   const monstresP = paragraphe && paragraphe.donnees && paragraphe.donnees.monstres || [];
+  const tomeOuvert = etat ? (livres || []).find(l => l.code === etat.livreCode) || null : null;
+  const reglesIntegrales = tomeOuvert && tomeOuvert.regles && tomeOuvert.regles.length ? tomeOuvert.regles : null;
   return React.createElement("div", {
     className: "min-h-screen flex flex-col",
     style: {
@@ -12478,7 +12487,7 @@ function VueNoyauLDVELH({
     avatar: avatar,
     compte: compte,
     onRetour: onRetour
-  }), etat && React.createElement("div", {
+  }), etat && onglet !== "prologue" && React.createElement("div", {
     className: "flex gap-2 mb-5 flex-wrap items-center justify-between"
   }, React.createElement("div", {
     className: "flex gap-2 flex-wrap"
@@ -12603,15 +12612,63 @@ function VueNoyauLDVELH({
     );
   }), livres && !livres.length && React.createElement("p", {
     className: "text-zinc-500 text-sm"
-  }, "Aucun tome dans la biblioth\xE8que \u2014 l'Archiviste n'a encore rien vers\xE9.")), onglet === "lecture" && !etat && React.createElement("p", {
+  }, "Aucun tome dans la biblioth\xE8que \u2014 l'Archiviste n'a encore rien vers\xE9.")), onglet === "prologue" && etat && (() => {
+    const tome = (livres || []).find(l => l.code === etat.livreCode) || {};
+    return React.createElement("div", null, React.createElement("div", {
+      className: "text-xs text-zinc-500 mb-2"
+    }, etat.titre, " \xB7 ", React.createElement("span", {
+      style: {
+        color: T.or
+      }
+    }, "prologue")), React.createElement("div", {
+      className: "rounded-xl border border-zinc-800 p-5 text-zinc-200",
+      style: {
+        background: "#12140f",
+        fontSize: taillePx,
+        textAlign: "justify",
+        hyphens: "auto",
+        lineHeight: 1.75
+      }
+    }, tome.intro ? React.createElement("div", null, tome.intro_titre ? React.createElement("div", {
+      className: "font-bold mb-4",
+      style: {
+        color: T.or
+      }
+    }, tome.intro_titre) : null, React.createElement(Alineas, {
+      texte: tome.intro
+    })) : "Le prologue de ce tome n'est pas encore gravé dans la Tombe."), React.createElement("button", {
+      onClick: quitterPrologue,
+      className: "mt-4 w-full text-left px-4 py-3 rounded-xl border text-sm",
+      style: {
+        background: "#161a12",
+        borderColor: "#3f3f46",
+        color: "#d4d4d8"
+      }
+    }, React.createElement("span", {
+      className: "text-zinc-400"
+    }, prologueFrais ? "Et maintenant, tournez la page" : "Reprendre la lecture"), " ", React.createElement("span", {
+      className: "font-bold",
+      style: {
+        color: T.accent
+      }
+    }, "\u2192 ", prologueFrais ? 1 : "§ " + etat.position)));
+  })(), onglet === "lecture" && !etat && React.createElement("p", {
     className: "text-zinc-500 text-sm"
   }, "Ouvrez un livre depuis la BIBLIOTH\xC8QUE."), onglet === "lecture" && etat && React.createElement("div", null, React.createElement("div", {
-    className: "text-xs text-zinc-500 mb-2"
-  }, etat.titre, " \xB7 paragraphe ", React.createElement("span", {
+    className: "text-xs text-zinc-500 mb-2 flex items-center justify-between gap-2"
+  }, React.createElement("span", null, etat.titre, " \xB7 paragraphe ", React.createElement("span", {
     style: {
       color: T.or
     }
-  }, "\xA7 ", paragraphe ? paragraphe.numero : etat.position)), React.createElement("div", {
+  }, "\xA7 ", paragraphe ? paragraphe.numero : etat.position)), React.createElement("button", {
+    onClick: () => setOnglet("prologue"),
+    className: "px-2 py-1 rounded text-xs font-bold",
+    style: {
+      color: "#a8adb8",
+      border: "1px solid #3f3f46",
+      cursor: "pointer"
+    }
+  }, "PROLOGUE")), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-5 text-zinc-200",
     style: {
       background: "#12140f",
@@ -13024,7 +13081,26 @@ function VueNoyauLDVELH({
     }
   }, label + " · " + px + " px"))), React.createElement("div", {
     className: "text-xs text-zinc-500 mt-2"
-  }, "Le texte des paragraphes suit ce r\xE9glage \u2014 votre choix est conserv\xE9 sur cet appareil.")), (pack.contenu && pack.contenu.documents || []).map(doc => React.createElement("div", {
+  }, "Le texte des paragraphes suit ce r\xE9glage \u2014 votre choix est conserv\xE9 sur cet appareil.")), reglesIntegrales ? reglesIntegrales.map((sec, i) => React.createElement("div", {
+    key: "regle-" + i,
+    className: "rounded-xl border border-zinc-800 p-4",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("div", {
+    className: "text-sm font-bold mb-2",
+    style: {
+      color: T.accent
+    }
+  }, sec.titre), React.createElement("div", {
+    className: "text-sm text-zinc-300",
+    style: {
+      textAlign: "justify",
+      hyphens: "auto"
+    }
+  }, React.createElement(Alineas, {
+    texte: (sec.alineas || []).join("\n\n")
+  })))) : (pack.contenu && pack.contenu.documents || []).map(doc => React.createElement("div", {
     key: doc.id,
     className: "rounded-xl border border-zinc-800 p-4",
     style: {
