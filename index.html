@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.130";
+const BUILD = "0.131";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7962,15 +7962,6 @@ function LecteurDocuments({
     }
   }, "Ce pack n'embarque pas encore de documents.")))));
 }
-function TitreUneLigne({
-  children
-}) {
-  return React.createElement("span", {
-    style: {
-      whiteSpace: "nowrap"
-    }
-  }, children);
-}
 function EntetePartie({
   pack,
   role,
@@ -8006,7 +7997,7 @@ function EntetePartie({
       overflow: "hidden",
       textOverflow: "ellipsis"
     }
-  }, React.createElement(TitreUneLigne, null, titre || pack.nom)), React.createElement("div", {
+  }, titre || pack.nom), React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa",
