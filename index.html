@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.129";
+const BUILD = "0.130";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7962,35 +7962,12 @@ function LecteurDocuments({
     }
   }, "Ce pack n'embarque pas encore de documents.")))));
 }
-function TitreAjuste({
+function TitreUneLigne({
   children
 }) {
-  const ref = useRef(null);
-  useEffect(function () {
-    const el = ref.current;
-    if (!el || !el.style || typeof getComputedStyle !== "function") return;
-    function ajuster() {
-      if (!el.parentElement) return;
-      el.style.fontSize = "";
-      const dispo = el.parentElement.clientWidth;
-      if (dispo > 0 && el.scrollWidth > dispo) {
-        const actuelle = parseFloat(getComputedStyle(el).fontSize);
-        if (actuelle > 0) el.style.fontSize = actuelle * (dispo / el.scrollWidth) * 0.98 + "px";
-      }
-    }
-    document.fonts && document.fonts.ready && document.fonts.ready.then(ajuster);
-    document.fonts && document.fonts.addEventListener && document.fonts.addEventListener("loadingdone", ajuster);
-    window.addEventListener("resize", ajuster);
-    return function () {
-      document.fonts && document.fonts.removeEventListener && document.fonts.removeEventListener("loadingdone", ajuster);
-      window.removeEventListener("resize", ajuster);
-    };
-  }, [children]);
   return React.createElement("span", {
-    ref: ref,
     style: {
-      whiteSpace: "nowrap",
-      display: "inline-block"
+      whiteSpace: "nowrap"
     }
   }, children);
 }
@@ -8029,7 +8006,7 @@ function EntetePartie({
       overflow: "hidden",
       textOverflow: "ellipsis"
     }
-  }, React.createElement(TitreAjuste, null, titre || pack.nom)), React.createElement("div", {
+  }, React.createElement(TitreUneLigne, null, titre || pack.nom)), React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa",
