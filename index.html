@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.125";
+const BUILD = "0.126";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7970,6 +7970,7 @@ function EntetePartie({
   compte,
   onRetour,
   titre,
+  sousTitre,
   menu
 }) {
   const T = pack.theme;
@@ -7989,7 +7990,7 @@ function EntetePartie({
     style: {
       color: "#a1a1aa"
     }
-  }, pack.sousTitre || ""))), React.createElement("div", {
+  }, sousTitre || pack.sousTitre || ""))), React.createElement("div", {
     className: "flex items-center gap-3"
   }, menu ? React.createElement("div", {
     style: {
@@ -12547,7 +12548,7 @@ function VueNoyauLDVELH({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: onglet === "feuille" ? "max-w-3xl mx-auto px-4 pt-5 w-full flex-1" : "max-w-3xl mx-auto px-4 pt-5 pb-24 w-full flex-1"
+    className: "max-w-3xl mx-auto px-4 pt-5 w-full flex-1"
   }, React.createElement(EntetePartie, {
     pack: pack,
     role: "joueur",
@@ -12555,7 +12556,8 @@ function VueNoyauLDVELH({
     avatar: avatar,
     compte: compte,
     onRetour: onRetour,
-    titre: etat ? prologueFrais ? etat.titre + " - Prologue" : etat.titre + " - Paragraphe : " + (paragraphe ? paragraphe.numero : etat.position) : null,
+    titre: etat ? etat.titre : null,
+    sousTitre: etat ? prologueFrais ? "Prologue" : "Paragraphe : " + (paragraphe ? paragraphe.numero : etat.position) : null,
     menu: [{
       label: "HUB",
       action: () => {
