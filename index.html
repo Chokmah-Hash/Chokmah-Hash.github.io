@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.131";
+const BUILD = "0.132";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -6682,7 +6682,7 @@ function EcranPartie({
         fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
       }
     }, React.createElement("div", {
-      className: "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col"
+      className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col"
     }, React.createElement("div", {
       className: "mb-6"
     }, React.createElement(EntetePartie, {
@@ -6831,7 +6831,7 @@ function EcranPartie({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: onglet === "lobby" ? "max-w-2xl w-full mx-auto px-5 pt-8 flex-1 flex flex-col gap-5" : "max-w-2xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col gap-5",
+    className: onglet === "lobby" ? "max-w-6xl w-full mx-auto px-5 pt-8 flex-1 flex flex-col gap-5" : "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col gap-5",
     style: onglet === "lobby" ? {
       flex: "1 1 0%",
       minHeight: 0,
@@ -7593,7 +7593,7 @@ function Hub({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-4xl w-full mx-auto px-5 pt-8 pb-0 flex-1 flex flex-col"
+    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-0 flex-1 flex flex-col"
   }, React.createElement("header", {
     className: "flex items-center justify-between mb-8"
   }, React.createElement("div", {
@@ -7881,7 +7881,7 @@ function LecteurDocuments({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5 py-6"
+    className: "max-w-6xl mx-auto px-5 py-6"
   }, React.createElement("header", {
     className: "flex items-center justify-between mb-6 pb-4",
     style: {
@@ -8281,7 +8281,7 @@ function VueNoyau40k({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5 py-6 w-full",
+    className: "max-w-6xl mx-auto px-5 py-6 w-full",
     style: onglet === "cantina" ? {
       flex: "1 1 0%",
       minHeight: 0,
@@ -10754,7 +10754,7 @@ function VueNoyauD100({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-4xl mx-auto px-5 py-6 w-full flex flex-col flex-1",
+    className: "max-w-6xl mx-auto px-5 py-6 w-full flex flex-col flex-1",
     style: onglet === "lobby" ? {
       flex: "1 1 0%",
       minHeight: 0
@@ -12566,7 +12566,7 @@ function VueNoyauLDVELH({
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-3xl mx-auto px-4 pt-5 w-full flex-1"
+    className: "max-w-6xl mx-auto px-4 pt-5 w-full flex-1"
   }, React.createElement(EntetePartie, {
     pack: pack,
     role: "joueur",
