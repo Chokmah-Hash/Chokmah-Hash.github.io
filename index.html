@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.124";
+const BUILD = "0.125";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7968,9 +7968,12 @@ function EntetePartie({
   joueur,
   avatar,
   compte,
-  onRetour
+  onRetour,
+  titre,
+  menu
 }) {
   const T = pack.theme;
+  const [menuOuvert, setMenuOuvert] = useState(false);
   return React.createElement("header", {
     className: "flex items-center justify-between mb-6"
   }, React.createElement("div", {
@@ -7981,14 +7984,78 @@ function EntetePartie({
     fond: T.fond
   }), React.createElement("div", null, React.createElement("div", {
     className: "text-2xl font-bold text-white tracking-wide leading-tight"
-  }, pack.nom), React.createElement("div", {
+  }, titre || pack.nom), React.createElement("div", {
     className: "text-xs tracking-widest",
     style: {
       color: "#a1a1aa"
     }
   }, pack.sousTitre || ""))), React.createElement("div", {
     className: "flex items-center gap-3"
-  }, onRetour && React.createElement("button", {
+  }, menu ? React.createElement("div", {
+    style: {
+      position: "relative"
+    }
+  }, React.createElement("button", {
+    onClick: () => setMenuOuvert(o => !o),
+    "aria-label": "Menu",
+    title: "Menu",
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+    style: {
+      background: "#a8adb814",
+      color: "#a8adb8",
+      border: "1px solid #27272a",
+      cursor: "pointer"
+    }
+  }, React.createElement("svg", {
+    width: "14",
+    height: "12",
+    viewBox: "0 0 14 12",
+    style: {
+      display: "block"
+    }
+  }, React.createElement("rect", {
+    x: "0",
+    y: "1",
+    width: "14",
+    height: "1.6",
+    fill: "#a8adb8"
+  }), React.createElement("rect", {
+    x: "0",
+    y: "5.2",
+    width: "14",
+    height: "1.6",
+    fill: "#a8adb8"
+  }), React.createElement("rect", {
+    x: "0",
+    y: "9.4",
+    width: "14",
+    height: "1.6",
+    fill: "#a8adb8"
+  }))), menuOuvert && React.createElement("div", {
+    style: {
+      position: "absolute",
+      right: 0,
+      top: "110%",
+      minWidth: 170,
+      background: "#14161b",
+      border: "1px solid #3f3f46",
+      borderRadius: 10,
+      padding: 4,
+      zIndex: 50
+    }
+  }, menu.map(m => React.createElement("button", {
+    key: m.label,
+    onClick: () => {
+      setMenuOuvert(false);
+      m.action();
+    },
+    className: "w-full text-left px-3 py-2 rounded-lg text-xs font-bold",
+    style: {
+      display: "block",
+      color: "#a8adb8",
+      cursor: "pointer"
+    }
+  }, m.label)))) : onRetour && React.createElement("button", {
     onClick: onRetour,
     className: "px-3 py-1.5 rounded-lg text-xs font-bold",
     style: {
@@ -11964,6 +12031,7 @@ function VueNoyauLDVELH({
     setAnnonces(null);
     setJetsP(null);
     setTestP(null);
+    setPrologueFrais(false);
     setOnglet("bibliotheque");
   };
   const quitterPrologue = () => {
@@ -12486,12 +12554,20 @@ function VueNoyauLDVELH({
     joueur: joueur,
     avatar: avatar,
     compte: compte,
-    onRetour: onRetour
-  }), etat && onglet !== "prologue" && React.createElement("div", {
-    className: "flex gap-2 mb-5 flex-wrap items-center justify-between"
-  }, React.createElement("div", {
-    className: "flex gap-2 flex-wrap"
-  }, [["lecture", "LECTURE"], ["feuille", "FEUILLE D'AVENTURE"], ["regles", "RÈGLES"]].map(([id, label]) => React.createElement("button", {
+    onRetour: onRetour,
+    titre: etat ? prologueFrais ? etat.titre + " - Prologue" : etat.titre + " - Paragraphe : " + (paragraphe ? paragraphe.numero : etat.position) : null,
+    menu: [{
+      label: "HUB",
+      action: () => {
+        if (onRetour) onRetour();
+      }
+    }, {
+      label: "BIBLIOTHÈQUE",
+      action: retourBibliotheque
+    }]
+  }), etat && React.createElement("div", {
+    className: "flex gap-2 mb-5 flex-wrap"
+  }, (prologueFrais ? [["prologue", "PROLOGUE"], ["feuille", "FEUILLE D'AVENTURE"], ["regles", "RÈGLES"]] : [["lecture", "LECTURE"], ["feuille", "FEUILLE D'AVENTURE"], ["regles", "RÈGLES"]]).map(([id, label]) => React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-3 py-1.5 rounded-lg text-xs font-bold border",
@@ -12504,16 +12580,7 @@ function VueNoyauLDVELH({
       borderColor: "#3f3f46",
       background: "transparent"
     }
-  }, label))), React.createElement("button", {
-    onClick: retourBibliotheque,
-    className: "px-3 py-1.5 rounded-lg text-xs font-bold",
-    style: {
-      background: "#a8adb814",
-      color: "#a8adb8",
-      border: "1px solid #3f3f46",
-      cursor: "pointer"
-    }
-  }, "\u2302 BIBLIOTH\xC8QUE")), notice && React.createElement("div", {
+  }, label))), notice && React.createElement("div", {
     className: "mb-4 px-3 py-2 rounded-lg text-sm",
     style: {
       background: "#1c1c22",
@@ -12615,12 +12682,6 @@ function VueNoyauLDVELH({
   }, "Aucun tome dans la biblioth\xE8que \u2014 l'Archiviste n'a encore rien vers\xE9.")), onglet === "prologue" && etat && (() => {
     const tome = (livres || []).find(l => l.code === etat.livreCode) || {};
     return React.createElement("div", null, React.createElement("div", {
-      className: "text-xs text-zinc-500 mb-2"
-    }, etat.titre, " \xB7 ", React.createElement("span", {
-      style: {
-        color: T.or
-      }
-    }, "prologue")), React.createElement("div", {
       className: "rounded-xl border border-zinc-800 p-5 text-zinc-200",
       style: {
         background: "#12140f",
@@ -12646,29 +12707,15 @@ function VueNoyauLDVELH({
       }
     }, React.createElement("span", {
       className: "text-zinc-400"
-    }, prologueFrais ? "Et maintenant, tournez la page" : "Reprendre la lecture"), " ", React.createElement("span", {
+    }, "Et maintenant, tournez la page"), " ", React.createElement("span", {
       className: "font-bold",
       style: {
         color: T.accent
       }
-    }, "\u2192 ", prologueFrais ? 1 : "§ " + etat.position)));
+    }, "\u2192 1")));
   })(), onglet === "lecture" && !etat && React.createElement("p", {
     className: "text-zinc-500 text-sm"
   }, "Ouvrez un livre depuis la BIBLIOTH\xC8QUE."), onglet === "lecture" && etat && React.createElement("div", null, React.createElement("div", {
-    className: "text-xs text-zinc-500 mb-2 flex items-center justify-between gap-2"
-  }, React.createElement("span", null, etat.titre, " \xB7 paragraphe ", React.createElement("span", {
-    style: {
-      color: T.or
-    }
-  }, "\xA7 ", paragraphe ? paragraphe.numero : etat.position)), React.createElement("button", {
-    onClick: () => setOnglet("prologue"),
-    className: "px-2 py-1 rounded text-xs font-bold",
-    style: {
-      color: "#a8adb8",
-      border: "1px solid #3f3f46",
-      cursor: "pointer"
-    }
-  }, "PROLOGUE")), React.createElement("div", {
     className: "rounded-xl border border-zinc-800 p-5 text-zinc-200",
     style: {
       background: "#12140f",
