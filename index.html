@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.133";
+const BUILD = "0.134";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11979,7 +11979,7 @@ function VueNoyauLDVELH({
       appliquer(p);
     }).catch(() => setNotice("La Tombe reste injoignable — reconnectez-vous."));
   };
-  const JETS_HEROS = [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"]];
+  const JETS_HEROS = [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"], ["PIÈCE D'OR", "or"]];
   const lancerCreation = livre => setCreation({
     livre,
     jetes: {}
@@ -12034,7 +12034,7 @@ function VueNoyauLDVELH({
         chance: c.chance,
         chanceDep: c.chance,
         provisions: tome.provisions || N.heros && N.heros.provisions || 10,
-        or: 0,
+        or: c.or || 0,
         bijoux: [],
         equipement: equipDepart.slice(),
         portes: {},
@@ -12587,7 +12587,6 @@ function VueNoyauLDVELH({
         equipement: etat.heros.equipement.slice(0, i).concat(etat.heros.equipement.slice(i + 1))
       }
     });
-    setNotice("Vous portez : " + nom + ".");
   };
   const desequiperObjet = slot => {
     if (!etat || !(etat.heros.portes || {})[slot]) return;
@@ -12604,7 +12603,6 @@ function VueNoyauLDVELH({
         equipement: [...etat.heros.equipement, nom]
       }
     });
-    setNotice(nom + " retourne au sac à dos.");
   };
   if (!joueur) {
     return React.createElement("div", {
@@ -12627,7 +12625,7 @@ function VueNoyauLDVELH({
     }, "Retour"));
   }
   const h = etat && etat.heros;
-  const creationPrete = !!(creation && creation.jetes && creation.jetes.habilete && creation.jetes.endurance && creation.jetes.chance);
+  const creationPrete = !!(creation && creation.jetes && creation.jetes.habilete && creation.jetes.endurance && creation.jetes.chance && creation.jetes.or);
   const monstresP = paragraphe && paragraphe.donnees && paragraphe.donnees.monstres || [];
   const tomeOuvert = etat ? (livres || []).find(l => l.code === etat.livreCode) || null : null;
   const reglesIntegrales = tomeOuvert && tomeOuvert.regles && tomeOuvert.regles.length ? tomeOuvert.regles : null;
@@ -13313,7 +13311,7 @@ function VueNoyauLDVELH({
     label: label,
     T: T,
     des: k === "endurance" ? ["D6", "D6"] : ["D6"],
-    bonus: k === "endurance" ? 12 : 6,
+    bonus: k === "endurance" ? 12 : k === "or" ? 0 : 6,
     surPose: total => poserCarac(k, total)
   })), React.createElement("div", {
     className: "flex gap-2 mt-4"
