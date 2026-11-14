@@ -1,6 +1,6 @@
 /* L'Archiviste — service worker : network-first avec repli hors ligne.
    L'app s'ouvre même sans connexion (le nuage des comptes reste en ligne, lui). */
-var CACHE = "archiviste-a0-v141";
+var CACHE = "archiviste-a0-v142";
 var PRECACHE = [
   "/",
   "/index.html",

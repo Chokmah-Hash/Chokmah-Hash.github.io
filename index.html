@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.134";
+const BUILD = "0.135";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11979,7 +11979,31 @@ function VueNoyauLDVELH({
       appliquer(p);
     }).catch(() => setNotice("La Tombe reste injoignable — reconnectez-vous."));
   };
-  const JETS_HEROS = [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"], ["PIÈCE D'OR", "or"]];
+  const tirageTome = t => t && t.tirage || {};
+  const orTome = t => {
+    const o = tirageTome(t).or;
+    if (o === null) return {
+      mode: "aucun"
+    };
+    if (o === undefined) return {
+      mode: "des",
+      des: 1,
+      bonus: 0
+    };
+    if (typeof o.fixe !== "undefined") return {
+      mode: "fixe",
+      fixe: o.fixe
+    };
+    return {
+      mode: "des",
+      des: o.des || 1,
+      bonus: o.bonus || 0
+    };
+  };
+  const choixPotionsCreation = t => {
+    const p = tirageTome(t).potions;
+    return p && p.choix && p.choix.length ? p.choix : null;
+  };
   const lancerCreation = livre => setCreation({
     livre,
     jetes: {}
@@ -12020,7 +12044,21 @@ function VueNoyauLDVELH({
     const c = creation;
     if (!c || !c.jetes.habilete || !c.jetes.endurance || !c.jetes.chance) return;
     const tome = (pack.contenu && pack.contenu.bibliotheque && pack.contenu.bibliotheque.tomes || []).find(t => t.code === c.livre.code) || {};
-    const equipDepart = tome.equipement || N.heros.equipementDepart || ["épée"];
+    const tg = tirageTome(c.livre);
+    const equipDepart = tg.equipement || tome.equipement || N.heros.equipementDepart || ["épée"];
+    const orRegle = orTome(c.livre);
+    if (orRegle.mode === "des" && !c.jetes.or) return;
+    if (choixPotionsCreation(c.livre) && !c.potionChoisie) return;
+    const potionsDepart = {
+      adresse: 0,
+      vigueur: 0,
+      bonneFortune: 0
+    };
+    const tgPot = tg.potions;
+    if (tgPot && !tgPot.choix) Object.keys(tgPot).forEach(k => {
+      if (potionsDepart.hasOwnProperty(k)) potionsDepart[k] += tgPot[k];
+    });
+    if (c.potionChoisie && potionsDepart.hasOwnProperty(c.potionChoisie)) potionsDepart[c.potionChoisie]++;
     const nouveau = {
       livreCode: c.livre.code,
       livreId: c.livre.id,
@@ -12033,16 +12071,11 @@ function VueNoyauLDVELH({
         enduranceDep: c.endurance,
         chance: c.chance,
         chanceDep: c.chance,
-        provisions: tome.provisions || N.heros && N.heros.provisions || 10,
-        or: c.or || 0,
-        bijoux: [],
+        provisions: tg.provisions || tome.provisions || N.heros && N.heros.provisions || 10,
+        or: orRegle.mode === "fixe" ? orRegle.fixe : orRegle.mode === "des" ? c.or || 0 : 0,
         equipement: equipDepart.slice(),
         portes: {},
-        potions: {
-          adresse: 0,
-          vigueur: 0,
-          bonneFortune: 0
-        },
+        potions: potionsDepart,
         fioles: {},
         marqueurs: []
       },
@@ -12625,7 +12658,9 @@ function VueNoyauLDVELH({
     }, "Retour"));
   }
   const h = etat && etat.heros;
-  const creationPrete = !!(creation && creation.jetes && creation.jetes.habilete && creation.jetes.endurance && creation.jetes.chance && creation.jetes.or);
+  const regleOr = creation ? orTome(creation.livre) : null;
+  const choixPotion = creation ? choixPotionsCreation(creation.livre) : null;
+  const creationPrete = !!(creation && creation.jetes && creation.jetes.habilete && creation.jetes.endurance && creation.jetes.chance && (!regleOr || regleOr.mode !== "des" || creation.jetes.or) && (!choixPotion || creation.potionChoisie));
   const monstresP = paragraphe && paragraphe.donnees && paragraphe.donnees.monstres || [];
   const tomeOuvert = etat ? (livres || []).find(l => l.code === etat.livreCode) || null : null;
   const reglesIntegrales = tomeOuvert && tomeOuvert.regles && tomeOuvert.regles.length ? tomeOuvert.regles : null;
@@ -13306,14 +13341,36 @@ function VueNoyauLDVELH({
     className: "text-lg font-bold text-zinc-100 mb-1"
   }, creation.livre.titre), React.createElement("div", {
     className: "text-xs text-zinc-500 mb-4"
-  }, "Lancez chaque caract\xE9ristique \u2014 une seule tentative, pas de retour :"), JETS_HEROS.map(([label, k]) => React.createElement(LigneJetDes, {
+  }, "Lancez chaque caract\xE9ristique \u2014 une seule tentative, pas de retour :"), [["HABILETÉ", "habilete"], ["ENDURANCE", "endurance"], ["CHANCE", "chance"]].concat(regleOr && regleOr.mode === "des" ? [["PIÈCE D'OR", "or"]] : []).map(([label, k]) => React.createElement(LigneJetDes, {
     key: k,
     label: label,
     T: T,
-    des: k === "endurance" ? ["D6", "D6"] : ["D6"],
-    bonus: k === "endurance" ? 12 : k === "or" ? 0 : 6,
+    des: k === "endurance" ? ["D6", "D6"] : Array(regleOr && regleOr.des || 1).fill("D6"),
+    bonus: k === "endurance" ? 12 : k === "or" ? regleOr && regleOr.bonus || 0 : 6,
     surPose: total => poserCarac(k, total)
-  })), React.createElement("div", {
+  })), regleOr && regleOr.mode === "fixe" && React.createElement("div", {
+    className: "text-xs text-zinc-400 py-2 border-t border-zinc-800 mt-2"
+  }, "Pi\xE8ces d'or : ", regleOr.fixe, " \u2014 pos\xE9es d'avance par le tome."), choixPotion && React.createElement("div", {
+    className: "mt-3 pt-3 border-t border-zinc-800"
+  }, React.createElement("div", {
+    className: "text-xs font-bold text-zinc-300 mb-2"
+  }, "POTION DE D\xC9PART \u2014 choisissez-en une :"), React.createElement("div", {
+    className: "flex gap-2"
+  }, choixPotion.map(p => React.createElement("button", {
+    key: p,
+    onClick: () => setCreation(cc => ({
+      ...cc,
+      potionChoisie: cc.potionChoisie === p ? null : p
+    })),
+    className: "flex-1 px-2 py-2 rounded-lg text-xs font-bold",
+    style: creation.potionChoisie === p ? {
+      background: T.accent,
+      color: "#000"
+    } : {
+      border: "1px solid #3f3f46",
+      color: "#d4d4d8"
+    }
+  }, "Potion ", LIBELLES_POTIONS[p] || p)))), React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, React.createElement("button", {
     onClick: () => setCreation(null),
