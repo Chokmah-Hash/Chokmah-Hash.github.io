@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.135";
+const BUILD = "0.136";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12081,7 +12081,8 @@ function VueNoyauLDVELH({
       },
       gainsAppliques: [],
       journal: [1],
-      visites: [1]
+      visites: [1],
+      prologueVu: false
     };
     setCreation(null);
     cacheParagraphes.current = {};
@@ -12124,6 +12125,10 @@ function VueNoyauLDVELH({
   const quitterPrologue = () => {
     setOnglet("lecture");
     setPrologueFrais(false);
+    if (etat && !etat.prologueVu) majEtat({
+      ...etat,
+      prologueVu: true
+    });
     if (!paragraphe && etat) ouvrirParagrapheDepuis(etat);
   };
   const supprimerAventure = a => {
@@ -12772,17 +12777,23 @@ function VueNoyauLDVELH({
         style: {
           color: T.accent
         }
-      }, "Aventure au \xA7 ", a.etat && a.etat.position || 1), React.createElement("div", {
+      }, a.etat && a.etat.prologueVu === false ? "Aventure au prologue" : "Aventure au § " + (a.etat && a.etat.position || 1)), React.createElement("div", {
         className: "flex items-center gap-2"
       }, React.createElement("button", {
         onClick: () => {
-          setEtat({
+          const e = {
             ...(a.etat || {}),
             id: a.id
-          });
+          };
+          setEtat(e);
           cacheParagraphes.current = {};
-          setOnglet("lecture");
-          ouvrirParagrapheDepuis(a.etat);
+          if (e.prologueVu === false) {
+            setPrologueFrais(true);
+            setOnglet("prologue");
+          } else {
+            setOnglet("lecture");
+            ouvrirParagrapheDepuis(e);
+          }
         },
         className: "px-3 py-1.5 rounded-lg text-xs font-bold",
         style: {
