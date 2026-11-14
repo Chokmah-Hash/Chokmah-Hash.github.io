@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.132";
+const BUILD = "0.133";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11841,6 +11841,31 @@ function VueNoyauLDVELH({
     vigueur: "de Vigueur",
     bonneFortune: "de Bonne Fortune"
   };
+  const placeObjet = nom => {
+    const n = String(nom).toLowerCase();
+    const a = mots => mots.some(m => n.indexOf(m) >= 0);
+    if (a(["casque", "bandeau", "boucles d'oreille", "chapeau", "couronne"])) return "tete";
+    if (a(["collier", "médaillon", "medaillon", "talisman", "amulette"])) return "collier";
+    if (a(["armure", "ceinture", "maille", "plastron", "cuirasse"])) return "torse";
+    if (a(["bague", "anneau"])) return "bagueD";
+    if (a(["bracelet", "brassard"])) return "braceletD";
+    if (a(["épée", "epee", "sabre", "couteau", "gant", "hache", "lance", "masse", "dague", "bâton", "baton", "marteau"])) return "mainDroite";
+    if (a(["bouclier", "filet", "grappin"])) return "mainGauche";
+    if (a(["jambière", "jambieres", "pantalon"])) return "jambe";
+    if (a(["bottes", "bottines", "chaussures", "échasses", "echasses", "sandales"])) return "pied";
+    return null;
+  };
+  const emplacementLibre = (nom, portes) => {
+    const base = placeObjet(nom);
+    if (!base) return null;
+    const paire = {
+      bagueD: ["bagueD", "bagueG"],
+      braceletD: ["braceletD", "braceletG"],
+      mainDroite: ["mainDroite", "mainGauche"]
+    }[base] || [base];
+    return paire.find(s => !(portes || {})[s]) || null;
+  };
+  const GROUPES_EMPLACEMENTS = [["TÊTE + COLLIER", ["tete", "collier"]], ["TORSÉ", ["torse"]], ["MAIN DROITE + BAGUE + BRACELET", ["mainDroite", "bagueD", "braceletD"]], ["MAIN GAUCHE + BAGUE + BRACELET", ["mainGauche", "bagueG", "braceletG"]], ["JAMBE", ["jambe"]], ["PIED", ["pied"]]];
   const appliquerEffets = (evts, heros, numero, gains) => {
     let h = {
       ...heros,
@@ -11871,6 +11896,15 @@ function VueNoyauLDVELH({
         if (i >= 0) {
           lignes.push("Vous perdez : " + h.equipement[i] + ".");
           h.equipement = h.equipement.filter((_, j) => j !== i);
+        } else {
+          const p = Object.keys(h.portes || {}).find(s => String(h.portes[s]).toLowerCase().indexOf(String(ev.retirerEquipement).toLowerCase()) >= 0);
+          if (p) {
+            lignes.push("Vous perdez : " + h.portes[p] + ".");
+            h.portes = {
+              ...h.portes
+            };
+            delete h.portes[p];
+          }
         }
       } else if (ev.viderEquipement) {
         if ((h.equipement || []).length) lignes.push("Votre sac à dos est vidé.");
@@ -12003,6 +12037,7 @@ function VueNoyauLDVELH({
         or: 0,
         bijoux: [],
         equipement: equipDepart.slice(),
+        portes: {},
         potions: {
           adresse: 0,
           vigueur: 0,
@@ -12534,6 +12569,43 @@ function VueNoyauLDVELH({
     });
     setNotice(annonce);
   };
+  const equiperObjet = nom => {
+    if (!etat) return;
+    const portes = {
+      ...(etat.heros.portes || {})
+    };
+    const slot = emplacementLibre(nom, portes);
+    if (!slot) return;
+    portes[slot] = nom;
+    const i = etat.heros.equipement.indexOf(nom);
+    if (i < 0) return;
+    majEtat({
+      ...etat,
+      heros: {
+        ...etat.heros,
+        portes,
+        equipement: etat.heros.equipement.slice(0, i).concat(etat.heros.equipement.slice(i + 1))
+      }
+    });
+    setNotice("Vous portez : " + nom + ".");
+  };
+  const desequiperObjet = slot => {
+    if (!etat || !(etat.heros.portes || {})[slot]) return;
+    const portes = {
+      ...(etat.heros.portes || {})
+    };
+    const nom = portes[slot];
+    delete portes[slot];
+    majEtat({
+      ...etat,
+      heros: {
+        ...etat.heros,
+        portes,
+        equipement: [...etat.heros.equipement, nom]
+      }
+    });
+    setNotice(nom + " retourne au sac à dos.");
+  };
   if (!joueur) {
     return React.createElement("div", {
       className: "min-h-screen flex flex-col items-center justify-center gap-4",
@@ -13047,37 +13119,56 @@ function VueNoyauLDVELH({
       color: T.or
     }
   }, h[champ])))), React.createElement("fieldset", {
-    className: "rounded-xl border border-zinc-800 px-4 pb-3 flex items-center justify-between",
-    style: {
-      background: "#12140f"
-    }
-  }, React.createElement("legend", {
-    className: "text-xs tracking-widest text-zinc-500 px-2"
-  }, "PROVISIONS"), React.createElement("div", {
-    className: "text-2xl"
-  }, React.createElement("span", {
-    className: "font-bold",
-    style: {
-      color: T.or
-    }
-  }, h.provisions, " rations")), React.createElement("div", {
-    className: "flex gap-2"
-  }, React.createElement("button", {
-    onClick: manger,
-    className: "px-3 py-2 rounded-lg text-xs font-bold text-black",
-    style: {
-      background: T.accent
-    }
-  }, "MANGER (+4 END)"))), React.createElement("fieldset", {
     className: "rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
     }
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
-  }, "POTIONS"), React.createElement("div", {
+  }, "\xC9QUIPEMENT"), React.createElement("div", {
     className: "space-y-1"
-  }, [["adresse", "Potion d'Adresse"], ["vigueur", "Potion de Vigueur"], ["bonneFortune", "Potion de Bonne Fortune"]].map(([p, libelle]) => React.createElement("div", {
+  }, GROUPES_EMPLACEMENTS.map(([label, slots]) => React.createElement("div", {
+    key: label,
+    className: "flex items-center justify-between gap-3 text-sm"
+  }, React.createElement("span", {
+    className: "text-xs tracking-wider text-zinc-500"
+  }, label), React.createElement("div", {
+    className: "flex flex-wrap gap-2 justify-end"
+  }, slots.map(s => (h.portes || {})[s] ? React.createElement("span", {
+    key: s,
+    className: "flex items-center gap-2"
+  }, React.createElement("span", {
+    className: "text-zinc-200"
+  }, h.portes[s]), React.createElement("button", {
+    onClick: () => desequiperObjet(s),
+    className: "px-2 py-0.5 rounded-lg text-xs font-bold",
+    style: {
+      background: "#27272a",
+      color: "#a1a1aa"
+    }
+  }, "D\xC9S\xC9QUIPER")) : React.createElement("span", {
+    key: s,
+    className: "text-zinc-600"
+  }, "\u2014"))))))), React.createElement("fieldset", {
+    className: "rounded-xl border border-zinc-800 px-4 pb-3",
+    style: {
+      background: "#12140f"
+    }
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
+  }, "CONSOMMABLE"), React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between text-sm"
+  }, React.createElement("span", {
+    className: "text-zinc-200"
+  }, "Rations \xD7 ", h.provisions), React.createElement("button", {
+    onClick: manger,
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold text-black",
+    style: {
+      background: T.accent
+    }
+  }, "MANGER (+4 END)")), [["adresse", "Potion d'Adresse"], ["vigueur", "Potion de Vigueur"], ["bonneFortune", "Potion de Bonne Fortune"]].map(([p, libelle]) => React.createElement("div", {
     key: p,
     className: "flex items-center justify-between text-sm"
   }, React.createElement("span", {
@@ -13102,23 +13193,34 @@ function VueNoyauLDVELH({
       background: T.accent,
       color: "#0c0d10"
     }
-  }, "CONSUMMER"))), !Object.keys(h.fioles || {}).length && !(h.potions.adresse || h.potions.vigueur || h.potions.bonneFortune) && React.createElement("div", {
+  }, "CONSUMMER"))), !h.provisions && !Object.keys(h.fioles || {}).length && !(h.potions.adresse || h.potions.vigueur || h.potions.bonneFortune) && React.createElement("div", {
     className: "text-sm text-zinc-500"
-  }, "Aucune potion."))), React.createElement("fieldset", {
+  }, "Aucun consommable."))), React.createElement("fieldset", {
     className: "rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
     }
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
-  }, "\xC9QUIPEMENT TRANSPORT\xC9"), React.createElement("div", {
+  }, "SAC \xC0 DOS"), React.createElement("div", {
     className: "text-sm text-zinc-200 mb-2"
   }, "BOURSE : ", h.or, " Pi\xE8ce", h.or > 1 ? "s" : "", " d'Or"), React.createElement("div", {
     className: "space-y-1"
-  }, h.equipement.map((e, i) => React.createElement("div", {
-    key: i,
-    className: "flex items-center justify-between text-sm text-zinc-200"
-  }, React.createElement("span", null, e))), !h.equipement.length && React.createElement("div", {
+  }, h.equipement.map((e, i) => {
+    const libre = emplacementLibre(e, h.portes || {});
+    return React.createElement("div", {
+      key: i,
+      className: "flex items-center justify-between text-sm text-zinc-200"
+    }, React.createElement("span", null, e), placeObjet(e) ? React.createElement("button", {
+      onClick: () => equiperObjet(e),
+      disabled: !libre,
+      className: "px-2 py-0.5 rounded-lg text-xs font-bold",
+      style: {
+        background: libre ? T.accent : "#27272a",
+        color: libre ? "#0c0d10" : "#52525b"
+      }
+    }, "\xC9QUIPER") : null);
+  }), !h.equipement.length && React.createElement("div", {
     className: "text-sm text-zinc-500"
   }, "Sac vide.")))), onglet === "regles" && React.createElement("div", {
     className: "space-y-4"
