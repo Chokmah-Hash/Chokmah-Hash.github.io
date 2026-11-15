@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.140";
+const BUILD = "0.141";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11866,6 +11866,19 @@ function VueNoyauLDVELH({
     return paire.find(s => !(portes || {})[s]) || null;
   };
   const GRILLE_EMPLACEMENTS = [[], ["tete", "collier"], [], ["mainGauche", "bagueG", "braceletG"], ["torse"], ["mainDroite", "bagueD", "braceletD"], [], ["jambe"], [], [], ["pied"], []];
+  const LIBELLES_EMPLACEMENTS = {
+    tete: "Tête",
+    collier: "Collier",
+    torse: "Torse",
+    mainDroite: "Main droite",
+    mainGauche: "Main gauche",
+    bagueD: "Bague",
+    bagueG: "Bague",
+    braceletD: "Bracelet",
+    braceletG: "Bracelet",
+    jambe: "Jambe",
+    pied: "Pied"
+  };
   const appliquerEffets = (evts, heros, numero, gains) => {
     let h = {
       ...heros,
@@ -13186,9 +13199,9 @@ function VueNoyauLDVELH({
     className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "\xC9QUIPEMENT"), React.createElement("div", {
     className: "grid grid-cols-3 gap-1"
-  }, GRILLE_EMPLACEMENTS.map((slots, i) => React.createElement("div", {
+  }, GRILLE_EMPLACEMENTS.map((slots, i) => slots.length ? React.createElement("div", {
     key: i,
-    className: "flex flex-col rounded-lg border border-zinc-800 px-2 py-1.5 text-sm",
+    className: "flex flex-col justify-center gap-0.5 rounded-lg border border-zinc-800 px-2 py-1.5 text-sm",
     style: {
       minHeight: 34
     }
@@ -13196,8 +13209,16 @@ function VueNoyauLDVELH({
     key: s,
     title: "Cliquer : ranger dans le sac",
     onClick: () => desequiperObjet(s),
-    className: "cursor-pointer text-zinc-200 hover:underline"
-  }, h.portes[s]) : null))))), React.createElement("fieldset", {
+    className: "cursor-pointer text-center hover:underline",
+    style: {
+      color: T.or
+    }
+  }, h.portes[s]) : React.createElement("span", {
+    key: s,
+    className: "text-center text-zinc-500"
+  }, LIBELLES_EMPLACEMENTS[s]))) : React.createElement("div", {
+    key: i
+  })))), React.createElement("fieldset", {
     className: "rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
