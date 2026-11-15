@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.137";
+const BUILD = "0.138";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12862,8 +12862,11 @@ function VueNoyauLDVELH({
     }
   }, paragraphe ? React.createElement(Alineas, {
     texte: paragraphe.texte
-  }) : "Le paragraphe s'ouvre…", !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("fieldset", {
-    className: "mt-4 rounded-xl border border-zinc-800 px-4 pb-3"
+  }) : "Le paragraphe s'ouvre…"), !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.boutique && paragraphe.donnees.boutique.length > 0 && React.createElement("fieldset", {
+    className: "mt-4 rounded-xl border border-zinc-800 px-4 pb-3",
+    style: {
+      background: "#12140f"
+    }
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "ARTICLES DISPONIBLES"), React.createElement("div", {
@@ -12902,10 +12905,17 @@ function VueNoyauLDVELH({
   }, dernierAchat ? "Vous achetez : " + dernierAchat : ""), React.createElement("div", {
     className: "text-zinc-400"
   }, "BOURSE : ", h.or, " PI\xC8CE", h.or > 1 ? "S" : "", " D'OR"))), paragraphe && paragraphe.donnees && paragraphe.donnees.texteApres && React.createElement("div", {
-    className: "mt-4"
+    className: "mt-4 rounded-xl border border-zinc-800 p-5 text-zinc-200",
+    style: {
+      background: "#12140f",
+      fontSize: taillePx,
+      textAlign: "justify",
+      hyphens: "auto",
+      lineHeight: 1.75
+    }
   }, React.createElement(Alineas, {
     texte: paragraphe.donnees.texteApres
-  }))), annonces && annonces.length > 0 && !combat && React.createElement("div", {
+  })), annonces && annonces.length > 0 && !combat && React.createElement("div", {
     className: "mt-4 px-4 py-3 rounded-xl border",
     style: {
       background: "#12140f",
