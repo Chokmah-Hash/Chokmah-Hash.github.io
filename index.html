@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.138";
+const BUILD = "0.139";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12870,19 +12870,24 @@ function VueNoyauLDVELH({
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "ARTICLES DISPONIBLES"), React.createElement("div", {
-    className: "space-y-1.5",
+    className: "space-y-2",
     style: {
-      maxHeight: 234,
+      maxHeight: 152,
       overflowY: "auto"
     }
   }, paragraphe.donnees.boutique.map((a, i) => {
     const tropCher = h.or < a.prix;
     return React.createElement("div", {
       key: i,
-      className: "flex items-center justify-between text-sm rounded-lg border border-zinc-800 px-3 py-1.5"
+      className: "flex items-end gap-2 text-sm"
     }, React.createElement("span", {
       className: "text-zinc-200"
-    }, a.nom), React.createElement("button", {
+    }, a.nom), React.createElement("span", {
+      className: "flex-1",
+      style: {
+        borderBottom: "1px dotted #3f3f46"
+      }
+    }), React.createElement("button", {
       onClick: () => acquerArticle(a),
       disabled: tropCher,
       className: "px-3 py-1.5 rounded-lg text-xs font-bold",
