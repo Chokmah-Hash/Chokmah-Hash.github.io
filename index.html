@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.139";
+const BUILD = "0.140";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -11865,7 +11865,7 @@ function VueNoyauLDVELH({
     }[base] || [base];
     return paire.find(s => !(portes || {})[s]) || null;
   };
-  const GROUPES_EMPLACEMENTS = [["TÊTE + COLLIER", ["tete", "collier"]], ["TORSÉ", ["torse"]], ["MAIN DROITE + BAGUE + BRACELET", ["mainDroite", "bagueD", "braceletD"]], ["MAIN GAUCHE + BAGUE + BRACELET", ["mainGauche", "bagueG", "braceletG"]], ["JAMBE", ["jambe"]], ["PIED", ["pied"]]];
+  const GRILLE_EMPLACEMENTS = [[], ["tete", "collier"], [], ["mainGauche", "bagueG", "braceletG"], ["torse"], ["mainDroite", "bagueD", "braceletD"], [], ["jambe"], [], [], ["pied"], []];
   const appliquerEffets = (evts, heros, numero, gains) => {
     let h = {
       ...heros,
@@ -13185,30 +13185,19 @@ function VueNoyauLDVELH({
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "\xC9QUIPEMENT"), React.createElement("div", {
-    className: "space-y-1"
-  }, GROUPES_EMPLACEMENTS.map(([label, slots]) => React.createElement("div", {
-    key: label,
-    className: "flex items-center justify-between gap-3 text-sm"
-  }, React.createElement("span", {
-    className: "text-xs tracking-wider text-zinc-500"
-  }, label), React.createElement("div", {
-    className: "flex flex-wrap gap-2 justify-end"
+    className: "grid grid-cols-3 gap-1"
+  }, GRILLE_EMPLACEMENTS.map((slots, i) => React.createElement("div", {
+    key: i,
+    className: "flex flex-col rounded-lg border border-zinc-800 px-2 py-1.5 text-sm",
+    style: {
+      minHeight: 34
+    }
   }, slots.map(s => (h.portes || {})[s] ? React.createElement("span", {
     key: s,
-    className: "flex items-center gap-2"
-  }, React.createElement("span", {
-    className: "text-zinc-200"
-  }, h.portes[s]), React.createElement("button", {
+    title: "Cliquer : ranger dans le sac",
     onClick: () => desequiperObjet(s),
-    className: "px-2 py-0.5 rounded-lg text-xs font-bold",
-    style: {
-      background: "#27272a",
-      color: "#a1a1aa"
-    }
-  }, "D\xC9S\xC9QUIPER")) : React.createElement("span", {
-    key: s,
-    className: "text-zinc-600"
-  }, "\u2014"))))))), React.createElement("fieldset", {
+    className: "cursor-pointer text-zinc-200 hover:underline"
+  }, h.portes[s]) : null))))), React.createElement("fieldset", {
     className: "rounded-xl border border-zinc-800 px-4 pb-3",
     style: {
       background: "#12140f"
