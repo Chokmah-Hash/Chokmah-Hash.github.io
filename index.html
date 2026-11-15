@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.136";
+const BUILD = "0.137";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12867,19 +12867,19 @@ function VueNoyauLDVELH({
   }, React.createElement("legend", {
     className: "text-xs tracking-widest text-zinc-500 px-2"
   }, "ARTICLES DISPONIBLES"), React.createElement("div", {
-    className: "space-y-1",
+    className: "space-y-1.5",
     style: {
-      maxHeight: 176,
+      maxHeight: 234,
       overflowY: "auto"
     }
   }, paragraphe.donnees.boutique.map((a, i) => {
     const tropCher = h.or < a.prix;
     return React.createElement("div", {
       key: i,
-      className: "flex items-center justify-between text-sm"
+      className: "flex items-center justify-between text-sm rounded-lg border border-zinc-800 px-3 py-1.5"
     }, React.createElement("span", {
       className: "text-zinc-200"
-    }, a.nom, " \u2014 ", a.prix, " Pi\xE8ce", a.prix > 1 ? "s" : "", " d'Or"), React.createElement("button", {
+    }, a.nom), React.createElement("button", {
       onClick: () => acquerArticle(a),
       disabled: tropCher,
       className: "px-3 py-1.5 rounded-lg text-xs font-bold",
@@ -12891,7 +12891,7 @@ function VueNoyauLDVELH({
         background: T.or,
         color: "#0c0d10"
       }
-    }, "ACHETER"));
+    }, a.prix, " PO"));
   })), React.createElement("div", {
     className: "mt-2 flex items-center gap-2 text-sm",
     style: {
