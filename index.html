@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.141";
+const BUILD = "0.142";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12533,6 +12533,30 @@ function VueNoyauLDVELH({
     }
     return false;
   };
+  const OBJETS_REQUIS = ["potion de contrôle des plantes", "potion de contrôle des insectes", "potion de tranquillité", "potion antipoison", "potion de guérison", "anneau de lumière", "bottes à bondir", "corde magique", "filet de capture", "brassard de force", "gant d'adresse au lancer", "perche à sonder", "gousses d'ail", "bandeau de concentration", "capsules de feu", "filtres à nez", "eau bénite", "cloche de cuivre", "tête de marteau", "manche", "poudre de lévitation", "belladone", "œil d'ambre", "clé d'argent", "casque"];
+  const possederObjet = (nom, heros) => {
+    const n = String(nom).toLowerCase();
+    if ((heros.equipement || []).some(e => String(e).toLowerCase().indexOf(n) >= 0)) return true;
+    if (Object.values(heros.portes || {}).some(v => String(v).toLowerCase().indexOf(n) >= 0)) return true;
+    if (Object.keys(heros.fioles || {}).some(f => f.toLowerCase().indexOf(n) >= 0 && heros.fioles[f] > 0)) return true;
+    return false;
+  };
+  const verrouObjetRenvoi = (renvois, i) => {
+    if (!etat || !renvois || !renvois[i]) return false;
+    const motifQuestion = /si oui|possédez-vous|portez-vous|avez-vous|si vous avez|si vous possédez|vous possédez|vous avez|\(si vous le possédez\)/i;
+    const objetsDans = t => OBJETS_REQUIS.filter(o => t.indexOf(o) >= 0);
+    const t = String(renvois[i].label || "").toLowerCase();
+    const objets = objetsDans(t);
+    if (objets.length > 0 && motifQuestion.test(t)) {
+      return !objets.every(o => possederObjet(o, etat.heros));
+    }
+    if (/^\s*(sinon|dans le cas contraire|vous ne possédez)/.test(t) && i > 0) {
+      const tp = String(renvois[i - 1].label || "").toLowerCase();
+      const objetsP = objetsDans(tp);
+      if (objetsP.length > 0 && motifQuestion.test(tp)) return objetsP.every(o => possederObjet(o, etat.heros));
+    }
+    return false;
+  };
   const manger = () => {
     if (!etat || etat.heros.provisions <= 0) return;
     const h = etat.heros;
@@ -13120,7 +13144,7 @@ function VueNoyauLDVELH({
   }, "COMBATTRE")), paragraphe && paragraphe.donnees && paragraphe.donnees.renvois && paragraphe.donnees.renvois.length > 0 && React.createElement("div", {
     className: "mt-4 space-y-2"
   }, paragraphe.donnees.renvois.map((r, i) => {
-    const verrou = verrouRenvoi(r.vers);
+    const verrou = verrouRenvoi(r.vers) || verrouObjetRenvoi(paragraphe.donnees.renvois, i);
     return React.createElement("button", {
       key: i,
       onClick: () => {
