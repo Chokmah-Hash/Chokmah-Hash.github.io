@@ -1739,7 +1739,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.142";
+const BUILD = "0.143";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -6301,6 +6301,99 @@ function FicheApercuD100({
     }
   }))));
 }
+function FicheApercuUnite({
+  pack,
+  perso,
+  accent
+}) {
+  if (!perso || !perso.st) return null;
+  const T = pack && pack.theme || {};
+  const a = accent || T.accent || "#2ee6c9";
+  const or = T.or || "#f0b24a";
+  return React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + a + "33"
+    }
+  }, React.createElement("div", {
+    className: "flex items-baseline justify-between mb-3"
+  }, React.createElement("div", {
+    className: "font-bold text-lg",
+    style: {
+      color: or
+    }
+  }, perso.nom), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, perso.chassis, " \xB7 code ", perso.code)), React.createElement(PvBarre, {
+    pv: perso.pvMax,
+    pvMax: perso.pvMax,
+    accent: a
+  }), React.createElement("div", {
+    className: "text-right text-xs mt-1",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, perso.pvMax, " / ", perso.pvMax, " PV"), React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 mt-3 text-center text-sm"
+  }, [["CC", perso.st.cc], ["CT", perso.st.ct], ["F", perso.st.f], ["E", perso.st.e], ["Sv", perso.st.sv], ["Cd", perso.st.cd]].concat(perso.st.a ? [["A", perso.st.a]] : []).map(([k, v]) => React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " "), v))), React.createElement("div", {
+    className: "mt-2 rounded py-1.5 text-center text-sm",
+    style: {
+      background: or + "22",
+      color: or
+    }
+  }, "Rfx +", perso.rfx, " ", React.createElement("span", {
+    className: "text-xs"
+  }, "\u2014 surcharge du mod P\xC9")), perso.armeDef && React.createElement("div", {
+    className: "mt-3 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, perso.armeDef.nom), " \xB7 ", perso.armeDef.tir ? "tir" : "mêlée", " \xB7 ", perso.armeDef.portee, " \xB7 A ", perso.armeDef.att, " \xB7 ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", perso.armeDef.f, " \xB7 PA ", perso.armeDef.pa, " \xB7 D ", perso.armeDef.d, perso.armeDef.regle ? React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, " \xB7 ", perso.armeDef.regle) : null), perso.apt && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.comps && React.createElement("div", {
+    className: "flex flex-wrap gap-1 mt-2"
+  }, perso.comps.map(c => React.createElement("span", {
+    key: c,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: a + "22",
+      color: a
+    }
+  }, c))));
+}
 function RegistrePersonnages({
   pack,
   persos,
@@ -7368,7 +7461,7 @@ function EcranPartie({
   }), (() => {
     const pris = (persos || []).find(q => q.id === persoChoisi);
     const pp = persoEdite || (pris ? pris.contenu || pris : null);
-    return pp && pp.caracs ? React.createElement("div", {
+    if (pp && pp.caracs) return React.createElement("div", {
       className: "mt-4"
     }, React.createElement(FicheApercuD100, {
       pack: pack,
@@ -7383,7 +7476,14 @@ function EcranPartie({
           contenu: p
         });
       }
-    })) : null;
+    }));
+    if (pp && pp.st) return React.createElement("div", {
+      className: "mt-4"
+    }, React.createElement(FicheApercuUnite, {
+      pack: pack,
+      perso: pp
+    }));
+    return null;
   })()), onglet === "regles" && React.createElement(ReglesSB, {
     pack: pack,
     livre: livreSb
