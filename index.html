@@ -911,6 +911,77 @@
         token: m.access_token
       });
     },
+    lireMonde: function () {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return Promise.all([api("/rest/v1/monde_vaisseau?select=*&id=eq.1", {
+        token: m.access_token
+      }), api("/rest/v1/monde_systemes?select=*&order=secteur.asc,systeme.asc", {
+        token: m.access_token
+      }), api("/rest/v1/monde_positions?select=personnage_id,contenu,maj_le&order=maj_le.desc", {
+        token: m.access_token
+      })]).then(function (r) {
+        return {
+          vaisseau: r[0] && r[0][0] || null,
+          systemes: r[1] || [],
+          positions: r[2] || []
+        };
+      }).catch(function () {
+        return null;
+      });
+    },
+    renommerVaisseau: function (nom) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/monde_vaisseau?id=eq.1", {
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          nom: nom,
+          maj_le: new Date().toISOString()
+        }
+      });
+    },
+    ordonnerSaut: function (position, vers) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      var depart = new Date();
+      var arrivee = new Date(depart.getTime() + vers.dureeMs);
+      return api("/rest/v1/monde_vaisseau?id=eq.1", {
+        method: "PATCH",
+        token: m.access_token,
+        prefer: "return=representation",
+        body: {
+          position: position,
+          saut: {
+            vers_secteur: vers.secteur,
+            vers_systeme: vers.systeme,
+            depart: depart.toISOString(),
+            arrivee: arrivee.toISOString(),
+            duree_s: Math.round(vers.dureeMs / 1000)
+          },
+          maj_le: depart.toISOString()
+        }
+      }).then(function (l) {
+        return l && l[0] || null;
+      });
+    },
+    gravureArrivee: function (saut) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve();
+      return api("/rest/v1/monde_vaisseau?id=eq.1", {
+        method: "PATCH",
+        token: m.access_token,
+        body: {
+          position: {
+            secteur: saut.vers_secteur,
+            systeme: saut.vers_systeme
+          },
+          saut: null,
+          maj_le: new Date().toISOString()
+        }
+      });
+    },
     tempsReel: tempsReel
   };
 }();</script>
@@ -1718,6 +1789,77 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           return [];
         });
       },
+      lireMonde: function () {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve(null);
+        return Promise.all([api("/rest/v1/monde_vaisseau?select=*&id=eq.1", {
+          token: m.access_token
+        }), api("/rest/v1/monde_systemes?select=*&order=secteur.asc,systeme.asc", {
+          token: m.access_token
+        }), api("/rest/v1/monde_positions?select=personnage_id,contenu,maj_le&order=maj_le.desc", {
+          token: m.access_token
+        })]).then(function (r) {
+          return {
+            vaisseau: r[0] && r[0][0] || null,
+            systemes: r[1] || [],
+            positions: r[2] || []
+          };
+        }).catch(function () {
+          return null;
+        });
+      },
+      renommerVaisseau: function (nom) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve();
+        return api("/rest/v1/monde_vaisseau?id=eq.1", {
+          method: "PATCH",
+          token: m.access_token,
+          body: {
+            nom: nom,
+            maj_le: new Date().toISOString()
+          }
+        });
+      },
+      ordonnerSaut: function (position, vers) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve(null);
+        var depart = new Date();
+        var arrivee = new Date(depart.getTime() + vers.dureeMs);
+        return api("/rest/v1/monde_vaisseau?id=eq.1", {
+          method: "PATCH",
+          token: m.access_token,
+          prefer: "return=representation",
+          body: {
+            position: position,
+            saut: {
+              vers_secteur: vers.secteur,
+              vers_systeme: vers.systeme,
+              depart: depart.toISOString(),
+              arrivee: arrivee.toISOString(),
+              duree_s: Math.round(vers.dureeMs / 1000)
+            },
+            maj_le: depart.toISOString()
+          }
+        }).then(function (l) {
+          return l && l[0] || null;
+        });
+      },
+      gravureArrivee: function (saut) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve();
+        return api("/rest/v1/monde_vaisseau?id=eq.1", {
+          method: "PATCH",
+          token: m.access_token,
+          body: {
+            position: {
+              secteur: saut.vers_secteur,
+              systeme: saut.vers_systeme
+            },
+            saut: null,
+            maj_le: new Date().toISOString()
+          }
+        });
+      },
       tempsReel: tempsReel
     };
   }();
@@ -1739,7 +1881,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.143";
+const BUILD = "0.144";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7657,6 +7799,490 @@ function EcranPartie({
     versionBase: versionBase
   }));
 }
+function dureeSautMs(origine, destination) {
+  const dSys = Math.abs((destination.systeme || 0) - (origine.systeme || 0));
+  const dSec = Math.abs((destination.secteur || 0) - (origine.secteur || 0));
+  return (2 + 3 * dSys + 20 * dSec) * 60000;
+}
+function positionEffective(vaisseau, maintenantMs) {
+  if (!vaisseau) return null;
+  const saut = vaisseau.saut;
+  if (saut && maintenantMs >= Date.parse(saut.arrivee)) {
+    return {
+      secteur: saut.vers_secteur,
+      systeme: saut.vers_systeme,
+      enRoute: false
+    };
+  }
+  const base = vaisseau.position || {
+    secteur: 1,
+    systeme: 1
+  };
+  return {
+    secteur: base.secteur,
+    systeme: base.systeme,
+    enRoute: !!saut,
+    saut: saut || null
+  };
+}
+function dureeLisibleMs(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m + " min " + (r < 10 ? "0" : "") + r + " s";
+}
+function MondeOuvertPret({
+  pack,
+  session,
+  vaisseau,
+  systemes,
+  positions,
+  persos,
+  maintenant,
+  versionBase,
+  onRetour,
+  onRenommer,
+  onSauter,
+  gravureEnCours
+}) {
+  const T = pack && pack.theme || {};
+  const fond = T.fond || "#0a120f";
+  const accent = T.accent || "#2ee6c9";
+  const or = T.or || "#f0b24a";
+  const estAdmin = !!(session && session.role === "admin");
+  const pos = positionEffective(vaisseau, maintenant);
+  const secteurs = [];
+  (systemes || []).forEach(s => {
+    if (secteurs.indexOf(s.secteur) < 0) secteurs.push(s.secteur);
+  });
+  secteurs.sort((a, b) => a - b);
+  const [secteurChoisi, setSecteurChoisi] = useState(pos ? pos.secteur : secteurs[0] || 1);
+  const [systemeChoisi, setSystemeChoisi] = useState(null);
+  const [nomSaisi, setNomSaisi] = useState("");
+  const systemesDuSecteur = (systemes || []).filter(s => s.secteur === secteurChoisi);
+  const detail = systemeChoisi ? (systemes || []).find(s => s.id === systemeChoisi) : null;
+  const systemeCourant = (systemes || []).find(s => s.secteur === pos.secteur && s.systeme === pos.systeme) || null;
+  const nomDestination = pos && pos.saut ? ((systemes || []).find(s => s.secteur === pos.saut.vers_secteur && s.systeme === pos.saut.vers_systeme) || {}).nom || null : null;
+  const resteMs = pos && pos.saut ? Date.parse(pos.saut.arrivee) - maintenant : 0;
+  const positionsParId = {};
+  (positions || []).forEach(p => {
+    positionsParId[p.personnage_id] = p.contenu || {};
+  });
+  const destination = detail ? {
+    secteur: detail.secteur,
+    systeme: detail.systeme
+  } : null;
+  const surPlace = destination && pos && destination.secteur === pos.secteur && destination.systeme === pos.systeme;
+  const sautPossible = estAdmin && !pos.enRoute && !surPlace && destination && !gravureEnCours;
+  const dureeAffichee = destination && pos && !surPlace ? dureeLisibleMs(dureeSautMs(pos, destination)) : "";
+  return React.createElement("div", {
+    className: "min-h-screen flex flex-col",
+    style: {
+      background: fond,
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, React.createElement("div", {
+    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+  }, React.createElement("header", {
+    className: "flex items-center justify-between mb-8",
+    style: {
+      gap: 12,
+      flexWrap: "wrap"
+    }
+  }, React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement(Icosaedre, {
+    size: 40,
+    color: accent
+  }), React.createElement("div", null, React.createElement("div", {
+    className: "text-2xl font-bold text-white tracking-wide leading-tight"
+  }, "LE MONDE OUVERT"), React.createElement("div", {
+    className: "text-xs tracking-widest",
+    style: {
+      color: accent
+    }
+  }, "PROTOCOLE \u03A9 \u2014 LA GALAXIE PARTAG\xC9E"))), React.createElement("button", {
+    onClick: onRetour,
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#ffffff0a",
+      border: "1px solid " + accent + "44",
+      color: "#e8e4d8"
+    }
+  }, "RETOUR AU HUB")), React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + or + "44"
+    }
+  }, React.createElement("div", {
+    className: "flex items-center justify-between mb-2",
+    style: {
+      gap: 12,
+      flexWrap: "wrap"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-xl",
+    style: {
+      color: or
+    }
+  }, vaisseau && vaisseau.nom || "Le Vaisseau-Mère"), React.createElement("div", {
+    className: "text-xs tracking-wider",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "SECTEUR ", pos.secteur, " \xB7 SYST\xC8ME ", pos.systeme, systemeCourant ? " — " + systemeCourant.nom : "")), React.createElement("div", {
+    className: "text-sm mb-3",
+    style: {
+      color: pos.enRoute ? accent : "#a1a1aa"
+    }
+  }, pos.enRoute ? "SAUT EN COURS vers " + (nomDestination || "secteur " + pos.saut.vers_secteur + " · système " + pos.saut.vers_systeme) + " — arrivée dans " + dureeLisibleMs(resteMs) : "En station — le vaisseau tient position."), estAdmin && React.createElement("div", {
+    className: "flex gap-2 items-center",
+    style: {
+      flexWrap: "wrap"
+    }
+  }, React.createElement("input", {
+    value: nomSaisi,
+    onChange: e => setNomSaisi(e.target.value),
+    placeholder: "Nouveau nom du vaisseau",
+    className: "px-3 py-2 rounded-lg text-sm",
+    style: {
+      background: "#14161b",
+      border: "1px solid #3f3f46",
+      color: "#e8e4d8"
+    }
+  }), React.createElement("button", {
+    onClick: () => {
+      if (onRenommer) onRenommer(nomSaisi);
+      setNomSaisi("");
+    },
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: or
+    }
+  }, "GRAVER LE NOM"))), React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid #ffffff14"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-3",
+    style: {
+      color: or
+    }
+  }, "LA GALAXIE"), React.createElement("div", {
+    className: "flex gap-1 mb-4",
+    style: {
+      flexWrap: "wrap"
+    }
+  }, secteurs.map(s => React.createElement("button", {
+    key: "gsec" + s,
+    onClick: () => setSecteurChoisi(s),
+    className: "px-4 py-2 text-sm font-bold",
+    style: {
+      background: secteurChoisi === s ? "#ffffff14" : "transparent",
+      color: secteurChoisi === s ? "#e8e4d8" : "#71717a",
+      border: "1px solid " + (secteurChoisi === s ? "#a8adb844" : "#27272a"),
+      borderRadius: 8
+    }
+  }, "SECTEUR ", s))), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-4"
+  }, systemesDuSecteur.map(s => {
+    const ici = pos && s.secteur === pos.secteur && s.systeme === pos.systeme;
+    return React.createElement("div", {
+      key: "gsys" + s.id,
+      onClick: () => setSystemeChoisi(s.id),
+      className: "rounded-xl p-4",
+      style: {
+        background: "#14161b",
+        border: "1px solid " + (systemeChoisi === s.id ? accent : ici ? or : "#3f3f46"),
+        cursor: "pointer"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm",
+      style: {
+        color: systemeChoisi === s.id ? accent : "#e8e4d8"
+      }
+    }, s.nom), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#71717a"
+      }
+    }, s.nature), ici && React.createElement("div", {
+      className: "text-xs mt-1",
+      style: {
+        color: or
+      }
+    }, "NOTRE POSITION"));
+  })), detail && React.createElement("div", {
+    className: "mt-4 rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "33"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-sm mb-1",
+    style: {
+      color: accent
+    }
+  }, detail.nom, " \u2014 ", detail.nature), React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, detail.lore))), estAdmin && React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "44"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: accent
+    }
+  }, "LA PASSERELLE"), React.createElement("div", {
+    className: "text-sm mb-3",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, pos.enRoute ? "Saut en cours — la passerelle tient le cap." : destination ? surPlace ? "Le vaisseau tient déjà ce système." : "Cap sur " + detail.nom + " — " + dureeAffichee + " de saut." : "Choisissez un système dans la galaxie pour tracer le cap."), React.createElement("button", {
+    disabled: !sautPossible,
+    onClick: () => {
+      if (onSauter) onSauter(destination);
+    },
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: sautPossible ? accent : "#3f3f46",
+      cursor: sautPossible ? "pointer" : "not-allowed"
+    }
+  }, gravureEnCours ? "GRAVURE EN COURS…" : "ORDONNER LE SAUT")), React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid #ffffff14"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-3",
+    style: {
+      color: or
+    }
+  }, "L'\xC9QUIPAGE"), (persos || []).length === 0 ? React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#71717a"
+    }
+  }, "Aucune unit\xE9 au registre Protocole \u03A9 \u2014 la premi\xE8re se cr\xE9e depuis l'\xE9cran de partie.") : React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3"
+  }, (persos || []).map(p => {
+    const loc = positionsParId[p.id];
+    const aBord = !loc || loc.aBord !== false;
+    return React.createElement("div", {
+      key: "eq" + p.id,
+      className: "rounded-xl p-3 flex items-center justify-between",
+      style: {
+        background: "#14161b",
+        border: "1px solid #3f3f46"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, p.nom), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: aBord ? "#a1a1aa" : accent
+      }
+    }, aBord ? "à bord — " + (loc && loc.lieu || "quartiers") : "hors du vaisseau"));
+  })))), React.createElement(PiedVibe, {
+    versionBase: versionBase
+  }));
+}
+function EcranMondeOuvert({
+  pack,
+  session,
+  versionBase,
+  showToast,
+  onRetour
+}) {
+  const [etat, setEtat] = useState("chargement");
+  const [vaisseau, setVaisseau] = useState(null);
+  const [systemes, setSystemes] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [persos, setPersos] = useState([]);
+  const [maintenant, setMaintenant] = useState(typeof Date !== "undefined" ? Date.now() : 0);
+  const [gravure, setGravure] = useState(false);
+  useEffect(() => {
+    let actif = true;
+    if (!CLOUD || typeof CLOUD.lireMonde !== "function") {
+      setEtat("hors-ligne");
+      return () => {
+        actif = false;
+      };
+    }
+    CLOUD.lireMonde().then(monde => {
+      if (!actif) return;
+      if (!monde || !monde.vaisseau) {
+        setEtat("hors-ligne");
+        return;
+      }
+      setVaisseau(monde.vaisseau);
+      setSystemes(monde.systemes || []);
+      setPositions(monde.positions || []);
+      setEtat("pret");
+    }).catch(() => {
+      if (actif) setEtat("hors-ligne");
+    });
+    if (typeof CLOUD.listerPersonnages === "function") {
+      CLOUD.listerPersonnages("GM-0001").then(l => {
+        if (actif) setPersos(l || []);
+      }).catch(() => {});
+    }
+    return () => {
+      actif = false;
+    };
+  }, [session ? session.compteId : null]);
+  useEffect(() => {
+    if (etat !== "pret") return;
+    const battement = setInterval(() => setMaintenant(Date.now()), 1000);
+    return () => clearInterval(battement);
+  }, [etat]);
+  useEffect(() => {
+    if (etat !== "pret" || !vaisseau || !vaisseau.saut) return;
+    if (maintenant < Date.parse(vaisseau.saut.arrivee)) return;
+    const saut = vaisseau.saut;
+    setVaisseau(v => v && v.saut && v.saut.arrivee === saut.arrivee ? {
+      ...v,
+      position: {
+        secteur: saut.vers_secteur,
+        systeme: saut.vers_systeme
+      },
+      saut: null
+    } : v);
+    if (CLOUD && typeof CLOUD.gravureArrivee === "function") CLOUD.gravureArrivee(saut).catch(() => {});
+  }, [etat, vaisseau, maintenant]);
+  const renommer = nom => {
+    const nettoye = (nom || "").trim().slice(0, 40);
+    if (!nettoye || !CLOUD || typeof CLOUD.renommerVaisseau !== "function") return;
+    CLOUD.renommerVaisseau(nettoye).then(() => {
+      setVaisseau(v => v ? {
+        ...v,
+        nom: nettoye
+      } : v);
+      if (showToast) showToast("Le vaisseau répond désormais au nom " + nettoye + ".");
+    }).catch(() => {
+      if (showToast) showToast("La Tombe refuse la gravure du nom.");
+    });
+  };
+  const sauter = destination => {
+    if (!CLOUD || typeof CLOUD.ordonnerSaut !== "function" || !vaisseau || !destination) return;
+    const pos = positionEffective(vaisseau, Date.now());
+    if (pos.enRoute) return;
+    const dureeMs = dureeSautMs(pos, destination);
+    setGravure(true);
+    CLOUD.ordonnerSaut({
+      secteur: pos.secteur,
+      systeme: pos.systeme
+    }, {
+      secteur: destination.secteur,
+      systeme: destination.systeme,
+      dureeMs
+    }).then(ligne => {
+      setGravure(false);
+      const saut = ligne && ligne.saut || {
+        vers_secteur: destination.secteur,
+        vers_systeme: destination.systeme,
+        depart: new Date().toISOString(),
+        arrivee: new Date(Date.now() + dureeMs).toISOString()
+      };
+      setVaisseau({
+        ...vaisseau,
+        position: {
+          secteur: pos.secteur,
+          systeme: pos.systeme
+        },
+        saut
+      });
+      if (showToast) showToast("Saut ordonné depuis la passerelle — le cap est gravé.");
+    }).catch(() => {
+      setGravure(false);
+      if (showToast) showToast("La Tombe refuse le saut.");
+    });
+  };
+  const T = pack && pack.theme || {};
+  const fond = T.fond || "#0c0d10";
+  if (etat === "hors-ligne") {
+    return React.createElement("div", {
+      className: "min-h-screen flex flex-col",
+      style: {
+        background: fond,
+        fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+      }
+    }, React.createElement("div", {
+      className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+    }, React.createElement("div", {
+      className: "rounded-2xl p-6",
+      style: {
+        background: "#ffffff08",
+        border: "1px solid #ffffff14"
+      }
+    }, React.createElement("div", {
+      className: "font-bold mb-2",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, "LE MONDE ATTEND LA TOMBE"), React.createElement("div", {
+      className: "text-sm mb-4",
+      style: {
+        color: "#71717a"
+      }
+    }, "Le monde ouvert vit dans la Tombe \u2014 elle est injoignable ou la mise \xE0 jour n'est pas encore grav\xE9e. Revenez dans un instant."), React.createElement("button", {
+      onClick: onRetour,
+      className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+      style: {
+        background: "#a8adb8"
+      }
+    }, "RETOUR AU HUB"))), React.createElement(PiedVibe, {
+      versionBase: versionBase
+    }));
+  }
+  if (etat !== "pret" || !vaisseau) {
+    return React.createElement("div", {
+      className: "min-h-screen flex flex-col",
+      style: {
+        background: fond,
+        fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+      }
+    }, React.createElement("div", {
+      className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+    }, React.createElement("div", {
+      className: "rounded-2xl p-6 animate-pulse",
+      style: {
+        background: "#ffffff08",
+        border: "1px solid #ffffff14",
+        color: "#71717a"
+      }
+    }, "L'ARCHIVISTE OUVRE LES ARCHIVES DU MONDE\u2026")), React.createElement(PiedVibe, {
+      versionBase: versionBase
+    }));
+  }
+  return React.createElement(MondeOuvertPret, {
+    pack: pack,
+    session: session,
+    vaisseau: vaisseau,
+    systemes: systemes,
+    positions: positions,
+    persos: persos,
+    maintenant: maintenant,
+    versionBase: versionBase,
+    onRetour: onRetour,
+    onRenommer: renommer,
+    onSauter: sauter,
+    gravureEnCours: gravure
+  });
+}
 function Hub({
   packs,
   favoris,
@@ -7678,7 +8304,8 @@ function Hub({
   enInstallation,
   symbole,
   versionBase,
-  modsParJeu
+  modsParJeu,
+  onMonde
 }) {
   const [onglet, setOnglet] = useState(joueur && installes && installes.length ? "bibliotheque" : "magasin");
   const [compteOuvert, setCompteOuvert] = useState(false);
@@ -7724,7 +8351,31 @@ function Hub({
     style: {
       background: "#a8adb8"
     }
-  }, "Identification")), React.createElement("div", {
+  }, "Identification")), joueur && onMonde && React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6 flex items-center justify-between",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid #2ee6c944",
+      gap: 16,
+      flexWrap: "wrap"
+    }
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "font-bold tracking-wide",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "LE MONDE OUVERT \u2014 PROTOCOLE \u03A9"), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "La galaxie, le vaisseau-m\xE8re et l'\xE9quipage \u2014 la partie continue entre les s\xE9ances.")), React.createElement("button", {
+    onClick: onMonde,
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: "#2ee6c9"
+    }
+  }, "ENTRER")), React.createElement("div", {
     className: "flex gap-1 mb-6",
     style: {
       borderBottom: "1px solid #27272a"
@@ -13751,7 +14402,8 @@ function App() {
   useEffect(() => {
     const racine = typeof document !== "undefined" && document.documentElement || null;
     if (!racine || !racine.style || !racine.style.setProperty) return;
-    const t = (vue === "chargement" || vue === "partie" || vue === "pack") && packActif ? packActif.theme : null;
+    const themeMonde = vue === "monde" ? ((PACKS || []).find(p => p.id === "GM-0001") || {}).theme : null;
+    const t = (vue === "chargement" || vue === "partie" || vue === "pack") && packActif ? packActif.theme : themeMonde;
     racine.style.setProperty("--scroll-pouce", t ? t.accent : "#a8adb8");
     racine.style.setProperty("--scroll-glace", t ? t.fond : "#1c1c22");
     racine.style.setProperty("--scroll-or", t ? t.or : "#e8e4d8");
@@ -14318,8 +14970,19 @@ function App() {
     enInstallation: enInstallation,
     symbole: symbole,
     versionBase: versionBase,
-    modsParJeu: modsParJeu
-  }), vue === "attente" && session && React.createElement("div", {
+    modsParJeu: modsParJeu,
+    onMonde: () => setVue("monde")
+  }), vue === "monde" && session && (() => {
+    const manifesteMonde = (PACKS || []).find(p => p.id === "GM-0001") || null;
+    const packMonde = manifesteMonde ? chargerPack(manifesteMonde) : null;
+    return React.createElement(EcranMondeOuvert, {
+      pack: packMonde,
+      session: session,
+      versionBase: versionBase,
+      showToast: showToast,
+      onRetour: () => setVue("hub")
+    });
+  })(), vue === "attente" && session && React.createElement("div", {
     className: "min-h-screen flex items-center justify-center p-4",
     style: {
       background: "#0c0d10",
