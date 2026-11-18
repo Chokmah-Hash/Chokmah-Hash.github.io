@@ -982,6 +982,22 @@
         }
       });
     },
+    graverPositionMonde: function (personnageId, contenu) {
+      var m = lire();
+      if (!m || !m.access_token) return Promise.resolve(null);
+      return api("/rest/v1/monde_positions", {
+        method: "POST",
+        token: m.access_token,
+        prefer: "return=representation,resolution=merge-duplicates",
+        body: {
+          personnage_id: personnageId,
+          contenu: contenu,
+          maj_le: new Date().toISOString()
+        }
+      }).then(function (l) {
+        return l && l[0] || null;
+      });
+    },
     tempsReel: tempsReel
   };
 }();</script>
@@ -1860,6 +1876,22 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           }
         });
       },
+      graverPositionMonde: function (personnageId, contenu) {
+        var m = lire();
+        if (!m || !m.access_token) return Promise.resolve(null);
+        return api("/rest/v1/monde_positions", {
+          method: "POST",
+          token: m.access_token,
+          prefer: "return=representation,resolution=merge-duplicates",
+          body: {
+            personnage_id: personnageId,
+            contenu: contenu,
+            maj_le: new Date().toISOString()
+          }
+        }).then(function (l) {
+          return l && l[0] || null;
+        });
+      },
       tempsReel: tempsReel
     };
   }();
@@ -1881,7 +1913,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.145";
+const BUILD = "0.146";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7933,6 +7965,10 @@ function dureeLisibleMs(ms) {
   const r = s % 60;
   return m + " min " + (r < 10 ? "0" : "") + r + " s";
 }
+function positionLisible(loc) {
+  if (!loc || loc.aBord !== false) return "à bord — " + (loc && loc.lieu || "quartiers");
+  return "hors du vaisseau";
+}
 function MondeOuvertPret({
   pack,
   session,
@@ -7940,6 +7976,7 @@ function MondeOuvertPret({
   systemes,
   positions,
   persos,
+  persoActif,
   maintenant,
   versionBase,
   onRetour,
@@ -8175,30 +8212,160 @@ function MondeOuvertPret({
     style: {
       color: "#71717a"
     }
-  }, "Aucune unit\xE9 au registre Protocole \u03A9 \u2014 la premi\xE8re se cr\xE9e depuis l'\xE9cran de partie.") : React.createElement("div", {
+  }, "Aucune unit\xE9 au registre Protocole \u03A9 \u2014 la premi\xE8re s'\xE9veille \xE0 l'entr\xE9e du monde.") : React.createElement("div", {
     className: "grid md:grid-cols-2 gap-3"
-  }, (persos || []).map(p => {
+  }, (persos || []).slice().sort((a, b) => (b.id === (persoActif && persoActif.id) ? 1 : 0) - (a.id === (persoActif && persoActif.id) ? 1 : 0)).map(p => {
     const loc = positionsParId[p.id];
-    const aBord = !loc || loc.aBord !== false;
+    const vous = !!(persoActif && persoActif.id === p.id);
     return React.createElement("div", {
       key: "eq" + p.id,
       className: "rounded-xl p-3 flex items-center justify-between",
       style: {
         background: "#14161b",
-        border: "1px solid #3f3f46"
+        border: "1px solid " + (vous ? accent + "66" : "#3f3f46")
       }
     }, React.createElement("div", {
       className: "font-bold text-sm",
       style: {
+        color: vous ? accent : "#e8e4d8"
+      }
+    }, p.nom, vous ? " — VOUS" : ""), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: loc && loc.aBord === false ? accent : "#a1a1aa"
+      }
+    }, positionLisible(loc)));
+  })))), React.createElement(PiedVibe, {
+    versionBase: versionBase
+  }));
+}
+function ChoixUniteMonde({
+  pack,
+  persos,
+  positions,
+  enGravure,
+  versionBase,
+  onEntrer,
+  onCree,
+  onRetour
+}) {
+  const T = pack && pack.theme || {};
+  const fond = T.fond || "#0a120f";
+  const accent = T.accent || "#2ee6c9";
+  const or = T.or || "#f0b24a";
+  const C = pack && pack.contenu || {};
+  const [enCreation, setEnCreation] = useState((persos || []).length === 0);
+  const positionsParId = {};
+  (positions || []).forEach(p => {
+    positionsParId[p.personnage_id] = p.contenu || {};
+  });
+  return React.createElement("div", {
+    className: "min-h-screen flex flex-col",
+    style: {
+      background: fond,
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, React.createElement("div", {
+    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+  }, React.createElement("header", {
+    className: "flex items-center justify-between mb-8",
+    style: {
+      gap: 12,
+      flexWrap: "wrap"
+    }
+  }, React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement(Icosaedre, {
+    size: 40,
+    color: accent
+  }), React.createElement("div", null, React.createElement("div", {
+    className: "text-2xl font-bold text-white tracking-wide leading-tight"
+  }, "QUI ENTRE DANS LE MONDE ?"), React.createElement("div", {
+    className: "text-xs tracking-widest",
+    style: {
+      color: accent
+    }
+  }, "PROTOCOLE \u03A9 \u2014 LE MONDE SE VISITE EN PERSONNAGE"))), React.createElement("button", {
+    onClick: onRetour,
+    className: "px-4 py-2 rounded-lg font-bold text-sm",
+    style: {
+      background: "#ffffff0a",
+      border: "1px solid " + accent + "44",
+      color: "#e8e4d8"
+    }
+  }, "RETOUR AU HUB")), React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "44"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-1",
+    style: {
+      color: or
+    }
+  }, "L'UNIT\xC9"), React.createElement("div", {
+    className: "text-sm mb-4",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, (persos || []).length ? "Votre unité garde sa position dans le monde, de séance en séance. Choisissez qui entre aujourd'hui." : "Aucune unité au registre — éveillez la première : elle s'éveillera à bord du vaisseau-mère."), (persos || []).length > 0 && React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3 mb-4"
+  }, (persos || []).map(p => {
+    const loc = positionsParId[p.id] || null;
+    const ch = p.contenu && p.contenu.chassis || null;
+    return React.createElement("div", {
+      key: "um" + p.id,
+      className: "rounded-xl p-4",
+      style: {
+        background: "#14161b",
+        border: "1px solid #3f3f46"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm mb-0.5",
+      style: {
         color: "#e8e4d8"
       }
     }, p.nom), React.createElement("div", {
-      className: "text-xs",
+      className: "text-xs mb-2",
       style: {
-        color: aBord ? "#a1a1aa" : accent
+        color: "#71717a"
       }
-    }, aBord ? "à bord — " + (loc && loc.lieu || "quartiers") : "hors du vaisseau"));
-  })))), React.createElement(PiedVibe, {
+    }, ch ? "Châssis " + ch : "Unité du registre Protocole Ω"), React.createElement("div", {
+      className: "text-xs mb-3",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, loc ? "Dernière position : " + positionLisible(loc) : "Jamais entrée dans le monde."), React.createElement("button", {
+      disabled: !!enGravure,
+      onClick: () => onEntrer(p),
+      className: "w-full px-4 py-2 rounded-lg font-bold text-sm text-black",
+      style: {
+        background: enGravure ? "#3f3f46" : accent,
+        cursor: enGravure ? "not-allowed" : "pointer"
+      }
+    }, enGravure ? "GRAVURE EN COURS…" : "ENTRER DANS LE MONDE"));
+  })), enCreation ? React.createElement("div", {
+    className: "rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + or + "33"
+    }
+  }, React.createElement(EcranCreationUnite, {
+    contenu: C,
+    accent: accent,
+    onValide: p => {
+      setEnCreation(false);
+      onCree(p);
+    },
+    onAnnule: () => setEnCreation(false)
+  })) : React.createElement("button", {
+    onClick: () => setEnCreation(true),
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: or
+    }
+  }, "CR\xC9ER UNE UNIT\xC9"))), React.createElement(PiedVibe, {
     versionBase: versionBase
   }));
 }
@@ -8209,13 +8376,26 @@ function EcranMondeOuvert({
   showToast,
   onRetour
 }) {
-  const [etat, setEtat] = useState("chargement");
+  const [etat, setEtat] = useState("sas");
+  const [sasEtapes, setSasEtapes] = useState([]);
+  const [mondeLu, setMondeLu] = useState(null);
   const [vaisseau, setVaisseau] = useState(null);
   const [systemes, setSystemes] = useState([]);
   const [positions, setPositions] = useState([]);
   const [persos, setPersos] = useState([]);
+  const [persoActif, setPersoActif] = useState(null);
   const [maintenant, setMaintenant] = useState(typeof Date !== "undefined" ? Date.now() : 0);
   const [gravure, setGravure] = useState(false);
+  const etapesSas = ["la Tombe répond — le monde partagé se lève", "la galaxie se lit, secteur par secteur", "le vaisseau-mère tient position", "le registre de l'équipage se manifeste", "le monde est prêt."];
+  useEffect(() => {
+    let actif = true;
+    etapesSas.forEach((t, i) => setTimeout(() => {
+      if (actif) setSasEtapes(e => [...e, t]);
+    }, 340 * (i + 1)));
+    return () => {
+      actif = false;
+    };
+  }, []);
   useEffect(() => {
     let actif = true;
     if (!CLOUD || typeof CLOUD.lireMonde !== "function") {
@@ -8233,7 +8413,7 @@ function EcranMondeOuvert({
       setVaisseau(monde.vaisseau);
       setSystemes(monde.systemes || []);
       setPositions(monde.positions || []);
-      setEtat("pret");
+      setMondeLu(true);
     }).catch(() => {
       if (actif) setEtat("hors-ligne");
     });
@@ -8246,6 +8426,9 @@ function EcranMondeOuvert({
       actif = false;
     };
   }, [session ? session.compteId : null]);
+  useEffect(() => {
+    if (etat === "sas" && mondeLu && sasEtapes.length >= etapesSas.length) setEtat("personnage");
+  }, [sasEtapes, mondeLu]);
   useEffect(() => {
     if (etat !== "pret") return;
     const battement = setInterval(() => setMaintenant(Date.now()), 1000);
@@ -8313,8 +8496,55 @@ function EcranMondeOuvert({
       if (showToast) showToast("La Tombe refuse le saut.");
     });
   };
+  const entrerMonde = p => {
+    if (!p) return;
+    const existante = (positions || []).find(x => x.personnage_id === p.id);
+    if (existante) {
+      setPersoActif(p);
+      setEtat("pret");
+      if (showToast) showToast("« " + p.nom + " » reprend sa place dans le monde — " + positionLisible(existante.contenu) + ".");
+      return;
+    }
+    const contenu = {
+      aBord: true,
+      lieu: "quartiers"
+    };
+    setGravure(true);
+    const atterrir = gravi => {
+      setGravure(false);
+      if (gravi) setPositions(liste => [...(liste || []), {
+        personnage_id: p.id,
+        contenu: contenu,
+        maj_le: null
+      }]);
+      setPersoActif(p);
+      setEtat("pret");
+      if (showToast) showToast("« " + p.nom + " » s'éveille à bord de " + (vaisseau && vaisseau.nom || "Le Vaisseau-Mère") + " — " + positionLisible(contenu) + ".");
+    };
+    if (!CLOUD || typeof CLOUD.graverPositionMonde !== "function") {
+      atterrir(false);
+      return;
+    }
+    CLOUD.graverPositionMonde(p.id, contenu).then(() => atterrir(true)).catch(() => atterrir(false));
+  };
+  const creerUniteMonde = p => {
+    if (!CLOUD || typeof CLOUD.creerPersonnage !== "function" || !session) return;
+    CLOUD.creerPersonnage("GM-0001", session.compteId, p.nom, p).then(l => {
+      const cree = l && l[0] || null;
+      if (!cree) {
+        if (showToast) showToast("La Tombe a refusé — l'unité n'a pas rejoint le registre. Réessayez.");
+        return;
+      }
+      setPersos(liste => [...(liste || []), cree]);
+      if (showToast) showToast("« " + cree.nom + " » rejoint le registre du monde.");
+      entrerMonde(cree);
+    }).catch(() => {
+      if (showToast) showToast("La Tombe a refusé — l'unité n'a pas rejoint le registre. Réessayez.");
+    });
+  };
   const T = pack && pack.theme || {};
   const fond = T.fond || "#0c0d10";
+  const accent = T.accent || "#2ee6c9";
   if (etat === "hors-ligne") {
     return React.createElement("div", {
       className: "min-h-screen flex flex-col",
@@ -8350,7 +8580,7 @@ function EcranMondeOuvert({
       versionBase: versionBase
     }));
   }
-  if (etat !== "pret" || !vaisseau) {
+  if (etat === "sas") {
     return React.createElement("div", {
       className: "min-h-screen flex flex-col",
       style: {
@@ -8358,17 +8588,55 @@ function EcranMondeOuvert({
         fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
       }
     }, React.createElement("div", {
-      className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+      className: "flex-1 flex items-center justify-center px-4"
     }, React.createElement("div", {
-      className: "rounded-2xl p-6 animate-pulse",
+      className: "rounded-2xl p-8 w-full max-w-md",
       style: {
-        background: "#ffffff08",
-        border: "1px solid #ffffff14",
+        background: "#ffffff0a",
+        border: "1px solid " + accent + "44"
+      }
+    }, React.createElement("div", {
+      className: "flex items-center gap-3 mb-5"
+    }, React.createElement(Icosaedre, {
+      size: 38,
+      color: accent
+    }), React.createElement("div", null, React.createElement("div", {
+      className: "font-bold text-lg",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, "Ouverture du monde ouvert\u2026"), React.createElement("div", {
+      className: "text-xs",
+      style: {
         color: "#71717a"
       }
-    }, "L'ARCHIVISTE OUVRE LES ARCHIVES DU MONDE\u2026")), React.createElement(PiedVibe, {
+    }, "la Tombe pr\xE9pare la galaxie partag\xE9e"))), React.createElement("div", {
+      className: "flex flex-col gap-2 text-sm"
+    }, sasEtapes.map((e, i) => React.createElement("div", {
+      key: i,
+      style: {
+        color: "#c8c8ce"
+      }
+    }, "\u2713 ", e)), sasEtapes.length < etapesSas.length && React.createElement("div", {
+      className: "animate-pulse",
+      style: {
+        color: accent
+      }
+    }, "\u27C1 \u2026")))), React.createElement(PiedVibe, {
       versionBase: versionBase
     }));
+  }
+  if (etat === "personnage") {
+    return React.createElement(ChoixUniteMonde, {
+      pack: pack,
+      persos: persos,
+      positions: positions,
+      enGravure: gravure,
+      versionBase: versionBase,
+      onRetour: onRetour,
+      onEntrer: entrerMonde,
+      onCree: creerUniteMonde
+    });
   }
   return React.createElement(MondeOuvertPret, {
     pack: pack,
@@ -8377,6 +8645,7 @@ function EcranMondeOuvert({
     systemes: systemes,
     positions: positions,
     persos: persos,
+    persoActif: persoActif,
     maintenant: maintenant,
     versionBase: versionBase,
     onRetour: onRetour,
