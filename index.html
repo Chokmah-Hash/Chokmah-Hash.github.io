@@ -1881,7 +1881,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.144";
+const BUILD = "0.145";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -4740,6 +4740,108 @@ function ChoixModePartie({
       color: "#a1a1aa"
     }
   }, "Lobby + vos personnages + les r\xE8gles"))), React.createElement("button", {
+    onClick: onAnnuler,
+    className: "mt-5 text-xs font-bold",
+    style: {
+      color: "#71717a"
+    }
+  }, "Annuler")));
+}
+function ChoixEntreeOmega({
+  pack,
+  onChoisi,
+  onAnnuler
+}) {
+  return React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "#000000b3"
+    }
+  }, React.createElement("div", {
+    className: "rounded-2xl p-6 w-full max-w-md text-center",
+    style: {
+      background: "#14161b",
+      border: "1px solid #2ee6c944",
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, React.createElement("div", {
+    className: "text-xs font-bold tracking-widest mb-2",
+    style: {
+      color: "#71717a"
+    }
+  }, "LANCER \u2014 ", pack.nom.toUpperCase()), React.createElement("div", {
+    className: "font-bold text-lg mb-1",
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "O\xF9 entrez-vous ?"), React.createElement("div", {
+    className: "text-xs mb-5",
+    style: {
+      color: "#71717a"
+    }
+  }, "Le monde ouvert vit entre les s\xE9ances ; la partie s'ouvre comme avant."), React.createElement("div", {
+    className: "grid gap-3 md:grid-cols-3"
+  }, React.createElement("button", {
+    onClick: () => onChoisi("monde"),
+    className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
+    style: {
+      background: "#2ee6c914",
+      border: "1px solid #2ee6c955"
+    }
+  }, React.createElement(Icosaedre, {
+    size: 28,
+    color: "#2ee6c9"
+  }), React.createElement("div", {
+    className: "font-bold text-sm",
+    style: {
+      color: "#2ee6c9"
+    }
+  }, "MONDE OUVERT"), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "la galaxie, le vaisseau-m\xE8re, l'\xE9quipage")), React.createElement("button", {
+    onClick: () => onChoisi("mj"),
+    className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
+    style: {
+      background: "#f0b24a14",
+      border: "1px solid #f0b24a66"
+    }
+  }, React.createElement(Icosaedre, {
+    size: 28,
+    color: "#f0b24a"
+  }), React.createElement("div", {
+    className: "font-bold text-sm",
+    style: {
+      color: "#f0b24a"
+    }
+  }, "MODE MJ"), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "cr\xE9ez, lancez, dirigez vos aventures")), React.createElement("button", {
+    onClick: () => onChoisi("joueur"),
+    className: "rounded-xl p-4 flex flex-col items-center gap-2 transition-transform hover:scale-105",
+    style: {
+      background: "#ffffff0a",
+      border: "1px solid #a8adb855"
+    }
+  }, React.createElement(Icosaedre, {
+    size: 28,
+    color: "#a8adb8"
+  }), React.createElement("div", {
+    className: "font-bold text-sm",
+    style: {
+      color: "#a8adb8"
+    }
+  }, "MODE JOUEUR"), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "vos personnages, les r\xE8gles, les tables"))), React.createElement("button", {
     onClick: onAnnuler,
     className: "mt-5 text-xs font-bold",
     style: {
@@ -8304,8 +8406,7 @@ function Hub({
   enInstallation,
   symbole,
   versionBase,
-  modsParJeu,
-  onMonde
+  modsParJeu
 }) {
   const [onglet, setOnglet] = useState(joueur && installes && installes.length ? "bibliotheque" : "magasin");
   const [compteOuvert, setCompteOuvert] = useState(false);
@@ -8351,31 +8452,7 @@ function Hub({
     style: {
       background: "#a8adb8"
     }
-  }, "Identification")), joueur && onMonde && React.createElement("div", {
-    className: "rounded-2xl p-5 mb-6 flex items-center justify-between",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid #2ee6c944",
-      gap: 16,
-      flexWrap: "wrap"
-    }
-  }, React.createElement("div", null, React.createElement("div", {
-    className: "font-bold tracking-wide",
-    style: {
-      color: "#e8e4d8"
-    }
-  }, "LE MONDE OUVERT \u2014 PROTOCOLE \u03A9"), React.createElement("div", {
-    className: "text-xs",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, "La galaxie, le vaisseau-m\xE8re et l'\xE9quipage \u2014 la partie continue entre les s\xE9ances.")), React.createElement("button", {
-    onClick: onMonde,
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
-    style: {
-      background: "#2ee6c9"
-    }
-  }, "ENTRER")), React.createElement("div", {
+  }, "Identification")), React.createElement("div", {
     className: "flex gap-1 mb-6",
     style: {
       borderBottom: "1px solid #27272a"
@@ -14304,6 +14381,7 @@ function App() {
   const [persoChoisi, setPersoChoisi] = useState({});
   const [rolePour, setRolePour] = useState(null);
   const [modePour, setModePour] = useState(null);
+  const [entreeOmega, setEntreeOmega] = useState(null);
   const [modePartie, setModePartie] = useState(null);
   const [mesAventuresListe, setMesAventuresListe] = useState([]);
   const [mdpsClairs, setMdpsClairs] = useState({});
@@ -14909,6 +14987,10 @@ function App() {
         showToast("Connectez-vous pour ouvrir ou rejoindre une aventure.");
         return;
       }
+      if (p.id === "GM-0001") {
+        setEntreeOmega(p);
+        return;
+      }
       setModePour(p);
       return;
     }
@@ -14925,6 +15007,20 @@ function App() {
     setPartieJoueurs([]);
     setFichesPartie([]);
     setModePartie(mode);
+    setPackPartie(chargerPack(p));
+    setVue("partie");
+  };
+  const choisirEntreeOmega = choix => {
+    const p = entreeOmega;
+    setEntreeOmega(null);
+    if (choix === "monde") {
+      setVue("monde");
+      return;
+    }
+    setPartie(null);
+    setPartieJoueurs([]);
+    setFichesPartie([]);
+    setModePartie(choix);
     setPackPartie(chargerPack(p));
     setVue("partie");
   };
@@ -14970,8 +15066,7 @@ function App() {
     enInstallation: enInstallation,
     symbole: symbole,
     versionBase: versionBase,
-    modsParJeu: modsParJeu,
-    onMonde: () => setVue("monde")
+    modsParJeu: modsParJeu
   }), vue === "monde" && session && (() => {
     const manifesteMonde = (PACKS || []).find(p => p.id === "GM-0001") || null;
     const packMonde = manifesteMonde ? chargerPack(manifesteMonde) : null;
@@ -15165,6 +15260,10 @@ function App() {
     pack: modePour,
     onChoisi: choisirModePartie,
     onAnnuler: () => setModePour(null)
+  }), entreeOmega && React.createElement(ChoixEntreeOmega, {
+    pack: entreeOmega,
+    onChoisi: choisirEntreeOmega,
+    onAnnuler: () => setEntreeOmega(null)
   }), toast && React.createElement("div", {
     className: "fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-xl text-sm font-bold text-black shadow-2xl z-50",
     style: {
