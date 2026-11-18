@@ -920,11 +920,14 @@
         token: m.access_token
       }), api("/rest/v1/monde_positions?select=personnage_id,contenu,maj_le&order=maj_le.desc", {
         token: m.access_token
+      }), api("/rest/v1/monde_lieux?select=*&order=ordre.asc", {
+        token: m.access_token
       })]).then(function (r) {
         return {
           vaisseau: r[0] && r[0][0] || null,
           systemes: r[1] || [],
-          positions: r[2] || []
+          positions: r[2] || [],
+          lieux: r[3] || []
         };
       }).catch(function () {
         return null;
@@ -1814,11 +1817,14 @@ if (typeof window !== "undefined" && !window.LARCHIVISTE_CLOUD) {
           token: m.access_token
         }), api("/rest/v1/monde_positions?select=personnage_id,contenu,maj_le&order=maj_le.desc", {
           token: m.access_token
+        }), api("/rest/v1/monde_lieux?select=*&order=ordre.asc", {
+          token: m.access_token
         })]).then(function (r) {
           return {
             vaisseau: r[0] && r[0][0] || null,
             systemes: r[1] || [],
-            positions: r[2] || []
+            positions: r[2] || [],
+            lieux: r[3] || []
           };
         }).catch(function () {
           return null;
@@ -1913,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.146";
+const BUILD = "0.147";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -7965,9 +7971,90 @@ function dureeLisibleMs(ms) {
   const r = s % 60;
   return m + " min " + (r < 10 ? "0" : "") + r + " s";
 }
-function positionLisible(loc) {
-  if (!loc || loc.aBord !== false) return "à bord — " + (loc && loc.lieu || "quartiers");
+function positionLisible(loc, nomParCle) {
+  if (!loc || loc.aBord !== false) {
+    const cle = loc && loc.lieu || "quartiers";
+    return "à bord — " + ((nomParCle || {})[cle] || cle);
+  }
   return "hors du vaisseau";
+}
+function PlanVaisseau({
+  lieux,
+  lieuActif,
+  onChoisir,
+  accent,
+  or
+}) {
+  const salles = (lieux || []).slice().sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
+  return React.createElement("svg", {
+    viewBox: "0 0 1000 420",
+    role: "img",
+    "aria-label": "Plan du vaisseau-m\xE8re",
+    style: {
+      width: "100%",
+      height: "auto",
+      display: "block"
+    }
+  }, React.createElement("path", {
+    d: "M 30 300 Q 30 60 500 30 Q 970 60 970 300 Q 720 368 500 368 Q 280 368 30 300 Z",
+    fill: "#ffffff05",
+    stroke: (or || "#f0b24a") + "55",
+    strokeWidth: 2
+  }), React.createElement("path", {
+    d: "M 90 285 Q 95 110 500 85 Q 905 110 910 285 Q 690 340 500 340 Q 310 340 90 285 Z",
+    fill: "none",
+    stroke: (or || "#f0b24a") + "22",
+    strokeWidth: 1
+  }), salles.map(l => {
+    const actif = lieuActif === l.cle;
+    return React.createElement("g", {
+      key: "pv" + l.cle,
+      onClick: () => {
+        if (onChoisir) onChoisir(l);
+      },
+      style: {
+        cursor: "pointer"
+      }
+    }, React.createElement("rect", {
+      x: l.x,
+      y: l.y,
+      width: l.largeur,
+      height: l.hauteur,
+      rx: 10,
+      fill: actif ? (accent || "#2ee6c9") + "1a" : "#14161bcc",
+      stroke: actif ? accent || "#2ee6c9" : "#3f3f46",
+      strokeWidth: actif ? 2 : 1
+    }), React.createElement("text", {
+      x: l.x + l.largeur / 2,
+      y: l.y + l.hauteur / 2 - 4,
+      textAnchor: "middle",
+      fill: actif ? accent || "#2ee6c9" : "#e8e4d8",
+      fontSize: 17,
+      fontWeight: "700",
+      style: {
+        pointerEvents: "none"
+      }
+    }, l.nom), React.createElement("text", {
+      x: l.x + l.largeur / 2,
+      y: l.y + l.hauteur / 2 + 18,
+      textAnchor: "middle",
+      fill: "#71717a",
+      fontSize: 13,
+      style: {
+        pointerEvents: "none"
+      }
+    }, l.nature), actif && React.createElement("text", {
+      x: l.x + l.largeur / 2,
+      y: l.y - 8,
+      textAnchor: "middle",
+      fill: or || "#f0b24a",
+      fontSize: 14,
+      fontWeight: "700",
+      style: {
+        pointerEvents: "none"
+      }
+    }, "VOUS"));
+  }));
 }
 function MondeOuvertPret({
   pack,
@@ -7979,6 +8066,8 @@ function MondeOuvertPret({
   persoActif,
   maintenant,
   versionBase,
+  lieux,
+  onDeplacer,
   onRetour,
   onRenommer,
   onSauter,
@@ -8012,7 +8101,19 @@ function MondeOuvertPret({
     systeme: detail.systeme
   } : null;
   const surPlace = destination && pos && destination.secteur === pos.secteur && destination.systeme === pos.systeme;
-  const sautPossible = estAdmin && !pos.enRoute && !surPlace && destination && !gravureEnCours;
+  const nomParCle = {};
+  (lieux || []).forEach(l => {
+    nomParCle[l.cle] = l.nom;
+  });
+  const locActif = persoActif && positionsParId[persoActif.id] || {};
+  const cleActif = locActif.aBord !== false && locActif.lieu || "quartiers";
+  const aLaPasserelle = cleActif === "passerelle";
+  const lieuDetail = (lieux || []).find(l => l.cle === cleActif) || null;
+  const equipagePresent = (persos || []).filter(p => {
+    const lp = positionsParId[p.id] || {};
+    return lp.aBord !== false && (lp.lieu || "quartiers") === cleActif;
+  }).map(p => p.nom);
+  const sautPossible = estAdmin && aLaPasserelle && !pos.enRoute && !surPlace && destination && !gravureEnCours;
   const dureeAffichee = destination && pos && !surPlace ? dureeLisibleMs(dureeSautMs(pos, destination)) : "";
   return React.createElement("div", {
     className: "min-h-screen flex flex-col",
@@ -8099,7 +8200,56 @@ function MondeOuvertPret({
     style: {
       background: or
     }
-  }, "GRAVER LE NOM"))), React.createElement("div", {
+  }, "GRAVER LE NOM"))), (lieux || []).length > 0 && React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + or + "44"
+    }
+  }, React.createElement("div", {
+    className: "flex items-center justify-between mb-3",
+    style: {
+      gap: 12,
+      flexWrap: "wrap"
+    }
+  }, React.createElement("div", {
+    className: "font-bold",
+    style: {
+      color: or
+    }
+  }, "L'INT\xC9RIEUR"), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Cliquer une salle s'y d\xE9place", persoActif ? " — " + persoActif.nom : "", ".")), React.createElement(PlanVaisseau, {
+    lieux: lieux,
+    lieuActif: cleActif,
+    onChoisir: onDeplacer,
+    accent: accent,
+    or: or
+  }), lieuDetail && React.createElement("div", {
+    className: "mt-4 rounded-xl p-4",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "33"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-sm mb-1",
+    style: {
+      color: accent
+    }
+  }, lieuDetail.nom, " \u2014 ", lieuDetail.nature), React.createElement("div", {
+    className: "text-sm mb-2",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, lieuDetail.lore), React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, equipagePresent.length ? "S'y tiennent : " + equipagePresent.join(", ") : "Personne ne s'y tient pour l'instant."))), React.createElement("div", {
     className: "rounded-2xl p-5 mb-6",
     style: {
       background: "#ffffff08",
@@ -8186,7 +8336,7 @@ function MondeOuvertPret({
     style: {
       color: "#c8c8ce"
     }
-  }, pos.enRoute ? "Saut en cours — la passerelle tient le cap." : destination ? surPlace ? "Le vaisseau tient déjà ce système." : "Cap sur " + detail.nom + " — " + dureeAffichee + " de saut." : "Choisissez un système dans la galaxie pour tracer le cap."), React.createElement("button", {
+  }, pos.enRoute ? "Saut en cours — la passerelle tient le cap." : !aLaPasserelle ? "Le saut s'ordonne depuis la passerelle — votre unité doit s'y tenir : L'INTÉRIEUR, salle La Passerelle." : destination ? surPlace ? "Le vaisseau tient déjà ce système." : "Cap sur " + detail.nom + " — " + dureeAffichee + " de saut." : "Choisissez un système dans la galaxie pour tracer le cap."), React.createElement("button", {
     disabled: !sautPossible,
     onClick: () => {
       if (onSauter) onSauter(destination);
@@ -8234,7 +8384,7 @@ function MondeOuvertPret({
       style: {
         color: loc && loc.aBord === false ? accent : "#a1a1aa"
       }
-    }, positionLisible(loc)));
+    }, positionLisible(loc, nomParCle)));
   })))), React.createElement(PiedVibe, {
     versionBase: versionBase
   }));
@@ -8245,6 +8395,7 @@ function ChoixUniteMonde({
   positions,
   enGravure,
   versionBase,
+  nomParCle,
   onEntrer,
   onCree,
   onRetour
@@ -8336,7 +8487,7 @@ function ChoixUniteMonde({
       style: {
         color: "#a1a1aa"
       }
-    }, loc ? "Dernière position : " + positionLisible(loc) : "Jamais entrée dans le monde."), React.createElement("button", {
+    }, loc ? "Dernière position : " + positionLisible(loc, nomParCle) : "Jamais entrée dans le monde."), React.createElement("button", {
       disabled: !!enGravure,
       onClick: () => onEntrer(p),
       className: "w-full px-4 py-2 rounded-lg font-bold text-sm text-black",
@@ -8381,11 +8532,16 @@ function EcranMondeOuvert({
   const [mondeLu, setMondeLu] = useState(null);
   const [vaisseau, setVaisseau] = useState(null);
   const [systemes, setSystemes] = useState([]);
+  const [lieux, setLieux] = useState([]);
   const [positions, setPositions] = useState([]);
   const [persos, setPersos] = useState([]);
   const [persoActif, setPersoActif] = useState(null);
   const [maintenant, setMaintenant] = useState(typeof Date !== "undefined" ? Date.now() : 0);
   const [gravure, setGravure] = useState(false);
+  const nomParCle = {};
+  (lieux || []).forEach(l => {
+    nomParCle[l.cle] = l.nom;
+  });
   const etapesSas = ["la Tombe répond — le monde partagé se lève", "la galaxie se lit, secteur par secteur", "le vaisseau-mère tient position", "le registre de l'équipage se manifeste", "le monde est prêt."];
   useEffect(() => {
     let actif = true;
@@ -8412,6 +8568,7 @@ function EcranMondeOuvert({
       }
       setVaisseau(monde.vaisseau);
       setSystemes(monde.systemes || []);
+      setLieux(monde.lieux || []);
       setPositions(monde.positions || []);
       setMondeLu(true);
     }).catch(() => {
@@ -8496,13 +8653,38 @@ function EcranMondeOuvert({
       if (showToast) showToast("La Tombe refuse le saut.");
     });
   };
+  const deplacer = lieu => {
+    if (!persoActif || !lieu || gravure) return;
+    const contenu = {
+      aBord: true,
+      lieu: lieu.cle
+    };
+    setGravure(true);
+    const bouger = gravi => {
+      setGravure(false);
+      setPositions(liste => {
+        const autres = (liste || []).filter(x => x.personnage_id !== persoActif.id);
+        return [...autres, {
+          personnage_id: persoActif.id,
+          contenu: contenu,
+          maj_le: null
+        }];
+      });
+      if (showToast) showToast("« " + persoActif.nom + " » rejoint " + lieu.nom + (gravi ? " — la position est gravée." : "."));
+    };
+    if (!CLOUD || typeof CLOUD.graverPositionMonde !== "function") {
+      bouger(false);
+      return;
+    }
+    CLOUD.graverPositionMonde(persoActif.id, contenu).then(() => bouger(true)).catch(() => bouger(false));
+  };
   const entrerMonde = p => {
     if (!p) return;
     const existante = (positions || []).find(x => x.personnage_id === p.id);
     if (existante) {
       setPersoActif(p);
       setEtat("pret");
-      if (showToast) showToast("« " + p.nom + " » reprend sa place dans le monde — " + positionLisible(existante.contenu) + ".");
+      if (showToast) showToast("« " + p.nom + " » reprend sa place dans le monde — " + positionLisible(existante.contenu, nomParCle) + ".");
       return;
     }
     const contenu = {
@@ -8519,7 +8701,7 @@ function EcranMondeOuvert({
       }]);
       setPersoActif(p);
       setEtat("pret");
-      if (showToast) showToast("« " + p.nom + " » s'éveille à bord de " + (vaisseau && vaisseau.nom || "Le Vaisseau-Mère") + " — " + positionLisible(contenu) + ".");
+      if (showToast) showToast("« " + p.nom + " » s'éveille à bord de " + (vaisseau && vaisseau.nom || "Le Vaisseau-Mère") + " — " + positionLisible(contenu, nomParCle) + ".");
     };
     if (!CLOUD || typeof CLOUD.graverPositionMonde !== "function") {
       atterrir(false);
@@ -8633,6 +8815,7 @@ function EcranMondeOuvert({
       positions: positions,
       enGravure: gravure,
       versionBase: versionBase,
+      nomParCle: nomParCle,
       onRetour: onRetour,
       onEntrer: entrerMonde,
       onCree: creerUniteMonde
@@ -8648,6 +8831,8 @@ function EcranMondeOuvert({
     persoActif: persoActif,
     maintenant: maintenant,
     versionBase: versionBase,
+    lieux: lieux,
+    onDeplacer: deplacer,
     onRetour: onRetour,
     onRenommer: renommer,
     onSauter: sauter,
