@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.147";
+const BUILD = "0.148";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -3551,30 +3551,6 @@ function resoudreTest(cible, mod = 0, noyau = NOYAU) {
     de,
     reussi,
     nat: nat6 ? "6 naturel — réussite auto" : nat1 ? "1 naturel — échec auto" : null
-  };
-}
-function cibleBlessure(f, e) {
-  if (f >= e * 2) return "2+";
-  if (f > e) return "3+";
-  if (f === e) return "4+";
-  if (f <= e / 2) return "6+";
-  return "5+";
-}
-function cibleSauvegarde(sv, pa) {
-  return cibleNum(sv) - (pa || 0) + "+";
-}
-function peArmeCombat(def, st) {
-  const mF = /^F\+(\d)$/.exec(String(def.f));
-  return {
-    nom: def.nom,
-    tir: def.tir,
-    portee: def.portee,
-    regle: def.regle,
-    bs_ws: def.tir ? st.ct : st.cc,
-    attaques: def.att === "A" ? st.a : def.att === "A+1" ? st.a + 1 : parseInt(def.att, 10),
-    f: mF ? st.f + Number(mF[1]) : parseInt(def.f, 10),
-    pa: -parseInt(String(def.pa).replace("−", ""), 10),
-    degats: def.d === "D3" ? () => 1 + Math.floor(Math.random() * 3) : parseInt(def.d, 10)
   };
 }
 function Cible({
