@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.148";
+const BUILD = "0.149";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -13023,6 +13023,7 @@ function VueNoyauLDVELH({
   const [jetsP, setJetsP] = useState(null);
   const [testP, setTestP] = useState(null);
   const [dernierAchat, setDernierAchat] = useState(null);
+  const [choixP, setChoixP] = useState(null);
   const TAILLES_TEXTE = [["normale", "NORMALE", 15], ["grande", "GRANDE", 17], ["tres-grande", "TRÈS GRANDE", 19]];
   const [tailleTexte, setTailleTexte] = useState((() => {
     try {
@@ -13213,6 +13214,7 @@ function VueNoyauLDVELH({
       });
       setAnnonces(r.lignes.length ? r.lignes : null);
       setDernierAchat(null);
+      setChoixP(null);
       const jets = (d.evenements || []).filter(ev => ev && ev.jet).map(ev => ({
         ...ev.jet,
         pose: false,
@@ -13297,6 +13299,7 @@ function VueNoyauLDVELH({
     setAnnonces(null);
     setJetsP(null);
     setTestP(null);
+    setChoixP(null);
     const cache = cacheParagraphes.current;
     const cle = s.livreId + ":" + s.position;
     const appliquer = p => setParagraphe(p);
@@ -13390,6 +13393,7 @@ function VueNoyauLDVELH({
     setAnnonces(null);
     setJetsP(null);
     setTestP(null);
+    setChoixP(null);
     setPrologueFrais(false);
     setOnglet("bibliotheque");
   };
@@ -13774,10 +13778,14 @@ function VueNoyauLDVELH({
     }
   };
   const renvoisParagraphe = paragraphe && paragraphe.donnees && paragraphe.donnees.renvois || [];
+  const choixDuP = paragraphe && paragraphe.donnees && paragraphe.donnees.choix || null;
+  const choixFaitP = !!(choixDuP && etat && (etat.choixFaits || {})[paragraphe.numero]);
+  const optionPossibleP = o => !o || !o.effet || !o.effet.objets || (etat && etat.heros && etat.heros.equipement || []).length >= o.effet.objets;
   const verrouRenvoi = vers => {
     if (rouesEnJeu > 0) return true;
     if (combat && (!combat.vaincu || combat.ennemiSuivant)) return true;
     if (jetsP && jetsP.some(j => !j.pose)) return true;
+    if (choixDuP && !choixFaitP) return true;
     if (testP && infosTest) {
       const t = infosTest;
       const issues = [t.chanceux && t.chanceux.vers, t.echec && t.echec.vers];
@@ -13901,6 +13909,63 @@ function VueNoyauLDVELH({
       heros
     });
     setNotice(annonce);
+  };
+  const departChoixP = i => {
+    if (!choixDuP || choixFaitP) return;
+    if (!choixDuP.options[i] || !optionPossibleP(choixDuP.options[i])) return;
+    setChoixP(c => c && c.option === i ? c : {
+      option: i,
+      objets: []
+    });
+  };
+  const cocherObjetChoixP = nom => {
+    setChoixP(c => {
+      if (!c || !choixDuP.options[c.option]) return c;
+      const max = (choixDuP.options[c.option].effet || {}).objets || 0;
+      const deja = c.objets.indexOf(nom) >= 0;
+      const objets = deja ? c.objets.filter(x => x !== nom) : c.objets.length < max ? c.objets.concat([nom]) : c.objets;
+      return {
+        ...c,
+        objets
+      };
+    });
+  };
+  const confirmerChoixP = () => {
+    if (!etat || !paragraphe || !choixDuP || choixFaitP || !choixP) return;
+    const o = choixDuP.options[choixP.option];
+    if (!o || !o.effet) return;
+    let heros = {
+      ...etat.heros
+    };
+    let prises = [];
+    if (typeof o.effet.or === "number") {
+      prises.push((heros.or || 0) + " Pièce" + ((heros.or || 0) > 1 ? "s" : "") + " d'Or");
+      heros = {
+        ...heros,
+        or: Math.max(0, o.effet.or)
+      };
+    }
+    if (o.effet.objets) {
+      if ((choixP.objets || []).length !== o.effet.objets) return;
+      prises = choixP.objets.slice();
+      heros = {
+        ...heros,
+        equipement: (heros.equipement || []).filter(x => choixP.objets.indexOf(x) < 0)
+      };
+    }
+    if (!prises.length) return;
+    majEtat({
+      ...etat,
+      heros,
+      choixFaits: {
+        ...(etat.choixFaits || {}),
+        [paragraphe.numero]: {
+          option: choixP.option,
+          prises
+        }
+      }
+    });
+    setChoixP(null);
   };
   const equiperObjet = nom => {
     if (!etat) return;
@@ -14215,7 +14280,76 @@ function VueNoyauLDVELH({
     }
   }, React.createElement(Alineas, {
     texte: paragraphe.donnees.texteApres
-  })), annonces && annonces.length > 0 && !combat && React.createElement("div", {
+  })), !combat && h && h.endurance > 0 && paragraphe && paragraphe.donnees && paragraphe.donnees.choix && React.createElement("fieldset", {
+    className: "mt-4 rounded-xl border px-4 pb-3",
+    style: {
+      background: "#12140f",
+      borderColor: T.accent + "66"
+    }
+  }, React.createElement("legend", {
+    className: "text-xs tracking-widest text-zinc-500 px-2"
+  }, paragraphe.donnees.choix.legende || "VOTRE CHOIX"), !choixFaitP ? React.createElement("div", {
+    className: "space-y-2"
+  }, React.createElement("div", {
+    className: "text-sm text-zinc-300"
+  }, paragraphe.donnees.choix.consigne), paragraphe.donnees.choix.options.map((o, i) => {
+    const possible = optionPossibleP(o);
+    const actif = choixP && choixP.option === i;
+    return React.createElement("div", {
+      key: i
+    }, React.createElement("button", {
+      onClick: () => departChoixP(i),
+      disabled: !possible,
+      className: "w-full text-left px-4 py-3 rounded-xl border text-sm",
+      style: !possible ? {
+        background: "#12140f",
+        borderColor: "#27272a",
+        color: "#52525b",
+        cursor: "not-allowed"
+      } : {
+        background: "#161a12",
+        borderColor: actif ? T.accent : "#3f3f46",
+        color: "#d4d4d8"
+      }
+    }, React.createElement("span", {
+      className: "text-zinc-200"
+    }, o.label)), actif && o.effet && o.effet.objets && React.createElement("div", {
+      className: "mt-2 space-y-2",
+      style: {
+        marginLeft: "1rem"
+      }
+    }, (h.equipement || []).map((nom, k) => {
+      const pris = choixP.objets.indexOf(nom) >= 0;
+      return React.createElement("button", {
+        key: k,
+        onClick: () => cocherObjetChoixP(nom),
+        className: "w-full text-left px-4 py-2 rounded-xl border text-sm",
+        style: pris ? {
+          background: "#161a12",
+          borderColor: T.accent,
+          color: T.accent
+        } : {
+          background: "#12140f",
+          borderColor: "#27272a",
+          color: "#a1a1aa"
+        }
+      }, nom, pris ? " — PRIS" : "");
+    }), React.createElement("button", {
+      onClick: confirmerChoixP,
+      disabled: !choixP || choixP.objets.length !== o.effet.objets,
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      style: !choixP || choixP.objets.length !== o.effet.objets ? {
+        background: "#27272a",
+        color: "#52525b",
+        cursor: "not-allowed"
+      } : {
+        background: T.or,
+        color: "#0c0d10"
+      }
+    }, "CONFIRMER LE CHOIX (", choixP ? choixP.objets.length : 0, "/", o.effet.objets, ")")));
+  })) : React.createElement("div", {
+    className: "text-sm text-zinc-200"
+  }, (paragraphe.donnees.choix.annonce || "Vous avez cédé : ") + (((etat.choixFaits || {})[paragraphe.numero] || {}).prises || []).join(", "))), annonces && annonces.length > 0 && !combat && React.createElement("div", {
     className: "mt-4 px-4 py-3 rounded-xl border",
     style: {
       background: "#12140f",
