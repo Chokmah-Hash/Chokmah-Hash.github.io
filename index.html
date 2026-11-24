@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.152";
+const BUILD = "0.153";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -13238,6 +13238,7 @@ function VueNoyauLDVELH({
         chanceEngagee: combat.chanceEngagee || false,
         arrive: combat.assautsGagnes || 0
       });else setCombat(null);
+      if (window.scrollTo) window.scrollTo(0, 0);
     };
     const cache = cacheParagraphes.current;
     const cle = E.livreId + ":" + numero;
@@ -13305,7 +13306,10 @@ function VueNoyauLDVELH({
     setMagasinOuvert(false);
     const cache = cacheParagraphes.current;
     const cle = s.livreId + ":" + s.position;
-    const appliquer = p => setParagraphe(p);
+    const appliquer = p => {
+      setParagraphe(p);
+      if (window.scrollTo) window.scrollTo(0, 0);
+    };
     if (cache[cle]) {
       appliquer(cache[cle]);
       return;
@@ -14248,7 +14252,7 @@ function VueNoyauLDVELH({
     },
     onClick: () => setMagasinOuvert(false)
   }, React.createElement("fieldset", {
-    className: "rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto px-5 pb-4",
+    className: "rounded-2xl w-full max-w-md h-[85vh] flex flex-col px-5 pb-4",
     style: {
       background: "#14161b",
       border: "1px solid #f0b24a44"
@@ -14268,11 +14272,7 @@ function VueNoyauLDVELH({
       cursor: "pointer"
     }
   }, "\u2715 FERMER")), React.createElement("div", {
-    className: "space-y-2",
-    style: {
-      maxHeight: 152,
-      overflowY: "auto"
-    }
+    className: "flex-1 space-y-2 min-h-0 overflow-y-auto"
   }, paragraphe.donnees.boutique.map((a, i) => {
     const tropCher = h.or < a.prix;
     return React.createElement("div", {
