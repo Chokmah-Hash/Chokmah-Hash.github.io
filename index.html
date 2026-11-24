@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.151";
+const BUILD = "0.152";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -14333,6 +14333,8 @@ function VueNoyauLDVELH({
   }, paragraphe.donnees.choix.consigne), paragraphe.donnees.choix.options.map((o, i) => {
     const possible = optionPossibleP(o);
     const actif = choixP && choixP.option === i;
+    const attendu = o.effet && o.effet.objets || 0;
+    const exact = !attendu || !!choixP && choixP.objets.length === attendu;
     return React.createElement("div", {
       key: i
     }, React.createElement("button", {
@@ -14351,12 +14353,12 @@ function VueNoyauLDVELH({
       }
     }, React.createElement("span", {
       className: "text-zinc-200"
-    }, o.label)), actif && o.effet && o.effet.objets && React.createElement("div", {
+    }, o.label)), actif && React.createElement("div", {
       className: "mt-2 space-y-2",
       style: {
         marginLeft: "1rem"
       }
-    }, (h.equipement || []).map((nom, k) => {
+    }, o.effet && o.effet.objets && (h.equipement || []).map((nom, k) => {
       const pris = choixP.objets.indexOf(nom) >= 0;
       return React.createElement("button", {
         key: k,
@@ -14374,9 +14376,9 @@ function VueNoyauLDVELH({
       }, nom, pris ? " — PRIS" : "");
     }), React.createElement("button", {
       onClick: confirmerChoixP,
-      disabled: !choixP || choixP.objets.length !== o.effet.objets,
+      disabled: !exact,
       className: "px-3 py-1.5 rounded-lg text-xs font-bold",
-      style: !choixP || choixP.objets.length !== o.effet.objets ? {
+      style: !exact ? {
         background: "#27272a",
         color: "#52525b",
         cursor: "not-allowed"
@@ -14384,7 +14386,7 @@ function VueNoyauLDVELH({
         background: T.or,
         color: "#0c0d10"
       }
-    }, "CONFIRMER LE CHOIX (", choixP ? choixP.objets.length : 0, "/", o.effet.objets, ")")));
+    }, attendu ? "CONFIRMER LE CHOIX (" + (choixP ? choixP.objets.length : 0) + "/" + attendu + ")" : "CONFIRMER LE CHOIX")));
   })) : React.createElement("div", {
     className: "text-sm text-zinc-200"
   }, (paragraphe.donnees.choix.annonce || "Vous avez cédé : ") + (((etat.choixFaits || {})[paragraphe.numero] || {}).prises || []).join(", "))), annonces && annonces.length > 0 && !combat && React.createElement("div", {
