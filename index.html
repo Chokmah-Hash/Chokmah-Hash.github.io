@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.150";
+const BUILD = "0.151";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -14248,7 +14248,7 @@ function VueNoyauLDVELH({
     },
     onClick: () => setMagasinOuvert(false)
   }, React.createElement("fieldset", {
-    className: "rounded-2xl w-full max-w-md px-5 pb-4",
+    className: "rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto px-5 pb-4",
     style: {
       background: "#14161b",
       border: "1px solid #f0b24a44"
