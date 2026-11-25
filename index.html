@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.153";
+const BUILD = "0.154";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -6617,7 +6617,8 @@ function FicheApercuUnite({
     }
   }, "Rfx +", perso.rfx, " ", React.createElement("span", {
     className: "text-xs"
-  }, "\u2014 surcharge du mod P\xC9")), perso.armeDef && React.createElement("div", {
+  }, "\u2014 surcharge du mod P\xC9")), (perso.armesDef && perso.armesDef.length ? perso.armesDef : perso.armeDef ? [perso.armeDef] : []).map(ad => React.createElement("div", {
+    key: ad.id || ad.nom,
     className: "mt-3 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -6627,11 +6628,11 @@ function FicheApercuUnite({
     style: {
       color: "#e8e4d8"
     }
-  }, perso.armeDef.nom), " \xB7 ", perso.armeDef.tir ? "tir" : "mêlée", " \xB7 ", perso.armeDef.portee, " \xB7 A ", perso.armeDef.att, " \xB7 ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", perso.armeDef.f, " \xB7 PA ", perso.armeDef.pa, " \xB7 D ", perso.armeDef.d, perso.armeDef.regle ? React.createElement("span", {
+  }, ad.nom), " \xB7 ", ad.tir ? "tir" : "mêlée", " \xB7 ", ad.portee, " \xB7 A ", ad.att, " \xB7 ", ad.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", ad.f, " \xB7 PA ", ad.pa, " \xB7 D ", ad.d, ad.regle ? React.createElement("span", {
     style: {
       color: "#71717a"
     }
-  }, " \xB7 ", perso.armeDef.regle) : null), perso.apt && React.createElement("div", {
+  }, " \xB7 ", ad.regle) : null)), perso.apt && React.createElement("div", {
     className: "mt-2 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -6641,7 +6642,37 @@ function FicheApercuUnite({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.comps && React.createElement("div", {
+  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), peSpeLigne(perso.spe) && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Sp\xE9cialisation ", peSpeLigne(perso.spe).nom, " \u2014 "), peSpeLigne(perso.spe).texte), peModulesNoms(perso.modules).length > 0 && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "\xC9quipement \u2014 "), peModulesNoms(perso.modules).join(" · ")), perso.protocole && peProtocoleDe(perso.protocole) && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", peProtocoleDe(perso.protocole).nom), perso.comps && React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, perso.comps.map(c => React.createElement("span", {
     key: c,
@@ -8481,6 +8512,7 @@ function ChoixUniteMonde({
   }, React.createElement(EcranCreationUnite, {
     contenu: C,
     accent: accent,
+    cleSauvegarde: "GM-0001",
     onValide: p => {
       setEnCreation(false);
       onCree(p);
@@ -9803,7 +9835,8 @@ function VueNoyau40k({
     }
   }, "Rfx +", perso.rfx, " ", React.createElement("span", {
     className: "text-xs"
-  }, "\u2014 surcharge du mod P\xC9")), React.createElement("div", {
+  }, "\u2014 surcharge du mod P\xC9")), (perso.armesDef && perso.armesDef.length ? perso.armesDef : perso.armeDef ? [perso.armeDef] : []).map(ad => React.createElement("div", {
+    key: ad.id || ad.nom,
     className: "mt-3 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -9813,11 +9846,11 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, perso.armeDef.nom), " \xB7 ", perso.armeDef.tir ? "tir" : "mêlée", " \xB7 ", perso.armeDef.portee, " \xB7 A ", perso.armeDef.att, " \xB7 ", perso.armeDef.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", perso.armeDef.f, " \xB7 PA ", perso.armeDef.pa, " \xB7 D ", perso.armeDef.d, React.createElement("span", {
+  }, ad.nom), " \xB7 ", ad.tir ? "tir" : "mêlée", " \xB7 ", ad.portee, " \xB7 A ", ad.att, " \xB7 ", ad.tir ? "CT " + perso.st.ct : "CC " + perso.st.cc, " \xB7 F ", ad.f, " \xB7 PA ", ad.pa, " \xB7 D ", ad.d, ad.regle ? React.createElement("span", {
     style: {
       color: "#71717a"
     }
-  }, " \xB7 ", perso.armeDef.regle)), perso.apt && React.createElement("div", {
+  }, " \xB7 ", ad.regle) : null)), perso.apt && React.createElement("div", {
     className: "mt-2 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -9827,7 +9860,37 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.comps && React.createElement("div", {
+  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), peSpeLigne(perso.spe) && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Sp\xE9cialisation ", peSpeLigne(perso.spe).nom, " \u2014 "), peSpeLigne(perso.spe).texte), peModulesNoms(perso.modules).length > 0 && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "\xC9quipement \u2014 "), peModulesNoms(perso.modules).join(" · ")), perso.protocole && peProtocoleDe(perso.protocole) && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", peProtocoleDe(perso.protocole).nom), perso.comps && React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, perso.comps.map(c => React.createElement("span", {
     key: c,
@@ -11429,40 +11492,579 @@ function EcranCreationAventurier({
     }
   }, "GRAVER ", nom.trim() || "L'AVENTURIER")));
 }
+const PE_GRAMMAIRE = {
+  "Fantassin programmé": {
+    armes: {
+      n: 1,
+      t: 2
+    },
+    capteurs: {
+      n: 1,
+      t: 1
+    },
+    coeur: {
+      t: 2
+    },
+    noyau: {
+      t: 1
+    },
+    bouclier: {
+      n: 1,
+      t: 1
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Vétéran": {
+    armes: {
+      n: 1,
+      t: 3
+    },
+    capteurs: {
+      n: 1,
+      t: 2
+    },
+    coeur: {
+      t: 2
+    },
+    noyau: {
+      t: 1
+    },
+    bouclier: {
+      n: 1,
+      t: 2
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Traqueur": {
+    armes: {
+      n: 1,
+      t: 3
+    },
+    capteurs: {
+      n: 2,
+      t: 2
+    },
+    coeur: {
+      t: 2
+    },
+    noyau: {
+      t: 1
+    },
+    bouclier: {
+      n: 0,
+      t: 0
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Ombre": {
+    armes: {
+      n: 2,
+      t: 2
+    },
+    capteurs: {
+      n: 1,
+      t: 2
+    },
+    coeur: {
+      t: 2
+    },
+    noyau: {
+      t: 1
+    },
+    bouclier: {
+      n: 0,
+      t: 0
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Sentinelle": {
+    armes: {
+      n: 2,
+      t: 4
+    },
+    capteurs: {
+      n: 1,
+      t: 2
+    },
+    coeur: {
+      t: 3
+    },
+    noyau: {
+      t: 2
+    },
+    bouclier: {
+      n: 1,
+      t: 3
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Officier de garde": {
+    armes: {
+      n: 2,
+      t: 3
+    },
+    capteurs: {
+      n: 1,
+      t: 2
+    },
+    coeur: {
+      t: 3
+    },
+    noyau: {
+      t: 2
+    },
+    bouclier: {
+      n: 1,
+      t: 2
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Artificier": {
+    armes: {
+      n: 2,
+      t: 3
+    },
+    capteurs: {
+      n: 2,
+      t: 2
+    },
+    coeur: {
+      t: 3
+    },
+    noyau: {
+      t: 2
+    },
+    bouclier: {
+      n: 1,
+      t: 2
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Énergicien": {
+    armes: {
+      n: 2,
+      t: 3
+    },
+    capteurs: {
+      n: 1,
+      t: 2
+    },
+    coeur: {
+      t: 4
+    },
+    noyau: {
+      t: 3
+    },
+    bouclier: {
+      n: 1,
+      t: 2
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Commandant": {
+    armes: {
+      n: 2,
+      t: 4
+    },
+    capteurs: {
+      n: 2,
+      t: 3
+    },
+    coeur: {
+      t: 3
+    },
+    noyau: {
+      t: 2
+    },
+    bouclier: {
+      n: 1,
+      t: 2
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  },
+  "Seigneur de guerre": {
+    armes: {
+      n: 3,
+      t: 4
+    },
+    capteurs: {
+      n: 2,
+      t: 3
+    },
+    coeur: {
+      t: 4
+    },
+    noyau: {
+      t: 3
+    },
+    bouclier: {
+      n: 1,
+      t: 3
+    },
+    systeme: {
+      n: 1,
+      t: 2
+    }
+  }
+};
+const PE_MODULES_DB = [{
+  id: "chrono",
+  cat: "capteur",
+  nom: "Chronomètre",
+  taille: 1,
+  desc: "+1 initiative et +2 m de déplacement"
+}, {
+  id: "opt",
+  cat: "capteur",
+  nom: "Optique de visée",
+  taille: 1,
+  desc: "Relance 1 au toucher à 12 m ou moins"
+}, {
+  id: "scanner",
+  cat: "capteur",
+  nom: "Scanner de proximité",
+  taille: 2,
+  desc: "Détecte les signaux à 30 m"
+}, {
+  id: "matriced",
+  cat: "capteur",
+  nom: "Matrice de détection",
+  taille: 3,
+  desc: "Perce le furtif à 50 m"
+}, {
+  id: "coeurstd",
+  cat: "coeur",
+  nom: "Cœur à fusion standard",
+  taille: 2,
+  desc: "Rendement nominal"
+}, {
+  id: "coeursup",
+  cat: "coeur",
+  nom: "Cœur à fusion renforcé",
+  taille: 3,
+  desc: "+1 PV régénéré par protocole"
+}, {
+  id: "coeurste",
+  cat: "coeur",
+  nom: "Cœur stellaire",
+  taille: 4,
+  desc: "Alimente une arme T4 sans malus"
+}, {
+  id: "noyaustd",
+  cat: "noyau",
+  nom: "Noyau de charge standard",
+  taille: 1,
+  desc: "Autonomie de base"
+}, {
+  id: "noyauhaut",
+  cat: "noyau",
+  nom: "Noyau haute capacité",
+  taille: 2,
+  desc: "+1 recharge de pouvoir par bataille"
+}, {
+  id: "ecranphase",
+  cat: "bouclier",
+  nom: "Écran de phase",
+  taille: 1,
+  desc: "Sauvegarde invulnérable 4++"
+}, {
+  id: "blindage",
+  cat: "bouclier",
+  nom: "Blindage entrelacé",
+  taille: 2,
+  desc: "−1 dégât subi (minimum 1)"
+}, {
+  id: "blindagel",
+  cat: "bouclier",
+  nom: "Blindage entrelacé renforcé",
+  taille: 3,
+  desc: "−2 dégâts subis"
+}, {
+  id: "memext",
+  cat: "systeme",
+  nom: "Mémoire étendue",
+  taille: 2,
+  desc: "+1 place mémoire — un protocole installable supplémentaire"
+}, {
+  id: "coproc",
+  cat: "systeme",
+  nom: "Coprocesseur",
+  taille: 2,
+  desc: "+1 calcul — un protocole actif supplémentaire en parallèle"
+}];
+const PE_PROTOCOLES_DB = [{
+  id: "p-analyse",
+  nom: "Protocole d'Analyse",
+  desc: "1×/scène : lisez les Caractéristiques et les règles d'une cible à vue (Érudition 4+ si elle résiste)."
+}, {
+  id: "p-ciblage",
+  nom: "Protocole de Ciblage",
+  desc: "1×/bataille : une attaque à distance touche automatiquement — résolvez les dégâts normalement."
+}, {
+  id: "p-reparation",
+  nom: "Protocole de Réparation",
+  desc: "1×/scène : regagnez D3 PV."
+}, {
+  id: "p-interception",
+  nom: "Protocole d'Interception",
+  desc: "1×/round : un allié à 2 m relance sa sauvegarde ratée."
+}, {
+  id: "p-menace",
+  nom: "Protocole de Menace",
+  desc: "1×/scène : +1 F à vos attaques de mêlée jusqu'à la fin du round."
+}, {
+  id: "p-suppression",
+  nom: "Protocole de Suppression",
+  desc: "1×/bataille : une attaque ignore la sauvegarde adverse."
+}, {
+  id: "p-occultation",
+  nom: "Protocole d'Occultation",
+  desc: "Passif : vos tests de Furtivité sont à 3+."
+}, {
+  id: "p-deflection",
+  nom: "Protocole de Déflection",
+  desc: "1×/scène : annulez une blessure qui vient de vous atteindre."
+}];
+const PE_SPECIALISATIONS_DB = [{
+  id: "s-archeoviste",
+  nom: "Archéoviste",
+  apt: "Archives infinies : 1×/scène, relancez un test d'Érudition ou de Technologie.",
+  pouvoir: "Acquisition : 1×/bataille, dupliquez l'arme d'un ennemi vaincu — elle rejoint votre inventaire."
+}, {
+  id: "s-chronomancien",
+  nom: "Chronomancien",
+  apt: "",
+  pouvoir: "Précognition : 1×/scène, forcez un ennemi à relancer une attaque qui venait de réussir."
+}, {
+  id: "s-technomancien",
+  nom: "Technomancien",
+  apt: "Entretien perpétuel : 1×/scène, soignez D3 PV à un allié à 6 m (ou à vous-même).",
+  pouvoir: ""
+}, {
+  id: "s-stratege",
+  nom: "Grand stratège",
+  apt: "Regard tactique : les alliés à 6 m gagnent +1 Cd sur leurs tests de volonté.",
+  pouvoir: ""
+}, {
+  id: "s-artisan",
+  nom: "Artisan d'élite",
+  apt: "Main savante : vous ignorez les malus des armes lourdes ; 1×/scène, réparez D3 PV.",
+  pouvoir: ""
+}, {
+  id: "s-chasseur",
+  nom: "Chasseur éternel",
+  apt: "Œil de traque : relancez 1 test de Perception raté par scène.",
+  pouvoir: "Marque de proie : 1×/bataille, vos attaques contre la cible marquée ignorent sa sauvegarde."
+}, {
+  id: "s-orateur",
+  nom: "Orateur dynastique",
+  apt: "Voix de la dynastie : vos tests de Commandement sont à 3+.",
+  pouvoir: ""
+}, {
+  id: "s-gardien",
+  nom: "Gardien du seuil",
+  apt: "",
+  pouvoir: "Verrouillé : 1×/scène, un allié à 2 m relance sa sauvegarde ratée."
+}];
+const peModuleDe = id => PE_MODULES_DB.find(m => m.id === id) || null;
+const peProtocoleDe = id => PE_PROTOCOLES_DB.find(p => p.id === id) || null;
+const peSpeDe = id => PE_SPECIALISATIONS_DB.find(s => s.id === id) || null;
+const peSpeLigne = id => {
+  const s = peSpeDe(id);
+  return s ? {
+    nom: s.nom,
+    texte: s.apt || s.pouvoir
+  } : null;
+};
+const peModulesNoms = mods => {
+  const noms = [];
+  if (!mods) return noms;
+  (mods.capteurs || []).forEach(id => {
+    const m = peModuleDe(id);
+    if (m) noms.push(m.nom);
+  });
+  ["coeur", "noyau", "bouclier", "systeme"].forEach(cat => {
+    const m = peModuleDe(mods[cat]);
+    if (m) noms.push(m.nom);
+  });
+  return noms;
+};
+const PE_ETIQUETTES = ["DÉSIGNATION", "CHÂSSIS", "CODE DE FABRIQUE", "SPÉCIALISATION", "ARSENAL", "MODULES", "PROTOCOLE INITIAL", "SYNTHÈSE"];
 function EcranCreationUnite({
   contenu,
   accent,
   onValide,
-  onAnnule
+  onAnnule,
+  cleSauvegarde,
+  reprise
 }) {
-  const [nom, setNom] = useState("");
-  const [chNom, setChNom] = useState(null);
-  const [code, setCode] = useState(null);
-  const [armeId, setArmeId] = useState(contenu.arsenal[0] ? contenu.arsenal[0].id : "");
-  const ch = contenu.chassis.find(c => c.n === chNom) || null;
-  const arme = contenu.arsenal.find(a => a.id === armeId);
-  const peutValider = !!ch && !!code && nom.trim().length > 0;
-  const valider = () => onValide({
-    id: "cree",
-    nom: nom.trim(),
-    chassis: ch.n,
-    code,
-    st: {
-      cc: ch.cc,
-      ct: ch.ct,
-      f: parseInt(ch.f, 10),
-      e: parseInt(ch.e, 10),
-      sv: ch.sv,
-      cd: ch.cd,
-      a: parseInt(ch.a, 10)
-    },
-    rfx: parseInt(ch.rfx, 10),
-    pvMax: parseInt(ch.pv, 10),
-    apt: ch.apt,
-    comps: ch.cp.slice(),
-    arme: arme.id,
-    armeDef: arme
-  });
+  const CLE_ETAT = "larchiviste_creation_" + (cleSauvegarde || "GM-0001");
+  const s0 = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(CLE_ETAT) || "null");
+    } catch (e) {
+      return null;
+    }
+  })();
+  const [etape, setEtape] = useState(Math.min(Math.max(s0 && s0.etape || 1, 1), 8));
+  const [nom, setNom] = useState(s0 && s0.nom || "");
+  const [chNom, setChNom] = useState(s0 && s0.chNom || null);
+  const [code, setCode] = useState(s0 && s0.code || null);
+  const [speId, setSpeId] = useState(s0 && s0.speId || null);
+  const [armesChoisies, setArmesChoisies] = useState((s0 && s0.armes || []).slice());
+  const [mods, setMods] = useState(Object.assign({
+    capteurs: [],
+    coeur: null,
+    noyau: null,
+    bouclier: null,
+    systeme: null
+  }, s0 && s0.mods || {}));
+  const [protoId, setProtoId] = useState(s0 && s0.protoId || null);
+  const [enregistre, setEnregistre] = useState(false);
+  const arsenal = contenu.arsenal || [];
+  const ch = chNom ? contenu.chassis.find(c => c.n === chNom) || null : null;
+  const emp = ch ? PE_GRAMMAIRE[ch.n] || null : null;
+  const spe = speId ? PE_SPECIALISATIONS_DB.find(s => s.id === speId) || null : null;
+  const proto = protoId ? PE_PROTOCOLES_DB.find(p => p.id === protoId) || null : null;
+  const armesDefs = armesChoisies.map(id => arsenal.find(a => a.id === id)).filter(Boolean);
+  const choisirChassis = c => {
+    setChNom(c.n);
+    const e = PE_GRAMMAIRE[c.n] || null;
+    if (!e) return;
+    setArmesChoisies(liste => {
+      const gardes = [];
+      liste.forEach(id => {
+        const a = arsenal.find(q => q.id === id);
+        if (a && a.taille <= e.armes.t && gardes.length < e.armes.n) gardes.push(id);
+      });
+      return gardes;
+    });
+    setMods(m => {
+      const capteurs = [];
+      (m.capteurs || []).forEach(id => {
+        const q = PE_MODULES_DB.find(x => x.id === id);
+        if (q && q.taille <= e.capteurs.t && capteurs.length < e.capteurs.n) capteurs.push(id);
+      });
+      const gardeUn = (cat, mid) => {
+        const q = mid ? PE_MODULES_DB.find(x => x.id === mid) : null;
+        return q && q.taille <= e[cat].t ? mid : null;
+      };
+      return {
+        capteurs: capteurs,
+        coeur: gardeUn("coeur", m.coeur),
+        noyau: gardeUn("noyau", m.noyau),
+        bouclier: e.bouclier && e.bouclier.n > 0 ? gardeUn("bouclier", m.bouclier) : null,
+        systeme: gardeUn("systeme", m.systeme)
+      };
+    });
+  };
+  const basculerArme = a => {
+    if (!emp) return;
+    setArmesChoisies(liste => liste.includes(a.id) ? liste.filter(x => x !== a.id) : a.taille <= emp.armes.t && liste.length < emp.armes.n ? liste.concat([a.id]) : liste);
+  };
+  const basculerModule = m => {
+    if (!emp) return;
+    const conf = emp[m.cat === "capteur" ? "capteurs" : m.cat];
+    if (!conf) return;
+    if (m.cat === "bouclier" && conf.n === 0) return;
+    if (m.taille > conf.t) return;
+    setMods(etat => {
+      if (m.cat === "capteur") {
+        const liste = (etat.capteurs || []).includes(m.id) ? (etat.capteurs || []).filter(x => x !== m.id) : (etat.capteurs || []).length < conf.n ? (etat.capteurs || []).concat([m.id]) : etat.capteurs || [];
+        return Object.assign({}, etat, {
+          capteurs: liste
+        });
+      }
+      return Object.assign({}, etat, {
+        [m.cat]: etat[m.cat] === m.id ? null : m.id
+      });
+    });
+  };
+  const modulesComplets = !!emp && (!emp.capteurs || (mods.capteurs || []).length === emp.capteurs.n) && !!mods.coeur && !!mods.noyau && (!emp.bouclier || emp.bouclier.n === 0 || !!mods.bouclier) && !!mods.systeme;
+  const etapeValide = etape === 1 ? nom.trim().length > 0 : etape === 2 ? !!ch : etape === 3 ? !!code : etape === 4 ? !!speId : etape === 5 ? armesChoisies.length >= 1 : etape === 6 ? modulesComplets : etape === 7 ? !!protoId : true;
+  const sauvegarder = () => {
+    try {
+      localStorage.setItem(CLE_ETAT, JSON.stringify({
+        etape,
+        nom,
+        chNom,
+        code,
+        speId,
+        armes: armesChoisies,
+        mods,
+        protoId
+      }));
+      setEnregistre(true);
+      setTimeout(() => setEnregistre(false), 2500);
+    } catch (e) {}
+  };
+  const valider = () => {
+    if (!ch || !armesDefs.length || !spe || !proto) return;
+    try {
+      localStorage.removeItem(CLE_ETAT);
+    } catch (e) {}
+    onValide({
+      id: "cree",
+      nom: nom.trim(),
+      chassis: ch.n,
+      code,
+      st: {
+        cc: ch.cc,
+        ct: ch.ct,
+        f: parseInt(ch.f, 10),
+        e: parseInt(ch.e, 10),
+        sv: ch.sv,
+        cd: ch.cd,
+        a: parseInt(ch.a, 10)
+      },
+      rfx: parseInt(ch.rfx, 10),
+      pvMax: parseInt(ch.pv, 10),
+      apt: ch.apt,
+      comps: ch.cp.slice(),
+      arme: armesDefs[0].id,
+      armeDef: armesDefs[0],
+      armes: armesDefs.map(a => a.id),
+      armesDef: armesDefs,
+      spe: spe.id,
+      modules: {
+        capteurs: (mods.capteurs || []).slice(),
+        coeur: mods.coeur,
+        noyau: mods.noyau,
+        bouclier: mods.bouclier,
+        systeme: mods.systeme
+      },
+      protocole: proto.id,
+      mem: ch.mem,
+      cal: ch.cal
+    });
+  };
   return React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
@@ -11476,31 +12078,51 @@ function EcranCreationUnite({
     style: {
       color: accent
     }
-  }, "\u2699 Cr\xE9er une unit\xE9"), React.createElement("div", {
+  }, "Cr\xE9ation de personnage"), React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "10 ch\xE2ssis \xB7 6 codes de fabrique")), React.createElement("div", {
-    className: "text-xs mb-4",
+  }, "\xC9tape ", etape, "/8 \u2014 ", PE_ETIQUETTES[etape - 1])), React.createElement("div", {
+    className: "flex flex-wrap gap-1 mb-3"
+  }, PE_ETIQUETTES.map((e, i) => React.createElement("span", {
+    key: e,
+    className: "text-xs px-1.5 py-0.5 rounded",
+    style: {
+      background: i + 1 === etape ? accent + "22" : "#ffffff08",
+      color: i + 1 <= etape ? accent : "#71717a",
+      border: "1px solid " + (i + 1 < etape ? accent + "44" : "transparent")
+    }
+  }, i + 1)), React.createElement("span", {
+    className: "text-xs px-1.5",
+    style: {
+      color: "#71717a"
+    }
+  }, "\u2014 ", PE_ETIQUETTES[etape - 1])), etape === 1 && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
     }
-  }, "Nom \u2192 ch\xE2ssis \u2192 code de fabrique \u2192 arme. PV et Rfx viennent du ch\xE2ssis (PV = W\xD73). Modules, wargear et protocoles : hors alpha \u2014 les places M\xE9moire/Calcul sont grav\xE9es pour la suite."), React.createElement("input", {
+  }, "D\xE9signez l'unit\xE9 \u2014 ce nom entrera au registre GM-0001, servira dans les parties et gravera sa position dans le monde."), React.createElement("input", {
     value: nom,
     onChange: e => setNom(e.target.value),
     placeholder: "D\xE9signation de l'unit\xE9\u2026",
-    className: "w-full rounded-lg px-3 py-2 mb-3 text-sm",
+    className: "w-full rounded-lg px-3 py-2 text-sm",
     style: {
       background: "#0c0d10",
       border: "1px solid #3f3f46",
       color: "#e8e4d8"
     }
-  }), React.createElement("div", {
+  })), etape === 2 && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Le ch\xE2ssis porte tout : caract\xE9ristiques (PV = W\xD73), emplacements d'armes et de modules, places M\xE9moire et Calcul."), React.createElement("div", {
     className: "grid grid-cols-2 md:grid-cols-3 gap-2"
   }, contenu.chassis.map(c => React.createElement("button", {
     key: c.n,
-    onClick: () => setChNom(c.n),
+    onClick: () => choisirChassis(c),
     className: "rounded-lg p-2.5 text-left",
     style: {
       border: "1px solid " + (chNom === c.n ? accent : "#3f3f46"),
@@ -11521,12 +12143,12 @@ function EcranCreationUnite({
     style: {
       color: "#71717a"
     }
-  }, "M\xE9moire ", c.mem, " \xB7 Calcul ", c.cal)))), ch && React.createElement(React.Fragment, null, React.createElement("div", {
-    className: "text-xs mt-4 mb-1.5",
+  }, "M\xE9moire ", c.mem, " \xB7 Calcul ", c.cal, PE_GRAMMAIRE[c.n] ? " · Armes " + PE_GRAMMAIRE[c.n].armes.n + "×T" + PE_GRAMMAIRE[c.n].armes.t : ""))))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
     style: {
-      color: "#71717a"
+      color: "#a1a1aa"
     }
-  }, "Code de fabrique de la lign\xE9e"), React.createElement("div", {
+  }, "Le code de fabrique dit la lign\xE9e qui a assembl\xE9 le ch\xE2ssis \u2014 sa marque de naissance."), React.createElement("div", {
     className: "flex flex-wrap gap-1.5"
   }, contenu.codes.map(c => React.createElement("button", {
     key: c,
@@ -11537,50 +12159,191 @@ function EcranCreationUnite({
       color: code === c ? "#0a120f" : "#c8c8ce",
       border: "1px solid " + (code === c ? accent : "#3f3f46")
     }
-  }, c))), React.createElement("div", {
-    className: "text-xs mt-4 mb-1.5",
+  }, c)))), etape === 4 && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "La sp\xE9cialisation grave une aptitude \u2014 et souvent un pouvoir \u2014 dans la trame de l'unit\xE9."), React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, PE_SPECIALISATIONS_DB.map(s => React.createElement("button", {
+    key: s.id,
+    onClick: () => setSpeId(s.id),
+    className: "rounded-lg p-2.5 text-left",
+    style: {
+      border: "1px solid " + (speId === s.id ? accent : "#3f3f46"),
+      background: speId === s.id ? "#ffffff0d" : "#ffffff08"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-sm",
+    style: {
+      color: speId === s.id ? accent : "#e8e4d8"
+    }
+  }, s.nom), s.apt ? React.createElement("div", {
+    className: "text-xs mt-0.5",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, s.apt) : null, s.pouvoir ? React.createElement("div", {
+    className: "text-xs mt-0.5",
     style: {
       color: "#71717a"
     }
-  }, "Arme de d\xE9part \u2014 arsenal neutre (choix libre dans l'alpha)"), React.createElement("select", {
-    value: armeId,
-    onChange: e => setArmeId(e.target.value),
-    className: "w-full rounded px-2 py-1.5 text-sm",
+  }, s.pouvoir) : null)))), etape === 5 && ch && emp && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
     style: {
-      background: "#14161b",
-      color: "#e8e4d8",
-      border: "1px solid #3f3f46"
+      color: "#a1a1aa"
     }
-  }, contenu.arsenal.map(a => React.createElement("option", {
-    key: a.id,
-    value: a.id
-  }, a.nom, " \xB7 ", a.tir ? "tir" : "mêlée", " \xB7 ", a.portee, " \xB7 A ", a.att, " \xB7 F ", a.f, " \xB7 PA ", a.pa, " \xB7 D ", a.d, " \xB7 T", a.taille))), React.createElement("div", {
-    className: "text-xs mt-1",
+  }, "Arsenal : ", emp.armes.n, " emplacement", emp.armes.n > 1 ? "s" : "", " d'arme sur ce ch\xE2ssis, taille T", emp.armes.t, " maximum \u2014 ", armesChoisies.length, "/", emp.armes.n, " choisi", armesChoisies.length > 1 ? "s" : "", "."), React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, arsenal.map(a => {
+    const prise = armesChoisies.includes(a.id);
+    const acceptable = a.taille <= emp.armes.t && (prise || armesChoisies.length < emp.armes.n);
+    return React.createElement("button", {
+      key: a.id,
+      onClick: () => acceptable && basculerArme(a),
+      className: "rounded-lg p-2.5 text-left",
+      style: {
+        border: "1px solid " + (prise ? accent : "#3f3f46"),
+        background: prise ? "#ffffff0d" : "#ffffff08",
+        opacity: a.taille <= emp.armes.t && (prise || armesChoisies.length < emp.armes.n) ? 1 : 0.4,
+        cursor: a.taille <= emp.armes.t && (prise || armesChoisies.length < emp.armes.n) ? "pointer" : "not-allowed"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm",
+      style: {
+        color: prise ? accent : "#e8e4d8"
+      }
+    }, a.nom, " ", React.createElement("span", {
+      style: {
+        color: "#71717a"
+      }
+    }, "\xB7 T", a.taille)), React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, a.tir ? "tir" : "mêlée", " \xB7 ", a.portee, " \xB7 A ", a.att, " \xB7 F ", a.f, " \xB7 PA ", a.pa, " \xB7 D ", a.d), React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: "#71717a"
+      }
+    }, a.taille > emp.armes.t ? "trop grande pour ce châssis (T" + a.taille + " > T" + emp.armes.t + ")" : a.regle));
+  }))), etape === 6 && ch && emp && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "\xC9quipez chaque emplacement du ch\xE2ssis \u2014 capteurs, c\u0153ur, noyau, bouclier, syst\xE8me logique \u2014 dans les limites de taille."), [["capteurs", "Capteurs", "capteur"], ["coeur", "Cœur énergétique", "coeur"], ["noyau", "Noyau énergétique", "noyau"], ["bouclier", "Bouclier", "bouclier"], ["systeme", "Système logique", "systeme"]].map(([cle, titre, cat]) => {
+    const conf = emp[cle];
+    if (!conf || cle === "bouclier" && conf.n === 0) return null;
+    const pris = cle === "capteurs" ? (mods.capteurs || []).length : 0;
+    return React.createElement("div", {
+      key: cle,
+      className: "mb-3"
+    }, React.createElement("div", {
+      className: "text-xs mb-1.5",
+      style: {
+        color: "#71717a"
+      }
+    }, titre, " \u2014 ", cle === "capteurs" ? pris + "/" + conf.n : mods[cle] ? "équipé" : "à choisir", " \xB7 T", conf.t, " max"), React.createElement("div", {
+      className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+    }, PE_MODULES_DB.filter(m => m.cat === cat).map(m => {
+      const choisi = cle === "capteurs" ? (mods.capteurs || []).includes(m.id) : mods[cle] === m.id;
+      const acceptable = m.taille <= conf.t && (cle !== "capteurs" || choisi || (mods.capteurs || []).length < conf.n);
+      return React.createElement("button", {
+        key: m.id,
+        onClick: () => acceptable && basculerModule(m),
+        className: "rounded-lg p-2.5 text-left",
+        style: {
+          border: "1px solid " + (choisi ? accent : "#3f3f46"),
+          background: choisi ? "#ffffff0d" : "#ffffff08",
+          opacity: acceptable ? 1 : 0.4,
+          cursor: acceptable ? "pointer" : "not-allowed"
+        }
+      }, React.createElement("div", {
+        className: "font-bold text-sm",
+        style: {
+          color: choisi ? accent : "#e8e4d8"
+        }
+      }, m.nom, " ", React.createElement("span", {
+        style: {
+          color: "#71717a"
+        }
+      }, "\xB7 T", m.taille)), React.createElement("div", {
+        className: "text-xs mt-0.5",
+        style: {
+          color: "#a1a1aa"
+        }
+      }, m.desc));
+    })));
+  })), etape === 7 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Un protocole initial se grave dans la M\xE9moire (places du ch\xE2ssis : ", ch.mem, "). Le Protocole de Secours est inn\xE9 \u2014 il est d\xE9j\xE0 grav\xE9, hors liste, sans co\xFBt."), React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, PE_PROTOCOLES_DB.map(p => React.createElement("button", {
+    key: p.id,
+    onClick: () => setProtoId(p.id),
+    className: "rounded-lg p-2.5 text-left",
+    style: {
+      border: "1px solid " + (protoId === p.id ? accent : "#3f3f46"),
+      background: protoId === p.id ? "#ffffff0d" : "#ffffff08"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-sm",
+    style: {
+      color: protoId === p.id ? accent : "#e8e4d8"
+    }
+  }, p.nom), React.createElement("div", {
+    className: "text-xs mt-0.5",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, p.desc))))), etape === 8 && ch && spe && proto && armesDefs.length > 0 && modulesComplets && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "flex items-baseline justify-between mb-3"
+  }, React.createElement("div", {
+    className: "font-bold text-lg",
+    style: {
+      color: "#f0b24a"
+    }
+  }, nom.trim()), React.createElement("div", {
+    className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, arme.regle), React.createElement("div", {
-    className: "flex gap-2 mt-3 text-center text-xs"
+  }, ch.n, " \xB7 code ", code, " \xB7 ", spe.nom)), React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 text-center text-sm"
+  }, [["CC", ch.cc], ["CT", ch.ct], ["F", ch.f], ["E", ch.e], ["Sv", ch.sv], ["Cd", ch.cd], ["A", ch.a], ["Rfx", ch.rfx], ["PV", ch.pv]].map(([k, v]) => React.createElement("div", {
+    key: k,
+    className: "rounded py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: "#71717a"
+    }
+  }, k, " "), v))), React.createElement("div", {
+    className: "flex gap-2 mt-2 text-center text-xs"
   }, React.createElement("div", {
     className: "flex-1 rounded-lg py-1.5",
     style: {
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "PV ", React.createElement("b", null, ch.pv)), React.createElement("div", {
+  }, "M\xE9moire ", React.createElement("b", null, ch.mem), " (1 protocole initial grav\xE9)"), React.createElement("div", {
     className: "flex-1 rounded-lg py-1.5",
     style: {
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "Initiative 1D6 ", React.createElement("b", null, "Rfx ", ch.rfx)), React.createElement("div", {
-    className: "flex-1 rounded-lg py-1.5",
-    style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
-    }
-  }, "M\xE9moire ", React.createElement("b", null, ch.mem), " \xB7 Calcul ", React.createElement("b", null, ch.cal))), React.createElement("div", {
-    className: "text-xs mt-2 rounded p-2",
+  }, "Calcul ", React.createElement("b", null, ch.cal))), React.createElement("div", {
+    className: "text-xs mt-3 rounded p-2",
     style: {
       background: "#ffffff08",
       color: "#c8c8ce"
@@ -11590,6 +12353,50 @@ function EcranCreationUnite({
       color: "#e8e4d8"
     }
   }, "Aptitude de ch\xE2ssis \u2014 "), ch.apt), React.createElement("div", {
+    className: "text-xs mt-2 rounded p-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Sp\xE9cialisation ", spe.nom, " \u2014 "), spe.apt || spe.pouvoir), React.createElement("div", {
+    className: "text-xs mt-2 rounded p-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Arsenal \u2014 "), armesDefs.map(a => a.nom).join(" · ")), React.createElement("div", {
+    className: "text-xs mt-2 rounded p-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "\xC9quipement \u2014 "), peModulesNoms(mods).join(" · ")), React.createElement("div", {
+    className: "text-xs mt-2 rounded p-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", proto.nom, React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, " \xB7 ", proto.desc)), React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, ch.cp.map(c => React.createElement("span", {
     key: c,
@@ -11600,6 +12407,31 @@ function EcranCreationUnite({
     }
   }, c)))), React.createElement("div", {
     className: "flex gap-2 mt-4"
+  }, etape > 1 ? React.createElement("button", {
+    onClick: () => setEtape(e => e - 1),
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: "#0c0d10",
+      color: "#a1a1aa",
+      border: "1px solid #3f3f46"
+    }
+  }, "\u2190 \xC9tape pr\xE9c\xE9dente") : null, etape < 8 ? React.createElement("button", {
+    onClick: () => etapeValide && setEtape(e => e + 1),
+    disabled: !etapeValide,
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: etapeValide ? accent : "#27272a",
+      color: etapeValide ? "#0a120f" : "#71717a"
+    }
+  }, etapeValide ? "Étape suivante →" : PE_ETIQUETTES[etape - 1] + " à compléter") : React.createElement("button", {
+    onClick: valider,
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: accent,
+      color: "#0a120f"
+    }
+  }, "\u27C1 Graver ", nom.trim(), " au registre")), React.createElement("div", {
+    className: "flex gap-2 mt-2"
   }, React.createElement("button", {
     onClick: onAnnule,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
@@ -11608,15 +12440,15 @@ function EcranCreationUnite({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "\u2715 Annuler"), React.createElement("button", {
-    onClick: valider,
-    disabled: !peutValider,
+  }, "Annuler"), nom.trim().length > 0 ? React.createElement("button", {
+    onClick: sauvegarder,
     className: "flex-1 py-2 rounded-lg text-sm font-bold",
     style: {
-      background: peutValider ? accent : "#27272a",
-      color: peutValider ? "#0a120f" : "#71717a"
+      background: "#0c0d10",
+      color: enregistre ? accent : "#a1a1aa",
+      border: "1px solid #3f3f46"
     }
-  }, peutValider ? `⟁ Créer ${nom.trim()}` : "⟁ Châssis, code et nom requis")));
+  }, enregistre ? "✓ sauvegardé" : "Sauvegarder") : null));
 }
 function VueNoyauD100({
   pack,
