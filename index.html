@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.154";
+const BUILD = "0.155";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -6642,7 +6642,17 @@ function FicheApercuUnite({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), peSpeLigne(perso.spe) && React.createElement("div", {
+  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.code && peCodeDe(perso.code) && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Code de fabrique \u2014 "), peCodeDe(perso.code).bonus), peSpeLigne(perso.spe) && React.createElement("div", {
     className: "mt-2 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -6672,7 +6682,17 @@ function FicheApercuUnite({
     style: {
       color: "#e8e4d8"
     }
-  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", peProtocoleDe(perso.protocole).nom), perso.comps && React.createElement("div", {
+  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", peProtocoleDe(perso.protocole).nom), perso.eveil != null && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Points d'\xC9veil \u2014 "), perso.eveil, " au r\xE9veil, pr\xEAts \xE0 se d\xE9penser en partie"), perso.comps && React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, perso.comps.map(c => React.createElement("span", {
     key: c,
@@ -9526,10 +9546,11 @@ function VueNoyau40k({
     setPersoCree(p);
     setEnCreationPE(false);
     setPvSigna(p.pvMax);
-    logEvent("perso.creation", rendreGabarit(C.journalCreation, {
+    const grave = rendreGabarit(C.journalCreation, {
       ...p,
       arme: (p.armeDef || {}).nom
-    }));
+    });
+    logEvent("perso.creation", p.eveil != null ? grave + " · " + p.eveil + " points au réveil" : grave);
   };
   const adopterDuRegistre = p => {
     if (!p || !p.contenu) return;
@@ -9860,7 +9881,17 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), peSpeLigne(perso.spe) && React.createElement("div", {
+  }, "Aptitude de ch\xE2ssis \u2014 "), perso.apt), perso.code && peCodeDe(perso.code) && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Code de fabrique \u2014 "), peCodeDe(perso.code).bonus), peSpeLigne(perso.spe) && React.createElement("div", {
     className: "mt-2 rounded p-2 text-xs",
     style: {
       background: "#ffffff08",
@@ -9890,7 +9921,17 @@ function VueNoyau40k({
     style: {
       color: "#e8e4d8"
     }
-  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", peProtocoleDe(perso.protocole).nom), perso.comps && React.createElement("div", {
+  }, "Protocoles \u2014 "), "Secours (inn\xE9) \xB7 ", peProtocoleDe(perso.protocole).nom), perso.eveil != null && React.createElement("div", {
+    className: "mt-2 rounded p-2 text-xs",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Points d'\xC9veil \u2014 "), perso.eveil, " au r\xE9veil, pr\xEAts \xE0 se d\xE9penser en partie"), perso.comps && React.createElement("div", {
     className: "flex flex-wrap gap-1 mt-2"
   }, perso.comps.map(c => React.createElement("span", {
     key: c,
@@ -11734,6 +11775,43 @@ const PE_GRAMMAIRE = {
     }
   }
 };
+const PE_PRIX = {
+  "Fantassin programmé": 2,
+  "Vétéran": 4,
+  "Traqueur": 5,
+  "Ombre": 5,
+  "Sentinelle": 7,
+  "Artificier": 13,
+  "Énergicien": 13,
+  "Officier de garde": 15,
+  "Commandant": 18,
+  "Seigneur de guerre": 24
+};
+const PE_CODES_DB = [{
+  nom: "Éternel",
+  texte: "Assemblée pour durer au-delà de l'usure des ères.",
+  bonus: "Passif : +1 aux jets de Réanimation."
+}, {
+  nom: "Pragmatique",
+  texte: "Forgée pour l'efficacité, jamais pour la bravade.",
+  bonus: "Passif : +1 à l'initiative."
+}, {
+  nom: "Sanguinaire",
+  texte: "Sa lame ne connaît ni trêve ni pitié.",
+  bonus: "Passif : +1 pour toucher en mêlée."
+}, {
+  nom: "Solaire",
+  texte: "Le rayon qui l'a vue naître ne la quitte jamais.",
+  bonus: "Passif : +1 pour blesser au tir à mi-portée ou moins."
+}, {
+  nom: "Tutélaire",
+  texte: "Plantée au sol, elle devient la tour de sa lignée.",
+  bonus: "Passif : +1 à la sauvegarde si l'unité n'a pas bougé depuis son dernier tour."
+}, {
+  nom: "Fondateur",
+  texte: "La première pierre de la dynastie, encore debout.",
+  bonus: "Passif : l'unité regagne 1 PV au début de chaque scène."
+}];
 const PE_MODULES_DB = [{
   id: "chrono",
   cat: "capteur",
@@ -11860,23 +11938,23 @@ const PE_SPECIALISATIONS_DB = [{
 }, {
   id: "s-chronomancien",
   nom: "Chronomancien",
-  apt: "",
+  apt: "Mémoire du futur : 1×/scène, relancez votre jet d'initiative.",
   pouvoir: "Précognition : 1×/scène, forcez un ennemi à relancer une attaque qui venait de réussir."
 }, {
   id: "s-technomancien",
   nom: "Technomancien",
   apt: "Entretien perpétuel : 1×/scène, soignez D3 PV à un allié à 6 m (ou à vous-même).",
-  pouvoir: ""
+  pouvoir: "Réanimation assistée : 1×/bataille, une unité alliée tombée se relève immédiatement avec 1 PV."
 }, {
   id: "s-stratege",
   nom: "Grand stratège",
   apt: "Regard tactique : les alliés à 6 m gagnent +1 Cd sur leurs tests de volonté.",
-  pouvoir: ""
+  pouvoir: "Ordre anticipé : 1×/scène, un allié à 6 m gagne une action supplémentaire ce tour."
 }, {
   id: "s-artisan",
   nom: "Artisan d'élite",
   apt: "Main savante : vous ignorez les malus des armes lourdes ; 1×/scène, réparez D3 PV.",
-  pouvoir: ""
+  pouvoir: "Surcadence : 1×/scène, toutes vos attaques de ce tour gagnent +1 PA."
 }, {
   id: "s-chasseur",
   nom: "Chasseur éternel",
@@ -11886,21 +11964,22 @@ const PE_SPECIALISATIONS_DB = [{
   id: "s-orateur",
   nom: "Orateur dynastique",
   apt: "Voix de la dynastie : vos tests de Commandement sont à 3+.",
-  pouvoir: ""
+  pouvoir: "Grandeur retrouvée : 1×/scène, un allié à 6 m relance un test de Commandement, d'Intimidation ou de volonté raté."
 }, {
   id: "s-gardien",
   nom: "Gardien du seuil",
-  apt: "",
+  apt: "Bastion immobile : tant que vous n'avez pas bougé depuis votre dernier tour, les ennemis subissent −1 pour vous toucher.",
   pouvoir: "Verrouillé : 1×/scène, un allié à 2 m relance sa sauvegarde ratée."
 }];
 const peModuleDe = id => PE_MODULES_DB.find(m => m.id === id) || null;
 const peProtocoleDe = id => PE_PROTOCOLES_DB.find(p => p.id === id) || null;
 const peSpeDe = id => PE_SPECIALISATIONS_DB.find(s => s.id === id) || null;
+const peCodeDe = nom => PE_CODES_DB.find(c => c.nom === nom) || null;
 const peSpeLigne = id => {
   const s = peSpeDe(id);
   return s ? {
     nom: s.nom,
-    texte: s.apt || s.pouvoir
+    texte: [s.apt, s.pouvoir].filter(Boolean).join(" · ")
   } : null;
 };
 const peModulesNoms = mods => {
@@ -11948,9 +12027,49 @@ function EcranCreationUnite({
   }, s0 && s0.mods || {}));
   const [protoId, setProtoId] = useState(s0 && s0.protoId || null);
   const [enregistre, setEnregistre] = useState(false);
+  const [dotation, setDotation] = useState(s0 && typeof s0.dotation === "number" ? s0.dotation : null);
+  const [dees, setDees] = useState(s0 && s0.dees || null);
+  const [exts, setExts] = useState(Object.assign({
+    armesT: 0,
+    capteursT: 0,
+    coeurT: 0,
+    noyauT: 0,
+    bouclierT: 0,
+    systemeT: 0,
+    armesN: 0,
+    capteursN: 0,
+    bouclierN: 0,
+    systemeN: 0
+  }, s0 && s0.exts || {}));
   const arsenal = contenu.arsenal || [];
   const ch = chNom ? contenu.chassis.find(c => c.n === chNom) || null : null;
   const emp = ch ? PE_GRAMMAIRE[ch.n] || null : null;
+  const empEff = emp ? {
+    armes: {
+      n: emp.armes.n + (exts.armesN || 0),
+      t: Math.min(4, emp.armes.t + (exts.armesT || 0))
+    },
+    capteurs: {
+      n: emp.capteurs.n + (exts.capteursN || 0),
+      t: Math.min(4, emp.capteurs.t + (exts.capteursT || 0))
+    },
+    coeur: {
+      t: Math.min(4, emp.coeur.t + (exts.coeurT || 0))
+    },
+    noyau: {
+      t: Math.min(4, emp.noyau.t + (exts.noyauT || 0))
+    },
+    bouclier: {
+      n: emp.bouclier.n + (exts.bouclierN || 0),
+      t: Math.min(4, emp.bouclier.t + (exts.bouclierT || 0))
+    },
+    systeme: {
+      n: emp.systeme.n + (exts.systemeN || 0),
+      t: Math.min(4, emp.systeme.t + (exts.systemeT || 0))
+    }
+  } : null;
+  const coutExt = 4 * ((exts.armesT || 0) + (exts.capteursT || 0) + (exts.coeurT || 0) + (exts.noyauT || 0) + (exts.bouclierT || 0) + (exts.systemeT || 0)) + 6 * ((exts.armesN || 0) + (exts.capteursN || 0) + (exts.bouclierN || 0) + (exts.systemeN || 0));
+  const solde = (dotation || 0) - (ch ? PE_PRIX[ch.n] || 0 : 0) - coutExt;
   const spe = speId ? PE_SPECIALISATIONS_DB.find(s => s.id === speId) || null : null;
   const proto = protoId ? PE_PROTOCOLES_DB.find(p => p.id === protoId) || null : null;
   const armesDefs = armesChoisies.map(id => arsenal.find(a => a.id === id)).filter(Boolean);
@@ -11958,11 +12077,49 @@ function EcranCreationUnite({
     setChNom(c.n);
     const e = PE_GRAMMAIRE[c.n] || null;
     if (!e) return;
+    const tailles = {};
+    ["armes", "capteurs", "coeur", "noyau", "bouclier", "systeme"].forEach(cat => {
+      tailles[cat] = Math.min(exts[cat + "T"] || 0, Math.max(0, 4 - (e[cat] || {}).t));
+    });
+    setExts(x => {
+      const maj = {};
+      ["armes", "capteurs", "coeur", "noyau", "bouclier", "systeme"].forEach(cat => {
+        maj[cat + "T"] = tailles[cat];
+      });
+      ["armes", "capteurs", "bouclier", "systeme"].forEach(cat => {
+        maj[cat + "N"] = x[cat + "N"] || 0;
+      });
+      return maj;
+    });
+    const eff = {
+      armes: {
+        n: e.armes.n + (exts.armesN || 0),
+        t: Math.min(4, e.armes.t + tailles.armes)
+      },
+      capteurs: {
+        n: e.capteurs.n + (exts.capteursN || 0),
+        t: Math.min(4, e.capteurs.t + tailles.capteurs)
+      },
+      coeur: {
+        t: Math.min(4, e.coeur.t + tailles.coeur)
+      },
+      noyau: {
+        t: Math.min(4, e.noyau.t + tailles.noyau)
+      },
+      bouclier: {
+        n: e.bouclier.n + (exts.bouclierN || 0),
+        t: Math.min(4, e.bouclier.t + tailles.bouclier)
+      },
+      systeme: {
+        n: e.systeme.n + (exts.systemeN || 0),
+        t: Math.min(4, e.systeme.t + tailles.systeme)
+      }
+    };
     setArmesChoisies(liste => {
       const gardes = [];
       liste.forEach(id => {
         const a = arsenal.find(q => q.id === id);
-        if (a && a.taille <= e.armes.t && gardes.length < e.armes.n) gardes.push(id);
+        if (a && a.taille <= eff.armes.t && gardes.length < eff.armes.n) gardes.push(id);
       });
       return gardes;
     });
@@ -11970,28 +12127,34 @@ function EcranCreationUnite({
       const capteurs = [];
       (m.capteurs || []).forEach(id => {
         const q = PE_MODULES_DB.find(x => x.id === id);
-        if (q && q.taille <= e.capteurs.t && capteurs.length < e.capteurs.n) capteurs.push(id);
+        if (q && q.taille <= eff.capteurs.t && capteurs.length < eff.capteurs.n) capteurs.push(id);
       });
       const gardeUn = (cat, mid) => {
         const q = mid ? PE_MODULES_DB.find(x => x.id === mid) : null;
-        return q && q.taille <= e[cat].t ? mid : null;
+        return q && q.taille <= eff[cat].t ? mid : null;
       };
       return {
         capteurs: capteurs,
         coeur: gardeUn("coeur", m.coeur),
         noyau: gardeUn("noyau", m.noyau),
-        bouclier: e.bouclier && e.bouclier.n > 0 ? gardeUn("bouclier", m.bouclier) : null,
+        bouclier: eff.bouclier && eff.bouclier.n > 0 ? gardeUn("bouclier", m.bouclier) : null,
         systeme: gardeUn("systeme", m.systeme)
       };
     });
   };
+  const lancerDes = () => {
+    if (chNom) return;
+    const r = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+    setDees(r);
+    setDotation(r[0] + r[1]);
+  };
   const basculerArme = a => {
-    if (!emp) return;
-    setArmesChoisies(liste => liste.includes(a.id) ? liste.filter(x => x !== a.id) : a.taille <= emp.armes.t && liste.length < emp.armes.n ? liste.concat([a.id]) : liste);
+    if (!empEff) return;
+    setArmesChoisies(liste => liste.includes(a.id) ? liste.filter(x => x !== a.id) : a.taille <= empEff.armes.t && liste.length < empEff.armes.n ? liste.concat([a.id]) : liste);
   };
   const basculerModule = m => {
-    if (!emp) return;
-    const conf = emp[m.cat === "capteur" ? "capteurs" : m.cat];
+    if (!empEff) return;
+    const conf = empEff[m.cat === "capteur" ? "capteurs" : m.cat];
     if (!conf) return;
     if (m.cat === "bouclier" && conf.n === 0) return;
     if (m.taille > conf.t) return;
@@ -12007,7 +12170,7 @@ function EcranCreationUnite({
       });
     });
   };
-  const modulesComplets = !!emp && (!emp.capteurs || (mods.capteurs || []).length === emp.capteurs.n) && !!mods.coeur && !!mods.noyau && (!emp.bouclier || emp.bouclier.n === 0 || !!mods.bouclier) && !!mods.systeme;
+  const modulesComplets = !!empEff && (!empEff.capteurs || (mods.capteurs || []).length === empEff.capteurs.n) && !!mods.coeur && !!mods.noyau && (!empEff.bouclier || empEff.bouclier.n === 0 || !!mods.bouclier) && !!mods.systeme;
   const etapeValide = etape === 1 ? nom.trim().length > 0 : etape === 2 ? !!ch : etape === 3 ? !!code : etape === 4 ? !!speId : etape === 5 ? armesChoisies.length >= 1 : etape === 6 ? modulesComplets : etape === 7 ? !!protoId : true;
   const sauvegarder = () => {
     try {
@@ -12019,7 +12182,10 @@ function EcranCreationUnite({
         speId,
         armes: armesChoisies,
         mods,
-        protoId
+        protoId,
+        dotation,
+        dees,
+        exts
       }));
       setEnregistre(true);
       setTimeout(() => setEnregistre(false), 2500);
@@ -12062,7 +12228,22 @@ function EcranCreationUnite({
       },
       protocole: proto.id,
       mem: ch.mem,
-      cal: ch.cal
+      cal: ch.cal,
+      eveil: solde,
+      dotation: dotation,
+      dees: dees,
+      exts: {
+        armesT: exts.armesT || 0,
+        capteursT: exts.capteursT || 0,
+        coeurT: exts.coeurT || 0,
+        noyauT: exts.noyauT || 0,
+        bouclierT: exts.bouclierT || 0,
+        systemeT: exts.systemeT || 0,
+        armesN: exts.armesN || 0,
+        capteursN: exts.capteursN || 0,
+        bouclierN: exts.bouclierN || 0,
+        systemeN: exts.systemeN || 0
+      }
     });
   };
   return React.createElement("div", {
@@ -12098,7 +12279,20 @@ function EcranCreationUnite({
     style: {
       color: "#71717a"
     }
-  }, "\u2014 ", PE_ETIQUETTES[etape - 1])), etape === 1 && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, "\u2014 ", PE_ETIQUETTES[etape - 1])), dotation != null && React.createElement("div", {
+    className: "text-xs mb-3",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Points d'\xC9veil : ", React.createElement("b", {
+    style: {
+      color: accent
+    }
+  }, solde), React.createElement("span", {
+    style: {
+      color: "#71717a"
+    }
+  }, " (", dotation, " de dotation", ch ? " − " + (PE_PRIX[ch.n] || 0) + " châssis" : "", coutExt > 0 ? " − " + coutExt + " extensions" : "", ")")), etape === 1 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
@@ -12118,48 +12312,114 @@ function EcranCreationUnite({
     style: {
       color: "#a1a1aa"
     }
-  }, "Le ch\xE2ssis porte tout : caract\xE9ristiques (PV = W\xD73), emplacements d'armes et de modules, places M\xE9moire et Calcul."), React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
-  }, contenu.chassis.map(c => React.createElement("button", {
-    key: c.n,
-    onClick: () => choisirChassis(c),
-    className: "rounded-lg p-2.5 text-left",
+  }, "Le ch\xE2ssis porte tout : caract\xE9ristiques (PV = W\xD73), emplacements d'armes et de modules, places M\xE9moire et Calcul. Le 2D6 de la gen\xE8se dote l'unit\xE9 ; le corps se paie sur cette dotation."), dotation == null ? React.createElement("button", {
+    onClick: lancerDes,
+    className: "px-3 py-2 rounded-lg text-sm font-bold",
     style: {
-      border: "1px solid " + (chNom === c.n ? accent : "#3f3f46"),
-      background: chNom === c.n ? "#ffffff0d" : "#ffffff08"
+      background: accent,
+      color: "#0a120f"
+    }
+  }, "\u27C1 Lancer les d\xE9s de la gen\xE8se (2D6)") : React.createElement("div", {
+    className: "flex items-baseline justify-between mb-2 rounded-lg p-2.5",
+    style: {
+      background: "#ffffff08"
     }
   }, React.createElement("div", {
-    className: "font-bold text-sm",
+    className: "text-sm",
     style: {
-      color: chNom === c.n ? accent : "#e8e4d8"
+      color: "#e8e4d8"
     }
-  }, c.n), React.createElement("div", {
-    className: "text-xs mt-0.5",
+  }, "Dotation d'\xE9veil : ", React.createElement("b", {
     style: {
-      color: "#a1a1aa"
+      color: accent
     }
-  }, "CC ", c.cc, " \xB7 CT ", c.ct, " \xB7 F ", c.f, " \xB7 E ", c.e, " \xB7 PV ", c.pv, " \xB7 A ", c.a, " \xB7 Sv ", c.sv, " \xB7 Rfx ", c.rfx), React.createElement("div", {
-    className: "text-xs mt-0.5",
+  }, dotation, " points"), React.createElement("span", {
+    className: "text-xs",
     style: {
       color: "#71717a"
     }
-  }, "M\xE9moire ", c.mem, " \xB7 Calcul ", c.cal, PE_GRAMMAIRE[c.n] ? " · Armes " + PE_GRAMMAIRE[c.n].armes.n + "×T" + PE_GRAMMAIRE[c.n].armes.t : ""))))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, " (2D6 : ", dees ? dees[0] + " + " + dees[1] : "?", ")")), !chNom ? React.createElement("button", {
+    onClick: lancerDes,
+    className: "px-2.5 py-1 rounded text-xs font-bold",
+    style: {
+      background: "#0c0d10",
+      color: "#a1a1aa",
+      border: "1px solid #3f3f46"
+    }
+  }, "Relancer") : null), dotation != null && React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, contenu.chassis.map(c => {
+    const prix = PE_PRIX[c.n] || 0;
+    const abordable = prix <= dotation;
+    return React.createElement("button", {
+      key: c.n,
+      onClick: () => abordable && choisirChassis(c),
+      className: "rounded-lg p-2.5 text-left",
+      style: {
+        border: "1px solid " + (chNom === c.n ? accent : "#3f3f46"),
+        background: chNom === c.n ? "#ffffff0d" : "#ffffff08",
+        opacity: abordable ? 1 : 0.4,
+        cursor: abordable ? "pointer" : "not-allowed"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm",
+      style: {
+        color: chNom === c.n ? accent : "#e8e4d8"
+      }
+    }, c.n), React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "CC ", c.cc, " \xB7 CT ", c.ct, " \xB7 F ", c.f, " \xB7 E ", c.e, " \xB7 PV ", c.pv, " \xB7 A ", c.a, " \xB7 Sv ", c.sv, " \xB7 Rfx ", c.rfx), React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: "#71717a"
+      }
+    }, "M\xE9moire ", c.mem, " \xB7 Calcul ", c.cal, " \xB7 ", React.createElement("b", {
+      style: {
+        color: abordable ? "#c8c8ce" : "#71717a"
+      }
+    }, prix, " \xC9veil"), PE_GRAMMAIRE[c.n] ? " · Armes " + PE_GRAMMAIRE[c.n].armes.n + "×T" + PE_GRAMMAIRE[c.n].armes.t : ""), React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: !abordable ? "#fb7185" : chNom === c.n ? accent : "#71717a"
+      }
+    }, abordable ? chNom === c.n ? "choisi — il reste " + solde + " Éveil" : "disponible" : "hors dotation : " + prix + " > " + dotation));
+  }))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
     }
-  }, "Le code de fabrique dit la lign\xE9e qui a assembl\xE9 le ch\xE2ssis \u2014 sa marque de naissance."), React.createElement("div", {
-    className: "flex flex-wrap gap-1.5"
-  }, contenu.codes.map(c => React.createElement("button", {
-    key: c,
-    onClick: () => setCode(c),
-    className: "px-2.5 py-1 rounded-lg text-sm font-bold",
-    style: {
-      background: code === c ? accent : "#14161b",
-      color: code === c ? "#0a120f" : "#c8c8ce",
-      border: "1px solid " + (code === c ? accent : "#3f3f46")
-    }
-  }, c)))), etape === 4 && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, "Le code de fabrique dit la lign\xE9e qui a assembl\xE9 le ch\xE2ssis \u2014 sa marque de naissance, et avec elle un bonus passif grav\xE9 \xE0 vie : ni usure ni transfert ne l'effacent."), React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, contenu.codes.map(cn => {
+    const cd = peCodeDe(cn);
+    return React.createElement("button", {
+      key: cn,
+      onClick: () => setCode(cn),
+      className: "rounded-lg p-2.5 text-left",
+      style: {
+        border: "1px solid " + (code === cn ? accent : "#3f3f46"),
+        background: code === cn ? "#ffffff0d" : "#ffffff08"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm",
+      style: {
+        color: code === cn ? accent : "#e8e4d8"
+      }
+    }, cn), cd ? React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, cd.texte) : null, cd ? React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: code === cn ? accent : "#71717a"
+      }
+    }, cd.bonus) : null);
+  }))), etape === 4 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
@@ -12189,16 +12449,16 @@ function EcranCreationUnite({
     style: {
       color: "#71717a"
     }
-  }, s.pouvoir) : null)))), etape === 5 && ch && emp && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, s.pouvoir) : null)))), etape === 5 && ch && empEff && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
     }
-  }, "Arsenal : ", emp.armes.n, " emplacement", emp.armes.n > 1 ? "s" : "", " d'arme sur ce ch\xE2ssis, taille T", emp.armes.t, " maximum \u2014 ", armesChoisies.length, "/", emp.armes.n, " choisi", armesChoisies.length > 1 ? "s" : "", "."), React.createElement("div", {
+  }, "Arsenal : ", empEff.armes.n, " emplacement", empEff.armes.n > 1 ? "s" : "", " d'arme sur ce ch\xE2ssis, taille T", empEff.armes.t, " maximum \u2014 ", armesChoisies.length, "/", empEff.armes.n, " choisi", armesChoisies.length > 1 ? "s" : "", ". Gratuit dans la grammaire : seules les extensions d'\xE9tape 6 se paient."), React.createElement("div", {
     className: "grid grid-cols-2 md:grid-cols-3 gap-2"
   }, arsenal.map(a => {
     const prise = armesChoisies.includes(a.id);
-    const acceptable = a.taille <= emp.armes.t && (prise || armesChoisies.length < emp.armes.n);
+    const acceptable = a.taille <= empEff.armes.t && (prise || armesChoisies.length < empEff.armes.n);
     return React.createElement("button", {
       key: a.id,
       onClick: () => acceptable && basculerArme(a),
@@ -12206,8 +12466,8 @@ function EcranCreationUnite({
       style: {
         border: "1px solid " + (prise ? accent : "#3f3f46"),
         background: prise ? "#ffffff0d" : "#ffffff08",
-        opacity: a.taille <= emp.armes.t && (prise || armesChoisies.length < emp.armes.n) ? 1 : 0.4,
-        cursor: a.taille <= emp.armes.t && (prise || armesChoisies.length < emp.armes.n) ? "pointer" : "not-allowed"
+        opacity: a.taille <= empEff.armes.t && (prise || armesChoisies.length < empEff.armes.n) ? 1 : 0.4,
+        cursor: a.taille <= empEff.armes.t && (prise || armesChoisies.length < empEff.armes.n) ? "pointer" : "not-allowed"
       }
     }, React.createElement("div", {
       className: "font-bold text-sm",
@@ -12228,14 +12488,14 @@ function EcranCreationUnite({
       style: {
         color: "#71717a"
       }
-    }, a.taille > emp.armes.t ? "trop grande pour ce châssis (T" + a.taille + " > T" + emp.armes.t + ")" : a.regle));
-  }))), etape === 6 && ch && emp && React.createElement(React.Fragment, null, React.createElement("div", {
+    }, a.taille > empEff.armes.t ? "trop grande pour ce châssis (T" + a.taille + " > T" + empEff.armes.t + ")" : a.regle));
+  }))), etape === 6 && ch && emp && empEff && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
     }
-  }, "\xC9quipez chaque emplacement du ch\xE2ssis \u2014 capteurs, c\u0153ur, noyau, bouclier, syst\xE8me logique \u2014 dans les limites de taille."), [["capteurs", "Capteurs", "capteur"], ["coeur", "Cœur énergétique", "coeur"], ["noyau", "Noyau énergétique", "noyau"], ["bouclier", "Bouclier", "bouclier"], ["systeme", "Système logique", "systeme"]].map(([cle, titre, cat]) => {
-    const conf = emp[cle];
+  }, "\xC9quipez chaque emplacement du ch\xE2ssis \u2014 capteurs, c\u0153ur, noyau, bouclier, syst\xE8me logique \u2014 dans les limites de taille. L'\xE9quipement de la grammaire est gratuit ; le menu ci-dessous \xE9tend la grammaire elle-m\xEAme, contre Points d'\xC9veil."), [["capteurs", "Capteurs", "capteur"], ["coeur", "Cœur énergétique", "coeur"], ["noyau", "Noyau énergétique", "noyau"], ["bouclier", "Bouclier", "bouclier"], ["systeme", "Système logique", "systeme"]].map(([cle, titre, cat]) => {
+    const conf = empEff[cle];
     if (!conf || cle === "bouclier" && conf.n === 0) return null;
     const pris = cle === "capteurs" ? (mods.capteurs || []).length : 0;
     return React.createElement("div", {
@@ -12277,7 +12537,66 @@ function EcranCreationUnite({
         }
       }, m.desc));
     })));
-  })), etape === 7 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+  }), React.createElement("div", {
+    className: "mb-3"
+  }, React.createElement("div", {
+    className: "text-xs mb-1.5",
+    style: {
+      color: "#71717a"
+    }
+  }, "Extensions de grammaire \u2014 ", solde, " \xC9veil disponibles \xB7 +1 taille : 4 \xC9veil \xB7 +1 emplacement : 6 \xC9veil"), React.createElement("div", {
+    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, [["armes", "Arsenal"], ["capteurs", "Capteurs"], ["coeur", "Cœur énergétique"], ["noyau", "Noyau énergétique"], ["bouclier", "Bouclier"], ["systeme", "Système logique"]].map(([cat, titre]) => {
+    const base = emp[cat] || null;
+    const effC = empEff[cat];
+    if (!base || cat === "bouclier" && base.n === 0) return null;
+    const nbTaille = exts[cat + "T"] || 0;
+    const nbEmp = exts[cat + "N"] || 0;
+    const taillePossible = effC.t < 4 && nbTaille < 2 && solde >= 4;
+    const empPossible = base.n >= 1 && nbEmp < 1 && solde >= 6;
+    return React.createElement("div", {
+      key: cat,
+      className: "rounded-lg p-2.5",
+      style: {
+        background: "#ffffff08",
+        border: "1px solid #3f3f46"
+      }
+    }, React.createElement("div", {
+      className: "font-bold text-sm",
+      style: {
+        color: "#e8e4d8"
+      }
+    }, titre), React.createElement("div", {
+      className: "text-xs mt-0.5",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, base.n != null ? base.n + nbEmp + " emplacement" + (base.n + nbEmp > 1 ? "s" : "") + " · " : "", "T", effC.t, " max", nbTaille > 0 || nbEmp > 0 ? " · étendu" : ""), React.createElement("div", {
+      className: "flex gap-1.5 mt-2"
+    }, React.createElement("button", {
+      onClick: () => taillePossible && setExts(x => Object.assign({}, x, {
+        [cat + "T"]: (x[cat + "T"] || 0) + 1
+      })),
+      disabled: !taillePossible,
+      className: "flex-1 px-2.5 py-1 rounded text-xs font-bold",
+      style: {
+        background: "#14161b",
+        color: taillePossible ? "#c8c8ce" : "#52525b",
+        border: "1px solid #3f3f46"
+      }
+    }, "+1 taille \xB7 4 \xC9veil"), base.n != null ? React.createElement("button", {
+      onClick: () => empPossible && setExts(x => Object.assign({}, x, {
+        [cat + "N"]: 1
+      })),
+      disabled: !empPossible,
+      className: "flex-1 px-2.5 py-1 rounded text-xs font-bold",
+      style: {
+        background: "#14161b",
+        color: empPossible ? "#c8c8ce" : "#52525b",
+        border: "1px solid #3f3f46"
+      }
+    }, "+1 emplacement \xB7 6 \xC9veil") : null));
+  })))), etape === 7 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
@@ -12342,7 +12661,23 @@ function EcranCreationUnite({
       background: "#ffffff0d",
       color: "#e8e4d8"
     }
-  }, "Calcul ", React.createElement("b", null, ch.cal))), React.createElement("div", {
+  }, "Calcul ", React.createElement("b", null, ch.cal)), React.createElement("div", {
+    className: "flex-1 rounded-lg py-1.5",
+    style: {
+      background: "#ffffff0d",
+      color: "#e8e4d8"
+    }
+  }, "\xC9veil ", React.createElement("b", null, solde), " au r\xE9veil")), React.createElement("div", {
+    className: "text-xs mt-2 rounded p-2",
+    style: {
+      background: "#ffffff08",
+      color: "#c8c8ce"
+    }
+  }, React.createElement("b", {
+    style: {
+      color: "#e8e4d8"
+    }
+  }, "Points d'\xC9veil \u2014 "), solde, " au r\xE9veil : ils suivent l'unit\xE9 en partie, pr\xEAts \xE0 \xE9tendre grammaire et protocoles aux forge d'un hub."), React.createElement("div", {
     className: "text-xs mt-3 rounded p-2",
     style: {
       background: "#ffffff08",
