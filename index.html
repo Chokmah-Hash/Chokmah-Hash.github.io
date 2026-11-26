@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.156";
+const BUILD = "0.157";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -6712,7 +6712,9 @@ function RegistrePersonnages({
   livre,
   persoChoisi,
   onChoisir,
-  accent
+  accent,
+  marquePerso,
+  actionPerso
 }) {
   const couleurAccent = accent || "#a8adb8";
   const [enCreationPerso, setEnCreationPerso] = useState(false);
@@ -6846,7 +6848,12 @@ function RegistrePersonnages({
     style: {
       color: "#a1a1aa"
     }
-  }, " - " + suffixePerso(p)) : null), React.createElement("span", {
+  }, " - " + suffixePerso(p)) : null, marquePerso && marquePerso(p) ? React.createElement("span", {
+    className: "font-bold",
+    style: {
+      color: couleurAccent
+    }
+  }, " " + marquePerso(p)) : null), React.createElement("span", {
     className: "flex items-center gap-1.5 shrink-0"
   }, onChoisir && React.createElement("button", {
     onClick: () => {
@@ -6863,7 +6870,26 @@ function RegistrePersonnages({
       border: "1px solid #3f3f46",
       cursor: "pointer"
     }
-  }, persoChoisi === p.id ? "SÉLECTIONNÉ" : "PRENDRE"), React.createElement("button", {
+  }, persoChoisi === p.id ? "SÉLECTIONNÉ" : "PRENDRE"), (() => {
+    const act = actionPerso ? actionPerso(p, persoChoisi === p.id) : null;
+    if (!act) return null;
+    return React.createElement("button", {
+      onClick: act.onClick,
+      disabled: !!act.disabled,
+      className: "px-2 py-1 rounded text-[10px] font-bold shrink-0",
+      style: act.disabled ? {
+        background: "#a8adb814",
+        color: "#71717a",
+        border: "1px solid #3f3f46",
+        cursor: "not-allowed",
+        opacity: 0.7
+      } : {
+        background: couleurAccent,
+        color: "#0c0d10",
+        cursor: "pointer"
+      }
+    }, act.label);
+  })(), React.createElement("button", {
     onClick: () => {
       setPersoFlottant(p);
       setMotSupprPerso("");
@@ -8083,7 +8109,7 @@ function PlanVaisseau({
     }, "VOUS"));
   }));
 }
-function LobbyMonde({
+function OngletFlotteMonde({
   pack,
   session,
   vaisseau,
@@ -8097,23 +8123,16 @@ function LobbyMonde({
   onDeplacer,
   onRenommer,
   onSauter,
-  gravureEnCours
+  gravureEnCours,
+  destination
 }) {
   const T = pack && pack.theme || {};
   const accent = T.accent || "#2ee6c9";
   const or = T.or || "#f0b24a";
   const estAdmin = !!(session && session.role === "admin");
   const pos = positionEffective(vaisseau, maintenant);
-  const secteurs = [];
-  (systemes || []).forEach(s => {
-    if (secteurs.indexOf(s.secteur) < 0) secteurs.push(s.secteur);
-  });
-  secteurs.sort((a, b) => a - b);
-  const [secteurChoisi, setSecteurChoisi] = useState(pos ? pos.secteur : secteurs[0] || 1);
-  const [systemeChoisi, setSystemeChoisi] = useState(null);
   const [nomSaisi, setNomSaisi] = useState("");
-  const systemesDuSecteur = (systemes || []).filter(s => s.secteur === secteurChoisi);
-  const detail = systemeChoisi ? (systemes || []).find(s => s.id === systemeChoisi) : null;
+  const detail = destination ? (systemes || []).find(s => s.secteur === destination.secteur && s.systeme === destination.systeme) || null : null;
   const systemeCourant = (systemes || []).find(s => s.secteur === pos.secteur && s.systeme === pos.systeme) || null;
   const nomDestination = pos && pos.saut ? ((systemes || []).find(s => s.secteur === pos.saut.vers_secteur && s.systeme === pos.saut.vers_systeme) || {}).nom || null : null;
   const resteMs = pos && pos.saut ? Date.parse(pos.saut.arrivee) - maintenant : 0;
@@ -8121,10 +8140,6 @@ function LobbyMonde({
   (positions || []).forEach(p => {
     positionsParId[p.personnage_id] = p.contenu || {};
   });
-  const destination = detail ? {
-    secteur: detail.secteur,
-    systeme: detail.systeme
-  } : null;
   const surPlace = destination && pos && destination.secteur === pos.secteur && destination.systeme === pos.systeme;
   const locActif = persoActif && positionsParId[persoActif.id] || {};
   const cleActif = locActif.aBord !== false && locActif.lieu || "quartiers";
@@ -8236,7 +8251,55 @@ function LobbyMonde({
     style: {
       color: "#a1a1aa"
     }
-  }, equipagePresent.length ? "S'y tiennent : " + equipagePresent.join(", ") : "Personne ne s'y tient pour l'instant."))), React.createElement("div", {
+  }, equipagePresent.length ? "S'y tiennent : " + equipagePresent.join(", ") : "Personne ne s'y tient pour l'instant."))), estAdmin && React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "44"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: accent
+    }
+  }, "LA PASSERELLE"), React.createElement("div", {
+    className: "text-sm mb-3",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, pos.enRoute ? "Saut en cours — la passerelle tient le cap." : !aLaPasserelle ? "Le saut s'ordonne depuis la passerelle — votre unité doit s'y tenir : L'INTÉRIEUR, salle La Passerelle." : destination ? surPlace ? "Le vaisseau tient déjà ce système." : "Cap sur " + detail.nom + " — " + dureeAffichee + " de saut." : "Tracez le cap dans l'onglet CARTE — la passerelle l'attendra."), React.createElement("button", {
+    disabled: !sautPossible,
+    onClick: () => {
+      if (onSauter) onSauter(destination);
+    },
+    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
+    style: {
+      background: sautPossible ? accent : "#3f3f46",
+      cursor: sautPossible ? "pointer" : "not-allowed"
+    }
+  }, gravureEnCours ? "GRAVURE EN COURS…" : "ORDONNER LE SAUT")));
+}
+function OngletCarteMonde({
+  pack,
+  vaisseau,
+  systemes,
+  maintenant,
+  systemeChoisi,
+  onChoisirSysteme
+}) {
+  const T = pack && pack.theme || {};
+  const accent = T.accent || "#2ee6c9";
+  const or = T.or || "#f0b24a";
+  const pos = positionEffective(vaisseau, maintenant);
+  const secteurs = [];
+  (systemes || []).forEach(s => {
+    if (secteurs.indexOf(s.secteur) < 0) secteurs.push(s.secteur);
+  });
+  secteurs.sort((a, b) => a - b);
+  const [secteurChoisi, setSecteurChoisi] = useState(pos ? pos.secteur : secteurs[0] || 1);
+  const systemesDuSecteur = (systemes || []).filter(s => s.secteur === secteurChoisi);
+  const detail = systemeChoisi ? (systemes || []).find(s => s.id === systemeChoisi) || null : null;
+  return React.createElement("div", null, React.createElement("div", {
     className: "rounded-2xl p-5 mb-6",
     style: {
       background: "#ffffff08",
@@ -8268,7 +8331,7 @@ function LobbyMonde({
     const ici = pos && s.secteur === pos.secteur && s.systeme === pos.systeme;
     return React.createElement("div", {
       key: "gsys" + s.id,
-      onClick: () => setSystemeChoisi(s.id),
+      onClick: () => onChoisirSysteme && onChoisirSysteme(s.id),
       className: "rounded-xl p-4",
       style: {
         background: "#14161b",
@@ -8307,142 +8370,57 @@ function LobbyMonde({
     style: {
       color: "#c8c8ce"
     }
-  }, detail.lore))), estAdmin && React.createElement("div", {
-    className: "rounded-2xl p-5 mb-6",
+  }, detail.lore), React.createElement("div", {
+    className: "text-xs mt-2",
     style: {
-      background: "#ffffff08",
-      border: "1px solid " + accent + "44"
+      color: "#a1a1aa"
     }
-  }, React.createElement("div", {
-    className: "font-bold mb-2",
-    style: {
-      color: accent
-    }
-  }, "LA PASSERELLE"), React.createElement("div", {
-    className: "text-sm mb-3",
-    style: {
-      color: "#c8c8ce"
-    }
-  }, pos.enRoute ? "Saut en cours — la passerelle tient le cap." : !aLaPasserelle ? "Le saut s'ordonne depuis la passerelle — votre unité doit s'y tenir : L'INTÉRIEUR, salle La Passerelle." : destination ? surPlace ? "Le vaisseau tient déjà ce système." : "Cap sur " + detail.nom + " — " + dureeAffichee + " de saut." : "Choisissez un système dans la galaxie pour tracer le cap."), React.createElement("button", {
-    disabled: !sautPossible,
-    onClick: () => {
-      if (onSauter) onSauter(destination);
-    },
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
-    style: {
-      background: sautPossible ? accent : "#3f3f46",
-      cursor: sautPossible ? "pointer" : "not-allowed"
-    }
-  }, gravureEnCours ? "GRAVURE EN COURS…" : "ORDONNER LE SAUT")));
+  }, "Cap trac\xE9 \u2014 la passerelle (onglet FLOTTE) ordonne le saut."))));
 }
 function OngletPersonnagesMonde({
   pack,
   persos,
-  positions,
   enGravure,
-  nomParCle,
+  persoChoisi,
+  onChoisir,
   persoActif,
   onEntrer,
-  onCree
+  onCree,
+  onSupprimer
 }) {
   const T = pack && pack.theme || {};
-  const accent = T.accent || "#2ee6c9";
   const or = T.or || "#f0b24a";
-  const C = pack && pack.contenu || {};
-  const [enCreation, setEnCreation] = useState((persos || []).length === 0);
-  const positionsParId = {};
-  (positions || []).forEach(p => {
-    positionsParId[p.personnage_id] = p.contenu || {};
-  });
-  const ficheActive = persoActif && persoActif.contenu && persoActif.contenu.st ? persoActif.contenu : null;
-  return React.createElement("div", null, React.createElement("div", {
-    className: "rounded-2xl p-5 mb-6",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid #ffffff14"
-    }
-  }, React.createElement("div", {
-    className: "font-bold mb-1",
-    style: {
-      color: or
-    }
-  }, "L'\xC9QUIPAGE"), React.createElement("div", {
-    className: "text-sm mb-4",
-    style: {
-      color: "#a1a1aa"
-    }
-  }, (persos || []).length ? "Votre unité garde sa position dans le monde, de séance en séance. Choisissez qui entre aujourd'hui." : "Aucune unité au registre — éveillez la première : elle s'éveillera à bord du vaisseau-mère."), (persos || []).length > 0 && React.createElement("div", {
-    className: "grid md:grid-cols-2 gap-3 mb-4"
-  }, (persos || []).slice().sort((a, b) => (b.id === (persoActif && persoActif.id) ? 1 : 0) - (a.id === (persoActif && persoActif.id) ? 1 : 0)).map(p => {
-    const loc = positionsParId[p.id];
-    const vous = !!(persoActif && persoActif.id === p.id);
-    const ch = p.contenu && p.contenu.chassis || null;
-    return React.createElement("div", {
-      key: "eq" + p.id,
-      className: "rounded-xl p-4",
-      style: {
-        background: "#14161b",
-        border: "1px solid " + (vous ? accent + "66" : "#3f3f46")
-      }
-    }, React.createElement("div", {
-      className: "font-bold text-sm mb-0.5",
-      style: {
-        color: vous ? accent : "#e8e4d8"
-      }
-    }, p.nom, vous ? " — VOUS" : ""), React.createElement("div", {
-      className: "text-xs mb-2",
-      style: {
-        color: "#71717a"
-      }
-    }, ch ? "Châssis " + ch : "Unité du registre Protocole Ω"), React.createElement("div", {
-      className: "text-xs mb-3",
-      style: {
-        color: "#a1a1aa"
-      }
-    }, loc ? "Dernière position : " + positionLisible(loc, nomParCle) : "Jamais entrée dans le monde."), React.createElement("button", {
-      disabled: !!enGravure || vous,
-      onClick: () => onEntrer(p),
-      className: "w-full px-4 py-2 rounded-lg font-bold text-sm text-black",
-      style: {
-        background: enGravure || vous ? "#3f3f46" : accent,
-        cursor: enGravure || vous ? "not-allowed" : "pointer"
-      }
-    }, vous ? "À BORD — VOUS" : enGravure ? "GRAVURE EN COURS…" : "ENTRER DANS LE MONDE"));
-  })), enCreation ? React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid " + or + "33"
-    }
-  }, React.createElement(EcranCreationUnite, {
-    contenu: C,
-    accent: accent,
-    cleSauvegarde: "GM-0001",
-    onValide: p => {
-      setEnCreation(false);
-      onCree(p);
-    },
-    onAnnule: () => setEnCreation(false)
-  })) : React.createElement("button", {
-    onClick: () => setEnCreation(true),
-    className: "px-4 py-2 rounded-lg font-bold text-sm text-black",
-    style: {
-      background: or
-    }
-  }, "CR\xC9ER UNE UNIT\xC9")), ficheActive && React.createElement("div", {
-    className: "rounded-2xl p-5 mb-6",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid " + accent + "33"
-    }
-  }, React.createElement("div", {
-    className: "font-bold mb-3",
-    style: {
-      color: or
-    }
-  }, "L'UNIT\xC9 EN SC\xC8NE \u2014 ", persoActif.nom), React.createElement(FicheApercuUnite, {
+  const marquePerso = p => persoActif && persoActif.id === p.id ? "VOUS" : null;
+  const actionPerso = (p, selectionne) => {
+    if (persoActif && persoActif.id === p.id) return {
+      label: "À BORD — VOUS",
+      disabled: true,
+      onClick: () => {}
+    };
+    if (!selectionne) return null;
+    return {
+      label: enGravure ? "GRAVURE EN COURS…" : "ENTRER DANS LE MONDE OUVERT",
+      disabled: !!enGravure,
+      onClick: () => onEntrer(p)
+    };
+  };
+  const pris = (persos || []).find(q => q.id === persoChoisi);
+  const fiche = pris && pris.contenu && pris.contenu.st ? pris.contenu : null;
+  return React.createElement("div", null, React.createElement(RegistrePersonnages, {
     pack: pack,
-    perso: ficheActive
+    persos: persos || [],
+    onCreer: onCree,
+    onSupprimer: onSupprimer,
+    persoChoisi: persoChoisi,
+    onChoisir: onChoisir,
+    accent: or,
+    marquePerso: marquePerso,
+    actionPerso: actionPerso
+  }), fiche && React.createElement("div", {
+    className: "mt-4"
+  }, React.createElement(FicheApercuUnite, {
+    pack: pack,
+    perso: fiche
   })));
 }
 function OngletReglesMonde({
@@ -8574,7 +8552,12 @@ function EcranMondeOuvert({
   joueur,
   avatar,
   onAvatar,
-  onLogout
+  onLogout,
+  filSalon,
+  onEnvoyerSalon,
+  salonEnvoi,
+  presents,
+  onSupprimerPersonnage
 }) {
   const [etat, setEtat] = useState("sas");
   const [onglet, setOnglet] = useState("personnages");
@@ -8587,6 +8570,8 @@ function EcranMondeOuvert({
   const [positions, setPositions] = useState([]);
   const [persos, setPersos] = useState([]);
   const [persoActif, setPersoActif] = useState(null);
+  const [persoChoisi, setPersoChoisi] = useState(null);
+  const [systemeChoisi, setSystemeChoisi] = useState(null);
   const [maintenant, setMaintenant] = useState(typeof Date !== "undefined" ? Date.now() : 0);
   const [gravure, setGravure] = useState(false);
   const nomParCle = {};
@@ -8636,7 +8621,7 @@ function EcranMondeOuvert({
   }, [session ? session.compteId : null]);
   useEffect(() => {
     if (etat === "sas" && mondeLu && sasEtapes.length >= etapesSas.length) {
-      setOnglet((persos || []).length ? "lobby" : "personnages");
+      setOnglet("personnages");
       setEtat("pret");
     }
   }, [sasEtapes, mondeLu]);
@@ -8737,7 +8722,8 @@ function EcranMondeOuvert({
     const existante = (positions || []).find(x => x.personnage_id === p.id);
     if (existante) {
       setPersoActif(p);
-      setOnglet("lobby");
+      setPersoChoisi(p.id);
+      setOnglet("flotte");
       if (showToast) showToast("« " + p.nom + " » reprend sa place dans le monde — " + positionLisible(existante.contenu, nomParCle) + ".");
       return;
     }
@@ -8754,7 +8740,8 @@ function EcranMondeOuvert({
         maj_le: null
       }]);
       setPersoActif(p);
-      setOnglet("lobby");
+      setPersoChoisi(p.id);
+      setOnglet("flotte");
       if (showToast) showToast("« " + p.nom + " » s'éveille à bord de " + (vaisseau && vaisseau.nom || "Le Vaisseau-Mère") + " — " + positionLisible(contenu, nomParCle) + ".");
     };
     if (!CLOUD || typeof CLOUD.graverPositionMonde !== "function") {
@@ -8777,6 +8764,12 @@ function EcranMondeOuvert({
     }).catch(() => {
       if (showToast) showToast("La Tombe a refusé — l'unité n'a pas rejoint le registre. Réessayez.");
     });
+  };
+  const supprimerDuRegistre = p => {
+    setPersos(liste => (liste || []).filter(x => x.id !== p.id));
+    if (persoChoisi === p.id) setPersoChoisi(null);
+    if (persoActif && persoActif.id === p.id) setPersoActif(null);
+    if (onSupprimerPersonnage) onSupprimerPersonnage(p);
   };
   const T = pack && pack.theme || {};
   const fond = T.fond || "#0c0d10";
@@ -8881,14 +8874,32 @@ function EcranMondeOuvert({
       or: "#f0b24a"
     }
   };
+  const systemeCap = systemeChoisi ? (systemes || []).find(s => s.id === systemeChoisi) || null : null;
+  const destination = systemeCap ? {
+    secteur: systemeCap.secteur,
+    systeme: systemeCap.systeme
+  } : null;
+  const ongletsBarre = persoActif ? [["lobby", "LOBBY"], ["flotte", "FLOTTE"], ["carte", "CARTE"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]] : [["lobby", "LOBBY"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]];
   return React.createElement("div", {
-    className: "min-h-screen flex flex-col",
-    style: {
+    className: onglet === "lobby" ? "flex flex-col text-zinc-200" : "min-h-screen flex flex-col text-zinc-200",
+    style: onglet === "lobby" ? {
+      background: fond,
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif",
+      height: "100vh",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column"
+    } : {
       background: fond,
       fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
     }
   }, React.createElement("div", {
-    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+    className: onglet === "lobby" ? "max-w-6xl w-full mx-auto px-5 pt-8 flex-1 flex flex-col gap-5" : "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1 flex flex-col gap-5",
+    style: onglet === "lobby" ? {
+      flex: "1 1 0%",
+      minHeight: 0,
+      paddingBottom: 20
+    } : undefined
   }, React.createElement(EntetePartie, {
     pack: packEntete,
     role: session && session.role,
@@ -8906,7 +8917,7 @@ function EcranMondeOuvert({
     style: {
       borderBottom: "1px solid #27272a"
     }
-  }, [["lobby", "LOBBY"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]].map(([id, lbl]) => React.createElement("button", {
+  }, ongletsBarre.map(([id, lbl]) => React.createElement("button", {
     key: id,
     onClick: () => setOnglet(id),
     className: "px-4 py-2 text-sm font-bold tracking-wider",
@@ -8917,7 +8928,16 @@ function EcranMondeOuvert({
       color: onglet === id ? accent : "#71717a",
       cursor: "pointer"
     }
-  }, lbl))), onglet === "lobby" && React.createElement(LobbyMonde, {
+  }, lbl))), onglet === "lobby" && React.createElement(ChatSalon, {
+    titre: "SALON — " + packEntete.nom,
+    fil: filSalon,
+    onEnvoyer: onEnvoyerSalon,
+    joueur: session,
+    enEnvoi: salonEnvoi,
+    presents: presents,
+    remplir: true,
+    accent: accent
+  }), onglet === "flotte" && persoActif && React.createElement(OngletFlotteMonde, {
     pack: pack,
     session: session,
     vaisseau: vaisseau,
@@ -8931,16 +8951,25 @@ function EcranMondeOuvert({
     onDeplacer: deplacer,
     onRenommer: renommer,
     onSauter: sauter,
-    gravureEnCours: gravure
+    gravureEnCours: gravure,
+    destination: destination
+  }), onglet === "carte" && persoActif && React.createElement(OngletCarteMonde, {
+    pack: pack,
+    vaisseau: vaisseau,
+    systemes: systemes,
+    maintenant: maintenant,
+    systemeChoisi: systemeChoisi,
+    onChoisirSysteme: setSystemeChoisi
   }), onglet === "personnages" && React.createElement(OngletPersonnagesMonde, {
     pack: pack,
     persos: persos,
-    positions: positions,
     enGravure: gravure,
-    nomParCle: nomParCle,
+    persoChoisi: persoChoisi,
+    onChoisir: p => setPersoChoisi(p ? p.id : null),
     persoActif: persoActif,
     onEntrer: entrerMonde,
-    onCree: creerUniteMonde
+    onCree: creerUniteMonde,
+    onSupprimer: supprimerDuRegistre
   }), onglet === "regles" && React.createElement(OngletReglesMonde, {
     pack: pack
   })), React.createElement(PiedVibe, {
@@ -16350,7 +16379,7 @@ function App() {
     packId: null
   };
   contexteConsoleRef.current = contexteConsole;
-  const salonJeuId = vue === "pack" && packActif ? packActif.id : null;
+  const salonJeuId = (vue === "pack" && packActif ? packActif.id : null) || (vue === "monde" ? "GM-0001" : null);
   salonJeuIdRef.current = salonJeuId;
   useEffect(() => {
     if (!CLOUD || !session) {
@@ -16662,7 +16691,7 @@ function App() {
       presenceInfo: () => ({
         compte_id: session.compteId,
         pseudo: session.pseudo,
-        jeu: packPartieRef.current && packPartieRef.current.id || null
+        jeu: packPartieRef.current && packPartieRef.current.id || (vueRef.current === "monde" ? "GM-0001" : null)
       }),
       surPresence: (p, ev) => {
         if (!p || typeof p !== "object") return;
@@ -16929,7 +16958,12 @@ function App() {
       joueur: session,
       avatar: session ? avatarDepuis(session.avatarId) : null,
       onAvatar: changerAvatar,
-      onLogout: seDeconnecter
+      onLogout: seDeconnecter,
+      filSalon: salonJeuFil,
+      onEnvoyerSalon: envoyerSalonJeu,
+      salonEnvoi: consoleEnvoi,
+      presents: Object.values(presents).filter(j => j && j.jeu === "GM-0001"),
+      onSupprimerPersonnage: p => supprimerPersonnageRegistre("GM-0001", p)
     });
   })(), vue === "attente" && session && React.createElement("div", {
     className: "min-h-screen flex items-center justify-center p-4",
