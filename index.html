@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.155";
+const BUILD = "0.156";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -8083,7 +8083,7 @@ function PlanVaisseau({
     }, "VOUS"));
   }));
 }
-function MondeOuvertPret({
+function LobbyMonde({
   pack,
   session,
   vaisseau,
@@ -8092,16 +8092,14 @@ function MondeOuvertPret({
   persos,
   persoActif,
   maintenant,
-  versionBase,
   lieux,
+  nomParCle,
   onDeplacer,
-  onRetour,
   onRenommer,
   onSauter,
   gravureEnCours
 }) {
   const T = pack && pack.theme || {};
-  const fond = T.fond || "#0a120f";
   const accent = T.accent || "#2ee6c9";
   const or = T.or || "#f0b24a";
   const estAdmin = !!(session && session.role === "admin");
@@ -8128,10 +8126,6 @@ function MondeOuvertPret({
     systeme: detail.systeme
   } : null;
   const surPlace = destination && pos && destination.secteur === pos.secteur && destination.systeme === pos.systeme;
-  const nomParCle = {};
-  (lieux || []).forEach(l => {
-    nomParCle[l.cle] = l.nom;
-  });
   const locActif = persoActif && positionsParId[persoActif.id] || {};
   const cleActif = locActif.aBord !== false && locActif.lieu || "quartiers";
   const aLaPasserelle = cleActif === "passerelle";
@@ -8142,41 +8136,7 @@ function MondeOuvertPret({
   }).map(p => p.nom);
   const sautPossible = estAdmin && aLaPasserelle && !pos.enRoute && !surPlace && destination && !gravureEnCours;
   const dureeAffichee = destination && pos && !surPlace ? dureeLisibleMs(dureeSautMs(pos, destination)) : "";
-  return React.createElement("div", {
-    className: "min-h-screen flex flex-col",
-    style: {
-      background: fond,
-      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
-    }
-  }, React.createElement("div", {
-    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
-  }, React.createElement("header", {
-    className: "flex items-center justify-between mb-8",
-    style: {
-      gap: 12,
-      flexWrap: "wrap"
-    }
-  }, React.createElement("div", {
-    className: "flex items-center gap-3"
-  }, React.createElement(Icosaedre, {
-    size: 40,
-    color: accent
-  }), React.createElement("div", null, React.createElement("div", {
-    className: "text-2xl font-bold text-white tracking-wide leading-tight"
-  }, "LE MONDE OUVERT"), React.createElement("div", {
-    className: "text-xs tracking-widest",
-    style: {
-      color: accent
-    }
-  }, "PROTOCOLE \u03A9 \u2014 LA GALAXIE PARTAG\xC9E"))), React.createElement("button", {
-    onClick: onRetour,
-    className: "px-4 py-2 rounded-lg font-bold text-sm",
-    style: {
-      background: "#ffffff0a",
-      border: "1px solid " + accent + "44",
-      color: "#e8e4d8"
-    }
-  }, "RETOUR AU HUB")), React.createElement("div", {
+  return React.createElement("div", null, React.createElement("div", {
     className: "rounded-2xl p-5 mb-6",
     style: {
       background: "#ffffff08",
@@ -8373,62 +8333,19 @@ function MondeOuvertPret({
       background: sautPossible ? accent : "#3f3f46",
       cursor: sautPossible ? "pointer" : "not-allowed"
     }
-  }, gravureEnCours ? "GRAVURE EN COURS…" : "ORDONNER LE SAUT")), React.createElement("div", {
-    className: "rounded-2xl p-5 mb-6",
-    style: {
-      background: "#ffffff08",
-      border: "1px solid #ffffff14"
-    }
-  }, React.createElement("div", {
-    className: "font-bold mb-3",
-    style: {
-      color: or
-    }
-  }, "L'\xC9QUIPAGE"), (persos || []).length === 0 ? React.createElement("div", {
-    className: "text-sm",
-    style: {
-      color: "#71717a"
-    }
-  }, "Aucune unit\xE9 au registre Protocole \u03A9 \u2014 la premi\xE8re s'\xE9veille \xE0 l'entr\xE9e du monde.") : React.createElement("div", {
-    className: "grid md:grid-cols-2 gap-3"
-  }, (persos || []).slice().sort((a, b) => (b.id === (persoActif && persoActif.id) ? 1 : 0) - (a.id === (persoActif && persoActif.id) ? 1 : 0)).map(p => {
-    const loc = positionsParId[p.id];
-    const vous = !!(persoActif && persoActif.id === p.id);
-    return React.createElement("div", {
-      key: "eq" + p.id,
-      className: "rounded-xl p-3 flex items-center justify-between",
-      style: {
-        background: "#14161b",
-        border: "1px solid " + (vous ? accent + "66" : "#3f3f46")
-      }
-    }, React.createElement("div", {
-      className: "font-bold text-sm",
-      style: {
-        color: vous ? accent : "#e8e4d8"
-      }
-    }, p.nom, vous ? " — VOUS" : ""), React.createElement("div", {
-      className: "text-xs",
-      style: {
-        color: loc && loc.aBord === false ? accent : "#a1a1aa"
-      }
-    }, positionLisible(loc, nomParCle)));
-  })))), React.createElement(PiedVibe, {
-    versionBase: versionBase
-  }));
+  }, gravureEnCours ? "GRAVURE EN COURS…" : "ORDONNER LE SAUT")));
 }
-function ChoixUniteMonde({
+function OngletPersonnagesMonde({
   pack,
   persos,
   positions,
   enGravure,
-  versionBase,
   nomParCle,
+  persoActif,
   onEntrer,
-  onCree,
-  onRetour
+  onCree
 }) {
   const T = pack && pack.theme || {};
-  const fond = T.fond || "#0a120f";
   const accent = T.accent || "#2ee6c9";
   const or = T.or || "#f0b24a";
   const C = pack && pack.contenu || {};
@@ -8437,74 +8354,42 @@ function ChoixUniteMonde({
   (positions || []).forEach(p => {
     positionsParId[p.personnage_id] = p.contenu || {};
   });
-  return React.createElement("div", {
-    className: "min-h-screen flex flex-col",
-    style: {
-      background: fond,
-      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
-    }
-  }, React.createElement("div", {
-    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
-  }, React.createElement("header", {
-    className: "flex items-center justify-between mb-8",
-    style: {
-      gap: 12,
-      flexWrap: "wrap"
-    }
-  }, React.createElement("div", {
-    className: "flex items-center gap-3"
-  }, React.createElement(Icosaedre, {
-    size: 40,
-    color: accent
-  }), React.createElement("div", null, React.createElement("div", {
-    className: "text-2xl font-bold text-white tracking-wide leading-tight"
-  }, "QUI ENTRE DANS LE MONDE ?"), React.createElement("div", {
-    className: "text-xs tracking-widest",
-    style: {
-      color: accent
-    }
-  }, "PROTOCOLE \u03A9 \u2014 LE MONDE SE VISITE EN PERSONNAGE"))), React.createElement("button", {
-    onClick: onRetour,
-    className: "px-4 py-2 rounded-lg font-bold text-sm",
-    style: {
-      background: "#ffffff0a",
-      border: "1px solid " + accent + "44",
-      color: "#e8e4d8"
-    }
-  }, "RETOUR AU HUB")), React.createElement("div", {
+  const ficheActive = persoActif && persoActif.contenu && persoActif.contenu.st ? persoActif.contenu : null;
+  return React.createElement("div", null, React.createElement("div", {
     className: "rounded-2xl p-5 mb-6",
     style: {
       background: "#ffffff08",
-      border: "1px solid " + accent + "44"
+      border: "1px solid #ffffff14"
     }
   }, React.createElement("div", {
     className: "font-bold mb-1",
     style: {
       color: or
     }
-  }, "L'UNIT\xC9"), React.createElement("div", {
+  }, "L'\xC9QUIPAGE"), React.createElement("div", {
     className: "text-sm mb-4",
     style: {
       color: "#a1a1aa"
     }
   }, (persos || []).length ? "Votre unité garde sa position dans le monde, de séance en séance. Choisissez qui entre aujourd'hui." : "Aucune unité au registre — éveillez la première : elle s'éveillera à bord du vaisseau-mère."), (persos || []).length > 0 && React.createElement("div", {
     className: "grid md:grid-cols-2 gap-3 mb-4"
-  }, (persos || []).map(p => {
-    const loc = positionsParId[p.id] || null;
+  }, (persos || []).slice().sort((a, b) => (b.id === (persoActif && persoActif.id) ? 1 : 0) - (a.id === (persoActif && persoActif.id) ? 1 : 0)).map(p => {
+    const loc = positionsParId[p.id];
+    const vous = !!(persoActif && persoActif.id === p.id);
     const ch = p.contenu && p.contenu.chassis || null;
     return React.createElement("div", {
-      key: "um" + p.id,
+      key: "eq" + p.id,
       className: "rounded-xl p-4",
       style: {
         background: "#14161b",
-        border: "1px solid #3f3f46"
+        border: "1px solid " + (vous ? accent + "66" : "#3f3f46")
       }
     }, React.createElement("div", {
       className: "font-bold text-sm mb-0.5",
       style: {
-        color: "#e8e4d8"
+        color: vous ? accent : "#e8e4d8"
       }
-    }, p.nom), React.createElement("div", {
+    }, p.nom, vous ? " — VOUS" : ""), React.createElement("div", {
       className: "text-xs mb-2",
       style: {
         color: "#71717a"
@@ -8515,14 +8400,14 @@ function ChoixUniteMonde({
         color: "#a1a1aa"
       }
     }, loc ? "Dernière position : " + positionLisible(loc, nomParCle) : "Jamais entrée dans le monde."), React.createElement("button", {
-      disabled: !!enGravure,
+      disabled: !!enGravure || vous,
       onClick: () => onEntrer(p),
       className: "w-full px-4 py-2 rounded-lg font-bold text-sm text-black",
       style: {
-        background: enGravure ? "#3f3f46" : accent,
-        cursor: enGravure ? "not-allowed" : "pointer"
+        background: enGravure || vous ? "#3f3f46" : accent,
+        cursor: enGravure || vous ? "not-allowed" : "pointer"
       }
-    }, enGravure ? "GRAVURE EN COURS…" : "ENTRER DANS LE MONDE"));
+    }, vous ? "À BORD — VOUS" : enGravure ? "GRAVURE EN COURS…" : "ENTRER DANS LE MONDE"));
   })), enCreation ? React.createElement("div", {
     className: "rounded-xl p-4",
     style: {
@@ -8544,18 +8429,156 @@ function ChoixUniteMonde({
     style: {
       background: or
     }
-  }, "CR\xC9ER UNE UNIT\xC9"))), React.createElement(PiedVibe, {
-    versionBase: versionBase
-  }));
+  }, "CR\xC9ER UNE UNIT\xC9")), ficheActive && React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "33"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-3",
+    style: {
+      color: or
+    }
+  }, "L'UNIT\xC9 EN SC\xC8NE \u2014 ", persoActif.nom), React.createElement(FicheApercuUnite, {
+    pack: pack,
+    perso: ficheActive
+  })));
+}
+function OngletReglesMonde({
+  pack
+}) {
+  const T = pack && pack.theme || {};
+  const accent = T.accent || "#2ee6c9";
+  const or = T.or || "#f0b24a";
+  const baseChassis = pack && pack.contenu && pack.contenu.chassis || [];
+  const chassisParPrix = baseChassis.slice().sort((a, b) => (PE_PRIX[a.n] || 0) - (PE_PRIX[b.n] || 0));
+  const carte = (cle, titre, texte) => React.createElement("div", {
+    key: cle,
+    className: "rounded-xl p-4",
+    style: {
+      background: "#14161b",
+      border: "1px solid #3f3f46"
+    }
+  }, React.createElement("div", {
+    className: "font-bold text-sm mb-1",
+    style: {
+      color: accent
+    }
+  }, titre), React.createElement("div", {
+    className: "text-sm",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, texte));
+  return React.createElement("div", null, React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + or + "44"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: or
+    }
+  }, "LA CR\xC9ATION D'UNE UNIT\xC9 \u2014 LES POINTS D'\xC9VEIL"), React.createElement("div", {
+    className: "text-sm mb-4",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "L'unit\xE9 na\xEEt d'une dotation de gen\xE8se : 2D6 points d'\xC9veil, rien d'autre. Le ch\xE2ssis se paie sur cette dotation ; le solde suit l'unit\xE9 de s\xE9ance en s\xE9ance, et le journal du r\xE9veil le rappelle (\xAB N points au r\xE9veil \xBB). En campagne, l'exp\xE9rience grav\xE9e se change en \xE9veil : 3 XP valent 1 point d'\xC9veil."), React.createElement("div", {
+    className: "font-bold text-sm mb-2",
+    style: {
+      color: accent
+    }
+  }, "LE PRIX DES CH\xC2SSIS (PS81)"), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3 mb-3"
+  }, chassisParPrix.map(c => carte("chx-" + c.n, c.n, (PE_PRIX[c.n] || "?") + " Éveil · " + c.pv + " PV · Réflexes " + c.rfx))), React.createElement("div", {
+    className: "text-xs mb-4",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Les cinq grands ch\xE2ssis (Artificier \xE0 Seigneur de guerre) \xE9chappent \xE0 la gen\xE8se \u2014 12 \xC9veil maximum aux d\xE9s. Ils se gagnent en campagne par transfert de ch\xE2ssis, pay\xE9 en diff\xE9rence."), React.createElement("div", {
+    className: "font-bold text-sm mb-2",
+    style: {
+      color: accent
+    }
+  }, "LES CODES DE FABRIQUE (PS82)"), React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Un bonus passif constant, grav\xE9 \xE0 vie \u2014 aucune usure, aucun transfert ne l'efface."), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3 mb-4"
+  }, PE_CODES_DB.map(c => carte("code-" + c.nom, c.nom, c.texte + " — " + c.bonus.replace("Passif : ", "")))), React.createElement("div", {
+    className: "font-bold text-sm mb-2",
+    style: {
+      color: accent
+    }
+  }, "LES SP\xC9CIALISATIONS (PS83)"), React.createElement("div", {
+    className: "text-xs mb-2",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Un choix libre et gratuit : l'identit\xE9 de l'unit\xE9 ne s'ach\xE8te pas."), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3 mb-4"
+  }, PE_SPECIALISATIONS_DB.map(s => carte("spe-" + s.id, s.nom, [s.apt, s.pouvoir].filter(Boolean).join(" — ")))), React.createElement("div", {
+    className: "font-bold text-sm mb-2",
+    style: {
+      color: accent
+    }
+  }, "L'ARSENAL ET LES MODULES (PS84\u2013PS85)"), React.createElement("div", {
+    className: "text-sm mb-4",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Les armes et les modules qui entrent dans la grammaire du ch\xE2ssis sont gratuits. Seules les extensions se paient : +1 taille d'emplacement = 4 \xC9veil (plafond T4, deux achats par cat\xE9gorie maximum) ; +1 emplacement = 6 \xC9veil (une fois par cat\xE9gorie, et seulement si le ch\xE2ssis en porte d\xE9j\xE0 un \u2014 un bouclier absent ne s'ach\xE8te pas)."), React.createElement("div", {
+    className: "font-bold text-sm mb-2",
+    style: {
+      color: accent
+    }
+  }, "LES PROTOCOLES (PS86)"), React.createElement("div", {
+    className: "text-sm mb-2",
+    style: {
+      color: "#c8c8ce"
+    }
+  }, "Le Protocole de Secours est inn\xE9, hors liste. Le protocole initial se choisit gratuitement au r\xE9veil ; un protocole suppl\xE9mentaire s'acquiert en partie pour 6 \xC9veil, ou par le don du Ma\xEEtre de la Tombe en campagne."), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3"
+  }, PE_PROTOCOLES_DB.map(p => carte("proto-" + p.id, p.nom, p.desc)))), React.createElement("div", {
+    className: "rounded-2xl p-5 mb-6",
+    style: {
+      background: "#ffffff08",
+      border: "1px solid " + accent + "44"
+    }
+  }, React.createElement("div", {
+    className: "font-bold mb-2",
+    style: {
+      color: or
+    }
+  }, "LE MONDE OUVERT"), React.createElement("div", {
+    className: "grid md:grid-cols-2 gap-3"
+  }, carte("m-entrer", "Entrer en personnage (PS72)", "Le monde se visite en personnage. La position de l'unité se grave dans la Tombe à l'atterrissage : à bord du vaisseau-mère si elle naît ici, à sa dernière salle si elle revient."), carte("m-vaisseau", "Le vaisseau-mère", "La base mobile du monde partagé. L'institution peut graver son nom ; tous voient sa position et son cap."), carte("m-interieur", "L'intérieur (PS73)", "Le plan du vaisseau se lit salle par salle ; cliquer une salle y déplace l'unité entrée, et la gravure suit."), carte("m-passerelle", "La passerelle (PS73)", "Le saut s'ordonne depuis la passerelle, par l'institution, l'unité entrée s'y tenant. La durée se dérive de la distance entre systèmes.")), React.createElement("div", {
+    className: "text-xs mt-4",
+    style: {
+      color: "#a1a1aa"
+    }
+  }, "Ce livret s'\xE9toffera au fil des s\xE9ances \u2014 les r\xE8gles vivantes se graveront ici telles qu'arbitr\xE9es.")));
 }
 function EcranMondeOuvert({
   pack,
   session,
   versionBase,
   showToast,
-  onRetour
+  onRetour,
+  joueur,
+  avatar,
+  onAvatar,
+  onLogout
 }) {
   const [etat, setEtat] = useState("sas");
+  const [onglet, setOnglet] = useState("personnages");
+  const [compteOuvert, setCompteOuvert] = useState(false);
   const [sasEtapes, setSasEtapes] = useState([]);
   const [mondeLu, setMondeLu] = useState(null);
   const [vaisseau, setVaisseau] = useState(null);
@@ -8612,7 +8635,10 @@ function EcranMondeOuvert({
     };
   }, [session ? session.compteId : null]);
   useEffect(() => {
-    if (etat === "sas" && mondeLu && sasEtapes.length >= etapesSas.length) setEtat("personnage");
+    if (etat === "sas" && mondeLu && sasEtapes.length >= etapesSas.length) {
+      setOnglet((persos || []).length ? "lobby" : "personnages");
+      setEtat("pret");
+    }
   }, [sasEtapes, mondeLu]);
   useEffect(() => {
     if (etat !== "pret") return;
@@ -8711,7 +8737,7 @@ function EcranMondeOuvert({
     const existante = (positions || []).find(x => x.personnage_id === p.id);
     if (existante) {
       setPersoActif(p);
-      setEtat("pret");
+      setOnglet("lobby");
       if (showToast) showToast("« " + p.nom + " » reprend sa place dans le monde — " + positionLisible(existante.contenu, nomParCle) + ".");
       return;
     }
@@ -8728,7 +8754,7 @@ function EcranMondeOuvert({
         maj_le: null
       }]);
       setPersoActif(p);
-      setEtat("pret");
+      setOnglet("lobby");
       if (showToast) showToast("« " + p.nom + " » s'éveille à bord de " + (vaisseau && vaisseau.nom || "Le Vaisseau-Mère") + " — " + positionLisible(contenu, nomParCle) + ".");
     };
     if (!CLOUD || typeof CLOUD.graverPositionMonde !== "function") {
@@ -8836,20 +8862,62 @@ function EcranMondeOuvert({
       versionBase: versionBase
     }));
   }
-  if (etat === "personnage") {
-    return React.createElement(ChoixUniteMonde, {
-      pack: pack,
-      persos: persos,
-      positions: positions,
-      enGravure: gravure,
-      versionBase: versionBase,
-      nomParCle: nomParCle,
-      onRetour: onRetour,
-      onEntrer: entrerMonde,
-      onCree: creerUniteMonde
-    });
-  }
-  return React.createElement(MondeOuvertPret, {
+  const compteEntete = joueur && avatar ? React.createElement(CompteJoueur, {
+    joueur: joueur,
+    avatar: avatar,
+    onAvatar: onAvatar,
+    avatarSeul: true,
+    ouvert: compteOuvert,
+    onOuvert: () => setCompteOuvert(o => !o),
+    onLogout: onLogout,
+    halo: session && session.role === "admin" ? "#f0b24a" : "#2ee6c9"
+  }) : null;
+  const packEntete = pack || {
+    id: "GM-0001",
+    nom: "PROTOCOLE Ω",
+    theme: {
+      fond: fond,
+      accent: accent,
+      or: "#f0b24a"
+    }
+  };
+  return React.createElement("div", {
+    className: "min-h-screen flex flex-col",
+    style: {
+      background: fond,
+      fontFamily: "'Rajdhani','Segoe UI',system-ui,sans-serif"
+    }
+  }, React.createElement("div", {
+    className: "max-w-6xl w-full mx-auto px-5 pt-8 pb-10 flex-1"
+  }, React.createElement(EntetePartie, {
+    pack: packEntete,
+    role: session && session.role,
+    joueur: joueur,
+    avatar: avatar,
+    compte: compteEntete,
+    titre: "PROTOCOLE \u03A9",
+    sousTitre: "Open World",
+    menu: [{
+      label: "⌂ HUB",
+      action: onRetour
+    }]
+  }), React.createElement("div", {
+    className: "flex gap-1 mb-5",
+    style: {
+      borderBottom: "1px solid #27272a"
+    }
+  }, [["lobby", "LOBBY"], ["personnages", "PERSONNAGES"], ["regles", "RÈGLES"]].map(([id, lbl]) => React.createElement("button", {
+    key: id,
+    onClick: () => setOnglet(id),
+    className: "px-4 py-2 text-sm font-bold tracking-wider",
+    style: {
+      background: onglet === id ? "#ffffff0d" : "transparent",
+      border: "none",
+      borderBottom: "2px solid " + (onglet === id ? accent : "transparent"),
+      color: onglet === id ? accent : "#71717a",
+      cursor: "pointer"
+    }
+  }, lbl))), onglet === "lobby" && React.createElement(LobbyMonde, {
     pack: pack,
     session: session,
     vaisseau: vaisseau,
@@ -8858,14 +8926,26 @@ function EcranMondeOuvert({
     persos: persos,
     persoActif: persoActif,
     maintenant: maintenant,
-    versionBase: versionBase,
     lieux: lieux,
+    nomParCle: nomParCle,
     onDeplacer: deplacer,
-    onRetour: onRetour,
     onRenommer: renommer,
     onSauter: sauter,
     gravureEnCours: gravure
-  });
+  }), onglet === "personnages" && React.createElement(OngletPersonnagesMonde, {
+    pack: pack,
+    persos: persos,
+    positions: positions,
+    enGravure: gravure,
+    nomParCle: nomParCle,
+    persoActif: persoActif,
+    onEntrer: entrerMonde,
+    onCree: creerUniteMonde
+  }), onglet === "regles" && React.createElement(OngletReglesMonde, {
+    pack: pack
+  })), React.createElement(PiedVibe, {
+    versionBase: versionBase
+  }));
 }
 function Hub({
   packs,
@@ -16845,7 +16925,11 @@ function App() {
       session: session,
       versionBase: versionBase,
       showToast: showToast,
-      onRetour: () => setVue("hub")
+      onRetour: () => setVue("hub"),
+      joueur: session,
+      avatar: session ? avatarDepuis(session.avatarId) : null,
+      onAvatar: changerAvatar,
+      onLogout: seDeconnecter
     });
   })(), vue === "attente" && session && React.createElement("div", {
     className: "min-h-screen flex items-center justify-center p-4",
