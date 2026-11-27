@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.157";
+const BUILD = "0.158";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -6735,6 +6735,24 @@ function RegistrePersonnages({
     aventurier: EcranCreationAventurier,
     porteur: EcranCreationPorteur
   }[(pack.contenu || {}).creation];
+  if (enCreationPerso && EcranCreationPerso) return React.createElement("div", {
+    className: "mb-4"
+  }, React.createElement(EcranCreationPerso, {
+    contenu: pack.contenu,
+    accent: "#f0b24a",
+    livre: livre,
+    cleSauvegarde: pack.id,
+    reprise: repriseDemandee,
+    onValide: p => {
+      setEnCreationPerso(false);
+      setRepriseDemandee(false);
+      onCreer && onCreer(p);
+    },
+    onAnnule: () => {
+      setEnCreationPerso(false);
+      setRepriseDemandee(false);
+    }
+  }));
   return React.createElement("fieldset", {
     className: "rounded-xl p-5 relative",
     style: {
@@ -6770,24 +6788,7 @@ function RegistrePersonnages({
       background: "#f0b24a",
       cursor: "pointer"
     }
-  }, "Cr\xE9er un personnage")), enCreationPerso && EcranCreationPerso ? React.createElement("div", {
-    className: "mb-4"
-  }, React.createElement(EcranCreationPerso, {
-    contenu: pack.contenu,
-    accent: "#f0b24a",
-    livre: livre,
-    cleSauvegarde: pack.id,
-    reprise: repriseDemandee,
-    onValide: p => {
-      setEnCreationPerso(false);
-      setRepriseDemandee(false);
-      onCreer && onCreer(p);
-    },
-    onAnnule: () => {
-      setEnCreationPerso(false);
-      setRepriseDemandee(false);
-    }
-  })) : persos.length === 0 && !encours ? React.createElement("div", {
+  }, "Cr\xE9er un personnage")), persos.length === 0 && !encours ? React.createElement("div", {
     className: "text-sm",
     style: {
       color: "#a1a1aa"
@@ -12150,6 +12151,8 @@ function EcranCreationUnite({
     bouclierN: 0,
     systemeN: 0
   }, s0 && s0.exts || {}));
+  const [relances, setRelances] = useState(s0 && s0.relances || 0);
+  const [relanceDemandee, setRelanceDemandee] = useState(false);
   const arsenal = contenu.arsenal || [];
   const ch = chNom ? contenu.chassis.find(c => c.n === chNom) || null : null;
   const emp = ch ? PE_GRAMMAIRE[ch.n] || null : null;
@@ -12251,12 +12254,6 @@ function EcranCreationUnite({
       };
     });
   };
-  const lancerDes = () => {
-    if (chNom) return;
-    const r = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
-    setDees(r);
-    setDotation(r[0] + r[1]);
-  };
   const basculerArme = a => {
     if (!empEff) return;
     setArmesChoisies(liste => liste.includes(a.id) ? liste.filter(x => x !== a.id) : a.taille <= empEff.armes.t && liste.length < empEff.armes.n ? liste.concat([a.id]) : liste);
@@ -12294,7 +12291,8 @@ function EcranCreationUnite({
         protoId,
         dotation,
         dees,
-        exts
+        exts,
+        relances
       }));
       setEnregistre(true);
       setTimeout(() => setEnregistre(false), 2500);
@@ -12355,20 +12353,21 @@ function EcranCreationUnite({
       }
     });
   };
-  return React.createElement("div", {
+  return React.createElement("fieldset", {
     className: "rounded-xl p-4",
     style: {
       background: "#ffffff08",
       border: "1px solid " + accent + "33"
     }
-  }, React.createElement("div", {
-    className: "flex items-baseline justify-between mb-2"
-  }, React.createElement("div", {
-    className: "font-bold text-lg",
+  }, React.createElement("legend", {
+    className: "text-xs font-bold tracking-widest",
     style: {
-      color: accent
+      color: accent,
+      padding: "0 6px"
     }
   }, "Cr\xE9ation de personnage"), React.createElement("div", {
+    className: "flex items-baseline justify-end mb-2"
+  }, React.createElement("div", {
     className: "text-xs",
     style: {
       color: "#71717a"
@@ -12421,14 +12420,21 @@ function EcranCreationUnite({
     style: {
       color: "#a1a1aa"
     }
-  }, "Le ch\xE2ssis porte tout : caract\xE9ristiques (PV = W\xD73), emplacements d'armes et de modules, places M\xE9moire et Calcul. Le 2D6 de la gen\xE8se dote l'unit\xE9 ; le corps se paie sur cette dotation."), dotation == null ? React.createElement("button", {
-    onClick: lancerDes,
-    className: "px-3 py-2 rounded-lg text-sm font-bold",
-    style: {
-      background: accent,
-      color: "#0a120f"
+  }, "Le ch\xE2ssis porte tout : caract\xE9ristiques (PV = W\xD73), emplacements d'armes et de modules, places M\xE9moire et Calcul. Le 2D6 de la gen\xE8se dote l'unit\xE9 ; le corps se paie sur cette dotation. La roue se relance une seule fois \u2014 au-del\xE0, le d\xE9 est scell\xE9."), dotation == null || relanceDemandee && !chNom ? React.createElement(LigneJetDes, {
+    label: dotation == null ? "Dotation de genèse (2D6)" : "Relance de genèse (2D6)",
+    des: ["D6", "D6"],
+    T: {
+      fond: "#0c0d10",
+      accent: accent,
+      or: accent
+    },
+    surPose: (total, valeurs) => {
+      setDees(valeurs);
+      setDotation(total);
+      setRelances(dotation == null ? 0 : x => x + 1);
+      setRelanceDemandee(false);
     }
-  }, "\u27C1 Lancer les d\xE9s de la gen\xE8se (2D6)") : React.createElement("div", {
+  }) : null, dotation != null && React.createElement("div", {
     className: "flex items-baseline justify-between mb-2 rounded-lg p-2.5",
     style: {
       background: "#ffffff08"
@@ -12447,8 +12453,8 @@ function EcranCreationUnite({
     style: {
       color: "#71717a"
     }
-  }, " (2D6 : ", dees ? dees[0] + " + " + dees[1] : "?", ")")), !chNom ? React.createElement("button", {
-    onClick: lancerDes,
+  }, " (2D6 : ", dees ? dees[0] + " + " + dees[1] : "?", ")")), !chNom && relances < 1 && !relanceDemandee ? React.createElement("button", {
+    onClick: () => setRelanceDemandee(true),
     className: "px-2.5 py-1 rounded text-xs font-bold",
     style: {
       background: "#0c0d10",
@@ -12501,14 +12507,24 @@ function EcranCreationUnite({
       color: "#a1a1aa"
     }
   }, "Le code de fabrique dit la lign\xE9e qui a assembl\xE9 le ch\xE2ssis \u2014 sa marque de naissance, et avec elle un bonus passif grav\xE9 \xE0 vie : ni usure ni transfert ne l'effacent."), React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+    className: "grid text-xs",
+    style: {
+      gridTemplateColumns: "130px 1fr 1fr",
+      color: "#71717a",
+      padding: "0 10px",
+      marginBottom: 2
+    }
+  }, React.createElement("div", null, "Code"), React.createElement("div", null, "Lign\xE9e"), React.createElement("div", null, "Bonus passif")), React.createElement("div", {
+    className: "grid gap-1"
   }, contenu.codes.map(cn => {
     const cd = peCodeDe(cn);
     return React.createElement("button", {
       key: cn,
       onClick: () => setCode(cn),
-      className: "rounded-lg p-2.5 text-left",
+      className: "grid rounded-lg px-2.5 py-2 text-left",
       style: {
+        gridTemplateColumns: "130px 1fr 1fr",
+        gap: 8,
         border: "1px solid " + (code === cn ? accent : "#3f3f46"),
         background: code === cn ? "#ffffff0d" : "#ffffff08"
       }
@@ -12518,42 +12534,44 @@ function EcranCreationUnite({
         color: code === cn ? accent : "#e8e4d8"
       }
     }, cn), cd ? React.createElement("div", {
-      className: "text-xs mt-0.5",
+      className: "text-xs",
       style: {
         color: "#a1a1aa"
       }
-    }, cd.texte) : null, cd ? React.createElement("div", {
-      className: "text-xs mt-0.5",
+    }, cd.texte) : React.createElement("div", null), cd ? React.createElement("div", {
+      className: "text-xs",
       style: {
         color: code === cn ? accent : "#71717a"
       }
-    }, cd.bonus) : null);
+    }, cd.bonus) : React.createElement("div", null));
   }))), etape === 4 && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
     }
   }, "La sp\xE9cialisation grave une aptitude \u2014 et souvent un pouvoir \u2014 dans la trame de l'unit\xE9."), React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+    className: "grid gap-1"
   }, PE_SPECIALISATIONS_DB.map(s => React.createElement("button", {
     key: s.id,
     onClick: () => setSpeId(s.id),
-    className: "rounded-lg p-2.5 text-left",
+    className: "rounded-lg px-2.5 py-2 text-left",
     style: {
       border: "1px solid " + (speId === s.id ? accent : "#3f3f46"),
       background: speId === s.id ? "#ffffff0d" : "#ffffff08"
     }
+  }, React.createElement("div", {
+    className: "flex items-baseline gap-3"
   }, React.createElement("div", {
     className: "font-bold text-sm",
     style: {
       color: speId === s.id ? accent : "#e8e4d8"
     }
   }, s.nom), s.apt ? React.createElement("div", {
-    className: "text-xs mt-0.5",
+    className: "text-xs",
     style: {
       color: "#a1a1aa"
     }
-  }, s.apt) : null, s.pouvoir ? React.createElement("div", {
+  }, s.apt) : null), s.pouvoir ? React.createElement("div", {
     className: "text-xs mt-0.5",
     style: {
       color: "#71717a"
@@ -12564,37 +12582,75 @@ function EcranCreationUnite({
       color: "#a1a1aa"
     }
   }, "Arsenal : ", empEff.armes.n, " emplacement", empEff.armes.n > 1 ? "s" : "", " d'arme sur ce ch\xE2ssis, taille T", empEff.armes.t, " maximum \u2014 ", armesChoisies.length, "/", empEff.armes.n, " choisi", armesChoisies.length > 1 ? "s" : "", ". Gratuit dans la grammaire : seules les extensions d'\xE9tape 6 se paient."), React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+    className: "grid text-xs",
+    style: {
+      gridTemplateColumns: "1fr 44px 64px 84px 36px 36px 40px 36px",
+      gap: 8,
+      color: "#71717a",
+      padding: "0 10px",
+      marginBottom: 2
+    }
+  }, React.createElement("div", null, "Arme"), React.createElement("div", null, "T"), React.createElement("div", null, "Type"), React.createElement("div", null, "Port\xE9e"), React.createElement("div", null, "A"), React.createElement("div", null, "F"), React.createElement("div", null, "PA"), React.createElement("div", null, "D")), React.createElement("div", {
+    className: "grid gap-1"
   }, arsenal.map(a => {
     const prise = armesChoisies.includes(a.id);
     const acceptable = a.taille <= empEff.armes.t && (prise || armesChoisies.length < empEff.armes.n);
     return React.createElement("button", {
       key: a.id,
       onClick: () => acceptable && basculerArme(a),
-      className: "rounded-lg p-2.5 text-left",
+      className: "grid rounded-lg px-2.5 py-2 text-left",
       style: {
+        gridTemplateColumns: "1fr 44px 64px 84px 36px 36px 40px 36px",
+        gap: 8,
         border: "1px solid " + (prise ? accent : "#3f3f46"),
         background: prise ? "#ffffff0d" : "#ffffff08",
-        opacity: a.taille <= empEff.armes.t && (prise || armesChoisies.length < empEff.armes.n) ? 1 : 0.4,
-        cursor: a.taille <= empEff.armes.t && (prise || armesChoisies.length < empEff.armes.n) ? "pointer" : "not-allowed"
+        opacity: acceptable ? 1 : 0.4,
+        cursor: acceptable ? "pointer" : "not-allowed"
       }
     }, React.createElement("div", {
       className: "font-bold text-sm",
       style: {
         color: prise ? accent : "#e8e4d8"
       }
-    }, a.nom, " ", React.createElement("span", {
+    }, a.nom), React.createElement("div", {
+      className: "text-xs",
       style: {
         color: "#71717a"
       }
-    }, "\xB7 T", a.taille)), React.createElement("div", {
-      className: "text-xs mt-0.5",
+    }, "T", a.taille), React.createElement("div", {
+      className: "text-xs",
       style: {
         color: "#a1a1aa"
       }
-    }, a.tir ? "tir" : "mêlée", " \xB7 ", a.portee, " \xB7 A ", a.att, " \xB7 F ", a.f, " \xB7 PA ", a.pa, " \xB7 D ", a.d), React.createElement("div", {
-      className: "text-xs mt-0.5",
+    }, a.tir ? "tir" : "mêlée"), React.createElement("div", {
+      className: "text-xs",
       style: {
+        color: "#a1a1aa"
+      }
+    }, a.portee), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "A ", a.att), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "F ", a.f), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "PA ", a.pa), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, "D ", a.d), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        gridColumn: "1 / -1",
         color: "#71717a"
       }
     }, a.taille > empEff.armes.t ? "trop grande pour ce châssis (T" + a.taille + " > T" + empEff.armes.t + ")" : a.regle));
@@ -12616,15 +12672,17 @@ function EcranCreationUnite({
         color: "#71717a"
       }
     }, titre, " \u2014 ", cle === "capteurs" ? pris + "/" + conf.n : mods[cle] ? "équipé" : "à choisir", " \xB7 T", conf.t, " max"), React.createElement("div", {
-      className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+      className: "grid gap-1"
     }, PE_MODULES_DB.filter(m => m.cat === cat).map(m => {
       const choisi = cle === "capteurs" ? (mods.capteurs || []).includes(m.id) : mods[cle] === m.id;
       const acceptable = m.taille <= conf.t && (cle !== "capteurs" || choisi || (mods.capteurs || []).length < conf.n);
       return React.createElement("button", {
         key: m.id,
         onClick: () => acceptable && basculerModule(m),
-        className: "rounded-lg p-2.5 text-left",
+        className: "grid rounded-lg px-2.5 py-2 text-left",
         style: {
+          gridTemplateColumns: "200px 44px 1fr",
+          gap: 8,
           border: "1px solid " + (choisi ? accent : "#3f3f46"),
           background: choisi ? "#ffffff0d" : "#ffffff08",
           opacity: acceptable ? 1 : 0.4,
@@ -12635,12 +12693,13 @@ function EcranCreationUnite({
         style: {
           color: choisi ? accent : "#e8e4d8"
         }
-      }, m.nom, " ", React.createElement("span", {
+      }, m.nom), React.createElement("div", {
+        className: "text-xs",
         style: {
           color: "#71717a"
         }
-      }, "\xB7 T", m.taille)), React.createElement("div", {
-        className: "text-xs mt-0.5",
+      }, "T", m.taille), React.createElement("div", {
+        className: "text-xs",
         style: {
           color: "#a1a1aa"
         }
@@ -12653,9 +12712,7 @@ function EcranCreationUnite({
     style: {
       color: "#71717a"
     }
-  }, "Extensions de grammaire \u2014 ", solde, " \xC9veil disponibles \xB7 +1 taille : 4 \xC9veil \xB7 +1 emplacement : 6 \xC9veil"), React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
-  }, [["armes", "Arsenal"], ["capteurs", "Capteurs"], ["coeur", "Cœur énergétique"], ["noyau", "Noyau énergétique"], ["bouclier", "Bouclier"], ["systeme", "Système logique"]].map(([cat, titre]) => {
+  }, "Extensions de grammaire \u2014 ", solde, " \xC9veil disponibles \xB7 +1 taille : 4 \xC9veil \xB7 +1 emplacement : 6 \xC9veil"), [["armes", "Arsenal"], ["capteurs", "Capteurs"], ["coeur", "Cœur énergétique"], ["noyau", "Noyau énergétique"], ["bouclier", "Bouclier"], ["systeme", "Système logique"]].map(([cat, titre]) => {
     const base = emp[cat] || null;
     const effC = empEff[cat];
     if (!base || cat === "bouclier" && base.n === 0) return null;
@@ -12665,8 +12722,10 @@ function EcranCreationUnite({
     const empPossible = base.n >= 1 && nbEmp < 1 && solde >= 6;
     return React.createElement("div", {
       key: cat,
-      className: "rounded-lg p-2.5",
+      className: "grid rounded-lg px-2.5 py-2 items-center",
       style: {
+        gridTemplateColumns: "200px 1fr auto",
+        gap: 8,
         background: "#ffffff08",
         border: "1px solid #3f3f46"
       }
@@ -12676,18 +12735,18 @@ function EcranCreationUnite({
         color: "#e8e4d8"
       }
     }, titre), React.createElement("div", {
-      className: "text-xs mt-0.5",
+      className: "text-xs",
       style: {
         color: "#a1a1aa"
       }
     }, base.n != null ? base.n + nbEmp + " emplacement" + (base.n + nbEmp > 1 ? "s" : "") + " · " : "", "T", effC.t, " max", nbTaille > 0 || nbEmp > 0 ? " · étendu" : ""), React.createElement("div", {
-      className: "flex gap-1.5 mt-2"
+      className: "flex gap-1.5"
     }, React.createElement("button", {
       onClick: () => taillePossible && setExts(x => Object.assign({}, x, {
         [cat + "T"]: (x[cat + "T"] || 0) + 1
       })),
       disabled: !taillePossible,
-      className: "flex-1 px-2.5 py-1 rounded text-xs font-bold",
+      className: "px-2.5 py-1 rounded text-xs font-bold",
       style: {
         background: "#14161b",
         color: taillePossible ? "#c8c8ce" : "#52525b",
@@ -12698,25 +12757,27 @@ function EcranCreationUnite({
         [cat + "N"]: 1
       })),
       disabled: !empPossible,
-      className: "flex-1 px-2.5 py-1 rounded text-xs font-bold",
+      className: "px-2.5 py-1 rounded text-xs font-bold",
       style: {
         background: "#14161b",
         color: empPossible ? "#c8c8ce" : "#52525b",
         border: "1px solid #3f3f46"
       }
     }, "+1 emplacement \xB7 6 \xC9veil") : null));
-  })))), etape === 7 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+  }))), etape === 7 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
     }
   }, "Un protocole initial se grave dans la M\xE9moire (places du ch\xE2ssis : ", ch.mem, "). Le Protocole de Secours est inn\xE9 \u2014 il est d\xE9j\xE0 grav\xE9, hors liste, sans co\xFBt."), React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+    className: "grid gap-1"
   }, PE_PROTOCOLES_DB.map(p => React.createElement("button", {
     key: p.id,
     onClick: () => setProtoId(p.id),
-    className: "rounded-lg p-2.5 text-left",
+    className: "grid rounded-lg px-2.5 py-2 text-left",
     style: {
+      gridTemplateColumns: "200px 1fr",
+      gap: 8,
       border: "1px solid " + (protoId === p.id ? accent : "#3f3f46"),
       background: protoId === p.id ? "#ffffff0d" : "#ffffff08"
     }
@@ -12726,7 +12787,7 @@ function EcranCreationUnite({
       color: protoId === p.id ? accent : "#e8e4d8"
     }
   }, p.nom), React.createElement("div", {
-    className: "text-xs mt-0.5",
+    className: "text-xs",
     style: {
       color: "#a1a1aa"
     }
@@ -12744,39 +12805,43 @@ function EcranCreationUnite({
     }
   }, ch.n, " \xB7 code ", code, " \xB7 ", spe.nom)), React.createElement("div", {
     className: "grid grid-cols-3 gap-2 text-center text-sm"
-  }, [["CC", ch.cc], ["CT", ch.ct], ["F", ch.f], ["E", ch.e], ["Sv", ch.sv], ["Cd", ch.cd], ["A", ch.a], ["Rfx", ch.rfx], ["PV", ch.pv]].map(([k, v]) => React.createElement("div", {
+  }, [["CC", ch.cc], ["CT", ch.ct], ["F", ch.f], ["E", ch.e], ["Sv", ch.sv], ["Cd", ch.cd], ["A", ch.a], ["Rfx", ch.rfx], ["PV", ch.pv]].map(([k, v]) => React.createElement("fieldset", {
     key: k,
-    className: "rounded py-1.5",
+    className: "rounded",
     style: {
       background: "#ffffff0d",
-      color: "#e8e4d8"
+      color: "#e8e4d8",
+      margin: 0,
+      border: "1px solid #3f3f46",
+      padding: "2px 6px 6px"
     }
-  }, React.createElement("span", {
-    className: "text-xs",
+  }, React.createElement("legend", {
+    className: "text-xs font-bold",
     style: {
-      color: "#71717a"
+      color: "#71717a",
+      padding: "0 4px"
     }
-  }, k, " "), v))), React.createElement("div", {
+  }, k), React.createElement("div", null, v)))), React.createElement("div", {
     className: "flex gap-2 mt-2 text-center text-xs"
-  }, React.createElement("div", {
-    className: "flex-1 rounded-lg py-1.5",
+  }, [["Mémoire", React.createElement(React.Fragment, null, React.createElement("b", null, ch.mem), " (1 protocole initial grav\xE9)")], ["Calcul", React.createElement("b", null, ch.cal)], ["Éveil", React.createElement(React.Fragment, null, React.createElement("b", null, solde), " au r\xE9veil")]].map(([titre, contenu]) => React.createElement("fieldset", {
+    key: titre,
+    className: "flex-1 rounded-lg",
     style: {
       background: "#ffffff0d",
-      color: "#e8e4d8"
+      color: "#e8e4d8",
+      margin: 0,
+      border: "1px solid #3f3f46",
+      padding: "2px 8px 6px"
     }
-  }, "M\xE9moire ", React.createElement("b", null, ch.mem), " (1 protocole initial grav\xE9)"), React.createElement("div", {
-    className: "flex-1 rounded-lg py-1.5",
+  }, React.createElement("legend", {
+    className: "text-xs font-bold",
     style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
+      color: "#71717a",
+      padding: "0 4px"
     }
-  }, "Calcul ", React.createElement("b", null, ch.cal)), React.createElement("div", {
-    className: "flex-1 rounded-lg py-1.5",
-    style: {
-      background: "#ffffff0d",
-      color: "#e8e4d8"
-    }
-  }, "\xC9veil ", React.createElement("b", null, solde), " au r\xE9veil")), React.createElement("div", {
+  }, titre), React.createElement("div", {
+    className: "py-1.5"
+  }, contenu)))), React.createElement("div", {
     className: "text-xs mt-2 rounded p-2",
     style: {
       background: "#ffffff08",
@@ -14134,7 +14199,7 @@ function LigneJetDes({
     if (etats.length && etats.every(e => e.phase === "bim")) {
       engage.current = false;
       if (surEngage) surEngage(false);
-      surPose(etats.reduce((a, e) => a + e.valeur, 0) + bonus);
+      surPose(etats.reduce((a, e) => a + e.valeur, 0) + (bonus || 0), etats.map(e => e.valeur));
     }
   }, [etats]);
   const poser = (i, v) => setEtats(prev => prev.map((e, j) => j === i ? {
