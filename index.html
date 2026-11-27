@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.158";
+const BUILD = "0.159";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12461,16 +12461,28 @@ function EcranCreationUnite({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "Relancer") : null), dotation != null && React.createElement("div", {
-    className: "grid grid-cols-2 md:grid-cols-3 gap-2"
+  }, "Relancer") : null), dotation != null && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "grid text-xs",
+    style: {
+      gridTemplateColumns: "1fr 40px 40px 36px 36px 40px 36px 40px 48px 56px 56px 64px 72px",
+      gap: 8,
+      color: "#71717a",
+      padding: "0 10px",
+      marginBottom: 2
+    }
+  }, React.createElement("div", null, "Ch\xE2ssis"), React.createElement("div", null, "CC"), React.createElement("div", null, "CT"), React.createElement("div", null, "F"), React.createElement("div", null, "E"), React.createElement("div", null, "PV"), React.createElement("div", null, "A"), React.createElement("div", null, "Sv"), React.createElement("div", null, "Rfx"), React.createElement("div", null, "M\xE9moire"), React.createElement("div", null, "Calcul"), React.createElement("div", null, "Armes"), React.createElement("div", null, "\xC9veil")), React.createElement("div", {
+    className: "grid gap-1"
   }, contenu.chassis.map(c => {
     const prix = PE_PRIX[c.n] || 0;
     const abordable = prix <= dotation;
+    const gram = PE_GRAMMAIRE[c.n];
     return React.createElement("button", {
       key: c.n,
       onClick: () => abordable && choisirChassis(c),
-      className: "rounded-lg p-2.5 text-left",
+      className: "grid rounded-lg px-2.5 py-2 text-left",
       style: {
+        gridTemplateColumns: "1fr 40px 40px 36px 36px 40px 36px 40px 48px 56px 56px 64px 72px",
+        gap: 8,
         border: "1px solid " + (chNom === c.n ? accent : "#3f3f46"),
         background: chNom === c.n ? "#ffffff0d" : "#ffffff08",
         opacity: abordable ? 1 : 0.4,
@@ -12482,26 +12494,73 @@ function EcranCreationUnite({
         color: chNom === c.n ? accent : "#e8e4d8"
       }
     }, c.n), React.createElement("div", {
-      className: "text-xs mt-0.5",
+      className: "text-xs",
       style: {
         color: "#a1a1aa"
       }
-    }, "CC ", c.cc, " \xB7 CT ", c.ct, " \xB7 F ", c.f, " \xB7 E ", c.e, " \xB7 PV ", c.pv, " \xB7 A ", c.a, " \xB7 Sv ", c.sv, " \xB7 Rfx ", c.rfx), React.createElement("div", {
-      className: "text-xs mt-0.5",
+    }, c.cc), React.createElement("div", {
+      className: "text-xs",
       style: {
-        color: "#71717a"
+        color: "#a1a1aa"
       }
-    }, "M\xE9moire ", c.mem, " \xB7 Calcul ", c.cal, " \xB7 ", React.createElement("b", {
+    }, c.ct), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.f), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.e), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.pv), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.a), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.sv), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.rfx), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.mem), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, c.cal), React.createElement("div", {
+      className: "text-xs",
+      style: {
+        color: "#a1a1aa"
+      }
+    }, gram ? gram.armes.n + "\u00D7T" + gram.armes.t : "\u2014"), React.createElement("div", {
+      className: "text-xs font-bold",
       style: {
         color: abordable ? "#c8c8ce" : "#71717a"
       }
-    }, prix, " \xC9veil"), PE_GRAMMAIRE[c.n] ? " · Armes " + PE_GRAMMAIRE[c.n].armes.n + "×T" + PE_GRAMMAIRE[c.n].armes.t : ""), React.createElement("div", {
-      className: "text-xs mt-0.5",
+    }, prix), React.createElement("div", {
+      className: "text-xs",
       style: {
+        gridColumn: "1 / -1",
         color: !abordable ? "#fb7185" : chNom === c.n ? accent : "#71717a"
       }
     }, abordable ? chNom === c.n ? "choisi — il reste " + solde + " Éveil" : "disponible" : "hors dotation : " + prix + " > " + dotation));
-  }))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+  })))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
