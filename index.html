@@ -1919,7 +1919,7 @@ const fondrePresents = (precedent, diff) => {
   });
   return suivant;
 };
-const BUILD = "0.159";
+const BUILD = "0.160";
 const MANIFESTES_CHARGES = typeof window !== "undefined" && window.LARCHIVISTE_MANIFESTES || null;
 const PACKS = MANIFESTES_CHARGES ? MANIFESTES_CHARGES.packs : [{
   format: 1,
@@ -12461,7 +12461,15 @@ function EcranCreationUnite({
       color: "#a1a1aa",
       border: "1px solid #3f3f46"
     }
-  }, "Relancer") : null), dotation != null && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, "Relancer") : null), dotation != null && React.createElement("div", {
+    style: {
+      overflowX: "auto"
+    }
+  }, React.createElement("div", {
+    style: {
+      minWidth: 760
+    }
+  }, React.createElement("div", {
     className: "grid text-xs",
     style: {
       gridTemplateColumns: "1fr 40px 40px 36px 36px 40px 36px 40px 48px 56px 56px 64px 72px",
@@ -12560,7 +12568,7 @@ function EcranCreationUnite({
         color: !abordable ? "#fb7185" : chNom === c.n ? accent : "#71717a"
       }
     }, abordable ? chNom === c.n ? "choisi — il reste " + solde + " Éveil" : "disponible" : "hors dotation : " + prix + " > " + dotation));
-  })))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
+  }))))), etape === 3 && ch && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
@@ -12641,6 +12649,14 @@ function EcranCreationUnite({
       color: "#a1a1aa"
     }
   }, "Arsenal : ", empEff.armes.n, " emplacement", empEff.armes.n > 1 ? "s" : "", " d'arme sur ce ch\xE2ssis, taille T", empEff.armes.t, " maximum \u2014 ", armesChoisies.length, "/", empEff.armes.n, " choisi", armesChoisies.length > 1 ? "s" : "", ". Gratuit dans la grammaire : seules les extensions d'\xE9tape 6 se paient."), React.createElement("div", {
+    style: {
+      overflowX: "auto"
+    }
+  }, React.createElement("div", {
+    style: {
+      minWidth: 540
+    }
+  }, React.createElement("div", {
     className: "grid text-xs",
     style: {
       gridTemplateColumns: "1fr 44px 64px 84px 36px 36px 40px 36px",
@@ -12713,7 +12729,7 @@ function EcranCreationUnite({
         color: "#71717a"
       }
     }, a.taille > empEff.armes.t ? "trop grande pour ce châssis (T" + a.taille + " > T" + empEff.armes.t + ")" : a.regle));
-  }))), etape === 6 && ch && emp && empEff && React.createElement(React.Fragment, null, React.createElement("div", {
+  }))))), etape === 6 && ch && emp && empEff && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "text-xs mb-2",
     style: {
       color: "#a1a1aa"
@@ -12740,7 +12756,7 @@ function EcranCreationUnite({
         onClick: () => acceptable && basculerModule(m),
         className: "grid rounded-lg px-2.5 py-2 text-left",
         style: {
-          gridTemplateColumns: "200px 44px 1fr",
+          gridTemplateColumns: "minmax(120px, 200px) 44px 1fr",
           gap: 8,
           border: "1px solid " + (choisi ? accent : "#3f3f46"),
           background: choisi ? "#ffffff0d" : "#ffffff08",
@@ -12783,7 +12799,7 @@ function EcranCreationUnite({
       key: cat,
       className: "grid rounded-lg px-2.5 py-2 items-center",
       style: {
-        gridTemplateColumns: "200px 1fr auto",
+        gridTemplateColumns: "minmax(120px, 200px) 1fr auto",
         gap: 8,
         background: "#ffffff08",
         border: "1px solid #3f3f46"
@@ -12799,7 +12815,10 @@ function EcranCreationUnite({
         color: "#a1a1aa"
       }
     }, base.n != null ? base.n + nbEmp + " emplacement" + (base.n + nbEmp > 1 ? "s" : "") + " · " : "", "T", effC.t, " max", nbTaille > 0 || nbEmp > 0 ? " · étendu" : ""), React.createElement("div", {
-      className: "flex gap-1.5"
+      className: "flex gap-1.5",
+      style: {
+        flexWrap: "wrap"
+      }
     }, React.createElement("button", {
       onClick: () => taillePossible && setExts(x => Object.assign({}, x, {
         [cat + "T"]: (x[cat + "T"] || 0) + 1
@@ -12835,7 +12854,7 @@ function EcranCreationUnite({
     onClick: () => setProtoId(p.id),
     className: "grid rounded-lg px-2.5 py-2 text-left",
     style: {
-      gridTemplateColumns: "200px 1fr",
+      gridTemplateColumns: "minmax(120px, 200px) 1fr",
       gap: 8,
       border: "1px solid " + (protoId === p.id ? accent : "#3f3f46"),
       background: protoId === p.id ? "#ffffff0d" : "#ffffff08"
